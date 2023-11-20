@@ -94,10 +94,19 @@ foreach( src_file IN ITEMS ${SRC_FILES})
 endforeach()
 
 #additional libraries, if needed
-#find_package(LIBNAME)
-#or
-#find_library(LIBNAME_LIBRARIES NAMES libname)
-#find_path(LIBNAME_INCLUDE_DIRS includefile.h)
-#
-#target_link_libraries(${PLUGIN_NAME} ${LIBNAME_LIBRARIES})
-#target_include_directories(${PLUGIN_NAME} PRIVATE ${LIBNAME_INCLUDE_DIRS})
+set(LIBONI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI)
+target_include_directories(${PLUGIN_NAME} PRIVATE ${LIBONI_DIR}/include)
+
+if (MSVC)
+    set(LIBONI_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI/win64)
+	target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/liboni.lib")
+	install(FILES ${LIBONI_LIB_DIR}/liboni.dll DESTINATION ${GUI_BIN_DIR}/shared CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
+elseif(LINUX)
+    find_library(LIBONI_LIBRARIES oni liboni PATHS ${CMAKE_CURRENT_SOURCE_DIR}/libONI/linux)
+	target_link_libraries(${PLUGIN_NAME} ${LIBONI_LIBRARIES})
+    install(DIRECTORY ${LIBONI_DIR}/linux/ DESTINATION ${GUI_BIN_DIR}/shared FILES_MATCHING PATTERN "*.so")
+elseif(APPLE)
+    set(LIBONI_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI/osx)
+    target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/liboni.dylib")
+    install(FILES ${LIBONI_LIB_DIR}/liboni.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api8)
+endif()

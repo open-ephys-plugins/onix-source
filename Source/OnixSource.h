@@ -25,21 +25,16 @@
 #ifndef __OnixSource_H__
 #define __OnixSource_H__
 
-#include <DataThreadHeaders.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <oni.h>
+
+#include <DataThreadHeaders.h>
 
 #include "OnixDevice.h"
 
 class OnixSourceEditor;
-
-struct PluginSettingsObject
-{
-	int numProbes;
-	int channelsPerProbe;
-	int numNIDAQ;
-	int channelsPerNIDAQ;
-};
 
 /**
 
@@ -55,10 +50,17 @@ class OnixSource : public DataThread
 public:
 
 	/** Constructor */
-	OnixSource(SourceNode* sn) : DataThread(sn) { }
+	OnixSource(SourceNode* sn) : DataThread(sn) 
+	{ 
+		ctx = NULL;
+	}
 
 	/** Destructor */
-	~OnixSource() { }
+	~OnixSource() 
+	{
+		if (ctx != NULL)
+			oni_destroy_ctx(ctx);
+	}
 
 	/** Static method to create DataThread */
 	static DataThread* createDataThread(SourceNode* sn);
@@ -86,9 +88,14 @@ public:
 		OwnedArray<DeviceInfo>* devices,
 		OwnedArray<ConfigurationObject>* configurationObjects);
 
+	/** Available data sources */
 	OwnedArray<OnixDevice> sources;
 
+	/** Pointer to the editor */
 	OnixSourceEditor* ed;
+
+	/** The ONI context object */
+	oni_ctx ctx;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 
