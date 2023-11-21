@@ -29,6 +29,7 @@
 #include <string.h>
 
 #include <oni.h>
+#include <onix.h>
 
 #include <DataThreadHeaders.h>
 
