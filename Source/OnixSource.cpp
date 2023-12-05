@@ -86,10 +86,21 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
         oni_get_opt(ctx, ONI_OPT_DEVICETABLE, devices, &devices_sz);
         
         // print device info
-        for (size_t i = 0; i < num_devs; i++) {
-            if (devices[i].id != ONIX_NULL) {
+        for (size_t dev_idx = 0; dev_idx < num_devs; dev_idx++) {
+            if (devices[dev_idx].id != ONIX_NULL) {
 
-                LOGD("Device ", i, " ID: ", devices[i].id);
+                const char* dev_str = onix_device_str(devices[dev_idx].id);
+
+                printf("%02zd |%05zd: 0x%02x.0x%02x\t|%d\t|%d\t|%u\t|%u\t|%s\n",
+                    dev_idx,
+                    devices[dev_idx].idx,
+                    (uint8_t)(devices[dev_idx].idx >> 8),
+                    (uint8_t)devices[dev_idx].idx,
+                    devices[dev_idx].id,
+                    devices[dev_idx].version,
+                    devices[dev_idx].read_size,
+                    devices[dev_idx].write_size,
+                    dev_str);
             }
         }
     }
