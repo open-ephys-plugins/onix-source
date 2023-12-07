@@ -66,12 +66,12 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
         ctx = oni_create_ctx("riffa"); // "riffa" is the PCIe driver name
 
-        if (!ctx) { LOGD("Failed to create context."); return; }
+        if (!ctx) { LOGE("Failed to create context."); return; }
 
         // Initialize context and discover hardware
         int errorCode = oni_init_ctx(ctx, 0);
         
-        if (errorCode) { LOGD("Error: ", oni_error_str(errorCode)); return; }
+        if (errorCode) { LOGE(oni_error_str(errorCode)); return; }
 
         oni_size_t num_devs = 0;
         oni_device_t* devices = NULL;
@@ -82,7 +82,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
         size_t devices_sz = sizeof(oni_device_t) * num_devs;
         devices = (oni_device_t *)realloc(devices, devices_sz);
-        if (devices == NULL) { LOGD("No devices found."); return; }
+        if (devices == NULL) { LOGE("No devices found."); return; }
         oni_get_opt(ctx, ONI_OPT_DEVICETABLE, devices, &devices_sz);
         
         // print device info
