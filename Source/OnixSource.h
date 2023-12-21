@@ -51,16 +51,17 @@ class OnixSource : public DataThread
 public:
 
 	/** Constructor */
-	OnixSource(SourceNode* sn) : DataThread(sn) 
-	{ 
-		ctx = NULL;
-	}
+	OnixSource(SourceNode* sn);
 
 	/** Destructor */
 	~OnixSource() 
 	{
 		if (ctx != NULL)
+		{
+			uint32_t val = 1;
+        	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 			oni_destroy_ctx(ctx);
+		}
 	}
 
 	/** Static method to create DataThread */
@@ -70,7 +71,7 @@ public:
 	std::unique_ptr<GenericEditor> createEditor(SourceNode* sn);
 
 	/** Not used -- data buffers are updated for each source stream */
-	bool updateBuffer() { return true;  }
+	bool updateBuffer() override;
 
 	/** Returns true if the hardware is connected, false otherwise.*/
 	bool foundInputSource();
@@ -89,6 +90,8 @@ public:
 		OwnedArray<DeviceInfo>* devices,
 		OwnedArray<ConfigurationObject>* configurationObjects);
 
+private:
+
 	/** Available data sources */
 	OwnedArray<OnixDevice> sources;
 
@@ -97,6 +100,11 @@ public:
 
 	/** The ONI context object */
 	oni_ctx ctx;
+
+	static const oni_dev_idx_t DEVICE_MEMORY = 0x000a;
+	const oni_size_t block_read_size = 2048;
+
+	bool devicesFound = false;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 
