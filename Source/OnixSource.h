@@ -34,8 +34,10 @@
 #include <DataThreadHeaders.h>
 
 #include "OnixDevice.h"
+#include "Devices/Neuropixels_1.h"
 
 class OnixSourceEditor;
+class Neuropixels_1;
 
 /**
 
@@ -101,10 +103,14 @@ private:
 	/** The ONI context object */
 	oni_ctx ctx;
 
-	static const oni_dev_idx_t DEVICE_MEMORY = 0x000a;
+	static const oni_dev_idx_t DEVICE_NPX1_1 = 0x0100;
+	static const oni_dev_idx_t DEVICE_NPX1_2 = 0x0101;
+	
 	const oni_size_t block_read_size = 2048;
 
 	bool devicesFound = false;
+
+	void initializeDevices();
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 

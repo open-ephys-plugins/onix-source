@@ -25,7 +25,6 @@
 
 #include "OnixSourceEditor.h"
 
-
 OnixSource::OnixSource(SourceNode* sn) :
     DataThread(sn),
     ctx(NULL),
@@ -42,6 +41,41 @@ OnixSource::OnixSource(SourceNode* sn) :
     
     if (errorCode) { LOGE(oni_error_str(errorCode)); return; }
 
+    initializeDevices();
+
+    if(!devicesFound) { return; }
+
+    oni_size_t frame_size = 0;
+    size_t frame_size_sz = sizeof(frame_size);
+    oni_get_opt(ctx, ONI_OPT_MAXREADFRAMESIZE, &frame_size, &frame_size_sz);
+    printf("Max. read frame size: %u bytes\n", frame_size);
+
+    oni_get_opt(ctx, ONI_OPT_MAXWRITEFRAMESIZE, &frame_size, &frame_size_sz);
+    printf("Max. write frame size: %u bytes\n", frame_size);
+
+    size_t block_size_sz = sizeof(block_read_size);
+    
+    // set block read size
+    oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, block_size_sz);
+}
+
+DataThread* OnixSource::createDataThread(SourceNode *sn)
+{
+	return new OnixSource(sn);
+}
+
+
+std::unique_ptr<GenericEditor> OnixSource::createEditor(SourceNode* sn)
+{
+    std::unique_ptr<OnixSourceEditor> e = std::make_unique<OnixSourceEditor>(sn, this);
+    ed = e.get();
+
+    return e;
+}
+
+
+void OnixSource::initializeDevices()
+{
     oni_size_t num_devs = 0;
     oni_device_t* devices = NULL;
 
@@ -55,6 +89,8 @@ OnixSource::OnixSource(SourceNode* sn) :
     oni_get_opt(ctx, ONI_OPT_DEVICETABLE, devices, &devices_sz);
 
     devicesFound = true;
+
+#ifdef DEBUG
 
     // print device info
     printf("   +--------------------+-------+-------+-------+-------+---------------------\n");
@@ -79,47 +115,39 @@ OnixSource::OnixSource(SourceNode* sn) :
                 dev_str);
         }
     }
+#endif
 
-    oni_size_t frame_size = 0;
-    size_t frame_size_sz = sizeof(frame_size);
-    oni_get_opt(ctx, ONI_OPT_MAXREADFRAMESIZE, &frame_size, &frame_size_sz);
-    printf("Max. read frame size: %u bytes\n", frame_size);
+    static const String probeLetters = "ABCDEFGHI";
+    int npxProbeIdx = 0;
 
-    oni_get_opt(ctx, ONI_OPT_MAXWRITEFRAMESIZE, &frame_size, &frame_size_sz);
-    printf("Max. write frame size: %u bytes\n", frame_size);
+    for (size_t dev_idx = 0; dev_idx < num_devs; dev_idx++)
+    {
+        if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
+        {
+            Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]));
+            sources.add(np1);
+            
+            for (auto streamInfo : np1->streams)
+            {
+                sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * 10));
 
-    size_t block_size_sz = sizeof(block_read_size);
-    
-    // oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
-    oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, block_size_sz);
+                if (streamInfo.channelPrefix.equalsIgnoreCase("AP"))
+                    np1->apBuffer = sourceBuffers.getLast();
+                else if (streamInfo.channelPrefix.equalsIgnoreCase("LFP"))
+                    np1->lfpBuffer = sourceBuffers.getLast();
+            }
 
-    // Enable memory usage device
-    oni_write_reg(ctx, DEVICE_MEMORY, 0, 1);
+            // // Enable device stream
+            // const oni_reg_addr_t enable_device_stream = 0x8000;
+            // oni_write_reg(ctx, DEVICE_NPX1_1, enable_device_stream, 1);
 
-    oni_reg_val_t hzVal = 0;
-    oni_read_reg(ctx, DEVICE_MEMORY, 2, &hzVal);
+            // oni_write_reg(ctx, DEVICE_NPX1_1, Neuropixels_Registers::REC_MOD , (uint32_t)1 << 5);
 
-    // set memory device refresh rate to 100 Hz
-    oni_write_reg(ctx, DEVICE_MEMORY, 1, hzVal/100);
+            // oni_write_reg(ctx, DEVICE_NPX1_1, Neuropixels_Registers::OP_MODE , (uint32_t)1 << 6);
 
-    oni_reg_val_t memSize = 0;
-    oni_read_reg(ctx, DEVICE_MEMORY, 3, &memSize);
-
-    LOGD ("Hardware buffer size in 32-bit words: ", (int)memSize);
-}
-
-DataThread* OnixSource::createDataThread(SourceNode *sn)
-{
-	return new OnixSource(sn);
-}
-
-
-std::unique_ptr<GenericEditor> OnixSource::createEditor(SourceNode* sn)
-{
-    std::unique_ptr<OnixSourceEditor> e = std::make_unique<OnixSourceEditor>(sn, this);
-    ed = e.get();
-
-    return e;
+            npxProbeIdx++;
+        }
+    }
 }
 
 void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
@@ -139,42 +167,62 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
     deviceInfos->clear();
     configurationObjects->clear();
 
-    sources.clear();
-    sourceBuffers.clear();
-
     if (devicesFound)
     {
-        sourceBuffers.add(new DataBuffer(1, 10000)); // Memory device
-        // sourceBuffers.add(new DataBuffer(1, 10000)); // Heartbeat device
+        DataStream* currentStream;
 
-        //Memory usage device
-        DataStream::Settings memStreamSettings
+        for (auto source : sources)
         {
-            "Memory Usage", // stream name
-            "Hardware buffer usage on an acquisition board", // stream description
-            "onix-pcie-device.memory", // stream identifier
-            100 // sample rate
+            // create device info object
+            if(source->type == OnixDeviceType::NEUROPIXELS_1)
+            {
+                DeviceInfo::Settings deviceSettings{
+                    source->getName(), // device name
+                    "Neuropixels 1.0 Probe",
+                    "neuropixels1.probe",
+                    "0000000",
+                    "imec"
+                };
 
-        };
+                DeviceInfo* device = new DeviceInfo(deviceSettings);
+                deviceInfos->add(device); // unique device object owned by SourceNode
+            }
 
-        DataStream* stream = new DataStream(memStreamSettings);
-        dataStreams->add(stream);
+            // add data streams and channels
+            for (auto streamInfo : source->streams)
+            {
+                DataStream::Settings apStreamSettings
+                {
+                    streamInfo.name, // stream name
+                    streamInfo.description, // stream description
+                    streamInfo.identifier, // stream identifier
+                    streamInfo.sampleRate // sample rate
 
-        {
-            ContinuousChannel::Settings channelSettings{
-                ContinuousChannel::AUX,
-                "MEM",
-                "Hardware buffer usage",
-                "onix-pcie-device.continuous.mem",
-                1.0f,
-                stream
-            };
-            continuousChannels->add(new ContinuousChannel(channelSettings));
+                };
+
+                DataStream* stream = new DataStream(apStreamSettings);
+                dataStreams->add(stream);
+                currentStream = stream;
+                currentStream->device = deviceInfos->getLast();
+
+                // Add continuous channels
+                for (int chan = 0; chan < streamInfo.numChannels; chan++)
+                {
+                    ContinuousChannel::Settings channelSettings{
+                        streamInfo.channelType,
+                        streamInfo.channelPrefix + String(chan + 1),
+                        streamInfo.description,
+                        streamInfo.identifier,
+                        streamInfo.bitVolts, // bitVolts
+                        currentStream
+                    };
+                    continuousChannels->add(new ContinuousChannel(channelSettings));
+                }
+            }
+
         }
     }
-        
-    // detect available devices and create source objects for each
-    
+            
 }
 
 
@@ -200,6 +248,16 @@ bool OnixSource::startAcquisition()
     {
         LOGE("Error starting acquisition: ", oni_error_str(res), " code ", res);
         return false;
+    }
+
+    for (auto source : sources)
+    {
+        if (source->type == OnixDeviceType::NEUROPIXELS_1)
+        {
+            oni_write_reg(ctx, DEVICE_NPX1_1, NeuropixelsRegisters::REC_MOD , (uint32_t)(1 << 6 | 1 << 7));
+        }
+
+        source->startThread();
     }
 
     startThread();
@@ -228,7 +286,10 @@ bool OnixSource::stopAcquisition()
         oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
         oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
     }
-    sourceBuffers[0]->clear();
+    
+    
+    for (auto buffers : sourceBuffers)
+        buffers->clear();
 
     return true;
 }
@@ -249,21 +310,21 @@ bool OnixSource::updateBuffer()
             return false;
         }
 
-        if (frame->dev_idx == DEVICE_MEMORY)
+        if (frame->dev_idx == DEVICE_NPX1_1)
         {
-            bufferPtr = (unsigned char*)frame->data + 8; //skip ONI timestamps
-            uint32 membytes = (uint32(*(uint16*)bufferPtr) << 16) + (uint32(*(uint16*)(bufferPtr + 2)));
-            float memf = membytes * sizeof(membytes);
-            uint64 zero = 0;
-            int64 tst = frame->time;
-            double tsd = -1;
-            sourceBuffers[0]->addToBuffer(
-                &memf,
-                &tst,
-                &tsd,
-                &zero,
-                1
-            );
+            // bufferPtr = (unsigned char*)frame->data + 8; //skip ONI timestamps
+            // uint32 membytes = (uint32(*(uint16*)bufferPtr) << 16) + (uint32(*(uint16*)(bufferPtr + 2)));
+            // float memf = membytes * sizeof(membytes);
+            // uint64 zero = 0;
+            // int64 tst = frame->time;
+            // double tsd = -1;
+            // sourceBuffers[0]->addToBuffer(
+            //     &memf,
+            //     &tst,
+            //     &tsd,
+            //     &zero,
+            //     1
+            // );
         }
 
         oni_destroy_frame(frame);

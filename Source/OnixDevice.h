@@ -21,8 +21,8 @@
 
 */
 
-#ifndef SIMULATEDSOURCE_H_DEFINED
-#define SIMULATEDSOURCE_H_DEFINED
+#ifndef __OnixDevice_H__
+#define __OnixDevice_H__
 
 #include <DataThreadHeaders.h>
 
@@ -45,6 +45,17 @@ enum OnixDeviceType {
 	ADC
 };
 
+struct StreamInfo {
+	String name;
+	String description;
+	String identifier;
+	int numChannels;
+	float sampleRate;
+	String channelPrefix;
+	ContinuousChannel::Type channelType;
+	float bitVolts;
+};
+
 /** 
 	
 	Streams data from an ONIX device
@@ -55,35 +66,40 @@ class OnixDevice : public Thread
 public:
 
 	/** Constructor */
-	OnixDevice(String name, int channels, float sampleRate, OnixDeviceType type);
+	OnixDevice(String name, OnixDeviceType type);
 
 	/** Destructor */
 	~OnixDevice() { }
 
+	virtual void addFrame() = 0;
+
+	const String getName() { return name; }
+
+	OnixDeviceType type;
+
 	/** Holds incoming data */
-	DataBuffer* buffer;
+	DataBuffer* deviceBuffer;
+
+	Array<StreamInfo> streams;
 
 private:
 
 	/** Updates buffer during acquisition */
 	void run() override;
 
-	OnixDeviceType type;
-
 	std::vector<float>* data;
 	int availableSamples;
     int samplesPerBuffer;
 
-	int numChannels;
-	int packetSize;
-	float sampleRate;
 	int64 numSamples;
 	uint64 eventCode;
 
-	float samples[384 * MAX_SAMPLES_PER_BUFFER];
-	int64 sampleNumbers[MAX_SAMPLES_PER_BUFFER];
-    double timestamps[MAX_SAMPLES_PER_BUFFER];
-	uint64 event_codes[MAX_SAMPLES_PER_BUFFER];
+	String name;
+
+	// float samples[384 * MAX_SAMPLES_PER_BUFFER];
+	// int64 sampleNumbers[MAX_SAMPLES_PER_BUFFER];
+    // double timestamps[MAX_SAMPLES_PER_BUFFER];
+	// uint64 event_codes[MAX_SAMPLES_PER_BUFFER];
 
 };
 

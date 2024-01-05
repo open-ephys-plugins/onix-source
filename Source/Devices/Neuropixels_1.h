@@ -21,19 +21,49 @@
 
 */
 
-#include "OnixDevice.h"
+#ifndef NEUROPIXELS1_H_DEFINED
+#define NEUROPIXELS1_H_DEFINED
 
-OnixDevice::OnixDevice(String name, OnixDeviceType type_)
-	: Thread(name), type(type_)
+#include "../OnixDevice.h"
+
+#include <ctime>
+#include <chrono>
+
+enum NeuropixelsRegisters
 {
+	OP_MODE = 0x00,
+	REC_MOD = 0x01,
+	CAL_MOD = 0x02
+};
+
+/** 
 	
-}
+	Streams data from an ONIX device
 
-
-void OnixDevice::run()
+*/
+class Neuropixels_1 : public OnixDevice
 {
-	while (!threadShouldExit())
-	{
+public:
 
-	}
-}
+	/** Constructor */
+	Neuropixels_1(String name);
+
+	/** Destructor */
+	~Neuropixels_1();
+
+	DataBuffer* apBuffer = deviceBuffer;
+	DataBuffer* lfpBuffer;
+
+	void addFrame() override;
+
+private:
+
+	float samples[384 * MAX_SAMPLES_PER_BUFFER];
+	int64 sampleNumbers[MAX_SAMPLES_PER_BUFFER];
+    double timestamps[MAX_SAMPLES_PER_BUFFER];
+	uint64 event_codes[MAX_SAMPLES_PER_BUFFER];
+
+};
+
+
+#endif
