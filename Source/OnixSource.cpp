@@ -124,7 +124,15 @@ void OnixSource::initializeDevices()
     {
         if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
         {
-            Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]));
+            Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
+
+            if(np1->enableDevice() != 0)
+            {
+                LOGE("Error enabling device data stream.");
+                delete np1;
+                continue;
+            }
+
             sources.add(np1);
             
             for (auto streamInfo : np1->streams)
@@ -241,6 +249,11 @@ bool OnixSource::startAcquisition()
     //     source->startThread();
     if (!devicesFound)
         return false;
+    
+    for (auto source : sources)
+    {
+        source->startAcquisition();
+    }
 
     oni_reg_val_t reg = 2;
     int res = oni_set_opt(ctx, ONI_OPT_RESETACQCOUNTER, &reg, sizeof(oni_size_t));
@@ -248,16 +261,6 @@ bool OnixSource::startAcquisition()
     {
         LOGE("Error starting acquisition: ", oni_error_str(res), " code ", res);
         return false;
-    }
-
-    for (auto source : sources)
-    {
-        if (source->type == OnixDeviceType::NEUROPIXELS_1)
-        {
-            oni_write_reg(ctx, DEVICE_NPX1_1, NeuropixelsRegisters::REC_MOD , (uint32_t)(1 << 6 | 1 << 7));
-        }
-
-        source->startThread();
     }
 
     startThread();
@@ -271,6 +274,11 @@ bool OnixSource::stopAcquisition()
         signalThreadShouldExit();
     
     waitForThreadToExit(2000);
+
+    for (auto source : sources)
+    {
+        source->stopAcquisition();
+    }
     
     if (devicesFound)
     {
@@ -296,7 +304,7 @@ bool OnixSource::stopAcquisition()
 
 bool OnixSource::updateBuffer()
 {
-    const int nSamps = 192;
+    const int nSamps = 120;
     oni_frame_t* frame;
     unsigned char* bufferPtr;
 
@@ -310,21 +318,12 @@ bool OnixSource::updateBuffer()
             return false;
         }
 
-        if (frame->dev_idx == DEVICE_NPX1_1)
+        for (auto source : sources)
         {
-            // bufferPtr = (unsigned char*)frame->data + 8; //skip ONI timestamps
-            // uint32 membytes = (uint32(*(uint16*)bufferPtr) << 16) + (uint32(*(uint16*)(bufferPtr + 2)));
-            // float memf = membytes * sizeof(membytes);
-            // uint64 zero = 0;
-            // int64 tst = frame->time;
-            // double tsd = -1;
-            // sourceBuffers[0]->addToBuffer(
-            //     &memf,
-            //     &tst,
-            //     &tsd,
-            //     &zero,
-            //     1
-            // );
+            if (frame->dev_idx == source->getDeviceIdx())
+            {
+                source->addFrame(frame);
+            }
         }
 
         oni_destroy_frame(frame);

@@ -33,8 +33,57 @@ enum NeuropixelsRegisters
 {
 	OP_MODE = 0x00,
 	REC_MOD = 0x01,
-	CAL_MOD = 0x02
+	CAL_MOD = 0x02,
+	STATUS = 0X08
 };
+
+
+enum OpMode
+{
+	TEST = 1 << 3, // Enable Test mode
+	DIG_TEST = 1 << 4, // Enable Digital Test mode
+    CALIBRATE = 1 << 5, // Enable calibration mode
+    RECORD = 1 << 6, // Enable recording mode
+    POWER_DOWN = 1 << 7, // Enable power down mode
+};
+
+enum RecMod
+{
+	DIG_AND_CH_RESET = 0,
+	RESET_ALL = 1 << 5, // 1 = Set analog SR chains to default values
+	DIG_NRESET = 1 << 6, // 0 = Reset the MUX, ADC, and PSB counter, 1 = Disable reset
+	CH_NRESET = 1 << 7, // 0 = Reset channel pseudo-registers, 1 = Disable reset
+
+	// Useful combinations
+	SR_RESET = RESET_ALL | CH_NRESET | DIG_NRESET,
+	DIG_RESET = CH_NRESET, // Yes, this is actually correct
+	CH_RESET = DIG_NRESET, // Yes, this is actually correct
+	ACTIVE = DIG_NRESET | CH_NRESET
+};
+
+// ADC number to frame index mapping
+static const int adcToFrameIndex[] = {
+	0, 7 , 14, 21, 28,
+	1, 8 , 15, 22, 29,
+	2, 9 , 16, 23, 30,
+	3, 10, 17, 24, 31,
+	4, 11, 18, 25, 32,
+	5, 12, 19, 26, 33,
+	6, 13
+};
+
+static const int adcToChannel[] = {
+	0, 1, 24, 25, 48, 49, 72, 73, 96, 97, 
+	120, 121, 144, 145, 168, 169, 192, 193,
+	216, 217, 240, 241, 264, 265, 288, 289, 
+	312, 313, 336, 337, 360, 361
+};
+
+const int superFramesPerUltraFrame = 12;
+const int framesPerSuperFrame = 13;
+const int framesPerUltraFrame = superFramesPerUltraFrame * framesPerSuperFrame;
+const int numUltraFrames = 12;
+const int dataOffset = 1;
 
 /** 
 	
@@ -46,23 +95,46 @@ class Neuropixels_1 : public OnixDevice
 public:
 
 	/** Constructor */
-	Neuropixels_1(String name);
+	Neuropixels_1(String name, const oni_dev_idx_t, const oni_ctx);
 
 	/** Destructor */
 	~Neuropixels_1();
+	
+	int enableDevice() override;
+
+	/** Starts probe data streaming */
+	void startAcquisition() override;
+
+	/** Stops probe data streaming*/
+	void stopAcquisition() override;
+
+	void addFrame(oni_frame_t*) override;
 
 	DataBuffer* apBuffer = deviceBuffer;
 	DataBuffer* lfpBuffer;
 
-	void addFrame() override;
-
 private:
 
-	float samples[384 * MAX_SAMPLES_PER_BUFFER];
-	int64 sampleNumbers[MAX_SAMPLES_PER_BUFFER];
-    double timestamps[MAX_SAMPLES_PER_BUFFER];
-	uint64 event_codes[MAX_SAMPLES_PER_BUFFER];
+	/** Updates buffer during acquisition */
+	void run() override;
 
+	float lfpSamples [384 * numUltraFrames];
+	float apSamples [384 * numUltraFrames * superFramesPerUltraFrame];
+
+	int64 apSampleNumbers[numUltraFrames * superFramesPerUltraFrame];
+    double apTimestamps[numUltraFrames * superFramesPerUltraFrame];
+	uint64 apEventCodes[numUltraFrames * superFramesPerUltraFrame];
+
+	int64 lfpSampleNumbers[numUltraFrames];
+    double lfpTimestamps[numUltraFrames];
+	uint64 lfpEventCodes[numUltraFrames];
+
+
+	bool shouldAddToBuffer = false;
+	int superFrameCount = 0;
+	int ultraFrameCount = 0;
+
+	int sampleNumber = 0;
 };
 
 

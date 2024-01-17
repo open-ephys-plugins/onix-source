@@ -31,8 +31,7 @@
 #include <chrono>
 #include <thread>
 
-#define PI 3.14159f
-#define MAX_SAMPLES_PER_BUFFER 300
+#include <oni.h>
 
 using namespace std::chrono;
 
@@ -66,14 +65,22 @@ class OnixDevice : public Thread
 public:
 
 	/** Constructor */
-	OnixDevice(String name, OnixDeviceType type);
+	OnixDevice(String name, OnixDeviceType type, const oni_dev_idx_t, const oni_ctx);
 
 	/** Destructor */
 	~OnixDevice() { }
 
-	virtual void addFrame() = 0;
+	virtual void addFrame(oni_frame_t*) = 0;
 
 	const String getName() { return name; }
+
+	virtual int enableDevice() = 0;
+	
+	virtual void startAcquisition() = 0;
+
+	virtual void stopAcquisition() = 0;
+
+	const oni_dev_idx_t getDeviceIdx() { return deviceIdx; }
 
 	OnixDeviceType type;
 
@@ -82,10 +89,15 @@ public:
 
 	Array<StreamInfo> streams;
 
+protected:
+
+	const oni_dev_idx_t deviceIdx;
+	const oni_ctx ctx;
+
 private:
 
 	/** Updates buffer during acquisition */
-	void run() override;
+	// void run() override;
 
 	std::vector<float>* data;
 	int availableSamples;
