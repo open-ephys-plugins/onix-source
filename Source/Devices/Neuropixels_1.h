@@ -72,6 +72,7 @@ static const int adcToFrameIndex[] = {
 	6, 13
 };
 
+// ADC to muxed channel mapping
 static const int adcToChannel[] = {
 	0, 1, 24, 25, 48, 49, 72, 73, 96, 97, 
 	120, 121, 144, 145, 168, 169, 192, 193,
@@ -129,12 +130,12 @@ private:
     double lfpTimestamps[numUltraFrames];
 	uint64 lfpEventCodes[numUltraFrames];
 
-
 	bool shouldAddToBuffer = false;
 	int superFrameCount = 0;
 	int ultraFrameCount = 0;
 
-	int sampleNumber = 0;
+	int apSampleNumber = 0;
+	int lfpSampleNumber = 0;
 };
 
 

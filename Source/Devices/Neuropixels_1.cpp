@@ -59,30 +59,37 @@ Neuropixels_1::~Neuropixels_1()
 
 int Neuropixels_1::enableDevice()
 {
+	// Get Probe SN
+	uint32_t eepromOffset = 0;
+	uint32_t i2cAddr = 0x50;
+	uint64_t probeSN = 0;
+	int errorCode = 0;
+
+	for (int i = 0; i < 8; i++)
+	{
+		oni_reg_addr_t reg_addr = ((eepromOffset + i) << 7) | i2cAddr;
+		oni_reg_val_t reg_val;
+
+		errorCode = oni_read_reg(ctx, deviceIdx, reg_addr, &reg_val);
+
+		if (errorCode) { LOGE(oni_error_str(errorCode)); return -1; }
+
+		if (reg_val <= 0xFF)
+		{
+			probeSN |= (((uint64_t)reg_val) << (i * 8));
+		}
+
+	}
+	
+	LOGD ("Probe SN: ", probeSN);
+
 	// Enable device streaming
 	const oni_reg_addr_t enable_device_stream = 0x8000;
-	int errorCode = oni_write_reg(ctx, deviceIdx, enable_device_stream, 1);
+	errorCode = oni_write_reg(ctx, deviceIdx, enable_device_stream, 1);
 
-	if (errorCode) { LOGE(oni_error_str(errorCode)); return errorCode; }
+	if (errorCode) { LOGE(oni_error_str(errorCode)); return -2; }
 
-	// check probe SN
-
-
-	const oni_reg_addr_t probe_sn_msb = 0x8191;
-	const oni_reg_addr_t probe_sn_lsb = 0x8192;
-
-	oni_reg_val_t probe_sn_msb_val;
-	oni_reg_val_t probe_sn_lsb_val;
-
-	errorCode =  oni_read_reg(ctx, deviceIdx, probe_sn_msb, &probe_sn_msb_val);
-	if (errorCode) { LOGE(oni_error_str(errorCode)); return errorCode; }
-
-	errorCode = oni_read_reg(ctx, deviceIdx, probe_sn_lsb, &probe_sn_lsb_val);
-	if (errorCode) { LOGE(oni_error_str(errorCode)); return errorCode; }
-
-	uint64_t probe_sn = ((uint64_t)probe_sn_msb_val << 32) | (uint64_t)probe_sn_lsb_val;
-
-	LOGC ("******* Probe SN: ", probe_sn);
+	oni_write_reg(ctx, deviceIdx, (uint32_t)NeuropixelsRegisters::OP_MODE , (uint32_t)OpMode::RECORD);
 
 	return 0;
 }
@@ -92,13 +99,9 @@ void Neuropixels_1::startAcquisition()
 {
 	startThread();
 
-	int errorCode = oni_write_reg(ctx, deviceIdx, (uint32_t)NeuropixelsRegisters::REC_MOD , (uint32_t)RecMod::DIG_RESET);
+	oni_write_reg(ctx, deviceIdx, (uint32_t)NeuropixelsRegisters::REC_MOD , (uint32_t)RecMod::DIG_RESET);
 
-	if (errorCode) { LOGE("[", deviceIdx ,"][Register][OP_MODE] ", oni_error_str(errorCode)); }
-
-	errorCode = oni_write_reg(ctx, deviceIdx, (uint32_t)NeuropixelsRegisters::REC_MOD , (uint32_t)RecMod::ACTIVE);
-
-	if (errorCode) { LOGE("[Neuropixels 1][", deviceIdx ,"] Error starting acquisition: ", oni_error_str(errorCode)); }
+	oni_write_reg(ctx, deviceIdx, (uint32_t)NeuropixelsRegisters::REC_MOD , (uint32_t)RecMod::ACTIVE);
 }
 
 void Neuropixels_1::stopAcquisition()
@@ -108,13 +111,13 @@ void Neuropixels_1::stopAcquisition()
     
     waitForThreadToExit(2000);
 
-	int errorCode = oni_write_reg(ctx, deviceIdx, (uint32_t)NeuropixelsRegisters::REC_MOD , (uint32_t)RecMod::RESET_ALL);
-	if (errorCode) { LOGE("[Neuropixels 1][", deviceIdx ,"] Error stopping acquisition: ", oni_error_str(errorCode)); }
+	oni_write_reg(ctx, deviceIdx, (uint32_t)NeuropixelsRegisters::REC_MOD , (uint32_t)RecMod::RESET_ALL);
 
 	superFrameCount = 0;
 	ultraFrameCount = 0;
 	shouldAddToBuffer = false;
-	sampleNumber = 0;
+	apSampleNumber = 0;
+	lfpSampleNumber = 0;
 }
 
 
@@ -131,7 +134,7 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 						((uint64_t)(*(uint16_t*)(dataclock + 6)) << 0);
     int64_t clockCounter = hubClock * sizeof(hubClock);
 	apTimestamps[superFrameCount] = clockCounter;
-	apSampleNumbers[superFrameCount] = sampleNumber++;
+	apSampleNumbers[superFrameCount] = apSampleNumber++;
 
 	for (int i = 0; i < framesPerSuperFrame; i++)
 	{
@@ -141,14 +144,15 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 			if (superCountOffset == 0)
 			{
 				lfpTimestamps[ultraFrameCount] = apTimestamps[superFrameCount];
-				lfpSampleNumbers[ultraFrameCount] = apSampleNumbers[superFrameCount];
+				lfpSampleNumbers[ultraFrameCount] =  lfpSampleNumber++;
 			}
 
 			for (int adc = 0; adc < 32; adc++)
 			{
 				
-				int chanIndex = adcToChannel[adc] + superCountOffset * 2;
-				lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount ]   = (*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) * 0.195f;
+				int chanIndex = adcToChannel[adc] + superCountOffset * 2; // map the ADC to muxed channel
+				lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount ] =
+					float(*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) * 0.195f;
 				
 			}
 		}
@@ -157,8 +161,9 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 			int chanOffset = 2 * (i - 1);
 			for (int adc = 0; adc < 32; adc++)
 			{
-				int chanIndex = adcToChannel[adc] + chanOffset;
-				apSamples[(chanIndex * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] = (*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) * 0.195f;
+				int chanIndex = adcToChannel[adc] + chanOffset; //  map the ADC to muxed channel.
+				apSamples[(chanIndex * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] = 
+					float(*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) * 0.195f;
 			}
 		}
 	}

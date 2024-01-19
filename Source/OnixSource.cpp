@@ -126,9 +126,19 @@ void OnixSource::initializeDevices()
         {
             Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
 
-            if(np1->enableDevice() != 0)
+            int res = np1->enableDevice();
+
+            if (res != 0)
             {
-                LOGE("Error enabling device data stream.");
+                if (res == -1)
+                {
+                    LOGE("Device Idx: ", devices[dev_idx].idx, " Unable to read probe serial number. Device not found.");
+                }
+                else if (res == -2)
+                {
+                    LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+                }
+
                 delete np1;
                 continue;
             }
@@ -144,14 +154,6 @@ void OnixSource::initializeDevices()
                 else if (streamInfo.channelPrefix.equalsIgnoreCase("LFP"))
                     np1->lfpBuffer = sourceBuffers.getLast();
             }
-
-            // // Enable device stream
-            // const oni_reg_addr_t enable_device_stream = 0x8000;
-            // oni_write_reg(ctx, DEVICE_NPX1_1, enable_device_stream, 1);
-
-            // oni_write_reg(ctx, DEVICE_NPX1_1, Neuropixels_Registers::REC_MOD , (uint32_t)1 << 5);
-
-            // oni_write_reg(ctx, DEVICE_NPX1_1, Neuropixels_Registers::OP_MODE , (uint32_t)1 << 6);
 
             npxProbeIdx++;
         }
