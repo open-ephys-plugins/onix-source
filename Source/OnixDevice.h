@@ -35,85 +35,87 @@
 
 using namespace std::chrono;
 
-
-enum OnixDeviceType {
-	HS64,
-	BNO,
-	NEUROPIXELS_1,
-	NEUROPIXELS_2,
-	ADC
-};
-
-struct StreamInfo {
-	String name;
-	String description;
-	String identifier;
-	int numChannels;
-	float sampleRate;
-	String channelPrefix;
-	ContinuousChannel::Type channelType;
-	float bitVolts;
-};
-
-/** 
-	
-	Streams data from an ONIX device
-
-*/
-class OnixDevice : public Thread
+namespace Onix
 {
-public:
+	enum PortName
+	{
+		PortA = 1,
+		PortB = 2
+	};
 
-	/** Constructor */
-	OnixDevice(String name, OnixDeviceType type, const oni_dev_idx_t, const oni_ctx);
+	enum OnixDeviceType {
+		HS64,
+		BNO,
+		NEUROPIXELS_1,
+		NEUROPIXELS_2,
+		ADC
+	};
 
-	/** Destructor */
-	~OnixDevice() { }
+	struct StreamInfo {
+		String name;
+		String description;
+		String identifier;
+		int numChannels;
+		float sampleRate;
+		String channelPrefix;
+		ContinuousChannel::Type channelType;
+		float bitVolts;
+	};
 
-	virtual void addFrame(oni_frame_t*) = 0;
+	/**
 
-	const String getName() { return name; }
+		Streams data from an ONIX device
 
-	virtual int enableDevice() = 0;
-	
-	virtual void startAcquisition() = 0;
+	*/
+	class OnixDevice : public Thread
+	{
+	public:
 
-	virtual void stopAcquisition() = 0;
+		/** Constructor */
+		OnixDevice(String name, OnixDeviceType type, const oni_dev_idx_t, const oni_ctx);
 
-	const oni_dev_idx_t getDeviceIdx() { return deviceIdx; }
+		/** Destructor */
+		~OnixDevice() { }
 
-	OnixDeviceType type;
+		virtual void addFrame(oni_frame_t*) = 0;
 
-	/** Holds incoming data */
-	DataBuffer* deviceBuffer;
+		const String getName() { return name; }
 
-	Array<StreamInfo> streams;
+		virtual int enableDevice() = 0;
 
-protected:
+		virtual void startAcquisition() = 0;
 
-	const oni_dev_idx_t deviceIdx;
-	const oni_ctx ctx;
+		virtual void stopAcquisition() = 0;
 
-private:
+		const oni_dev_idx_t getDeviceIdx() const { return deviceIdx; }
 
-	/** Updates buffer during acquisition */
-	// void run() override;
+		OnixDeviceType type;
 
-	std::vector<float>* data;
-	int availableSamples;
-    int samplesPerBuffer;
+		/** Holds incoming data */
+		DataBuffer* deviceBuffer;
 
-	int64 numSamples;
-	uint64 eventCode;
+		Array<StreamInfo> streams;
 
-	String name;
+		int setPortVoltage(oni_dev_idx_t port, int voltage);
 
-	// float samples[384 * MAX_SAMPLES_PER_BUFFER];
-	// int64 sampleNumbers[MAX_SAMPLES_PER_BUFFER];
-    // double timestamps[MAX_SAMPLES_PER_BUFFER];
-	// uint64 event_codes[MAX_SAMPLES_PER_BUFFER];
+		int checkLinkState(oni_dev_idx_t port);
 
-};
+	protected:
 
+		const oni_dev_idx_t deviceIdx;
+		const oni_ctx ctx;
+
+	private:
+
+		std::vector<float>* data;
+		int availableSamples;
+		int samplesPerBuffer;
+
+		int64 numSamples;
+		uint64 eventCode;
+
+		String name;
+	};
+}
 
 #endif

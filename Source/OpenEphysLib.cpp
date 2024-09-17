@@ -32,6 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 using namespace Plugin;
+using namespace Onix;
 //Number of plugins defined on the library. Can be of different types (Processors, RecordEngines, etc...)
 #define NUM_PLUGINS 1
 
@@ -39,7 +40,7 @@ extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 {
 	/* API version, defined by the GUI source.
 	Should not be changed to ensure it is always equal to the one used in the latest codebase.
-	The GUI refueses to load plugins with mismatched API versions */
+	The GUI refuses to load plugins with mismatched API versions */
 	info->apiVersion = PLUGIN_API_VER;
 
 	//Name of the Library, used only for information

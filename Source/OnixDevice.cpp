@@ -23,8 +23,35 @@
 
 #include "OnixDevice.h"
 
+using namespace Onix;
+
 OnixDevice::OnixDevice(String name, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 	: Thread(name), type(type_), deviceIdx(deviceIdx_), ctx(ctx_)
 {
 	
+}
+
+int OnixDevice::setPortVoltage(oni_dev_idx_t port, int voltage)
+{
+	const oni_reg_addr_t voltageRegister = 3;
+
+	auto result = oni_write_reg(ctx, port, voltageRegister, voltage);
+
+	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
+
+	sleep(500);
+
+	return result;
+}
+
+int OnixDevice::checkLinkState(oni_dev_idx_t port)
+{
+	const oni_reg_addr_t linkStateRegister = 5;
+
+	oni_reg_val_t linkState;
+	int result = oni_read_reg(ctx, port, linkStateRegister, &linkState);
+
+	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
+	else if ((linkState & (unsigned int)0x1) == 0) { LOGE("Unable to acquire communication lock."); return -1; }
+	else return result;
 }

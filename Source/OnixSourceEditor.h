@@ -34,31 +34,51 @@
 	number of channels per stream.
 
 */
-class OnixSourceEditor : public GenericEditor
+namespace Onix
 {
-public:
+    class OnixSource;
 
-	/** Constructor */
-	OnixSourceEditor(GenericProcessor* parentNode, OnixSource* thread);
+    class OnixSourceEditor : public GenericEditor,
+        public Label::Listener,
+        public Button::Listener
+    {
+    public:
 
-	/** Destructor */
-	virtual ~OnixSourceEditor() { }
+        /** Constructor */
+        OnixSourceEditor(GenericProcessor* parentNode, OnixSource* thread);
 
-    /** Called when settings are changed */
-    void updateSettings() override;
+        /** Destructor */
+        virtual ~OnixSourceEditor() { }
 
-	/** Called at start of acquisition */
-	void startAcquisition() override;
+        /** Listener methods */
+        void labelTextChanged(Label* l);
 
-	/** Called when acquisition finishes */
-	void stopAcquisition() override;
+        void buttonClicked(Button* b);
 
-private:
+        /** Called when settings are changed */
+        void updateSettings() override;
 
-	OnixSource* thread;
+        /** Called at start of acquisition */
+        void startAcquisition() override;
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
+        /** Called when acquisition finishes */
+        void stopAcquisition() override;
 
-};
+        float portVoltage;
+
+    private:
+
+        OnixSource* thread;
+
+        ScopedPointer<Label> portVoltageLabel;
+        ScopedPointer<Label> portVoltageValue;
+
+        ScopedPointer<UtilityButton> portVoltageOverrideButton;
+
+        ScopedPointer<UtilityButton> refreshDevicesButton;
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
+    };
+}
 
 #endif // __OnixSourceEditor_H__

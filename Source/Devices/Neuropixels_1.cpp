@@ -24,7 +24,9 @@
 #include <oni.h>
 #include <onix.h>
 
-Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
+using namespace Onix;
+
+Neuropixels_1::Neuropixels_1(String name, float portVoltage, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 	: OnixDevice(name, NEUROPIXELS_1, deviceIdx_, ctx_)
 {
 	StreamInfo apStream;
@@ -48,17 +50,26 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, const 
 	lfpStream.bitVolts = 0.195f;
 	lfpStream.channelType = ContinuousChannel::Type::ELECTRODE;
 	streams.add(lfpStream);
-}
 
+	if (portVoltage >= minVoltage && portVoltage <= maxVoltage)
+		portVoltage_ = portVoltage;
+}
 
 Neuropixels_1::~Neuropixels_1()
 {
 
 }
 
-
 int Neuropixels_1::enableDevice()
 {
+	int result = setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage_ * 10));
+
+	if (result != 0) return result;
+
+	result = checkLinkState((oni_dev_idx_t)PortName::PortA);
+
+	if (result != 0) return result;
+
 	// Get Probe SN
 	uint32_t eepromOffset = 0;
 	uint32_t i2cAddr = 0x50;
@@ -78,7 +89,6 @@ int Neuropixels_1::enableDevice()
 		{
 			probeSN |= (((uint64_t)reg_val) << (i * 8));
 		}
-
 	}
 	
 	LOGD ("Probe SN: ", probeSN);
@@ -93,7 +103,6 @@ int Neuropixels_1::enableDevice()
 
 	return 0;
 }
-
 
 void Neuropixels_1::startAcquisition()
 {
@@ -120,10 +129,8 @@ void Neuropixels_1::stopAcquisition()
 	lfpSampleNumber = 0;
 }
 
-
 void Neuropixels_1::addFrame(oni_frame_t* frame)
 {
-	
 	uint16_t* dataPtr;
 	dataPtr = (uint16_t*)frame->data;
 
@@ -181,9 +188,6 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 		superFrameCount = 0;
 		shouldAddToBuffer = true;
 	}
-
-
-       
 }
 
 void Neuropixels_1::run()

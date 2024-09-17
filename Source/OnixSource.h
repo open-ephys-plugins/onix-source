@@ -35,89 +35,89 @@
 
 #include "OnixDevice.h"
 #include "Devices/Neuropixels_1.h"
+#include "Devices/Bno055.h"
 
-class OnixSourceEditor;
-class Neuropixels_1;
-
-/**
-
-	Simulates multiple data streams, for testing purposes.
-
-	@see DataThread, SourceNode
-
-*/
-
-class OnixSource : public DataThread
+namespace Onix
 {
+	class OnixSourceEditor;
+	class Neuropixels_1;
+	class Bno055;
 
-public:
+	/**
 
-	/** Constructor */
-	OnixSource(SourceNode* sn);
+		@see DataThread, SourceNode
 
-	/** Destructor */
-	~OnixSource() 
+	*/
+
+	class OnixSource : public DataThread
 	{
-		if (ctx != NULL)
+	public:
+
+		/** Constructor */
+		OnixSource(SourceNode* sn);
+
+		/** Destructor */
+		~OnixSource()
 		{
-			uint32_t val = 1;
-        	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
-			oni_destroy_ctx(ctx);
+			if (ctx != NULL && contextInitialized)
+			{
+				oni_destroy_ctx(ctx);
+			}
 		}
-	}
 
-	/** Static method to create DataThread */
-	static DataThread* createDataThread(SourceNode* sn);
+		/** Static method to create DataThread */
+		static DataThread* createDataThread(SourceNode* sn);
 
-	/** Creates the custom editor */
-	std::unique_ptr<GenericEditor> createEditor(SourceNode* sn);
+		/** Creates the custom editor */
+		std::unique_ptr<GenericEditor> createEditor(SourceNode* sn);
 
-	/** Not used -- data buffers are updated for each source stream */
-	bool updateBuffer() override;
+		/** Reads frames and adds them to the appropriate device */
+		bool updateBuffer() override;
 
-	/** Returns true if the hardware is connected, false otherwise.*/
-	bool foundInputSource();
+		/** Returns true if the hardware is connected, false otherwise.*/
+		bool foundInputSource();
 
-	/** Initializes data transfer.*/
-	bool startAcquisition();
+		/** Initializes data transfer.*/
+		bool startAcquisition();
 
-	/** Stops data transfer.*/
-	bool stopAcquisition();
+		/** Stops data transfer.*/
+		bool stopAcquisition();
 
-	// DataThread Methods
-	void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
-		OwnedArray<EventChannel>* eventChannels,
-		OwnedArray<SpikeChannel>* spikeChannels,
-		OwnedArray<DataStream>* sourceStreams,
-		OwnedArray<DeviceInfo>* devices,
-		OwnedArray<ConfigurationObject>* configurationObjects);
+		bool setPortVoltage(OnixDeviceType device, oni_dev_idx_t port, int voltage);
 
-private:
+		void initializeContext();
 
-	/** Available data sources */
-	OwnedArray<OnixDevice> sources;
+		void initializeDevices();
 
-	/** Pointer to the editor */
-	OnixSourceEditor* ed;
+		// DataThread Methods
+		void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
+			OwnedArray<EventChannel>* eventChannels,
+			OwnedArray<SpikeChannel>* spikeChannels,
+			OwnedArray<DataStream>* sourceStreams,
+			OwnedArray<DeviceInfo>* devices,
+			OwnedArray<ConfigurationObject>* configurationObjects);
 
-	/** The ONI context object */
-	oni_ctx ctx;
+	private:
 
-	static const oni_dev_idx_t DEVICE_NPX1_1 = 0x0100;
-	static const oni_dev_idx_t DEVICE_NPX1_2 = 0x0101;
-	
-	const oni_size_t block_read_size = 2048;
+		/** Available data sources */
+		OwnedArray<OnixDevice> sources;
 
-	bool devicesFound = false;
+		/** Pointer to the editor */
+		OnixSourceEditor* ed;
 
-	void initializeDevices();
+		/** The ONI context object */
+		oni_ctx ctx;
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
+		static const oni_dev_idx_t DEVICE_NPX1_1 = 0x0100;
+		static const oni_dev_idx_t DEVICE_NPX1_2 = 0x0101;
 
-};
+		const oni_size_t block_read_size = 2048;
 
+		bool contextInitialized = false;
+		bool devicesFound = false;
 
-
-
+		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
+	};
+}
 
 #endif  // __OnixSource_H__
