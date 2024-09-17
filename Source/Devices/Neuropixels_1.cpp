@@ -138,6 +138,7 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 
 	for (int i = 0; i < framesPerSuperFrame; i++)
 	{
+		int newDataOffset = dataOffset + i * 36; // 36 = 32 ADCs + type + 2 counters
 		if (i == 0) // LFP data
 		{
 			int superCountOffset = superFrameCount % superFramesPerUltraFrame; 
@@ -152,7 +153,7 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 				
 				int chanIndex = adcToChannel[adc] + superCountOffset * 2; // map the ADC to muxed channel
 				lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount ] =
-					float(*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) * 0.195f;
+					float(*(dataPtr + adcToFrameIndex[adc] + newDataOffset) >> 5);
 				
 			}
 		}
@@ -163,7 +164,7 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 			{
 				int chanIndex = adcToChannel[adc] + chanOffset; //  map the ADC to muxed channel.
 				apSamples[(chanIndex * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] = 
-					float(*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) * 0.195f;
+					float(*(dataPtr + adcToFrameIndex[adc] + newDataOffset) >> 5);
 			}
 		}
 	}
