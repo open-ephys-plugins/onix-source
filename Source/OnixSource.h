@@ -83,11 +83,11 @@ namespace Onix
 		/** Stops data transfer.*/
 		bool stopAcquisition();
 
-		bool setPortVoltage(OnixDeviceType device, oni_dev_idx_t port, int voltage);
+		bool setPortVoltage(oni_dev_idx_t port, int voltage);
 
 		void initializeContext();
 
-		void initializeDevices();
+		void initializeDevices(bool updateStreamInfo = false);
 
 		// DataThread Methods
 		void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,

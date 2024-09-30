@@ -21,24 +21,29 @@
 
 */
 
-#include "OnixDevice.h"
+#include "I2CRegisterContext.h"
 
 using namespace Onix;
 
-OnixDevice::OnixDevice(String name, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: Thread(name), type(type_), deviceIdx(deviceIdx_), ctx(ctx_)
+I2CRegisterContext::I2CRegisterContext(uint32_t address_, const oni_dev_idx_t devIdx_, const oni_ctx ctx_)
+	: deviceIndex(devIdx_), context(ctx_)
 {
-	
+	address = address_;
 }
 
-int OnixDevice::checkLinkState(oni_dev_idx_t port)
+void I2CRegisterContext::WriteByte(uint32_t address, uint32_t value)
 {
-	const oni_reg_addr_t linkStateRegister = 5;
+	uint32_t registerAddress = (address << 7) | this->address & 0x7F;
+	oni_write_reg(context, deviceIndex, registerAddress, value);
+}
 
-	oni_reg_val_t linkState;
-	int result = oni_read_reg(ctx, port, linkStateRegister, &linkState);
+oni_reg_val_t I2CRegisterContext::ReadByte(uint32_t address)
+{
+	uint32_t registerAddress = (address << 7) | this->address & 0x7F;
 
-	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
-	else if ((linkState & (unsigned int)0x1) == 0) { LOGE("Unable to acquire communication lock."); return -1; }
-	else return result;
+	oni_reg_val_t value;
+
+	oni_read_reg(context, deviceIndex, registerAddress, &value);
+
+	return value;
 }

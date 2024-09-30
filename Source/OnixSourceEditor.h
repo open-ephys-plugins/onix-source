@@ -75,7 +75,7 @@ namespace Onix
 
         ScopedPointer<UtilityButton> portVoltageOverrideButton;
 
-        ScopedPointer<UtilityButton> refreshDevicesButton;
+        ScopedPointer<UtilityButton> rescanButton;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
     };

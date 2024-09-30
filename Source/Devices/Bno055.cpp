@@ -87,6 +87,9 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 	temperatureStream.bitVolts = bitVolts;
 	temperatureStream.channelType = ContinuousChannel::Type::AUX;
 	streams.add(temperatureStream);
+
+	for (int i = 0; i < numFrames; i++)
+		eventCodes[i] = 0;
 }
 
 Bno055::~Bno055() 
@@ -112,63 +115,81 @@ void Bno055::stopAcquisition()
 
 	waitForThreadToExit(2000);
 
+
+	while (!frameArray.isEmpty())
+	{
+		oni_destroy_frame(frameArray.removeAndReturn(0));
+	}
+
 	currentFrame = 0;
 	sampleNumber = 0;
 }
 
 void Bno055::addFrame(oni_frame_t* frame)
 {
-	uint16_t* dataPtr = (uint16_t*)frame->data;
-
-	bnoTimestamps[currentFrame] = *(uint64_t*)frame->data;
-
-	int dataOffset = 4;
-
-	const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
-	const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
-	const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
-
-	for (int i = 0; i < 3; i++)
-	{
-		eulerSamples[currentFrame * 3 + i] = float(*(dataPtr + dataOffset)) * eulerAngleScale;
-		dataOffset++;
-	}
-
-	for (int i = 0; i < 4; i++)
-	{
-		quaternionSamples[currentFrame * 4 + i] = float(*(dataPtr + dataOffset)) * quaternionScale;
-		dataOffset++;
-	}
-
-	for (int i = 0; i < 3; i++)
-	{
-		accelerationSamples[currentFrame * 3 + i] = float(*(dataPtr + dataOffset)) * accelerationScale;
-		dataOffset++;
-	}
-
-	for (int i = 0; i < 3; i++)
-	{
-		gravitySamples[currentFrame * 3 + i] = float(*(dataPtr + dataOffset)) * accelerationScale;
-		dataOffset++;
-	}
-
-	temperatureSamples[currentFrame] = float(*((uint8_t*)(dataPtr + dataOffset)));
-
-	sampleNumbers[currentFrame] = sampleNumber;
-
-	currentFrame++;
-
-	if (currentFrame >= numFrames)
-	{
-		shouldAddToBuffer = true;
-		currentFrame = 0;
-	}
+	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
+	frameArray.add(frame);
 }
 
 void Bno055::run()
 {
 	while (!threadShouldExit())
 	{
+		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
+
+		if (!frameArray.isEmpty())
+		{
+			oni_frame_t* frame = frameArray.removeAndReturn(0);
+
+			int16_t* dataPtr = (int16_t*)frame->data;
+
+			bnoTimestamps[currentFrame] = *(uint64_t*)frame->data;
+
+			int dataOffset = 4;
+
+			const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
+			const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
+			const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
+
+			for (int i = 0; i < 3; i++)
+			{
+				eulerSamples[currentFrame + i * numFrames] = float(*(dataPtr + dataOffset)) * eulerAngleScale;
+				dataOffset++;
+			}
+
+			for (int i = 0; i < 4; i++)
+			{
+				quaternionSamples[currentFrame + i * numFrames] = float(*(dataPtr + dataOffset)) * quaternionScale;
+				dataOffset++;
+			}
+
+			for (int i = 0; i < 3; i++)
+			{
+				accelerationSamples[currentFrame + i * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
+				dataOffset++;
+			}
+
+			for (int i = 0; i < 3; i++)
+			{
+				gravitySamples[currentFrame + i * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
+				dataOffset++;
+			}
+
+			temperatureSamples[currentFrame] = float(*((uint8_t*)(dataPtr + dataOffset)));
+
+			oni_destroy_frame(frame);
+
+			sampleNumbers[currentFrame] = sampleNumber;
+
+			currentFrame++;
+
+			if (currentFrame >= numFrames)
+			{
+				shouldAddToBuffer = true;
+				currentFrame = 0;
+			}
+		}
+
 		if (shouldAddToBuffer)
 		{
 			shouldAddToBuffer = false;

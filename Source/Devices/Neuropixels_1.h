@@ -36,7 +36,22 @@ namespace Onix
 		OP_MODE = 0x00,
 		REC_MOD = 0x01,
 		CAL_MOD = 0x02,
-		STATUS = 0X08
+		STATUS = 0X08,
+		SYNC = 0X09
+	};
+
+	enum CalMode
+	{
+		CAL_OFF = 0,
+		OSC_ACTIVE = 1 << 4, // 0 = external osc inactive, 1 = activate the external calibration oscillator
+		ADC_CAL = 1 << 5, // Enable ADC calibration
+		CH_CAL = 1 << 6, // Enable channel gain calibration
+		PIX_CAL = 1 << 7, // Enable pixel + channel gain calibration
+
+		// Useful combinations
+		OSC_ACTIVE_AND_ADC_CAL = OSC_ACTIVE | ADC_CAL,
+		OSC_ACTIVE_AND_CH_CAL = OSC_ACTIVE | CH_CAL,
+		OSC_ACTIVE_AND_PIX_CAL = OSC_ACTIVE | PIX_CAL,
 	};
 
 	enum OpMode
@@ -87,12 +102,15 @@ namespace Onix
 	const int numUltraFrames = 12;
 	const int dataOffset = 1;
 
+	const int ProbeI2CAddress = 0x70;
+
 	/**
 
 		Streams data from an ONIX device
 
 	*/
-	class Neuropixels_1 : public OnixDevice
+	class Neuropixels_1 : public OnixDevice,
+		public I2CRegisterContext
 	{
 	public:
 
@@ -119,6 +137,8 @@ namespace Onix
 
 		/** Updates buffer during acquisition */
 		void run() override;
+
+		Array<oni_frame_t*, CriticalSection, numUltraFrames> frameArray;
 
 		float lfpSamples[384 * numUltraFrames];
 		float apSamples[384 * numUltraFrames * superFramesPerUltraFrame];

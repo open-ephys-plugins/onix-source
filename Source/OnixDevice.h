@@ -33,6 +33,8 @@
 
 #include <oni.h>
 
+#include "I2CRegisterContext.h"
+
 using namespace std::chrono;
 
 namespace Onix
@@ -95,8 +97,6 @@ namespace Onix
 		DataBuffer* deviceBuffer;
 
 		Array<StreamInfo> streams;
-
-		int setPortVoltage(oni_dev_idx_t port, int voltage);
 
 		int checkLinkState(oni_dev_idx_t port);
 

@@ -33,7 +33,7 @@ namespace Onix
 		ENABLE = 0x00
 	};
 
-	const int numFrames = 10;
+	const int numFrames = 1;
 
 	class Bno055 : public OnixDevice
 	{
@@ -65,6 +65,8 @@ namespace Onix
 
 		/** Updates buffer during acquisition */
 		void run() override;
+
+		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
 		bool shouldAddToBuffer = false;
 

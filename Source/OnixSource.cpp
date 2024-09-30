@@ -44,12 +44,10 @@ OnixSource::OnixSource(SourceNode* sn) :
 
 	if (!contextInitialized) { LOGE("Failed to initialize context."); return; }
 
+	setPortVoltage((oni_dev_idx_t)PortName::PortA, 6.0);
 	initializeDevices();
 
 	if (!devicesFound) { return; }
-
-	uint32_t val = 1;
-	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 
 	oni_size_t frame_size = 0;
 	size_t frame_size_sz = sizeof(frame_size);
@@ -89,7 +87,7 @@ void OnixSource::initializeContext()
 	contextInitialized = true;
 }
 
-void OnixSource::initializeDevices()
+void OnixSource::initializeDevices(bool updateStreamInfo)
 {
 	if (!contextInitialized)
 	{
@@ -107,6 +105,9 @@ void OnixSource::initializeDevices()
 
 	oni_size_t num_devs = 0;
 	oni_device_t* devices = NULL;
+
+	uint32_t val = 1;
+	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 
 	// Examine device table
 	size_t num_devs_sz = sizeof(num_devs);
@@ -221,23 +222,27 @@ void OnixSource::initializeDevices()
 			bnoIdx++;
 		}
 	}
+
+	if (updateStreamInfo) CoreServices::updateSignalChain(ed);
+
+	LOGD("All devices initialized.");
 }
 
-bool OnixSource::setPortVoltage(OnixDeviceType device, oni_dev_idx_t port, int voltage)
+bool OnixSource::setPortVoltage(oni_dev_idx_t port, int voltage)
 {
-	if (sources.isEmpty())
-	{
-		LOGD("No valid sources to set port voltage.");
-		return false;
-	}
+	const oni_reg_addr_t voltageRegister = 3;
 
-	for (auto source : sources)
-	{
-		if (source->type == device)
-		{
-			source->setPortVoltage(port, voltage);
-		}
-	}
+	auto result = oni_write_reg(ctx, port, voltageRegister, 0);
+
+	sleep(500);
+
+	result = oni_write_reg(ctx, port, voltageRegister, voltage);
+
+	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
+
+	sleep(200);
+
+	return result;
 }
 
 void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
@@ -401,15 +406,21 @@ bool OnixSource::updateBuffer()
 			return false;
 		}
 
+		bool destroyFrame = true;
+
 		for (auto source : sources)
 		{
 			if (frame->dev_idx == source->getDeviceIdx())
 			{
 				source->addFrame(frame);
+				destroyFrame = false;
 			}
 		}
 
-		oni_destroy_frame(frame);
+		if (destroyFrame)
+		{
+			oni_destroy_frame(frame);
+		}
 	}
 
 	return true;

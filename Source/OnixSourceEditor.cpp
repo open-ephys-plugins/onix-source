@@ -30,13 +30,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 {
 	desiredWidth = 180;
 
-	portVoltageLabel = new Label("Voltage", "VOLTAGE [V]");
+	portVoltageLabel = new Label("Voltage", "PORT VOLTAGE [V]");
 	portVoltageLabel->setBounds(5, 20, 75, 20);
 	portVoltageLabel->setFont(Font("Small Text", 11, Font::plain));
 	portVoltageLabel->setColour(Label::textColourId, Colours::black);
 	addAndMakeVisible(portVoltageLabel);
 
-	portVoltage = 5.0f;
+	portVoltage = 6.0f;
 	portVoltageValue = new Label("VoltageValue", String(portVoltage));
 	portVoltageValue->setBounds(10, 38, 30, 13);
 	portVoltageValue->setFont(Font("Small Text", 11, Font::plain));
@@ -45,18 +45,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	portVoltageValue->setColour(Label::backgroundColourId, Colours::lightgrey);
 	portVoltageValue->addListener(this);
 	addAndMakeVisible(portVoltageValue);
-	
-	portVoltageOverrideButton = new UtilityButton("Apply Voltage [NPX1]", Font("Small Text", 8, Font::plain));
-	portVoltageOverrideButton->setBounds(48, 35, 125, 17);
-	portVoltageOverrideButton->setRadius(2.0f);
-	portVoltageOverrideButton->addListener(this);
-	addAndMakeVisible(portVoltageOverrideButton);
 
-	refreshDevicesButton = new UtilityButton("Refresh Devices", Font("Small Text", 9, Font::plain));
-	refreshDevicesButton->setBounds(10, 110, 110, 17);
-	refreshDevicesButton->setRadius(3.0f);
-	refreshDevicesButton->addListener(this);
-	addAndMakeVisible(refreshDevicesButton);
+	rescanButton = new UtilityButton("Rescan");
+	rescanButton->setFont(FontOptions("Small Text", 9, Font::plain));
+	rescanButton->setBounds(10, 100, 50, 17);
+	rescanButton->setRadius(3.0f);
+	rescanButton->addListener(this);
+	addAndMakeVisible(rescanButton);
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)
@@ -89,11 +84,12 @@ void OnixSourceEditor::buttonClicked(Button* b)
 {
 	if (b == portVoltageOverrideButton)
 	{
-		thread->setPortVoltage(OnixDeviceType::NEUROPIXELS_1, (oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
+		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
 	}
-	else if (b == refreshDevicesButton)
+	else if (b == rescanButton)
 	{
-		thread->initializeDevices();
+		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
+		thread->initializeDevices(true);
 	}
 }
 
@@ -104,18 +100,12 @@ void OnixSourceEditor::updateSettings()
 
 void OnixSourceEditor::startAcquisition()
 {
-	portVoltageOverrideButton->setEnabled(false);
-	portVoltageOverrideButton->setAlpha(0.3f);
-
-	refreshDevicesButton->setEnabled(false);
-	refreshDevicesButton->setAlpha(0.3f);
+	rescanButton->setEnabled(false);
+	rescanButton->setAlpha(0.3f);
 }
 
 void OnixSourceEditor::stopAcquisition()
 {
-	portVoltageOverrideButton->setEnabled(true);
-	portVoltageOverrideButton->setAlpha(1.0f);
-
-	refreshDevicesButton->setEnabled(true);
-	refreshDevicesButton->setAlpha(1.0f);
+	rescanButton->setEnabled(true);
+	rescanButton->setAlpha(1.0f);
 }

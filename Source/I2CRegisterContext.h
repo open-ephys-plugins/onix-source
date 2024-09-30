@@ -21,24 +21,32 @@
 
 */
 
-#include "OnixDevice.h"
+#ifndef __I2CRegisterContext_H__
+#define __I2CRegisterContext_H__
 
-using namespace Onix;
+#include <oni.h>
 
-OnixDevice::OnixDevice(String name, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: Thread(name), type(type_), deviceIdx(deviceIdx_), ctx(ctx_)
+#include <cstddef>
+
+namespace Onix
 {
-	
+	class I2CRegisterContext
+	{
+	public:
+
+		I2CRegisterContext(uint32_t address, const oni_dev_idx_t, const oni_ctx);
+
+		void WriteByte(uint32_t address, uint32_t value);
+
+		oni_reg_val_t ReadByte(uint32_t address);
+
+	private:
+
+		const oni_ctx context;
+		const oni_dev_idx_t deviceIndex;
+
+		uint32_t address;
+	};
 }
 
-int OnixDevice::checkLinkState(oni_dev_idx_t port)
-{
-	const oni_reg_addr_t linkStateRegister = 5;
-
-	oni_reg_val_t linkState;
-	int result = oni_read_reg(ctx, port, linkStateRegister, &linkState);
-
-	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
-	else if ((linkState & (unsigned int)0x1) == 0) { LOGE("Unable to acquire communication lock."); return -1; }
-	else return result;
-}
+#endif // !__I2CRegisterContext_H__
