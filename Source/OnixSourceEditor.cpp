@@ -28,7 +28,7 @@ using namespace Onix;
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* onixSource)
 	: GenericEditor(parentNode), thread(onixSource)
 {
-	desiredWidth = 180;
+	desiredWidth = 200;
 
 	portVoltageLabel = new Label("Voltage", "PORT VOLTAGE [V]");
 	portVoltageLabel->setBounds(5, 20, 75, 20);
@@ -52,6 +52,50 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	rescanButton->setRadius(3.0f);
 	rescanButton->addListener(this);
 	addAndMakeVisible(rescanButton);
+
+	adcCalibrationLabel = new Label("ADC CAL LABEL", "ADC CAL.");
+	adcCalibrationLabel->setFont(FontOptions("Small Text", 11, Font::plain));
+	adcCalibrationLabel->setBounds(80, 25, 50, 15);
+	adcCalibrationLabel->setColour(Label::textColourId, Colours::black);
+	addAndMakeVisible(adcCalibrationLabel);
+
+	adcCalibrationFile = new TextEditor("ADC CAL FILE");
+	adcCalibrationFile->setFont(FontOptions("Small Text", 11, Font::plain));
+	adcCalibrationFile->setBounds(80, 40, 90, 16);
+	adcCalibrationFile->setColour(Label::textColourId, Colours::black);
+	adcCalibrationFile->addListener(this);
+	addAndMakeVisible(adcCalibrationFile);
+
+	chooseAdcCalibrationFileButton = new UtilityButton("...");
+	chooseAdcCalibrationFileButton->setFont(FontOptions("Small Text", 9, Font::bold));
+	chooseAdcCalibrationFileButton->setBounds(172, 40, 18, 16);
+	chooseAdcCalibrationFileButton->setRadius(1.0f);
+	chooseAdcCalibrationFileButton->addListener(this);
+	addAndMakeVisible(chooseAdcCalibrationFileButton);
+
+	adcCalibrationFileChooser = std::make_unique<FileChooser>("Select ADC Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_ADCCalibration.csv");
+
+	gainCalibrationLabel = new Label("GAIN CAL LABEL", "GAIN CAL.");
+	gainCalibrationLabel->setFont(FontOptions("Small Text", 11, Font::plain));
+	gainCalibrationLabel->setBounds(80, 57, 50, 15);
+	gainCalibrationLabel->setColour(Label::textColourId, Colours::black);
+	addAndMakeVisible(gainCalibrationLabel);
+
+	gainCalibrationFile = new TextEditor("GAIN CAL FILE");
+	gainCalibrationFile->setFont(FontOptions("Small Text", 11, Font::plain));
+	gainCalibrationFile->setBounds(80, 72, 90, 16);
+	gainCalibrationFile->setColour(Label::textColourId, Colours::black);
+	gainCalibrationFile->addListener(this);
+	addAndMakeVisible(gainCalibrationFile);
+
+	chooseGainCalibrationFileButton = new UtilityButton("...");
+	chooseGainCalibrationFileButton->setFont(FontOptions("Small Text", 9, Font::bold));
+	chooseGainCalibrationFileButton->setBounds(172, 72, 18, 16);
+	chooseGainCalibrationFileButton->setRadius(1.0f);
+	chooseGainCalibrationFileButton->addListener(this);
+	addAndMakeVisible(chooseGainCalibrationFileButton);
+
+	gainCalibrationFileChooser = std::make_unique<FileChooser>("Select Gain Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_gainCalValues.csv");
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)
@@ -91,21 +135,46 @@ void OnixSourceEditor::buttonClicked(Button* b)
 		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
 		thread->initializeDevices(true);
 	}
+	else if (b == chooseAdcCalibrationFileButton)
+	{
+		if (adcCalibrationFileChooser->browseForFileToOpen())
+		{
+			adcCalibrationFile->setText(adcCalibrationFileChooser->getResult().getFullPathName(), false);
+		}
+	}
+	else if (b == chooseGainCalibrationFileButton)
+	{
+		if (gainCalibrationFileChooser->browseForFileToOpen())
+		{
+			gainCalibrationFile->setText(gainCalibrationFileChooser->getResult().getFullPathName(), false);
+		}
+	}
 }
 
 void OnixSourceEditor::updateSettings()
 {
-
 }
 
 void OnixSourceEditor::startAcquisition()
 {
 	rescanButton->setEnabled(false);
 	rescanButton->setAlpha(0.3f);
+
+	chooseAdcCalibrationFileButton->setEnabled(false);
+	chooseAdcCalibrationFileButton->setAlpha(0.3f);
+
+	chooseGainCalibrationFileButton->setEnabled(false);
+	chooseGainCalibrationFileButton->setAlpha(0.3f);
 }
 
 void OnixSourceEditor::stopAcquisition()
 {
 	rescanButton->setEnabled(true);
 	rescanButton->setAlpha(1.0f);
+
+	chooseAdcCalibrationFileButton->setEnabled(true);
+	chooseAdcCalibrationFileButton->setAlpha(1.0f);
+
+	chooseGainCalibrationFileButton->setEnabled(true);
+	chooseGainCalibrationFileButton->setAlpha(1.0f);
 }

@@ -28,6 +28,9 @@
 
 #include <ctime>
 #include <chrono>
+#include <bitset>
+#include <vector>
+#include <string>
 
 namespace Onix
 {
@@ -77,6 +80,34 @@ namespace Onix
 		ACTIVE = DIG_NRESET | CH_NRESET
 	};
 
+	enum NeuropixelsReference
+	{
+		External = 0b001,
+		Tip = 0b010
+	};
+
+	enum NeuropixelsGain
+	{
+		Gain50 = 0b000,
+		Gain125 = 0b001,
+		Gain250 = 0b010,
+		Gain500 = 0b011,
+		Gain1000 = 0b100,
+		Gain1500 = 0b101,
+		Gain2000 = 0b110,
+		Gain3000 = 0b111
+	};
+
+	enum ShiftRegisters
+	{
+		SR_CHAIN1 = 0X0E,
+		SR_CHAIN3 = 0X0C,
+		SR_CHAIN2 = 0X0D,
+		SR_LENGTH2 = 0X0F,
+		SR_LENGTH1 = 0X10,
+		SOFT_RESET = 0X11
+	};
+
 	// ADC number to frame index mapping
 	static const int adcToFrameIndex[] = {
 		0, 7 , 14, 21, 28,
@@ -96,11 +127,34 @@ namespace Onix
 		312, 313, 336, 337, 360, 361
 	};
 
+	struct NeuropixelsV1Adc
+	{
+	public:
+		const int compP;
+		const int compN;
+		const int slope;
+		const int coarse;
+		const int fine;
+		const int cfix;
+		const int offset;
+		const int threshold;
+
+		NeuropixelsV1Adc(int compP_ = 16, int compN_ = 16, int slope_ = 0, int coarse_ = 0, int fine_ = 0, int cfix_ = 0, int offset_ = 0, int threshold_ = 512)
+			: compP(compP_), compN(compN_), slope(slope_), coarse(coarse_), fine(fine_), cfix(cfix_), offset(offset_), threshold(threshold_)
+		{
+		}
+	};
+
 	const int superFramesPerUltraFrame = 12;
 	const int framesPerSuperFrame = 13;
 	const int framesPerUltraFrame = superFramesPerUltraFrame * framesPerSuperFrame;
 	const int numUltraFrames = 12;
 	const int dataOffset = 1;
+
+	const int shankConfigurationBitCount = 968;
+	const int BaseConfigurationBitCount = 2448;
+
+	const int numberOfChannels = 384;
 
 	const int ProbeI2CAddress = 0x70;
 
@@ -115,7 +169,7 @@ namespace Onix
 	public:
 
 		/** Constructor */
-		Neuropixels_1(String name, float portVoltage, const oni_dev_idx_t, const oni_ctx);
+		Neuropixels_1(String name, float portVoltage, String adcFile, String gainFile, const oni_dev_idx_t, const oni_ctx);
 
 		/** Destructor */
 		~Neuropixels_1();
@@ -138,7 +192,18 @@ namespace Onix
 		/** Updates buffer during acquisition */
 		void run() override;
 
+		std::bitset<shankConfigurationBitCount> static makeShankBits(NeuropixelsReference reference, Array<int, DummyCriticalSection, numberOfChannels> channelMap);
+
+		std::vector<std::bitset<BaseConfigurationBitCount>> static makeConfigBits(NeuropixelsReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
+
+		template<int N> std::vector<unsigned char> static toBitReversedBytes(std::bitset<N> shankBits);
+
+		void writeShiftRegisters(std::bitset<shankConfigurationBitCount> shankBits, std::vector<std::bitset<BaseConfigurationBitCount>> configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
+
 		Array<oni_frame_t*, CriticalSection, numUltraFrames> frameArray;
+
+		String adcCalibrationFile;
+		String gainCalibrationFile;
 
 		float lfpSamples[384 * numUltraFrames];
 		float apSamples[384 * numUltraFrames * superFramesPerUltraFrame];

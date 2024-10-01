@@ -40,7 +40,8 @@ namespace Onix
 
     class OnixSourceEditor : public GenericEditor,
         public Label::Listener,
-        public Button::Listener
+        public Button::Listener,
+        public TextEditor::Listener
     {
     public:
 
@@ -66,12 +67,24 @@ namespace Onix
 
         float portVoltage;
 
+        ScopedPointer<TextEditor> adcCalibrationFile;
+        ScopedPointer<TextEditor> gainCalibrationFile;
+
     private:
 
         OnixSource* thread;
 
         ScopedPointer<Label> portVoltageLabel;
         ScopedPointer<Label> portVoltageValue;
+
+        ScopedPointer<Label> adcCalibrationLabel;
+        ScopedPointer<Label> gainCalibrationLabel;
+
+        ScopedPointer<UtilityButton> chooseAdcCalibrationFileButton;
+        ScopedPointer<UtilityButton> chooseGainCalibrationFileButton;
+
+        std::unique_ptr<FileChooser> adcCalibrationFileChooser;
+        std::unique_ptr<FileChooser> gainCalibrationFileChooser;
 
         ScopedPointer<UtilityButton> portVoltageOverrideButton;
 

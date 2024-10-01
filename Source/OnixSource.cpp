@@ -156,7 +156,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
 		{
-			Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]), ed->portVoltage, devices[dev_idx].idx, ctx);
+			Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]), ed->portVoltage, ed->adcCalibrationFile->getText(), ed->gainCalibrationFile->getText(), devices[dev_idx].idx, ctx);
 
 			int res = np1->enableDevice();
 
@@ -169,6 +169,10 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				else if (res == -2)
 				{
 					LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				}
+				else if (res == -3)
+				{
+					LOGE("Missing calibration file(s). Ensure that all calibration files exist and the file paths are correct.");
 				}
 
 				delete np1;
@@ -335,14 +339,18 @@ bool OnixSource::foundInputSource()
 	return devicesFound;
 }
 
-bool OnixSource::startAcquisition()
+bool OnixSource::isReady()
 {
 	if (!devicesFound)
 		return false;
 
-	for (auto source : sources)
+	File adcFile = File(ed->adcCalibrationFile->getText());
+	File gainFile = File(ed->gainCalibrationFile->getText());
+
+	if (!adcFile.existsAsFile() || !gainFile.existsAsFile())
 	{
-		source->startAcquisition();
+		LOGE("Missing calibration file(s). Ensure that all calibration files exist and the file paths are correct.");
+		return false;
 	}
 
 	oni_reg_val_t reg = 2;
@@ -350,10 +358,21 @@ bool OnixSource::startAcquisition()
 	if (res < ONI_ESUCCESS)
 	{
 		LOGE("Error starting acquisition: ", oni_error_str(res), " code ", res);
+
 		return false;
 	}
 
+	return true;
+}
+
+bool OnixSource::startAcquisition()
+{
 	startThread();
+
+	for (auto source : sources)
+	{
+		source->startAcquisition();
+	}
 
 	return true;
 }
@@ -370,6 +389,9 @@ bool OnixSource::stopAcquisition()
 		source->stopAcquisition();
 	}
 
+	for (auto buffers : sourceBuffers)
+		buffers->clear();
+
 	if (devicesFound)
 	{
 		oni_size_t reg = 0;
@@ -384,9 +406,6 @@ bool OnixSource::stopAcquisition()
 		oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 		oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
 	}
-
-	for (auto buffers : sourceBuffers)
-		buffers->clear();
 
 	return true;
 }

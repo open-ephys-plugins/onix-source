@@ -74,6 +74,9 @@ namespace Onix
 		/** Reads frames and adds them to the appropriate device */
 		bool updateBuffer() override;
 
+		/** Returns true if the processor is ready to stream data, including all hardware initialization. Returns false if not ready. */
+		bool isReady() override;
+
 		/** Returns true if the hardware is connected, false otherwise.*/
 		bool foundInputSource();
 

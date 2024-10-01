@@ -39,6 +39,6 @@ int OnixDevice::checkLinkState(oni_dev_idx_t port)
 	int result = oni_read_reg(ctx, port, linkStateRegister, &linkState);
 
 	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
-	else if ((linkState & (unsigned int)0x1) == 0) { LOGE("Unable to acquire communication lock."); return -1; }
+	else if ((linkState & (uint32_t)0x1) == 0) { LOGE("Unable to acquire communication lock."); return -1; }
 	else return result;
 }
