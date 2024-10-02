@@ -37,6 +37,8 @@
 #include "Devices/Neuropixels_1.h"
 #include "Devices/Bno055.h"
 #include "Devices/HeadStageEEPROM.h"
+#include "Devices/DS90UB9x.h"
+#include "Devices/Neuropixels2e.h"
 
 namespace Onix
 {

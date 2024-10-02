@@ -24,7 +24,7 @@
 #include "OnixSource.h"
 
 #include "OnixSourceEditor.h"
-#include "Devices/DS90UB9x.h"
+
 
 using namespace Onix;
 
@@ -251,10 +251,32 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			LOGD("Detected headstage ", hsid);
 			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
 			{
+				auto np2 = std::make_unique<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
+				int res = np2->enableDevice();
+				if (res != 0)
+				{
+					if (res == -1)
+					{
+						LOGE("Device Idx: ", devices[dev_idx].idx, " Unable to read probe serial number. Device not found.");
+					}
+					//TODO add other errors if needed
+					continue;
+				}
+				npxProbeIdx += np2->getNumProbes();
 
+				int bufferIdx = 0;
+				for (auto streamInfo : np2->streams)
+				{
+					sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+					np2->apBuffer[bufferIdx++] = sourceBuffers.getLast();
+				}
+				sources.add(np2.release());
 			}
 		}
 	}
+
+	val = 1;
+	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(ed);
 
@@ -326,6 +348,16 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				};
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));
+			}
+			else if (source->type == OnixDeviceType::NEUROPIXELS_2)
+			{
+				DeviceInfo::Settings deviceSettings{
+					source->getName(), // device name
+					"Neuropixels 2.0 Probe",
+					"neuropixels1.probe",
+					"0000000",
+					"imec"
+				};
 			}
 
 			// add data streams and channels
