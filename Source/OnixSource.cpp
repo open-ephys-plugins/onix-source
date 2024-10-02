@@ -48,7 +48,7 @@ OnixSource::OnixSource(SourceNode* sn) :
 
 	if (!contextInitialized) { LOGE("Failed to initialize context."); return; }
 
-	setPortVoltage((oni_dev_idx_t)PortName::PortA, 6.0);
+	setPortVoltage((oni_dev_idx_t)PortName::PortA, 5.0);
 	initializeDevices();
 
 	if (!devicesFound) { return; }
@@ -249,6 +249,10 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(devices[dev_idx].idx, ctx);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
+			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
+			{
+
+			}
 		}
 	}
 

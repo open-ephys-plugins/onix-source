@@ -47,7 +47,7 @@ namespace Onix
 		const oni_ctx context;
 		const oni_dev_idx_t deviceIndex;
 
-		uint32_t address;
+		const uint32_t i2caddress;
 	};
 }
 

@@ -2,7 +2,6 @@
 #include "../I2CRegisterContext.h"
 #include <oni.h>
 #include <onix.h>
-#include <memory>
 
 namespace Onix
 {
@@ -16,8 +15,8 @@ namespace Onix
         uint32_t GetHeadStageID();
 
     private:
-        const int EEPROM_ADDRESS = 0x51;
-        const int DEVID_START_ADDR = 18;
+        static const uint32_t EEPROM_ADDRESS = 0x51;
+        static const uint32_t DEVID_START_ADDR = 18;
 
     };
 

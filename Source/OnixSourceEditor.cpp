@@ -36,7 +36,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	portVoltageLabel->setColour(Label::textColourId, Colours::black);
 	addAndMakeVisible(portVoltageLabel);
 
-	portVoltage = 6.0f;
+	portVoltage = 5.0f;
 	portVoltageValue = new Label("VoltageValue", String(portVoltage));
 	portVoltageValue->setBounds(10, 38, 30, 13);
 	portVoltageValue->setFont(Font("Small Text", 11, Font::plain));
