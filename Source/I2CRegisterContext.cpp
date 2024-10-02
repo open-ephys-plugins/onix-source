@@ -22,6 +22,7 @@
 */
 
 #include "I2CRegisterContext.h"
+#include <iostream>
 
 using namespace Onix;
 
@@ -31,19 +32,22 @@ I2CRegisterContext::I2CRegisterContext(uint32_t address_, const oni_dev_idx_t de
 	address = address_;
 }
 
-void I2CRegisterContext::WriteByte(uint32_t address, uint32_t value)
+void I2CRegisterContext::WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress)
 {
 	uint32_t registerAddress = (address << 7) | this->address & 0x7F;
+	registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
 	oni_write_reg(context, deviceIndex, registerAddress, value);
 }
 
-oni_reg_val_t I2CRegisterContext::ReadByte(uint32_t address)
+oni_reg_val_t I2CRegisterContext::ReadByte(uint32_t address, bool sixteenBitAddress )
 {
 	uint32_t registerAddress = (address << 7) | this->address & 0x7F;
+	registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
 
 	oni_reg_val_t value;
 
-	oni_read_reg(context, deviceIndex, registerAddress, &value);
+	if (oni_read_reg(context, deviceIndex, registerAddress, &value) != ONI_ESUCCESS)
+		std::cout << "Error reading register " << address << " from index " << deviceIndex << " i2c addr " << this->address << " 16b " << sixteenBitAddress << std::endl;
 
 	return value;
 }

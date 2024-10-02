@@ -96,6 +96,8 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	addAndMakeVisible(chooseGainCalibrationFileButton);
 
 	gainCalibrationFileChooser = std::make_unique<FileChooser>("Select Gain Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_gainCalValues.csv");
+
+	addToggleParameterEditor(Parameter::PROCESSOR_SCOPE, "is_passthrough_A", 80, 95);
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)

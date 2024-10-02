@@ -36,9 +36,9 @@ namespace Onix
 
 		I2CRegisterContext(uint32_t address, const oni_dev_idx_t, const oni_ctx);
 
-		void WriteByte(uint32_t address, uint32_t value);
+		void WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
 
-		oni_reg_val_t ReadByte(uint32_t address);
+		oni_reg_val_t ReadByte(uint32_t address, bool sixteenBitAddress = false);
 
 	private:
 

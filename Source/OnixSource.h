@@ -36,6 +36,7 @@
 #include "OnixDevice.h"
 #include "Devices/Neuropixels_1.h"
 #include "Devices/Bno055.h"
+#include "Devices/HeadStageEEPROM.h"
 
 namespace Onix
 {

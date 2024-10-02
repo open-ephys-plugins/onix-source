@@ -24,6 +24,7 @@
 #include "OnixSource.h"
 
 #include "OnixSourceEditor.h"
+#include "Devices/DS90UB9x.h"
 
 using namespace Onix;
 
@@ -33,6 +34,9 @@ OnixSource::OnixSource(SourceNode* sn) :
 	devicesFound(false),
 	ed(NULL)
 {
+
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "is_passthrough_A", "Passthrough Mode", "Enables passthrough mode for e-variant headstages", false, true);
+
 	LOGD("ONIX Source creating ONI context.");
 
 	ctx = oni_create_ctx("riffa"); // "riffa" is the PCIe driver name
@@ -106,7 +110,16 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	oni_size_t num_devs = 0;
 	oni_device_t* devices = NULL;
 
-	uint32_t val = 1;
+	uint32_t val = 0;
+
+	if (getParameter("is_passthrough_A")->getValue())
+	{
+		LOGD("Passthrough mode enabled");
+		val = 1;
+	}
+	oni_set_opt(ctx, ONIX_OPT_PASSTHROUGH, &val, sizeof(val));
+
+	val = 1;
 	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 
 	// Examine device table
@@ -224,6 +237,18 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			sources.add(bno.release());
 
 			bnoIdx++;
+		}
+		else if (devices[dev_idx].id == ONIX_DS90UB9RAW)
+		{
+			LOGD("Passthrough device detected");
+			//initialize main i2c parameter
+			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, devices[dev_idx].idx, ctx);
+			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
+			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
+			
+			auto EEPROM = std::make_unique<HeadStageEEPROM>(devices[dev_idx].idx, ctx);
+			uint32_t hsid = EEPROM->GetHeadStageID();
+			LOGD("Detected headstage ", hsid);
 		}
 	}
 
