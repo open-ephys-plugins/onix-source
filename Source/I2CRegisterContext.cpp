@@ -31,19 +31,23 @@ I2CRegisterContext::I2CRegisterContext(uint32_t address_, const oni_dev_idx_t de
 	address = address_;
 }
 
-void I2CRegisterContext::WriteByte(uint32_t address, uint32_t value)
+int I2CRegisterContext::WriteByte(uint32_t address, uint32_t value)
 {
 	uint32_t registerAddress = (address << 7) | this->address & 0x7F;
-	oni_write_reg(context, deviceIndex, registerAddress, value);
+	auto result = oni_write_reg(context, deviceIndex, registerAddress, value);
+
+	if (result != 0) { LOGE(oni_error_str(result)); }
+
+	return result;
 }
 
-oni_reg_val_t I2CRegisterContext::ReadByte(uint32_t address)
+int I2CRegisterContext::ReadByte(uint32_t address, oni_reg_val_t* value)
 {
 	uint32_t registerAddress = (address << 7) | this->address & 0x7F;
 
-	oni_reg_val_t value;
+	auto result = oni_read_reg(context, deviceIndex, registerAddress, value);
 
-	oni_read_reg(context, deviceIndex, registerAddress, &value);
+	if (result != 0) { LOGE(oni_error_str(result)); }
 
-	return value;
+	return result;
 }

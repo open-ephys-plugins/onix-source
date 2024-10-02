@@ -98,22 +98,21 @@ int Neuropixels_1::enableDevice()
 
 	if (errorCode) { LOGE(oni_error_str(errorCode)); return -2; }
 
-	WriteByte((uint32_t)NeuropixelsRegisters::CAL_MOD, (uint32_t)CalMode::CAL_OFF);
-	WriteByte((uint32_t)NeuropixelsRegisters::SYNC, (uint32_t)0);
+	if (WriteByte((uint32_t)NeuropixelsRegisters::CAL_MOD, (uint32_t)CalMode::CAL_OFF) != 0) return -4;
+	if (WriteByte((uint32_t)NeuropixelsRegisters::SYNC, (uint32_t)0) != 0) return -4;
 
-	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::DIG_AND_CH_RESET);
+	if (WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::DIG_AND_CH_RESET) != 0) return -4;
 
-	WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD);
+	if (WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD) != 0) return -4;
 
-	// TODO: Parse ADC and Gain calibration files here
-
+	// Parse ADC and Gain calibration files
 	File adcFile = File(adcCalibrationFile);
 	File gainFile = File(gainCalibrationFile);
 
 	if (!adcFile.existsAsFile() || !gainFile.existsAsFile()) return -3;
 
-	NeuropixelsGain lfpGain = NeuropixelsGain::Gain1000;
-	NeuropixelsGain apGain = NeuropixelsGain::Gain50;
+	NeuropixelsGain lfpGain = NeuropixelsGain::Gain50;
+	NeuropixelsGain apGain = NeuropixelsGain::Gain1000;
 
 	StringArray gainFileLines;
 	gainFile.readLines(gainFileLines);
@@ -122,13 +121,49 @@ int Neuropixels_1::enableDevice()
 
 	LOGD("Gain calibration file SN = ", gainSN);
 
+	if (gainSN != probeSN) { LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", probeSN, ")."); return -4; };
+
 	StringRef gainCalLine = gainFileLines[1];
-	StringRef breakCharacters = ", ";
+	StringRef breakCharacters = ",";
 	StringRef noQuote = "";
 
 	StringArray calibrationValues = StringArray::fromTokens(gainCalLine, breakCharacters, noQuote);
 
+	int lfpIndex = gainToIndex.find(lfpGain)->second;
+	int apIndex = gainToIndex.find(apGain)->second;
 
+	double apGainCorrection = std::stod(calibrationValues[apIndex + 1].toStdString());
+	double lfpGainCorrection = std::stod(calibrationValues[lfpIndex + 8].toStdString());
+
+	LOGD("AP gain correction = ", apGainCorrection, ", LFP gain correction = ", lfpGainCorrection);
+
+	StringArray adcFileLines;
+	adcFile.readLines(adcFileLines);
+
+	auto adcSN = std::stoull(adcFileLines[0].toStdString());
+
+	LOGD("ADC calibration file SN = ", adcSN);
+
+	if (adcSN != probeSN) { LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", probeSN, ")."); return -4; };
+
+	Array<NeuropixelsV1Adc> adcs;
+
+	for (int i = 1; i < adcFileLines.size() - 1; i++)
+	{
+		auto adcLine = StringArray::fromTokens(adcFileLines[i], breakCharacters, noQuote);
+
+		adcs.add(
+			NeuropixelsV1Adc(
+				std::stoi(adcLine[1].toStdString()),
+				std::stoi(adcLine[2].toStdString()),
+				std::stoi(adcLine[3].toStdString()),
+				std::stoi(adcLine[4].toStdString()),
+				std::stoi(adcLine[5].toStdString()),
+				std::stoi(adcLine[6].toStdString()),
+				std::stoi(adcLine[7].toStdString()),
+				std::stoi(adcLine[8].toStdString())
+				));
+	}
 
 	// Write shift registers
 	auto channelMap = Array<int, DummyCriticalSection, numberOfChannels>();
@@ -139,11 +174,6 @@ int Neuropixels_1::enableDevice()
 	}
 
 	auto shankBits = makeShankBits(NeuropixelsReference::External, channelMap);
-
-	Array<NeuropixelsV1Adc> adcs;
-	double lfpGainCorrection = 1.0;
-	double apGainCorrection = 1.0;
-
 	auto configBits = makeConfigBits(NeuropixelsReference::External, lfpGain, apGain, true, adcs);
 
 	writeShiftRegisters(shankBits, configBits, adcs, lfpGainCorrection, apGainCorrection);
@@ -176,7 +206,6 @@ void Neuropixels_1::stopAcquisition()
 
 void Neuropixels_1::addFrame(oni_frame_t* frame)
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
@@ -184,8 +213,6 @@ void Neuropixels_1::run()
 {
 	while (!threadShouldExit())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
-
 		if (!frameArray.isEmpty())
 		{
 			oni_frame_t* frame = frameArray.removeAndReturn(0);
@@ -357,9 +384,9 @@ std::vector<std::bitset<BaseConfigurationBitCount>> Neuropixels_1::makeConfigBit
 		baseConfigs[configIdx][compOffset + 8] = compN[3];
 		baseConfigs[configIdx][compOffset + 9] = compN[4];
 
-		baseConfigs[configIdx][slopeOffset + 0] = slope[4];
-		baseConfigs[configIdx][slopeOffset + 1] = slope[4];
-		baseConfigs[configIdx][slopeOffset + 2] = slope[4];
+		baseConfigs[configIdx][slopeOffset + 0] = slope[0];
+		baseConfigs[configIdx][slopeOffset + 1] = slope[1];
+		baseConfigs[configIdx][slopeOffset + 2] = slope[2];
 
 		baseConfigs[configIdx][slopeOffset + 3] = fine[0];
 		baseConfigs[configIdx][slopeOffset + 4] = fine[1];
@@ -398,12 +425,12 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 {
 	auto shankBytes = toBitReversedBytes<shankConfigurationBitCount>(shankBits);
 
-	WriteByte(ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
-	WriteByte(ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
+	if (WriteByte(ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100) != 0) return;
+	if (WriteByte(ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100) != 0) return;
 
 	for (auto b : shankBytes)
 	{
-		WriteByte(ShiftRegisters::SR_CHAIN1, b);
+		if (WriteByte(ShiftRegisters::SR_CHAIN1, b) != 0) return;
 	}
 
 	const uint32_t shiftRegisterSuccess = 1 << 7;
@@ -416,16 +443,18 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 		{
 			auto baseBytes = toBitReversedBytes<BaseConfigurationBitCount>(configBits[i]);
 
-			WriteByte(ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100);
-			WriteByte(ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100);
+			if (WriteByte(ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100) != 0) return;
+			if (WriteByte(ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100) != 0) return;
 
 			for (auto b : baseBytes)
 			{
-				WriteByte(srAddress, b);
+				if (WriteByte(srAddress, b) != 0) return;
 			}
 		}
 
-		if (ReadByte(NeuropixelsRegisters::STATUS) != shiftRegisterSuccess)
+		oni_reg_val_t value;
+
+		if (ReadByte(NeuropixelsRegisters::STATUS, &value) != 0 || value != shiftRegisterSuccess)
 		{
 			LOGE("Shift register ", srAddress, " status check failed.");
 			return;
@@ -436,7 +465,11 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 
 	for (uint32_t i = 0; i < adcs.size(); i += 2)
 	{
-		oni_write_reg(ctx, deviceIdx, ADC01_00_OFF_THRESH + i, (uint32_t)(adcs[i + 1].offset << 26 | adcs[i + 1].threshold << 16 | adcs[i].offset << 10 | adcs[i].threshold));
+		if (oni_write_reg(ctx, deviceIdx, ADC01_00_OFF_THRESH + i, (uint32_t)(adcs[i + 1].offset << 26 | adcs[i + 1].threshold << 16 | adcs[i].offset << 10 | adcs[i].threshold)) != 0)
+		{
+			LOGE("Error writing to register ", ADC01_00_OFF_THRESH + i, ".");
+			return;
+		}
 	}
 
 	auto fixedPointLfPGain = (uint32_t)(lfpGainCorrection * (1 << 14)) & 0xFFFF;
@@ -447,7 +480,16 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 
 	for (uint32_t i = 0; i < numberOfChannels / 2; i++)
 	{
-		oni_write_reg(ctx, deviceIdx, CHAN001_000_LFPGAIN + i, fixedPointLfPGain << 16 | fixedPointLfPGain);
-		oni_write_reg(ctx, deviceIdx, CHAN001_000_APGAIN + i, fixedPointApGain << 16 | fixedPointApGain);
+		if (oni_write_reg(ctx, deviceIdx, CHAN001_000_LFPGAIN + i, fixedPointLfPGain << 16 | fixedPointLfPGain) != 0)
+		{
+			LOGE("Error writing to register ", CHAN001_000_LFPGAIN + i, ".");
+			return;
+		}
+
+		if (oni_write_reg(ctx, deviceIdx, CHAN001_000_APGAIN + i, fixedPointApGain << 16 | fixedPointApGain) != 0)
+		{
+			LOGE("Error writing to register ", CHAN001_000_APGAIN + i, ".");
+			return;
+		}
 	}
 }
