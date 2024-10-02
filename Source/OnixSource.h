@@ -112,9 +112,6 @@ namespace Onix
 		/** The ONI context object */
 		oni_ctx ctx;
 
-		static const oni_dev_idx_t DEVICE_NPX1_1 = 0x0100;
-		static const oni_dev_idx_t DEVICE_NPX1_2 = 0x0101;
-
 		const oni_size_t block_read_size = 2048;
 
 		bool contextInitialized = false;

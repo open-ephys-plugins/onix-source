@@ -32,6 +32,7 @@ I2CRegisterContext::I2CRegisterContext(uint32_t address_, const oni_dev_idx_t de
 	address = address_;
 }
 
+<<<<<<< HEAD
 void I2CRegisterContext::WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress)
 {
 	uint32_t registerAddress = (address << 7) | this->address & 0x7F;
@@ -40,14 +41,31 @@ void I2CRegisterContext::WriteByte(uint32_t address, uint32_t value, bool sixtee
 }
 
 oni_reg_val_t I2CRegisterContext::ReadByte(uint32_t address, bool sixteenBitAddress )
+=======
+int I2CRegisterContext::WriteByte(uint32_t address, uint32_t value)
+{
+	uint32_t registerAddress = (address << 7) | this->address & 0x7F;
+	auto result = oni_write_reg(context, deviceIndex, registerAddress, value);
+
+	if (result != 0) { LOGE(oni_error_str(result)); }
+
+	return result;
+}
+
+int I2CRegisterContext::ReadByte(uint32_t address, oni_reg_val_t* value)
+>>>>>>> a8c862cc1571a5223988d31244531267472fc397
 {
 	uint32_t registerAddress = (address << 7) | this->address & 0x7F;
 	registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
 
-	oni_reg_val_t value;
+	auto result = oni_read_reg(context, deviceIndex, registerAddress, value);
 
+<<<<<<< HEAD
 	if (oni_read_reg(context, deviceIndex, registerAddress, &value) != ONI_ESUCCESS)
 		std::cout << "Error reading register " << address << " from index " << deviceIndex << " i2c addr " << this->address << " 16b " << sixteenBitAddress << std::endl;
+=======
+	if (result != 0) { LOGE(oni_error_str(result)); }
+>>>>>>> a8c862cc1571a5223988d31244531267472fc397
 
-	return value;
+	return result;
 }

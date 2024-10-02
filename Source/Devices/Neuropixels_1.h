@@ -31,6 +31,7 @@
 #include <bitset>
 #include <vector>
 #include <string>
+#include <map>
 
 namespace Onix
 {
@@ -201,6 +202,17 @@ namespace Onix
 		void writeShiftRegisters(std::bitset<shankConfigurationBitCount> shankBits, std::vector<std::bitset<BaseConfigurationBitCount>> configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
 
 		Array<oni_frame_t*, CriticalSection, numUltraFrames> frameArray;
+
+		const std::map<NeuropixelsGain, int> gainToIndex{ 
+			{NeuropixelsGain::Gain50, 0}, 
+			{NeuropixelsGain::Gain125, 1}, 
+			{NeuropixelsGain::Gain250, 2}, 
+			{NeuropixelsGain::Gain500, 3}, 
+			{NeuropixelsGain::Gain1000, 4}, 
+			{NeuropixelsGain::Gain1500, 5}, 
+			{NeuropixelsGain::Gain2000, 6}, 
+			{NeuropixelsGain::Gain3000, 7}, 
+		};
 
 		String adcCalibrationFile;
 		String gainCalibrationFile;
