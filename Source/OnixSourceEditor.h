@@ -67,29 +67,28 @@ namespace Onix
 
         float portVoltage;
 
-        ScopedPointer<TextEditor> adcCalibrationFile;
-        ScopedPointer<TextEditor> gainCalibrationFile;
+        std::unique_ptr<TextEditor> adcCalibrationFile;
+        std::unique_ptr<TextEditor> gainCalibrationFile;
 
     private:
 
         OnixSource* thread;
 
-        ScopedPointer<Label> portVoltageLabel;
-        ScopedPointer<Label> portVoltageValue;
+        std::unique_ptr<Label> portVoltageLabel;
+        std::unique_ptr<Label> portVoltageValue;
 
-        ScopedPointer<Label> adcCalibrationLabel;
-        ScopedPointer<Label> gainCalibrationLabel;
+        std::unique_ptr<Label> adcCalibrationLabel;
+        std::unique_ptr<Label> gainCalibrationLabel;
 
-        ScopedPointer<UtilityButton> chooseAdcCalibrationFileButton;
-        ScopedPointer<UtilityButton> chooseGainCalibrationFileButton;
+        std::unique_ptr<UtilityButton> chooseAdcCalibrationFileButton;
+        std::unique_ptr<UtilityButton> chooseGainCalibrationFileButton;
 
         std::unique_ptr<FileChooser> adcCalibrationFileChooser;
         std::unique_ptr<FileChooser> gainCalibrationFileChooser;
 
-        ScopedPointer<UtilityButton> portVoltageOverrideButton;
+        std::unique_ptr<UtilityButton> portVoltageOverrideButton;
 
-        ScopedPointer<UtilityButton> rescanButton;
-
+        std::unique_ptr<UtilityButton> rescanButton;
        
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
     };

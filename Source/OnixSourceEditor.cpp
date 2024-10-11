@@ -30,70 +30,70 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 {
 	desiredWidth = 200;
 
-	portVoltageLabel = new Label("Voltage", "PORT VOLTAGE [V]");
+	portVoltageLabel = std::make_unique<Label>("Voltage", "PORT VOLTAGE [V]");
 	portVoltageLabel->setBounds(5, 20, 75, 20);
 	portVoltageLabel->setFont(Font("Small Text", 11, Font::plain));
 	portVoltageLabel->setColour(Label::textColourId, Colours::black);
-	addAndMakeVisible(portVoltageLabel);
+	addAndMakeVisible(portVoltageLabel.get());
 
 	portVoltage = 5.0f;
-	portVoltageValue = new Label("VoltageValue", String(portVoltage));
+	portVoltageValue = std::make_unique<Label>("VoltageValue", String(portVoltage));
 	portVoltageValue->setBounds(10, 38, 30, 13);
 	portVoltageValue->setFont(Font("Small Text", 11, Font::plain));
 	portVoltageValue->setEditable(true);
 	portVoltageValue->setColour(Label::textColourId, Colours::black);
 	portVoltageValue->setColour(Label::backgroundColourId, Colours::lightgrey);
 	portVoltageValue->addListener(this);
-	addAndMakeVisible(portVoltageValue);
+	addAndMakeVisible(portVoltageValue.get());
 
-	rescanButton = new UtilityButton("Rescan");
+	rescanButton = std::make_unique<UtilityButton>("Rescan");
 	rescanButton->setFont(FontOptions("Small Text", 9, Font::plain));
 	rescanButton->setBounds(10, 100, 50, 17);
 	rescanButton->setRadius(3.0f);
 	rescanButton->addListener(this);
-	addAndMakeVisible(rescanButton);
+	addAndMakeVisible(rescanButton.get());
 
-	adcCalibrationLabel = new Label("ADC CAL LABEL", "ADC CAL.");
+	adcCalibrationLabel = std::make_unique<Label>("ADC CAL LABEL", "ADC CAL.");
 	adcCalibrationLabel->setFont(FontOptions("Small Text", 11, Font::plain));
 	adcCalibrationLabel->setBounds(80, 25, 50, 15);
 	adcCalibrationLabel->setColour(Label::textColourId, Colours::black);
-	addAndMakeVisible(adcCalibrationLabel);
+	addAndMakeVisible(adcCalibrationLabel.get());
 
-	adcCalibrationFile = new TextEditor("ADC CAL FILE");
+	adcCalibrationFile = std::make_unique<TextEditor>("ADC CAL FILE");
 	adcCalibrationFile->setFont(FontOptions("Small Text", 11, Font::plain));
 	adcCalibrationFile->setBounds(80, 40, 90, 16);
 	adcCalibrationFile->setColour(Label::textColourId, Colours::black);
 	adcCalibrationFile->addListener(this);
-	addAndMakeVisible(adcCalibrationFile);
+	addAndMakeVisible(adcCalibrationFile.get());
 
-	chooseAdcCalibrationFileButton = new UtilityButton("...");
+	chooseAdcCalibrationFileButton = std::make_unique<UtilityButton>("...");
 	chooseAdcCalibrationFileButton->setFont(FontOptions("Small Text", 9, Font::bold));
 	chooseAdcCalibrationFileButton->setBounds(172, 40, 18, 16);
 	chooseAdcCalibrationFileButton->setRadius(1.0f);
 	chooseAdcCalibrationFileButton->addListener(this);
-	addAndMakeVisible(chooseAdcCalibrationFileButton);
+	addAndMakeVisible(chooseAdcCalibrationFileButton.get());
 
 	adcCalibrationFileChooser = std::make_unique<FileChooser>("Select ADC Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_ADCCalibration.csv");
 
-	gainCalibrationLabel = new Label("GAIN CAL LABEL", "GAIN CAL.");
+	gainCalibrationLabel = std::make_unique<Label>("GAIN CAL LABEL", "GAIN CAL.");
 	gainCalibrationLabel->setFont(FontOptions("Small Text", 11, Font::plain));
 	gainCalibrationLabel->setBounds(80, 57, 50, 15);
 	gainCalibrationLabel->setColour(Label::textColourId, Colours::black);
-	addAndMakeVisible(gainCalibrationLabel);
+	addAndMakeVisible(gainCalibrationLabel.get());
 
-	gainCalibrationFile = new TextEditor("GAIN CAL FILE");
+	gainCalibrationFile = std::make_unique<TextEditor>("GAIN CAL FILE");
 	gainCalibrationFile->setFont(FontOptions("Small Text", 11, Font::plain));
 	gainCalibrationFile->setBounds(80, 72, 90, 16);
 	gainCalibrationFile->setColour(Label::textColourId, Colours::black);
 	gainCalibrationFile->addListener(this);
-	addAndMakeVisible(gainCalibrationFile);
+	addAndMakeVisible(gainCalibrationFile.get());
 
-	chooseGainCalibrationFileButton = new UtilityButton("...");
+	chooseGainCalibrationFileButton = std::make_unique<UtilityButton>("...");
 	chooseGainCalibrationFileButton->setFont(FontOptions("Small Text", 9, Font::bold));
 	chooseGainCalibrationFileButton->setBounds(172, 72, 18, 16);
 	chooseGainCalibrationFileButton->setRadius(1.0f);
 	chooseGainCalibrationFileButton->addListener(this);
-	addAndMakeVisible(chooseGainCalibrationFileButton);
+	addAndMakeVisible(chooseGainCalibrationFileButton.get());
 
 	gainCalibrationFileChooser = std::make_unique<FileChooser>("Select Gain Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_gainCalValues.csv");
 
@@ -102,7 +102,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 
 void OnixSourceEditor::labelTextChanged(Label* l)
 {
-	if (l == portVoltageValue)
+	if (l == portVoltageValue.get())
 	{
 		const float minVoltage = 4.5;
 		const float maxVoltage = 6.5;
@@ -128,23 +128,23 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 
 void OnixSourceEditor::buttonClicked(Button* b)
 {
-	if (b == portVoltageOverrideButton)
+	if (b == portVoltageOverrideButton.get())
 	{
 		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
 	}
-	else if (b == rescanButton)
+	else if (b == rescanButton.get())
 	{
 		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
 		thread->initializeDevices(true);
 	}
-	else if (b == chooseAdcCalibrationFileButton)
+	else if (b == chooseAdcCalibrationFileButton.get())
 	{
 		if (adcCalibrationFileChooser->browseForFileToOpen())
 		{
 			adcCalibrationFile->setText(adcCalibrationFileChooser->getResult().getFullPathName(), false);
 		}
 	}
-	else if (b == chooseGainCalibrationFileButton)
+	else if (b == chooseGainCalibrationFileButton.get())
 	{
 		if (gainCalibrationFileChooser->browseForFileToOpen())
 		{
