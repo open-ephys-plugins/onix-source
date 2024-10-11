@@ -285,6 +285,8 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 bool OnixSource::setPortVoltage(oni_dev_idx_t port, int voltage)
 {
+	if (!contextInitialized) return false;
+
 	const oni_reg_addr_t voltageRegister = 3;
 
 	auto result = oni_write_reg(ctx, port, voltageRegister, 0);
