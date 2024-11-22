@@ -25,8 +25,6 @@
 #include <oni.h>
 #include <onix.h>
 
-using namespace Onix;
-
 Neuropixels_1::Neuropixels_1(String name, float portVoltage, String adcFile, String gainFile, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 	: OnixDevice(name, NEUROPIXELS_1, deviceIdx_, ctx_), I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_)
 {
@@ -57,6 +55,8 @@ Neuropixels_1::Neuropixels_1(String name, float portVoltage, String adcFile, Str
 
 	if (portVoltage >= minVoltage && portVoltage <= maxVoltage)
 		portVoltage_ = portVoltage;
+
+	defineMetadata(settings);
 }
 
 Neuropixels_1::~Neuropixels_1()
@@ -179,6 +179,51 @@ int Neuropixels_1::enableDevice()
 	writeShiftRegisters(shankBits, configBits, adcs, lfpGainCorrection, apGainCorrection);
 
 	return 0;
+}
+
+Array<int> Neuropixels_1::selectElectrodeConfiguration(String config)
+{
+	Array<int> selection;
+
+	if (config.equalsIgnoreCase("Bank A"))
+	{
+		for (int i = 0; i < 384; i++)
+			selection.add(i);
+	}
+	else if (config.equalsIgnoreCase("Bank B"))
+	{
+		for (int i = 384; i < 768; i++)
+			selection.add(i);
+	}
+	else if (config.equalsIgnoreCase("Bank C"))
+	{
+		for (int i = 576; i < 960; i++)
+			selection.add(i);
+	}
+	else if (config.equalsIgnoreCase("Single Column"))
+	{
+		for (int i = 0; i < 384; i += 2)
+			selection.add(i);
+
+		for (int i = 385; i < 768; i += 2)
+			selection.add(i);
+	}
+	else if (config.equalsIgnoreCase("Tetrodes"))
+	{
+		for (int i = 0; i < 384; i += 8)
+		{
+			for (int j = 0; j < 4; j++)
+				selection.add(i + j);
+		}
+
+		for (int i = 388; i < 768; i += 8)
+		{
+			for (int j = 0; j < 4; j++)
+				selection.add(i + j);
+		}
+	}
+
+	return selection;
 }
 
 void Neuropixels_1::startAcquisition()
@@ -308,11 +353,11 @@ std::bitset<shankConfigurationBitCount> Neuropixels_1::makeShankBits(Neuropixels
 
 	switch (reference)
 	{
-	case Onix::External:
+	case External:
 		shankBits[shankBitExt1] = true;
 		shankBits[shankBitExt2] = true;
 		break;
-	case Onix::Tip:
+	case Tip:
 		shankBits[shankBitTip1] = true;
 		shankBits[shankBitTip2] = true;
 		break;
@@ -331,9 +376,9 @@ std::vector<std::bitset<BaseConfigurationBitCount>> Neuropixels_1::makeConfigBit
 
 	for (int i = 0; i < numberOfChannels; i++)
 	{
-		auto configIdx = i % 2;
+		size_t configIdx = i % 2;
 
-		auto refIdx = configIdx == 0 ?
+		size_t refIdx = configIdx == 0 ?
 			(382 - i) / 2 * 3 :
 			(383 - i) / 2 * 3;
 
@@ -341,7 +386,7 @@ std::vector<std::bitset<BaseConfigurationBitCount>> Neuropixels_1::makeConfigBit
 		baseConfigs[configIdx][refIdx + 1] = ((unsigned char)reference >> 1 & 0x1) == 1;
 		baseConfigs[configIdx][refIdx + 2] = ((unsigned char)reference >> 2 & 0x1) == 1;
 
-		auto chanOptsIdx = BaseConfigurationConfigOffset + ((i - configIdx) * 4);
+		size_t chanOptsIdx = BaseConfigurationConfigOffset + ((i - configIdx) * 4);
 
 		baseConfigs[configIdx][chanOptsIdx + 0] = ((unsigned char)spikeAmplifierGain >> 0 & 0x1) == 1;
 		baseConfigs[configIdx][chanOptsIdx + 1] = ((unsigned char)spikeAmplifierGain >> 1 & 0x1) == 1;
@@ -357,13 +402,13 @@ std::vector<std::bitset<BaseConfigurationBitCount>> Neuropixels_1::makeConfigBit
 
 	int k = 0;
 
-	for (auto adc : adcs)
+	for (const auto& adc : adcs)
 	{
 		auto configIdx = k % 2;
 		int d = k++ / 2;
 
-		int compOffset = 2406 - 42 * (d / 2) + (d % 2) * 10;
-		int slopeOffset = compOffset + 20 + (d % 2);
+		size_t compOffset = 2406 - 42 * (d / 2) + (d % 2) * 10;
+		size_t slopeOffset = compOffset + 20 + (d % 2);
 
 		auto compP = std::bitset<8>{ (unsigned char)(adc.compP) };
 		auto compN = std::bitset<8>{ (unsigned char)(adc.compN) };
@@ -492,4 +537,126 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 			return;
 		}
 	}
+}
+
+void Neuropixels_1::defineMetadata(ProbeSettings& settings)
+{
+	settings.probeMetadata.type = ProbeType::NPX_V1E;
+	settings.probeMetadata.name = "Neuropixels 1.0e";
+
+	Path path;
+	path.startNewSubPath(27, 31);
+	path.lineTo(27, 514);
+	path.lineTo(27 + 5, 522);
+	path.lineTo(27 + 10, 514);
+	path.lineTo(27 + 10, 31);
+	path.closeSubPath();
+
+	settings.probeMetadata.shank_count = 1;
+	settings.probeMetadata.electrodes_per_shank = 960;
+	settings.probeMetadata.rows_per_shank = 960 / 2;
+	settings.probeMetadata.columns_per_shank = 2;
+	settings.probeMetadata.shankOutline = path;
+	settings.probeMetadata.num_adcs = 32; // NB: Is this right for 1.0e?
+	settings.probeMetadata.adc_bits = 10; // NB: Is this right for 1.0e?
+
+	settings.probeMetadata.availableBanks = {
+		Bank::A,
+		Bank::B,
+		Bank::C,
+		Bank::NONE //disconnected
+	};
+
+	Array<float> xpositions = { 27.0f, 59.0f, 11.0f, 43.0f };
+
+	for (int i = 0; i < settings.probeMetadata.electrodes_per_shank * settings.probeMetadata.shank_count; i++)
+	{
+		ElectrodeMetadata metadata;
+
+		metadata.shank = 0;
+		metadata.shank_local_index = i % settings.probeMetadata.electrodes_per_shank;
+		metadata.global_index = i;
+		metadata.xpos = xpositions[i % 4];
+		metadata.ypos = (i - (i % 2)) * 10.0f;
+		metadata.site_width = 12;
+		metadata.column_index = i % 2;
+		metadata.row_index = i / 2;
+		metadata.isSelected = false;
+		metadata.colour = Colours::lightgrey;
+
+		if (i < 384)
+		{
+			metadata.bank = Bank::A;
+			metadata.channel = i;
+			metadata.status = ElectrodeStatus::CONNECTED;
+		}
+		else if (i >= 384 && i < 768)
+		{
+			metadata.bank = Bank::B;
+			metadata.channel = i - 384;
+			metadata.status = ElectrodeStatus::DISCONNECTED;
+		}
+		else
+		{
+			metadata.bank = Bank::C;
+			metadata.channel = i - 768;
+			metadata.status = ElectrodeStatus::DISCONNECTED;
+		}
+
+		if (i == 191 || i == 575 || i == 959)
+		{
+			metadata.type = ElectrodeType::REFERENCE;
+		}
+		else
+		{
+			metadata.type = ElectrodeType::ELECTRODE;
+		}
+
+		settings.probeMetadata.electrodeMetadata.add(metadata);
+	}
+
+	// NB: Copy metadata to settings struct for use in the canvas
+	settings.probeType = settings.probeMetadata.type;
+	settings.availableBanks = settings.probeMetadata.availableBanks;
+
+	settings.apGainIndex = 3;
+	settings.lfpGainIndex = 2;
+	settings.referenceIndex = 0;
+	settings.apFilterState = true;
+
+
+	for (int i = 0; i < numberOfChannels; i++)
+	{
+		settings.selectedBank.add(Bank::A);
+		settings.selectedChannel.add(i);
+		settings.selectedShank.add(0);
+		settings.selectedElectrode.add(i);
+	}
+
+	settings.availableApGains.add(50.0f);
+	settings.availableApGains.add(125.0f);
+	settings.availableApGains.add(250.0f);
+	settings.availableApGains.add(500.0f);
+	settings.availableApGains.add(1000.0f);
+	settings.availableApGains.add(1500.0f);
+	settings.availableApGains.add(2000.0f);
+	settings.availableApGains.add(3000.0f);
+
+	settings.availableLfpGains.add(50.0f);
+	settings.availableLfpGains.add(125.0f);
+	settings.availableLfpGains.add(250.0f);
+	settings.availableLfpGains.add(500.0f);
+	settings.availableLfpGains.add(1000.0f);
+	settings.availableLfpGains.add(1500.0f);
+	settings.availableLfpGains.add(2000.0f);
+	settings.availableLfpGains.add(3000.0f);
+
+	settings.availableReferences.add("Ext");
+	settings.availableReferences.add("Tip");
+
+	settings.availableElectrodeConfigurations.add("Bank A");
+	settings.availableElectrodeConfigurations.add("Bank B");
+	settings.availableElectrodeConfigurations.add("Bank C");
+	settings.availableElectrodeConfigurations.add("Single column");
+	settings.availableElectrodeConfigurations.add("Tetrodes");
 }

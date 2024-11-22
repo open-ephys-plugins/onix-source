@@ -23,8 +23,6 @@
 
 #include "OnixDevice.h"
 
-using namespace Onix;
-
 OnixDevice::OnixDevice(String name, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 	: Thread(name), type(type_), deviceIdx(deviceIdx_), ctx(ctx_)
 {

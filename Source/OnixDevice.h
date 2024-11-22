@@ -34,88 +34,88 @@
 #include <oni.h>
 
 #include "I2CRegisterContext.h"
+#include "NeuropixComponents.h"
 
 using namespace std::chrono;
 
-namespace Onix
+enum PortName
 {
-	enum PortName
-	{
-		PortA = 1,
-		PortB = 2
-	};
+	PortA = 1,
+	PortB = 2
+};
 
-	enum OnixDeviceType {
-		HS64,
-		BNO,
-		NEUROPIXELS_1,
-		NEUROPIXELS_2,
-		ADC
-	};
+enum OnixDeviceType {
+	HS64,
+	BNO,
+	NEUROPIXELS_1,
+	NEUROPIXELS_2,
+	ADC
+};
 
-	struct StreamInfo {
-		String name;
-		String description;
-		String identifier;
-		int numChannels;
-		float sampleRate;
-		String channelPrefix;
-		ContinuousChannel::Type channelType;
-		float bitVolts;
-	};
+struct StreamInfo {
+	String name;
+	String description;
+	String identifier;
+	int numChannels;
+	float sampleRate;
+	String channelPrefix;
+	ContinuousChannel::Type channelType;
+	float bitVolts;
+};
 
-	/**
+/**
 
-		Streams data from an ONIX device
+	Streams data from an ONIX device
 
-	*/
-	class OnixDevice : public Thread
-	{
-	public:
+*/
+class OnixDevice : public Thread
+{
+public:
 
-		/** Constructor */
-		OnixDevice(String name, OnixDeviceType type, const oni_dev_idx_t, const oni_ctx);
+	/** Constructor */
+	OnixDevice(String name, OnixDeviceType type, const oni_dev_idx_t, const oni_ctx);
 
-		/** Destructor */
-		~OnixDevice() { }
+	/** Destructor */
+	~OnixDevice() { }
 
-		virtual void addFrame(oni_frame_t*) = 0;
+	virtual void addFrame(oni_frame_t*) = 0;
 
-		const String getName() { return name; }
+	const String getName() { return name; }
 
-		virtual int enableDevice() = 0;
+	virtual int enableDevice() = 0;
 
-		virtual void startAcquisition() = 0;
+	virtual void startAcquisition() = 0;
 
-		virtual void stopAcquisition() = 0;
+	virtual void stopAcquisition() = 0;
 
-		const oni_dev_idx_t getDeviceIdx() const { return deviceIdx; }
+	const oni_dev_idx_t getDeviceIdx() const { return deviceIdx; }
 
-		OnixDeviceType type;
+	OnixDeviceType type;
 
-		/** Holds incoming data */
-		DataBuffer* deviceBuffer;
+	/** Holds incoming data */
+	DataBuffer* deviceBuffer;
 
-		Array<StreamInfo> streams;
+	Array<StreamInfo> streams;
 
-		int checkLinkState(oni_dev_idx_t port);
+	ProbeSettings settings;
 
-	protected:
+	int checkLinkState(oni_dev_idx_t port);
 
-		const oni_dev_idx_t deviceIdx;
-		const oni_ctx ctx;
+protected:
 
-	private:
+	const oni_dev_idx_t deviceIdx;
+	const oni_ctx ctx;
 
-		std::vector<float>* data;
-		int availableSamples;
-		int samplesPerBuffer;
+private:
 
-		int64 numSamples;
-		uint64 eventCode;
+	std::vector<float>* data;
+	int availableSamples;
+	int samplesPerBuffer;
 
-		String name;
-	};
-}
+	int64 numSamples;
+	uint64 eventCode;
+
+	String name;
+};
 
 #endif

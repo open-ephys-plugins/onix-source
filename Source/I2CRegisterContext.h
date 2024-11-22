@@ -30,25 +30,22 @@
 
 #include <cstddef>
 
-namespace Onix
+class I2CRegisterContext
 {
-	class I2CRegisterContext
-	{
-	public:
+public:
 
-		I2CRegisterContext(uint32_t address, const oni_dev_idx_t, const oni_ctx);
+	I2CRegisterContext(uint32_t address, const oni_dev_idx_t, const oni_ctx);
 
-		int WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
+	int WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
 
-		int ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
+	int ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
 
-	private:
+private:
 
-		const oni_ctx context;
-		const oni_dev_idx_t deviceIndex;
+	const oni_ctx context;
+	const oni_dev_idx_t deviceIndex;
 
-		const uint32_t i2caddress;
-	};
-}
+	const uint32_t i2caddress;
+};
 
 #endif // !__I2CRegisterContext_H__

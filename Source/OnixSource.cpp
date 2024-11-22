@@ -25,9 +25,6 @@
 
 #include "OnixSourceEditor.h"
 
-
-using namespace Onix;
-
 OnixSource::OnixSource(SourceNode* sn) :
 	DataThread(sn),
 	ctx(NULL),
@@ -194,7 +191,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			sources.add(np1);
 
-			for (auto streamInfo : np1->streams)
+			for (StreamInfo streamInfo : np1->streams)
 			{
 				sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
 
@@ -218,7 +215,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				continue;
 			}
 
-			for (auto streamInfo : bno->streams)
+			for (StreamInfo streamInfo : bno->streams)
 			{
 				sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
 
@@ -265,7 +262,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				npxProbeIdx += np2->getNumProbes();
 
 				int bufferIdx = 0;
-				for (auto streamInfo : np2->streams)
+				for (StreamInfo streamInfo : np2->streams)
 				{
 					sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
 					np2->apBuffer[bufferIdx++] = sourceBuffers.getLast();
@@ -281,6 +278,18 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	if (updateStreamInfo) CoreServices::updateSignalChain(ed);
 
 	LOGD("All devices initialized.");
+}
+
+Array<OnixDevice*> OnixSource::getDataSources()
+{
+	Array<OnixDevice*> devices;
+
+	for (auto source : sources)
+	{
+		devices.add(source);
+	}
+
+	return devices;
 }
 
 bool OnixSource::setPortVoltage(oni_dev_idx_t port, int voltage)
@@ -363,7 +372,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 			}
 
 			// add data streams and channels
-			for (auto streamInfo : source->streams)
+			for (StreamInfo streamInfo : source->streams)
 			{
 				DataStream::Settings apStreamSettings
 				{

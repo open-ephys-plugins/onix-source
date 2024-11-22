@@ -1,9 +1,6 @@
 #include "Neuropixels2e.h"
 #include "DS90UB9x.h"
 
-
-using namespace Onix;
-
 #define ONI_OK(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));}} 
 
 Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)

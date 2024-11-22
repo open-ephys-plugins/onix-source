@@ -24,8 +24,6 @@
 #include "I2CRegisterContext.h"
 #include <iostream>
 
-using namespace Onix;
-
 I2CRegisterContext::I2CRegisterContext(uint32_t address_, const oni_dev_idx_t devIdx_, const oni_ctx ctx_)
 	: deviceIndex(devIdx_), context(ctx_), i2caddress(address_)
 {

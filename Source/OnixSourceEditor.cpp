@@ -22,24 +22,23 @@
 */
 
 #include "OnixSourceEditor.h"
-
-using namespace Onix;
+#include "OnixSourceCanvas.h"
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* onixSource)
-	: GenericEditor(parentNode), thread(onixSource)
+	: VisualizerEditor(parentNode, "Onix Source"), thread(onixSource)
 {
 	desiredWidth = 200;
 
 	portVoltageLabel = std::make_unique<Label>("Voltage", "PORT VOLTAGE [V]");
 	portVoltageLabel->setBounds(5, 20, 75, 20);
-	portVoltageLabel->setFont(Font("Small Text", 11, Font::plain));
+	portVoltageLabel->setFont(FontOptions("Small Text", 11, Font::plain));
 	portVoltageLabel->setColour(Label::textColourId, Colours::black);
 	addAndMakeVisible(portVoltageLabel.get());
 
 	portVoltage = 5.0f;
 	portVoltageValue = std::make_unique<Label>("VoltageValue", String(portVoltage));
 	portVoltageValue->setBounds(10, 38, 30, 13);
-	portVoltageValue->setFont(Font("Small Text", 11, Font::plain));
+	portVoltageValue->setFont(FontOptions("Small Text", 11, Font::plain));
 	portVoltageValue->setEditable(true);
 	portVoltageValue->setColour(Label::textColourId, Colours::black);
 	portVoltageValue->setColour(Label::backgroundColourId, Colours::lightgrey);
@@ -179,4 +178,38 @@ void OnixSourceEditor::stopAcquisition()
 
 	chooseGainCalibrationFileButton->setEnabled(true);
 	chooseGainCalibrationFileButton->setAlpha(1.0f);
+}
+
+Visualizer* OnixSourceEditor::createNewCanvas(void)
+{
+	GenericProcessor* processor = (GenericProcessor*)getProcessor();
+	canvas = new OnixSourceCanvas(processor, this, thread);
+
+	if (acquisitionIsActive)
+	{
+		canvas->startAcquisition();
+	}
+
+	return canvas;
+}
+
+void OnixSourceEditor::resetCanvas()
+{
+	if (canvas != nullptr)
+	{
+		VisualizerEditor::canvas.reset();
+
+		if (isOpenInTab)
+		{
+			removeTab();
+			addTab();
+		}
+		else
+		{
+			checkForCanvas();
+
+			if (dataWindow != nullptr)
+				dataWindow->setContentNonOwned(VisualizerEditor::canvas.get(), false);
+		}
+	}
 }

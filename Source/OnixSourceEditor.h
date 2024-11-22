@@ -24,9 +24,13 @@
 #ifndef __OnixSourceEditor_H__
 #define __OnixSourceEditor_H__
 
-#include <EditorHeaders.h>
+#include <VisualizerEditorHeaders.h>
 
 #include "OnixSource.h"
+#include "OnixSourceCanvas.h"
+#include "NeuropixComponents.h"
+
+class OnixSource;
 
 /** 
 
@@ -34,64 +38,70 @@
 	number of channels per stream.
 
 */
-namespace Onix
+class OnixSourceEditor : public VisualizerEditor,
+    public Label::Listener,
+    public Button::Listener,
+    public TextEditor::Listener
 {
-    class OnixSource;
+public:
 
-    class OnixSourceEditor : public GenericEditor,
-        public Label::Listener,
-        public Button::Listener,
-        public TextEditor::Listener
-    {
-    public:
+    /** Constructor */
+    OnixSourceEditor(GenericProcessor* parentNode, OnixSource* thread);
 
-        /** Constructor */
-        OnixSourceEditor(GenericProcessor* parentNode, OnixSource* thread);
+    /** Destructor */
+    virtual ~OnixSourceEditor() { }
 
-        /** Destructor */
-        virtual ~OnixSourceEditor() { }
+    /** Listener methods */
+    void labelTextChanged(Label* l);
 
-        /** Listener methods */
-        void labelTextChanged(Label* l);
+    void buttonClicked(Button* b);
 
-        void buttonClicked(Button* b);
+    /** Called when settings are changed */
+    void updateSettings() override;
 
-        /** Called when settings are changed */
-        void updateSettings() override;
+    /** Called at start of acquisition */
+    void startAcquisition() override;
 
-        /** Called at start of acquisition */
-        void startAcquisition() override;
+    /** Called when acquisition finishes */
+    void stopAcquisition() override;
 
-        /** Called when acquisition finishes */
-        void stopAcquisition() override;
+    /** Creates the Onix Source settings interface*/
+    Visualizer* createNewCanvas(void) override;
 
-        float portVoltage;
+    void checkCanvas() { checkForCanvas(); };
 
-        std::unique_ptr<TextEditor> adcCalibrationFile;
-        std::unique_ptr<TextEditor> gainCalibrationFile;
+    void resetCanvas();
 
-    private:
+    float portVoltage;
 
-        OnixSource* thread;
+    std::unique_ptr<TextEditor> adcCalibrationFile;
+    std::unique_ptr<TextEditor> gainCalibrationFile;
 
-        std::unique_ptr<Label> portVoltageLabel;
-        std::unique_ptr<Label> portVoltageValue;
+    OnixSourceCanvas* canvas;
 
-        std::unique_ptr<Label> adcCalibrationLabel;
-        std::unique_ptr<Label> gainCalibrationLabel;
+private:
 
-        std::unique_ptr<UtilityButton> chooseAdcCalibrationFileButton;
-        std::unique_ptr<UtilityButton> chooseGainCalibrationFileButton;
+    OnixSource* thread;
 
-        std::unique_ptr<FileChooser> adcCalibrationFileChooser;
-        std::unique_ptr<FileChooser> gainCalibrationFileChooser;
+    std::unique_ptr<Label> portVoltageLabel;
+    std::unique_ptr<Label> portVoltageValue;
 
-        std::unique_ptr<UtilityButton> portVoltageOverrideButton;
+    std::unique_ptr<Label> adcCalibrationLabel;
+    std::unique_ptr<Label> gainCalibrationLabel;
 
-        std::unique_ptr<UtilityButton> rescanButton;
+    std::unique_ptr<UtilityButton> chooseAdcCalibrationFileButton;
+    std::unique_ptr<UtilityButton> chooseGainCalibrationFileButton;
+
+    std::unique_ptr<FileChooser> adcCalibrationFileChooser;
+    std::unique_ptr<FileChooser> gainCalibrationFileChooser;
+
+    std::unique_ptr<UtilityButton> portVoltageOverrideButton;
+
+    std::unique_ptr<UtilityButton> rescanButton;
+
+    Viewport* viewport;
        
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
-    };
-}
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
+};
 
 #endif // __OnixSourceEditor_H__

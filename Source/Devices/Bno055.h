@@ -26,63 +26,60 @@
 
 #include "../OnixDevice.h"
 
-namespace Onix
+enum Bno055Registers
 {
-	enum Bno055Registers
-	{
-		ENABLE = 0x00
-	};
+	ENABLE = 0x00
+};
 
-	const int numFrames = 1;
+const int numFrames = 1;
 
-	class Bno055 : public OnixDevice
-	{
-	public:
+class Bno055 : public OnixDevice
+{
+public:
 
-		/** Constructor */
-		Bno055(String name, const oni_dev_idx_t, const oni_ctx);
+	/** Constructor */
+	Bno055(String name, const oni_dev_idx_t, const oni_ctx);
 
-		/** Destructor */
-		~Bno055();
+	/** Destructor */
+	~Bno055();
 
-		int enableDevice() override;
+	int enableDevice() override;
 
-		/** Starts probe data streaming */
-		void startAcquisition() override;
+	/** Starts probe data streaming */
+	void startAcquisition() override;
 
-		/** Stops probe data streaming*/
-		void stopAcquisition() override;
+	/** Stops probe data streaming*/
+	void stopAcquisition() override;
 
-		void addFrame(oni_frame_t*) override;
+	void addFrame(oni_frame_t*) override;
 
-		DataBuffer* eulerBuffer = deviceBuffer;
-		DataBuffer* quaternionBuffer;
-		DataBuffer* accelerationBuffer;
-		DataBuffer* gravityBuffer;
-		DataBuffer* temperatureBuffer;
+	DataBuffer* eulerBuffer = deviceBuffer;
+	DataBuffer* quaternionBuffer;
+	DataBuffer* accelerationBuffer;
+	DataBuffer* gravityBuffer;
+	DataBuffer* temperatureBuffer;
 
-	private:
+private:
 
-		/** Updates buffer during acquisition */
-		void run() override;
+	/** Updates buffer during acquisition */
+	void run() override;
 
-		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
+	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
-		bool shouldAddToBuffer = false;
+	bool shouldAddToBuffer = false;
 
-		float eulerSamples[3 * numFrames];
-		float quaternionSamples[4 * numFrames];
-		float accelerationSamples[3 * numFrames];
-		float gravitySamples[3 * numFrames];
-		float temperatureSamples[numFrames];
+	float eulerSamples[3 * numFrames];
+	float quaternionSamples[4 * numFrames];
+	float accelerationSamples[3 * numFrames];
+	float gravitySamples[3 * numFrames];
+	float temperatureSamples[numFrames];
 
-		double bnoTimestamps[numFrames];
-		int64 sampleNumbers[numFrames];
-		uint64 eventCodes[numFrames];
+	double bnoTimestamps[numFrames];
+	int64 sampleNumbers[numFrames];
+	uint64 eventCodes[numFrames];
 
-		unsigned short currentFrame = 0;
-		int sampleNumber = 0;
-	};
-}
+	unsigned short currentFrame = 0;
+	int sampleNumber = 0;
+};
 
 #endif
