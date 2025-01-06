@@ -118,12 +118,6 @@ public:
 	/** Called when the basestation is created or refreshed */
 	void populateSourceTabs(CustomTabComponent* basestationTab, int& topLevelTabNumber);
 
-	/** Stores probe settings (for copying) */
-	void storeProbeSettings(ProbeSettings p);
-
-	/** Gets the most recent probe settings (for copying) */
-	ProbeSettings getProbeSettings();
-
 	/** Saves custom UI settings */
 	void saveCustomParametersToXml(XmlElement* xml) override;
 
@@ -136,8 +130,6 @@ public:
 	OwnedArray<SettingsInterface> settingsInterfaces;
 
 private:
-
-	ProbeSettings savedSettings;
 
 	Array<OnixDevice*> dataSources;
 

@@ -21,7 +21,6 @@
 
 */
 
-
 #ifndef __OnixSource_H__
 #define __OnixSource_H__
 
@@ -87,7 +86,7 @@ public:
 	/** Stops data transfer.*/
 	bool stopAcquisition();
 
-	bool setPortVoltage(oni_dev_idx_t port, int voltage);
+	bool setPortVoltage(oni_dev_idx_t port, int voltage) const;
 
 	void initializeContext();
 
@@ -109,7 +108,7 @@ private:
 	OwnedArray<OnixDevice> sources;
 
 	/** Pointer to the editor */
-	OnixSourceEditor* ed;
+	OnixSourceEditor* editor;
 
 	/** The ONI context object */
 	oni_ctx ctx;

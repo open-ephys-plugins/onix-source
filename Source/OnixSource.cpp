@@ -22,22 +22,18 @@
 */
 
 #include "OnixSource.h"
-
 #include "OnixSourceEditor.h"
 
 OnixSource::OnixSource(SourceNode* sn) :
 	DataThread(sn),
 	ctx(NULL),
 	devicesFound(false),
-	ed(NULL)
+	editor(NULL)
 {
-
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "is_passthrough_A", "Passthrough Mode", "Enables passthrough mode for e-variant headstages", false, true);
 
 	LOGD("ONIX Source creating ONI context.");
-
 	ctx = oni_create_ctx("riffa"); // "riffa" is the PCIe driver name
-
 	if (ctx == NULL) { LOGE("Failed to create context."); return; }
 
 	// Initialize context and discover hardware
@@ -45,7 +41,7 @@ OnixSource::OnixSource(SourceNode* sn) :
 
 	if (!contextInitialized) { LOGE("Failed to initialize context."); return; }
 
-	setPortVoltage((oni_dev_idx_t)PortName::PortA, 5.0);
+	setPortVoltage((oni_dev_idx_t)PortName::PortB, 5.0);
 	initializeDevices();
 
 	if (!devicesFound) { return; }
@@ -72,7 +68,7 @@ DataThread* OnixSource::createDataThread(SourceNode* sn)
 std::unique_ptr<GenericEditor> OnixSource::createEditor(SourceNode* sn)
 {
 	std::unique_ptr<OnixSourceEditor> e = std::make_unique<OnixSourceEditor>(sn, this);
-	ed = e.get();
+	editor = e.get();
 
 	return e;
 }
@@ -80,6 +76,13 @@ std::unique_ptr<GenericEditor> OnixSource::createEditor(SourceNode* sn)
 void OnixSource::initializeContext()
 {
 	if (contextInitialized) { LOGD("Context is already initialized."); return; }
+
+	if (ctx == NULL) 
+	{
+		LOGD("ONIX Source creating ONI context.");
+		ctx = oni_create_ctx("riffa"); // "riffa" is the PCIe driver name
+		if (ctx == NULL) { LOGE("Failed to create context."); return; }
+	}
 
 	int errorCode = oni_init_ctx(ctx, 0);
 
@@ -166,7 +169,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
 		{
-			Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]), ed->portVoltage, ed->adcCalibrationFile->getText(), ed->gainCalibrationFile->getText(), devices[dev_idx].idx, ctx);
+			Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]), editor->portVoltage, editor->adcCalibrationFile->getText(), editor->gainCalibrationFile->getText(), devices[dev_idx].idx, ctx);
 
 			int res = np1->enableDevice();
 
@@ -275,7 +278,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	val = 1;
 	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 
-	if (updateStreamInfo) CoreServices::updateSignalChain(ed);
+	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 
 	LOGD("All devices initialized.");
 }
@@ -292,7 +295,7 @@ Array<OnixDevice*> OnixSource::getDataSources()
 	return devices;
 }
 
-bool OnixSource::setPortVoltage(oni_dev_idx_t port, int voltage)
+bool OnixSource::setPortVoltage(oni_dev_idx_t port, int voltage) const
 {
 	if (!contextInitialized) return false;
 
@@ -416,8 +419,8 @@ bool OnixSource::isReady()
 	if (!devicesFound)
 		return false;
 
-	File adcFile = File(ed->adcCalibrationFile->getText());
-	File gainFile = File(ed->gainCalibrationFile->getText());
+	File adcFile = File(editor->adcCalibrationFile->getText());
+	File gainFile = File(editor->gainCalibrationFile->getText());
 
 	if (!adcFile.existsAsFile() || !gainFile.existsAsFile())
 	{

@@ -32,6 +32,7 @@
 #include <thread>
 
 #include <oni.h>
+#include <onix.h>
 
 #include "I2CRegisterContext.h"
 #include "NeuropixComponents.h"
@@ -73,7 +74,7 @@ class OnixDevice : public Thread
 public:
 
 	/** Constructor */
-	OnixDevice(String name, OnixDeviceType type, const oni_dev_idx_t, const oni_ctx);
+	OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t, const oni_ctx);
 
 	/** Destructor */
 	~OnixDevice() { }
@@ -81,6 +82,10 @@ public:
 	virtual void addFrame(oni_frame_t*) = 0;
 
 	const String getName() { return name; }
+
+	bool isEnabled() const { return enabled; }
+
+	void setEnabled(bool newState) { enabled = newState; }
 
 	virtual int enableDevice() = 0;
 
@@ -96,8 +101,6 @@ public:
 	DataBuffer* deviceBuffer;
 
 	Array<StreamInfo> streams;
-
-	ProbeSettings settings;
 
 	int checkLinkState(oni_dev_idx_t port);
 
@@ -116,6 +119,8 @@ private:
 	uint64 eventCode;
 
 	String name;
+
+	bool enabled = true;
 };
 
 #endif

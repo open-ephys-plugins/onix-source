@@ -53,9 +53,9 @@ ProbeBrowser::ProbeBrowser(NeuropixV1Interface* parent_) : parent(parent_)
 	zoomOffset = 50;
 	int defaultZoomHeight = 100;
 
-	shankPath = Path(parent->device->settings.probeMetadata.shankOutline);
+	ProbeMetadata probeMetadata = parent->device->settings.probeMetadata;
 
-	if (parent->probeMetadata.columns_per_shank == 8)
+	if (probeMetadata.columns_per_shank == 8)
 	{
 		maxZoomHeight = 450;
 		minZoomHeight = 300;
@@ -63,7 +63,7 @@ ProbeBrowser::ProbeBrowser(NeuropixV1Interface* parent_) : parent(parent_)
 		pixelHeight = 10;
 		zoomOffset = 0;
 	}
-	else if (parent->probeMetadata.columns_per_shank > 8)
+	else if (probeMetadata.columns_per_shank > 8)
 	{
 		maxZoomHeight = 520;
 		minZoomHeight = 520;
@@ -72,33 +72,33 @@ ProbeBrowser::ProbeBrowser(NeuropixV1Interface* parent_) : parent(parent_)
 		zoomOffset = 0;
 	}
 
-	if (parent->probeMetadata.rows_per_shank > 650)
+	if (probeMetadata.rows_per_shank > 650)
 	{
 		maxZoomHeight = 60;
 		minZoomHeight = 10;
 		defaultZoomHeight = 30;
 	}
 
-	if (parent->probeMetadata.rows_per_shank > 1400)
+	if (probeMetadata.rows_per_shank > 1400)
 	{
 		maxZoomHeight = 30;
 		minZoomHeight = 5;
 		defaultZoomHeight = 20;
 	}
 
-	if (parent->probeMetadata.shank_count == 4)
+	if (probeMetadata.shank_count == 4)
 	{
 		defaultZoomHeight = 80;
 	}
 
 	// ALSO CONFIGURE CHANNEL JUMP
-	if (parent->probeMetadata.electrodes_per_shank < 500)
+	if (probeMetadata.electrodes_per_shank < 500)
 		channelLabelSkip = 50;
-	else if (parent->probeMetadata.electrodes_per_shank >= 500
-		&& parent->probeMetadata.electrodes_per_shank < 1500)
+	else if (probeMetadata.electrodes_per_shank >= 500
+		&& probeMetadata.electrodes_per_shank < 1500)
 		channelLabelSkip = 100;
-	else if (parent->probeMetadata.electrodes_per_shank >= 1500
-		&& parent->probeMetadata.electrodes_per_shank < 3000)
+	else if (probeMetadata.electrodes_per_shank >= 1500
+		&& probeMetadata.electrodes_per_shank < 3000)
 		channelLabelSkip = 200;
 	else
 		channelLabelSkip = 500;
@@ -138,8 +138,8 @@ void ProbeBrowser::mouseMove(const MouseEvent& event)
 	bool isOverLowerBorderNew = false;
 
 	// check for move into zoom region
-	if ((y > lowerBound - zoomOffset - zoomHeight - dragZoneWidth / 2)
-		&& (y < lowerBound - zoomOffset + dragZoneWidth / 2)
+	if ((y > lowerBound - zoomOffset - zoomHeight - dragZoneWidth / 2.0f)
+		&& (y < lowerBound - zoomOffset + dragZoneWidth / 2.0f)
 		&& (x > 9)
 		&& (x < 54 + shankOffset))
 	{
@@ -153,13 +153,13 @@ void ProbeBrowser::mouseMove(const MouseEvent& event)
 	// check for move over upper border or lower border
 	if (isOverZoomRegionNew)
 	{
-		if (y > lowerBound - zoomHeight - zoomOffset - dragZoneWidth / 2
-			&& y < lowerBound - zoomHeight - zoomOffset + dragZoneWidth / 2)
+		if (y > lowerBound - zoomHeight - zoomOffset - dragZoneWidth / 2.0f
+			&& y < lowerBound - zoomHeight - zoomOffset + dragZoneWidth / 2.0f)
 		{
 			isOverUpperBorderNew = true;
 		}
-		else if (y > lowerBound - zoomOffset - dragZoneWidth / 2
-			&& y < lowerBound - zoomOffset + dragZoneWidth / 2)
+		else if (y > lowerBound - zoomOffset - dragZoneWidth / 2.0f
+			&& y < lowerBound - zoomOffset + dragZoneWidth / 2.0f)
 		{
 			isOverLowerBorderNew = true;
 		}
@@ -222,17 +222,19 @@ void ProbeBrowser::mouseMove(const MouseEvent& event)
 	}
 }
 
-int ProbeBrowser::getNearestElectrode(int x, int y)
+int ProbeBrowser::getNearestElectrode(int x, int y) const
 {
+	ProbeMetadata probeMetadata = parent->device->settings.probeMetadata;
+
 	int row = (lowerBound - y) / electrodeHeight + zoomAreaMinRow + 1;
 
-	int shankWidth = electrodeHeight * parent->probeMetadata.columns_per_shank;
-	int totalWidth = shankWidth * parent->probeMetadata.shank_count + shankWidth * (parent->probeMetadata.shank_count - 1);
+	int shankWidth = electrodeHeight * probeMetadata.columns_per_shank;
+	int totalWidth = shankWidth * probeMetadata.shank_count + shankWidth * (probeMetadata.shank_count - 1);
 
 	int shank = 0;
 	int column = -1;
 
-	for (shank = 0; shank < parent->probeMetadata.shank_count; shank++)
+	for (shank = 0; shank < probeMetadata.shank_count; shank++)
 	{
 		int leftEdge = 220 + shankOffset - totalWidth / 2 + shankWidth * 2 * shank;
 		int rightEdge = leftEdge + shankWidth;
@@ -244,11 +246,13 @@ int ProbeBrowser::getNearestElectrode(int x, int y)
 		}
 	}
 
-	for (int i = 0; i < parent->electrodeMetadata.size(); i++)
+	Array<ElectrodeMetadata> electrodeMetadata = parent->device->settings.electrodeMetadata;
+
+	for (int i = 0; i < electrodeMetadata.size(); i++)
 	{
-		if ((parent->electrodeMetadata[i].row_index == row)
-			&& (parent->electrodeMetadata[i].column_index == column)
-			&& (parent->electrodeMetadata[i].shank == shank))
+		if ((electrodeMetadata[i].row_index == row)
+			&& (electrodeMetadata[i].column_index == column)
+			&& (electrodeMetadata[i].shank == shank))
 		{
 			return i;
 		}
@@ -257,20 +261,22 @@ int ProbeBrowser::getNearestElectrode(int x, int y)
 	return -1;
 }
 
-Array<int> ProbeBrowser::getElectrodesWithinBounds(int x, int y, int w, int h)
+Array<int> ProbeBrowser::getElectrodesWithinBounds(int x, int y, int w, int h) const
 {
+	ProbeMetadata probeMetadata = parent->device->settings.probeMetadata;
+
 	int startrow = (lowerBound - y - h) / electrodeHeight + zoomAreaMinRow + 1;
 	int endrow = (lowerBound - y) / electrodeHeight + zoomAreaMinRow + 1;
 
-	int shankWidth = electrodeHeight * parent->probeMetadata.columns_per_shank;
-	int totalWidth = shankWidth * parent->probeMetadata.shank_count + shankWidth * (parent->probeMetadata.shank_count - 1);
+	int shankWidth = electrodeHeight * probeMetadata.columns_per_shank;
+	int totalWidth = shankWidth * probeMetadata.shank_count + shankWidth * (probeMetadata.shank_count - 1);
 
 	Array<int> selectedColumns;
 
-	for (int i = 0; i < parent->probeMetadata.shank_count * parent->probeMetadata.columns_per_shank; i++)
+	for (int i = 0; i < probeMetadata.shank_count * probeMetadata.columns_per_shank; i++)
 	{
-		int shank = i / parent->probeMetadata.columns_per_shank;
-		int column = i % parent->probeMetadata.columns_per_shank;
+		int shank = i / probeMetadata.columns_per_shank;
+		int column = i % probeMetadata.columns_per_shank;
 
 		int l = leftEdge + shankWidth * 2 * shank + electrodeHeight * column;
 		int r = l + electrodeHeight / 2;
@@ -280,13 +286,14 @@ Array<int> ProbeBrowser::getElectrodesWithinBounds(int x, int y, int w, int h)
 	}
 
 	Array<int> inds;
+	Array<ElectrodeMetadata> electrodeMetadata = parent->device->settings.electrodeMetadata;
 
-	for (int i = 0; i < parent->electrodeMetadata.size(); i++)
+	for (int i = 0; i < electrodeMetadata.size(); i++)
 	{
-		if ((parent->electrodeMetadata[i].row_index >= startrow) && (parent->electrodeMetadata[i].row_index <= endrow))
+		if ((electrodeMetadata[i].row_index >= startrow) && (electrodeMetadata[i].row_index <= endrow))
 
 		{
-			int column_id = parent->electrodeMetadata[i].shank * parent->probeMetadata.columns_per_shank + parent->electrodeMetadata[i].column_index;
+			int column_id = electrodeMetadata[i].shank * probeMetadata.columns_per_shank + electrodeMetadata[i].column_index;
 
 			if (selectedColumns.indexOf(column_id) > -1)
 			{
@@ -300,13 +307,15 @@ Array<int> ProbeBrowser::getElectrodesWithinBounds(int x, int y, int w, int h)
 
 String ProbeBrowser::getElectrodeInfoString(int index)
 {
+	Array<ElectrodeMetadata> electrodeMetadata = parent->device->settings.electrodeMetadata;
+
 	String a;
 	a += "Electrode ";
-	a += String(parent->electrodeMetadata[index].global_index + 1);
+	a += String(electrodeMetadata[index].global_index + 1);
 
 	a += "\nBank ";
 
-	switch (parent->electrodeMetadata[index].bank)
+	switch (electrodeMetadata[index].bank)
 	{
 	case Bank::A:
 		a += "A";
@@ -352,14 +361,14 @@ String ProbeBrowser::getElectrodeInfoString(int index)
 	}
 
 	a += ", Channel ";
-	a += String(parent->electrodeMetadata[index].channel + 1);
+	a += String(electrodeMetadata[index].channel + 1);
 
 	a += "\nY Position: ";
-	a += String(parent->electrodeMetadata[index].ypos);
+	a += String(electrodeMetadata[index].ypos);
 
 	a += "\nType: ";
 
-	if (parent->electrodeMetadata[index].type == ElectrodeType::REFERENCE)
+	if (electrodeMetadata[index].type == ElectrodeType::REFERENCE)
 	{
 		a += "REFERENCE";
 	}
@@ -369,7 +378,7 @@ String ProbeBrowser::getElectrodeInfoString(int index)
 
 		a += "\nEnabled: ";
 
-		if (parent->electrodeMetadata[index].status == ElectrodeStatus::CONNECTED)
+		if (electrodeMetadata[index].status == ElectrodeStatus::CONNECTED)
 			a += "YES";
 		else
 			a += "NO";
@@ -409,6 +418,8 @@ void ProbeBrowser::mouseDown(const MouseEvent& event)
 {
 	initialOffset = zoomOffset;
 	initialHeight = zoomHeight;
+	
+	Array<ElectrodeMetadata> electrodeMetadata = parent->device->settings.electrodeMetadata;
 
 	if (!event.mods.isRightButtonDown())
 	{
@@ -416,17 +427,17 @@ void ProbeBrowser::mouseDown(const MouseEvent& event)
 		{
 			if (!event.mods.isShiftDown())
 			{
-				for (int i = 0; i < parent->electrodeMetadata.size(); i++)
-					parent->electrodeMetadata.getReference(i).isSelected = false;
+				for (int i = 0; i < electrodeMetadata.size(); i++)
+					electrodeMetadata.getReference(i).isSelected = false;
 			}
 
 			if (event.x > leftEdge && event.x < rightEdge)
 			{
 				int chan = getNearestElectrode(event.x, event.y);
 
-				if (chan >= 0 && chan < parent->electrodeMetadata.size())
+				if (chan >= 0 && chan < electrodeMetadata.size())
 				{
-					parent->electrodeMetadata.getReference(chan).isSelected = true;
+					electrodeMetadata.getReference(chan).isSelected = true;
 				}
 			}
 			repaint();
@@ -535,19 +546,20 @@ void ProbeBrowser::mouseDrag(const MouseEvent& event)
 		isSelectionActive = true;
 
 		Array<int> inBounds = getElectrodesWithinBounds(x, y, w, h);
+		Array<ElectrodeMetadata> electrodeMetadata = parent->device->settings.electrodeMetadata;
 
 		if (x < rightEdge)
 		{
-			for (int i = 0; i < parent->electrodeMetadata.size(); i++)
+			for (int i = 0; i < electrodeMetadata.size(); i++)
 			{
 				if (inBounds.indexOf(i) > -1)
 				{
-					parent->electrodeMetadata.getReference(i).isSelected = true;
+					electrodeMetadata.getReference(i).isSelected = true;
 				}
 				else
 				{
 					if (!event.mods.isShiftDown())
-						parent->electrodeMetadata.getReference(i).isSelected = false;
+						electrodeMetadata.getReference(i).isSelected = false;
 				}
 			}
 		}
@@ -605,27 +617,30 @@ void ProbeBrowser::paint(Graphics& g)
 	int channelSpan = SHANK_HEIGHT;
 	int pixelGap = 2;
 
-	if (parent->probeMetadata.columns_per_shank > 8)
+	ProbeMetadata probeMetadata = parent->device->settings.probeMetadata;
+	Array<ElectrodeMetadata> electrodeMetadata = parent->device->settings.electrodeMetadata;
+
+	if (probeMetadata.columns_per_shank > 8)
 	{
 		pixelGap = 1;
 	}
 
-	for (int i = 0; i < parent->electrodeMetadata.size(); i++)
+	for (int i = 0; i < electrodeMetadata.size(); i++)
 	{
 		g.setColour(getElectrodeColour(i).withAlpha(0.5f));
 
 		for (int px = 0; px < pixelHeight; px++)
 			g.fillRect(
 				LEFT_BORDER
-				+ parent->electrodeMetadata[i].column_index
+				+ electrodeMetadata[i].column_index
 				* pixelGap
-				+ parent->electrodeMetadata[i].shank
+				+ electrodeMetadata[i].shank
 				* INTERSHANK_DISTANCE,
 				TOP_BORDER
 				+ channelSpan
-				- int(float(parent->electrodeMetadata[i].row_index)
+				- int(float(electrodeMetadata[i].row_index)
 					* float(channelSpan)
-					/ float(parent->probeMetadata.rows_per_shank))
+					/ float(probeMetadata.rows_per_shank))
 				- px,
 				1,
 				1);
@@ -637,11 +652,11 @@ void ProbeBrowser::paint(Graphics& g)
 
 	int ch = 0;
 
-	int ch_interval = SHANK_HEIGHT * channelLabelSkip / parent->probeMetadata.electrodes_per_shank;
+	int ch_interval = SHANK_HEIGHT * channelLabelSkip / probeMetadata.electrodes_per_shank;
 
 	// draw mark for every N channels
 
-	shankOffset = INTERSHANK_DISTANCE * (parent->probeMetadata.shank_count - 1);
+	shankOffset = INTERSHANK_DISTANCE * (probeMetadata.shank_count - 1);
 	for (int i = TOP_BORDER + channelSpan; i > TOP_BORDER; i -= ch_interval)
 	{
 		g.drawLine(6, i, 18, i);
@@ -653,7 +668,7 @@ void ProbeBrowser::paint(Graphics& g)
 	// draw top channel
 	g.drawLine(6, TOP_BORDER, 18, TOP_BORDER);
 	g.drawLine(44 + shankOffset, TOP_BORDER, 54 + shankOffset, TOP_BORDER);
-	g.drawText(String(parent->probeMetadata.electrodes_per_shank),
+	g.drawText(String(probeMetadata.electrodes_per_shank),
 		59 + shankOffset,
 		TOP_BORDER - 6,
 		100,
@@ -664,22 +679,22 @@ void ProbeBrowser::paint(Graphics& g)
 	// draw shank outline
 	g.setColour(Colours::lightgrey);
 
-	for (int i = 0; i < parent->probeMetadata.shank_count; i++)
+	for (int i = 0; i < probeMetadata.shank_count; i++)
 	{
-		Path shankPath = parent->probeMetadata.shankOutline;
+		Path shankPath = probeMetadata.shankOutline;
 		shankPath.applyTransform(AffineTransform::translation(INTERSHANK_DISTANCE * i, 0.0f));
 		g.strokePath(shankPath, PathStrokeType(1.0));
 	}
 
 	// draw zoomed channels
-	float miniRowHeight = float(channelSpan) / float(parent->probeMetadata.rows_per_shank); // pixels per row
+	float miniRowHeight = float(channelSpan) / float(probeMetadata.rows_per_shank); // pixels per row
 
 	float lowestRow = (zoomOffset - 17) / miniRowHeight;
 	float highestRow = lowestRow + (zoomHeight / miniRowHeight);
 
 	zoomAreaMinRow = int(lowestRow);
 
-	if (parent->probeMetadata.columns_per_shank > 8)
+	if (probeMetadata.columns_per_shank > 8)
 	{
 		electrodeHeight = jmin(lowerBound / (highestRow - lowestRow), 12.0f);
 	}
@@ -688,17 +703,17 @@ void ProbeBrowser::paint(Graphics& g)
 		electrodeHeight = lowerBound / (highestRow - lowestRow);
 	}
 
-	for (int i = 0; i < parent->electrodeMetadata.size(); i++)
+	for (int i = 0; i < electrodeMetadata.size(); i++)
 	{
-		if (parent->electrodeMetadata[i].row_index >= int(lowestRow)
-			&& parent->electrodeMetadata[i].row_index < int(highestRow))
+		if (electrodeMetadata[i].row_index >= int(lowestRow)
+			&& electrodeMetadata[i].row_index < int(highestRow))
 		{
-			float xLoc = 220 + shankOffset - electrodeHeight * parent->probeMetadata.columns_per_shank / 2
-				+ electrodeHeight * parent->electrodeMetadata[i].column_index + parent->electrodeMetadata[i].shank * electrodeHeight * 4
-				- (parent->probeMetadata.shank_count / 2 * electrodeHeight * 3);
-			float yLoc = lowerBound - ((parent->electrodeMetadata[i].row_index - int(lowestRow)) * electrodeHeight);
+			float xLoc = 220 + shankOffset - electrodeHeight * probeMetadata.columns_per_shank / 2
+				+ electrodeHeight * electrodeMetadata[i].column_index + electrodeMetadata[i].shank * electrodeHeight * 4
+				- (probeMetadata.shank_count / 2.0f * electrodeHeight * 3);
+			float yLoc = lowerBound - ((electrodeMetadata[i].row_index - int(lowestRow)) * electrodeHeight);
 
-			if (parent->electrodeMetadata[i].isSelected)
+			if (electrodeMetadata[i].isSelected)
 			{
 				g.setColour(Colours::white);
 				g.fillRect(xLoc, yLoc, electrodeHeight, electrodeHeight);
@@ -731,8 +746,8 @@ void ProbeBrowser::paint(Graphics& g)
 	g.strokePath(lowerBorder, PathStrokeType(2.0));
 
 	// draw selection zone
-	int shankWidth = electrodeHeight * parent->probeMetadata.columns_per_shank;
-	int totalWidth = shankWidth * parent->probeMetadata.shank_count + shankWidth * (parent->probeMetadata.shank_count - 1);
+	int shankWidth = electrodeHeight * probeMetadata.columns_per_shank;
+	int totalWidth = shankWidth * probeMetadata.shank_count + shankWidth * (probeMetadata.shank_count - 1);
 
 	leftEdge = 220 + shankOffset - totalWidth / 2;
 	rightEdge = 220 + shankOffset + totalWidth / 2;
@@ -775,9 +790,9 @@ void ProbeBrowser::drawAnnotations(Graphics& g)
 			float xLoc = 225 + 30;
 			int ch = a.electrodes[0];
 
-			float midpoint = lowerBound / 2 + 8;
+			float midpoint = lowerBound / 2.0f + 8;
 
-			float yLoc = lowerBound - ((ch - lowestElectrode - (ch % 2)) / 2 * electrodeHeight) + 10;
+			float yLoc = lowerBound - ((ch - lowestElectrode - (ch % 2)) / 2.0f * electrodeHeight) + 10;
 
 			yLoc = (midpoint + 3 * yLoc) / 4;
 			a.currentYLoc = yLoc;
@@ -805,7 +820,7 @@ void ProbeBrowser::drawAnnotations(Graphics& g)
 			g.drawMultiLineText(a.text, xLoc + 2, yLoc, 150);
 
 			float xLoc2 = 225 - electrodeHeight * (1 - (ch % 2)) + electrodeHeight / 2;
-			float yLoc2 = lowerBound - ((ch - lowestElectrode - (ch % 2)) / 2 * electrodeHeight) + electrodeHeight / 2;
+			float yLoc2 = lowerBound - ((ch - lowestElectrode - (ch % 2)) / 2.0f * electrodeHeight) + electrodeHeight / 2;
 
 			g.drawLine(xLoc - 5, yLoc - 3, xLoc2, yLoc2);
 			g.drawLine(xLoc - 5, yLoc - 3, xLoc, yLoc - 3);
@@ -815,11 +830,13 @@ void ProbeBrowser::drawAnnotations(Graphics& g)
 
 Colour ProbeBrowser::getElectrodeColour(int i)
 {
-	if (parent->electrodeMetadata[i].status == ElectrodeStatus::DISCONNECTED) // not available
+	Array<ElectrodeMetadata> electrodeMetadata = parent->device->settings.electrodeMetadata;
+
+	if (electrodeMetadata[i].status == ElectrodeStatus::DISCONNECTED) // not available
 	{
-		return disconnectedColours[parent->electrodeMetadata[i].bank];
+		return disconnectedColours[electrodeMetadata[i].bank];
 	}
-	else if (parent->electrodeMetadata[i].type == ElectrodeType::REFERENCE)
+	else if (electrodeMetadata[i].type == ElectrodeType::REFERENCE)
 		return Colours::black;
 	else
 	{
@@ -855,9 +872,9 @@ Colour ProbeBrowser::getElectrodeColour(int i)
 		}
 		else if (parent->mode == VisualizationMode::ACTIVITY_VIEW)
 		{
-			if (parent->electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
+			if (electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
 			{
-				return parent->electrodeMetadata.getReference(i).colour;
+				return electrodeMetadata.getReference(i).colour;
 			}
 			else
 			{
@@ -871,12 +888,12 @@ void ProbeBrowser::timerCallback()
 {
 }
 
-int ProbeBrowser::getZoomHeight()
+int ProbeBrowser::getZoomHeight() const
 {
 	return zoomHeight;
 }
 
-int ProbeBrowser::getZoomOffset()
+int ProbeBrowser::getZoomOffset() const
 {
 	return zoomOffset;
 }

@@ -22,11 +22,12 @@
 */
 
 #include "OnixSourceEditor.h"
-#include "OnixSourceCanvas.h"
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* onixSource)
 	: VisualizerEditor(parentNode, "Onix Source"), thread(onixSource)
 {
+	canvas = nullptr;
+
 	desiredWidth = 200;
 
 	portVoltageLabel = std::make_unique<Label>("Voltage", "PORT VOLTAGE [V]");
@@ -96,7 +97,10 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 
 	gainCalibrationFileChooser = std::make_unique<FileChooser>("Select Gain Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_gainCalValues.csv");
 
-	addToggleParameterEditor(Parameter::PROCESSOR_SCOPE, "is_passthrough_A", 80, 95);
+	passthroughEditor = std::make_unique<ToggleParameterEditor>(onixSource->getParameter("is_passthrough_A"), 20, 95);
+	passthroughEditor->setLayout(ParameterEditor::nameOnTop);
+	passthroughEditor->setBounds(80, 90, 100, 36);
+	addAndMakeVisible(passthroughEditor.get());
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)
@@ -127,13 +131,9 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 
 void OnixSourceEditor::buttonClicked(Button* b)
 {
-	if (b == portVoltageOverrideButton.get())
+	if (b == rescanButton.get())
 	{
-		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
-	}
-	else if (b == rescanButton.get())
-	{
-		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
+		thread->setPortVoltage((oni_dev_idx_t)PortName::PortB, (int)(portVoltage * 10));
 		thread->initializeDevices(true);
 	}
 	else if (b == chooseAdcCalibrationFileButton.get())
@@ -154,6 +154,8 @@ void OnixSourceEditor::buttonClicked(Button* b)
 
 void OnixSourceEditor::updateSettings()
 {
+	if (canvas != nullptr)
+		canvas->update();
 }
 
 void OnixSourceEditor::startAcquisition()

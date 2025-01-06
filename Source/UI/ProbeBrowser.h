@@ -49,8 +49,8 @@ public:
 
     void drawAnnotations (Graphics& g);
 
-    int getZoomHeight();
-    int getZoomOffset();
+    int getZoomHeight() const;
+    int getZoomOffset() const;
 
     void setZoomHeightAndOffset (int, int);
 
@@ -88,15 +88,13 @@ private:
 
     float electrodeHeight;
 
-    Path shankPath;
-
     MouseCursor::StandardCursorType cursorType;
 
     String electrodeInfoString;
 
     Colour getElectrodeColour (int index);
-    int getNearestElectrode (int x, int y);
-    Array<int> getElectrodesWithinBounds (int x, int y, int w, int h);
+    int getNearestElectrode (int x, int y) const;
+    Array<int> getElectrodesWithinBounds (int x, int y, int w, int h) const;
     String getElectrodeInfoString (int index);
 
     NeuropixV1Interface* parent;

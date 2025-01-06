@@ -74,7 +74,7 @@ public:
 	friend class ProbeBrowser;
 
 	/** Constructor */
-	NeuropixV1Interface(OnixDevice* probe, OnixSourceEditor* editor, OnixSourceCanvas* canvas);
+	NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	/** Destructor */
 	~NeuropixV1Interface();
@@ -119,9 +119,6 @@ public:
 	Neuropixels_1* device;
 
 private:
-	Array<ElectrodeMetadata> electrodeMetadata;
-	ProbeMetadata probeMetadata;
-
 	XmlElement neuropix_info;
 
 	bool acquisitionIsActive = false;
@@ -181,33 +178,10 @@ private:
 
 	Array<Annotation> annotations;
 
-	Array<int> getSelectedElectrodes();
+	Array<int> getSelectedElectrodes() const;
 
 	Array<String> imroFiles;
 	Array<bool> imroLoadedFromFolder;
-};
-
-class AnnotationColourSelector : public Component, public Button::Listener
-{
-public:
-	AnnotationColourSelector(NeuropixV1Interface* np);
-	~AnnotationColourSelector();
-
-	Array<Colour> standardColours;
-	Array<Colour> hoverColours;
-	StringArray strings;
-
-	OwnedArray<ShapeButton> buttons;
-
-	void buttonClicked(Button* button);
-
-	void updateCurrentString(String s);
-
-	Colour getCurrentColour() const;
-
-	NeuropixV1Interface* npi;
-
-	int activeButton;
 };
 
 #endif //__NEUROPIXINTERFACE_H__

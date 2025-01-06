@@ -49,9 +49,9 @@ public:
 		Array<var> ax2 = { 0.0f, 1.0f };
 		Array<var> contact_plane_axis = { ax1, ax2 };
 
-		for (int elec = 0; elec < settings.probeMetadata.electrodeMetadata.size(); elec++)
+		for (int elec = 0; elec < settings.electrodeMetadata.size(); elec++)
 		{
-			ElectrodeMetadata& em = settings.probeMetadata.electrodeMetadata.getReference(elec);
+			ElectrodeMetadata& em = settings.electrodeMetadata.getReference(elec);
 			int channelIndex = settings.selectedElectrode.indexOf(elec);
 			int channel = -1;
 			if (channelIndex > -1)
@@ -62,7 +62,7 @@ public:
 			contact_position.add(em.ypos);
 
 			DynamicObject::Ptr contact_shape_param = new DynamicObject;
-			contact_shape_param->setProperty(Identifier("width"), settings.probeMetadata.electrodeMetadata.getReference(elec).site_width);
+			contact_shape_param->setProperty(Identifier("width"), settings.electrodeMetadata.getReference(elec).site_width);
 
 			contact_positions.add(contact_position);
 			shank_ids.add(String(em.shank));

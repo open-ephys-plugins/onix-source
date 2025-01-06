@@ -77,26 +77,21 @@ OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEdito
 
 	int topLevelTabNumber = 0;
 
-	for (int i = 0; i < 2; i++)
-	{
-		CustomTabComponent* portTab = new CustomTabComponent(editor, false);
+	CustomTabComponent* portTab = new CustomTabComponent(editor, false);
 
-		String name = i == 0 ? "Port A" : "Port B";
+	topLevelTabComponent->addTab("Devices", Colours::grey, portTab, true);
 
-		topLevelTabComponent->addTab(name, Colours::grey, portTab, true);
+	portTab->setTabBarDepth(26);
+	portTab->setIndent(0);
+	portTab->setOutline(0);
 
-		portTab->setTabBarDepth(26);
-		portTab->setIndent(0);
-		portTab->setOutline(0);
+	portTabs.add(portTab);
 
-		portTabs.add(portTab);
+	populateSourceTabs(portTab, topLevelTabNumber);
 
-		populateSourceTabs(portTab, topLevelTabNumber);
-	}
+	topLevelTabComponent->setCurrentTabIndex(0);
 
-	topLevelTabComponent->setCurrentTabIndex(topLevelTabNumber - 1);
-
-	savedSettings.probeType = ProbeType::NONE;
+	update();
 }
 
 void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab, int& topLevelTabNumber)
@@ -118,12 +113,13 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab, int& topL
 		}
 	}
 
+	// DEBUG - Only here for testing purposes, remove this once it is fully functional
 	if (availableDataSources.isEmpty() && DEBUG)
 	{
 		OnixDevice* source = new Neuropixels_1("test", 0.0f, "", "", NULL, NULL);
 		NeuropixV1Interface* neuropixInterface = new NeuropixV1Interface(source, editor, this);
 		settingsInterfaces.add((SettingsInterface*)neuropixInterface);
-		portTab->addTab("TEST", Colours::darkgrey, neuropixInterface->viewport.get(), false);
+		portTab->addTab(source->getName(), Colours::darkgrey, neuropixInterface->viewport.get(), false);
 
 		topLevelTabIndex.add(topLevelTabNumber);
 		portTabIndex.add(portTabNumber++);
@@ -188,7 +184,7 @@ void OnixSourceCanvas::startAcquisition()
 {
 	for (auto settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->settings.isEnabled)
+		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
 		{
 			settingsInterface->startAcquisition();
 		}
@@ -199,7 +195,7 @@ void OnixSourceCanvas::stopAcquisition()
 {
 	for (auto settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->settings.isEnabled)
+		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
 		{
 			settingsInterface->stopAcquisition();
 		}
@@ -215,16 +211,6 @@ void OnixSourceCanvas::setSelectedInterface(OnixDevice* dataSource)
 		topLevelTabComponent->setCurrentTabIndex(topLevelTabIndex[index], false);
 		portTabs[topLevelTabIndex[index]]->setCurrentTabIndex(portTabIndex[index], false);
 	}
-}
-
-void OnixSourceCanvas::storeProbeSettings(ProbeSettings p)
-{
-	savedSettings = p;
-}
-
-ProbeSettings OnixSourceCanvas::getProbeSettings()
-{
-	return savedSettings;
 }
 
 void OnixSourceCanvas::saveCustomParametersToXml(XmlElement* xml)

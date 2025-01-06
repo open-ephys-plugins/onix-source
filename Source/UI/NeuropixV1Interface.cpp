@@ -26,9 +26,9 @@
 
 #include "../Formats/ProbeInterface.h"
 
-NeuropixV1Interface::NeuropixV1Interface(OnixDevice* p, OnixSourceEditor* e, OnixSourceCanvas* c) :
-	SettingsInterface(p, e, c),
-	device((Neuropixels_1*)p),
+NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c) :
+	SettingsInterface(d, e, c),
+	device((Neuropixels_1*)d),
 	neuropix_info("INFO")
 {
 	ColourScheme::setColourScheme(ColourSchemeId::PLASMA);
@@ -36,12 +36,6 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* p, OnixSourceEditor* e, Oni
 	if (device != nullptr)
 	{
 		type = SettingsInterface::PROBE_SETTINGS_INTERFACE;
-
-		// make a local copy
-		electrodeMetadata = Array<ElectrodeMetadata>(device->settings.probeMetadata.electrodeMetadata);
-
-		// make a local copy
-		probeMetadata = device->settings.probeMetadata;
 
 		mode = VisualizationMode::ENABLE_VIEW;
 
@@ -56,7 +50,7 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* p, OnixSourceEditor* e, Oni
 		probeEnableButton->setRadius(3.0f);
 		probeEnableButton->setBounds(630, currentHeight + 25, 100, 22);
 		probeEnableButton->setClickingTogglesState(true);
-		probeEnableButton->setToggleState(device->settings.isEnabled, dontSendNotification);
+		probeEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
 		probeEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
 		probeEnableButton->addListener(this);
 		addAndMakeVisible(probeEnableButton.get());
@@ -436,9 +430,9 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 {
 	if (button == probeEnableButton.get())
 	{
-		device->settings.isEnabled = probeEnableButton->getToggleState();
+		device->setEnabled(probeEnableButton->getToggleState());
 
-		if (device->settings.isEnabled)
+		if (device->isEnabled())
 		{
 			probeEnableButton->setLabel("ENABLED");
 		}
@@ -522,25 +516,15 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 				CoreServices::sendStatusMessage("Successfully wrote probe channel map.");
 		}
 	}
-	else if (button == copyButton.get())
-	{
-		canvas->storeProbeSettings(getProbeSettings());
-		CoreServices::sendStatusMessage("Probe settings copied.");
-	}
-	else if (button == pasteButton.get())
-	{
-		applyProbeSettings(canvas->getProbeSettings());
-		CoreServices::updateSignalChain(editor);
-	}
 }
 
-Array<int> NeuropixV1Interface::getSelectedElectrodes()
+Array<int> NeuropixV1Interface::getSelectedElectrodes() const
 {
 	Array<int> electrodeIndices;
 
-	for (int i = 0; i < electrodeMetadata.size(); i++)
+	for (int i = 0; i < device->settings.electrodeMetadata.size(); i++)
 	{
-		if (electrodeMetadata[i].isSelected)
+		if (device->settings.electrodeMetadata[i].isSelected)
 		{
 			electrodeIndices.add(i);
 		}
@@ -571,6 +555,8 @@ void NeuropixV1Interface::setApFilterState(bool state)
 
 void NeuropixV1Interface::selectElectrodes(Array<int> electrodes)
 {
+	Array<ElectrodeMetadata> electrodeMetadata = device->settings.electrodeMetadata;
+
 	// update selection state
 	for (int i = 0; i < electrodes.size(); i++)
 	{
@@ -709,7 +695,7 @@ void NeuropixV1Interface::drawLegend(Graphics& g)
 		g.setColour(Colours::yellow);
 		g.fillRect(xOffset + 10, yOffset + 10, 15, 15);
 
-		g.setColour(Colours::grey);
+		g.setColour(Colours::darkgrey);
 		g.fillRect(xOffset + 10, yOffset + 30, 15, 15);
 
 		g.setColour(Colours::black);
@@ -815,10 +801,10 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings p, bool shouldUpdateP
 	if (referenceComboBox != 0)
 		referenceComboBox->setSelectedId(p.referenceIndex + 1, dontSendNotification);
 
-	for (int i = 0; i < electrodeMetadata.size(); i++)
+	for (int i = 0; i < device->settings.electrodeMetadata.size(); i++)
 	{
-		if (electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
-			electrodeMetadata.getReference(i).status = ElectrodeStatus::DISCONNECTED;
+		if (device->settings.electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
+			device->settings.electrodeMetadata.getReference(i).status = ElectrodeStatus::DISCONNECTED;
 	}
 
 	// update selection state
@@ -828,11 +814,11 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings p, bool shouldUpdateP
 		int channel = p.selectedChannel[i];
 		int shank = p.selectedShank[i];
 
-		for (int j = 0; j < electrodeMetadata.size(); j++)
+		for (int j = 0; j < device->settings.electrodeMetadata.size(); j++)
 		{
-			if (electrodeMetadata[j].channel == channel && electrodeMetadata[j].bank == bank && electrodeMetadata[j].shank == shank)
+			if (device->settings.electrodeMetadata[j].channel == channel && device->settings.electrodeMetadata[j].bank == bank && device->settings.electrodeMetadata[j].shank == shank)
 			{
-				electrodeMetadata.getReference(j).status = ElectrodeStatus::CONNECTED;
+				device->settings.electrodeMetadata.getReference(j).status = ElectrodeStatus::CONNECTED;
 			}
 		}
 	}
@@ -853,6 +839,7 @@ ProbeSettings NeuropixV1Interface::getProbeSettings()
 	ProbeSettings p;
 
 	// Get probe constants
+	p.availableElectrodeConfigurations = device->settings.availableElectrodeConfigurations;
 	p.availableApGains = device->settings.availableApGains;
 	p.availableLfpGains = device->settings.availableLfpGains;
 	p.availableReferences = device->settings.availableReferences;
@@ -864,22 +851,22 @@ ProbeSettings NeuropixV1Interface::getProbeSettings()
 	else
 		p.electrodeConfigurationIndex = -1;
 
-	if (apGainComboBox != 0)
+	if (apGainComboBox != nullptr)
 		p.apGainIndex = apGainComboBox->getSelectedId() - 1;
 	else
 		p.apGainIndex = -1;
 
-	if (lfpGainComboBox != 0)
+	if (lfpGainComboBox != nullptr)
 		p.lfpGainIndex = lfpGainComboBox->getSelectedId() - 1;
 	else
 		p.lfpGainIndex = -1;
 
-	if (filterComboBox != 0)
+	if (filterComboBox != nullptr)
 		p.apFilterState = (filterComboBox->getSelectedId()) == 1;
 	else
 		p.apFilterState = false;
 
-	if (referenceComboBox != 0)
+	if (referenceComboBox != nullptr)
 		p.referenceIndex = referenceComboBox->getSelectedId() - 1;
 	else
 		p.referenceIndex = -1;
@@ -887,7 +874,7 @@ ProbeSettings NeuropixV1Interface::getProbeSettings()
 	LOGD("Getting probe settings");
 	int numElectrodes = 0;
 
-	for (const auto& electrode : electrodeMetadata)
+	for (const auto& electrode : device->settings.electrodeMetadata)
 	{
 		if (electrode.status == ElectrodeStatus::CONNECTED)
 		{
@@ -897,11 +884,23 @@ ProbeSettings NeuropixV1Interface::getProbeSettings()
 			p.selectedElectrode.add(electrode.global_index);
 			numElectrodes++;
 		}
+
+		p.electrodeMetadata.add(electrode);
 	}
 
 	LOGD("Found ", numElectrodes, " connected electrodes.");
 
-	p.probeType = device->settings.probeMetadata.type;
+	p.probeType = device->settings.probeType;
+
+	p.probeMetadata.adc_bits = device->settings.probeMetadata.adc_bits;
+	p.probeMetadata.columns_per_shank = device->settings.probeMetadata.columns_per_shank;
+	p.probeMetadata.electrodes_per_shank = device->settings.probeMetadata.electrodes_per_shank;
+	p.probeMetadata.name = device->settings.probeMetadata.name;
+	p.probeMetadata.num_adcs = device->settings.probeMetadata.num_adcs;
+	p.probeMetadata.rows_per_shank = device->settings.probeMetadata.rows_per_shank;
+	p.probeMetadata.shankOutline = device->settings.probeMetadata.shankOutline;
+	p.probeMetadata.shank_count = device->settings.probeMetadata.shank_count;
+	p.probeMetadata.switchable = device->settings.probeMetadata.switchable;
 
 	return p;
 }
@@ -983,8 +982,8 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 			String chId = "CH" + String(channel);
 
 			channelNode->setAttribute(chId, chString);
-			xposNode->setAttribute(chId, String(device->settings.probeMetadata.electrodeMetadata[elec].xpos + 250 * shank));
-			yposNode->setAttribute(chId, String(device->settings.probeMetadata.electrodeMetadata[elec].ypos));
+			xposNode->setAttribute(chId, String(device->settings.electrodeMetadata[elec].xpos + 250 * shank));
+			yposNode->setAttribute(chId, String(device->settings.electrodeMetadata[elec].ypos));
 		}
 
 		if (imroFiles.size() > 0)
@@ -1016,7 +1015,7 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 			annotationNode->setAttribute("B", a.colour.getBlue());
 		}
 
-		xmlNode->setAttribute("isEnabled", bool(device->settings.isEnabled));
+		xmlNode->setAttribute("isEnabled", bool(device->isEnabled()));
 	}
 }
 
@@ -1028,7 +1027,7 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 
 		// first, set defaults
 		ProbeSettings settings = ProbeSettings(device->settings);
-		settings.probeType = device->settings.probeMetadata.type;
+		settings.probeType = device->settings.probeType;
 		settings.apFilterState = device->settings.apFilterState;
 		settings.lfpGainIndex = device->settings.lfpGainIndex;
 		settings.apGainIndex = device->settings.apGainIndex;
@@ -1089,11 +1088,11 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 					settings.selectedBank.add(bank);
 					settings.selectedShank.add(shank);
 
-					for (int j = 0; j < electrodeMetadata.size(); j++)
+					for (int j = 0; j < device->settings.electrodeMetadata.size(); j++)
 					{
-						if (electrodeMetadata[j].channel == i)
+						if (device->settings.electrodeMetadata[j].channel == i)
 						{
-							if (electrodeMetadata[j].bank == bank && electrodeMetadata[j].shank == shank)
+							if (device->settings.electrodeMetadata[j].bank == bank && device->settings.electrodeMetadata[j].shank == shank)
 							{
 								settings.selectedElectrode.add(j);
 							}
@@ -1156,15 +1155,14 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 				}
 			}
 
-			device->settings.isEnabled = matchingNode->getBoolAttribute("isEnabled", true);
-			probeEnableButton->setToggleState(device->settings.isEnabled, dontSendNotification);
-			if (device->settings.isEnabled)
+			device->setEnabled(matchingNode->getBoolAttribute("isEnabled", true));
+			probeEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
+			if (device->isEnabled())
 				probeEnableButton->setLabel("ENABLED");
 			else
 			{
 				probeEnableButton->setLabel("DISABLED");
 			}
-			//stopAcquisition();
 		}
 
 		device->updateSettings(settings);
@@ -1188,53 +1186,4 @@ Annotation::Annotation(String t, Array<int> e, Colour c)
 
 Annotation::~Annotation()
 {
-}
-
-AnnotationColourSelector::AnnotationColourSelector(NeuropixV1Interface* np)
-{
-	npi = np;
-	Path p;
-	p.addRoundedRectangle(0, 0, 15, 15, 3);
-
-	for (int i = 0; i < 6; i++)
-	{
-		standardColours.add(Colour(245, 245, 245 - 40 * i));
-		hoverColours.add(Colour(215, 215, 215 - 40 * i));
-	}
-
-	for (int i = 0; i < 6; i++)
-	{
-		buttons.add(new ShapeButton(String(i), standardColours[i], hoverColours[i], hoverColours[i]));
-		buttons[i]->setShape(p, true, true, false);
-		buttons[i]->setBounds(18 * i, 0, 15, 15);
-		buttons[i]->addListener(this);
-		addAndMakeVisible(buttons[i]);
-
-		strings.add("Annotation " + String(i + 1));
-	}
-
-	npi->setAnnotationLabel(strings[0], standardColours[0]);
-
-	activeButton = 0;
-}
-
-AnnotationColourSelector::~AnnotationColourSelector()
-{
-}
-
-void AnnotationColourSelector::buttonClicked(Button* b)
-{
-	activeButton = buttons.indexOf((ShapeButton*)b);
-
-	npi->setAnnotationLabel(strings[activeButton], standardColours[activeButton]);
-}
-
-void AnnotationColourSelector::updateCurrentString(String s)
-{
-	strings.set(activeButton, s);
-}
-
-Colour AnnotationColourSelector::getCurrentColour() const
-{
-	return standardColours[activeButton];
 }

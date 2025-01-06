@@ -197,6 +197,8 @@ public:
 	DataBuffer* apBuffer = deviceBuffer;
 	DataBuffer* lfpBuffer;
 
+	ProbeSettings settings;
+
 private:
 
 	/** Updates buffer during acquisition */

@@ -22,8 +22,6 @@
 */
 
 #include "Neuropixels_1.h"
-#include <oni.h>
-#include <onix.h>
 
 Neuropixels_1::Neuropixels_1(String name, float portVoltage, String adcFile, String gainFile, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 	: OnixDevice(name, NEUROPIXELS_1, deviceIdx_, ctx_), I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_)
@@ -541,7 +539,7 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 
 void Neuropixels_1::defineMetadata(ProbeSettings& settings)
 {
-	settings.probeMetadata.type = ProbeType::NPX_V1E;
+	settings.probeType = ProbeType::NPX_V1E;
 	settings.probeMetadata.name = "Neuropixels 1.0e";
 
 	Path path;
@@ -560,7 +558,7 @@ void Neuropixels_1::defineMetadata(ProbeSettings& settings)
 	settings.probeMetadata.num_adcs = 32; // NB: Is this right for 1.0e?
 	settings.probeMetadata.adc_bits = 10; // NB: Is this right for 1.0e?
 
-	settings.probeMetadata.availableBanks = {
+	settings.availableBanks = {
 		Bank::A,
 		Bank::B,
 		Bank::C,
@@ -612,18 +610,13 @@ void Neuropixels_1::defineMetadata(ProbeSettings& settings)
 			metadata.type = ElectrodeType::ELECTRODE;
 		}
 
-		settings.probeMetadata.electrodeMetadata.add(metadata);
+		settings.electrodeMetadata.add(metadata);
 	}
-
-	// NB: Copy metadata to settings struct for use in the canvas
-	settings.probeType = settings.probeMetadata.type;
-	settings.availableBanks = settings.probeMetadata.availableBanks;
 
 	settings.apGainIndex = 3;
 	settings.lfpGainIndex = 2;
 	settings.referenceIndex = 0;
 	settings.apFilterState = true;
-
 
 	for (int i = 0; i < numberOfChannels; i++)
 	{

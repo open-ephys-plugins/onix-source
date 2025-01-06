@@ -95,12 +95,10 @@ private:
     std::unique_ptr<FileChooser> adcCalibrationFileChooser;
     std::unique_ptr<FileChooser> gainCalibrationFileChooser;
 
-    std::unique_ptr<UtilityButton> portVoltageOverrideButton;
-
     std::unique_ptr<UtilityButton> rescanButton;
 
-    Viewport* viewport;
-       
+    std::unique_ptr<ToggleParameterEditor> passthroughEditor;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
 };
 

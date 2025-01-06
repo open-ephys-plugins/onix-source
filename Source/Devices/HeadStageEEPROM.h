@@ -1,5 +1,7 @@
 #pragma once
+
 #include "../I2CRegisterContext.h"
+
 #include <oni.h>
 #include <onix.h>
 

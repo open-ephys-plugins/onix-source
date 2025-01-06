@@ -105,11 +105,8 @@ struct ProbeMetadata
 	Path shankOutline;
 	int columns_per_shank;
 	int rows_per_shank;
-	ProbeType type;
 	String name;
-	Array<Bank> availableBanks;
 	bool switchable;
-	Array<ElectrodeMetadata> electrodeMetadata;
 };
 
 struct ProbeSettings
@@ -130,6 +127,7 @@ struct ProbeSettings
 	Array<int> selectedShank; // size = channels
 	Array<int> selectedChannel; // size = channels
 	Array<int> selectedElectrode; // size = channels
+	Array<ElectrodeMetadata> electrodeMetadata;
 
 	void clearElectrodeSelection()
 	{
@@ -142,8 +140,6 @@ struct ProbeSettings
 	ProbeType probeType;
 
 	ProbeMetadata probeMetadata;
-
-	bool isEnabled = true;
 };
 
 /** Base class for all Neuropixels components, which must implement the "getInfo" method */
