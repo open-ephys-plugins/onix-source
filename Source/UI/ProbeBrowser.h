@@ -58,6 +58,8 @@ public:
     float maxPeakToPeakAmplitude;
 
 private:
+    const int leftEdgeOffset = 220;
+
     std::map<Bank, Colour> disconnectedColours;
 
     // display variables

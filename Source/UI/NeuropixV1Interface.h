@@ -94,7 +94,7 @@ public:
 
 	/** Settings-related functions*/
 	bool applyProbeSettings(ProbeSettings p, bool shouldUpdateProbe = true);
-	ProbeSettings getProbeSettings();
+	ProbeSettings getProbeSettings() const;
 	void updateProbeSettings();
 
 	/** Save parameters to XML */

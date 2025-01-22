@@ -236,7 +236,7 @@ int ProbeBrowser::getNearestElectrode(int x, int y) const
 
 	for (shank = 0; shank < probeMetadata.shank_count; shank++)
 	{
-		int leftEdge = 220 + shankOffset - totalWidth / 2 + shankWidth * 2 * shank;
+		int leftEdge = leftEdgeOffset + shankOffset - totalWidth / 2 + shankWidth * 2 * shank;
 		int rightEdge = leftEdge + shankWidth;
 
 		if (x >= leftEdge && x <= rightEdge)
@@ -419,25 +419,23 @@ void ProbeBrowser::mouseDown(const MouseEvent& event)
 	initialOffset = zoomOffset;
 	initialHeight = zoomHeight;
 	
-	Array<ElectrodeMetadata> electrodeMetadata = parent->device->settings.electrodeMetadata;
-
 	if (!event.mods.isRightButtonDown())
 	{
 		if (event.x > 150 && event.x < 400)
 		{
 			if (!event.mods.isShiftDown())
 			{
-				for (int i = 0; i < electrodeMetadata.size(); i++)
-					electrodeMetadata.getReference(i).isSelected = false;
+				for (int i = 0; i < parent->device->settings.electrodeMetadata.size(); i++)
+					parent->device->settings.electrodeMetadata.getReference(i).isSelected = false;
 			}
 
 			if (event.x > leftEdge && event.x < rightEdge)
 			{
 				int chan = getNearestElectrode(event.x, event.y);
 
-				if (chan >= 0 && chan < electrodeMetadata.size())
+				if (chan >= 0 && chan < parent->device->settings.electrodeMetadata.size())
 				{
-					electrodeMetadata.getReference(chan).isSelected = true;
+					parent->device->settings.electrodeMetadata.getReference(chan).isSelected = !parent->device->settings.electrodeMetadata.getReference(chan).isSelected;
 				}
 			}
 			repaint();
@@ -546,20 +544,19 @@ void ProbeBrowser::mouseDrag(const MouseEvent& event)
 		isSelectionActive = true;
 
 		Array<int> inBounds = getElectrodesWithinBounds(x, y, w, h);
-		Array<ElectrodeMetadata> electrodeMetadata = parent->device->settings.electrodeMetadata;
 
 		if (x < rightEdge)
 		{
-			for (int i = 0; i < electrodeMetadata.size(); i++)
+			for (int i = 0; i < parent->device->settings.electrodeMetadata.size(); i++)
 			{
 				if (inBounds.indexOf(i) > -1)
 				{
-					electrodeMetadata.getReference(i).isSelected = true;
+					parent->device->settings.electrodeMetadata.getReference(i).isSelected = true;
 				}
 				else
 				{
 					if (!event.mods.isShiftDown())
-						electrodeMetadata.getReference(i).isSelected = false;
+						parent->device->settings.electrodeMetadata.getReference(i).isSelected = false;
 				}
 			}
 		}
@@ -708,9 +705,9 @@ void ProbeBrowser::paint(Graphics& g)
 		if (electrodeMetadata[i].row_index >= int(lowestRow)
 			&& electrodeMetadata[i].row_index < int(highestRow))
 		{
-			float xLoc = 220 + shankOffset - electrodeHeight * probeMetadata.columns_per_shank / 2
+			float xLoc = leftEdgeOffset + shankOffset - electrodeHeight * probeMetadata.columns_per_shank / 2
 				+ electrodeHeight * electrodeMetadata[i].column_index + electrodeMetadata[i].shank * electrodeHeight * 4
-				- (probeMetadata.shank_count / 2.0f * electrodeHeight * 3);
+				- (probeMetadata.shank_count / 2 * electrodeHeight * 3);
 			float yLoc = lowerBound - ((electrodeMetadata[i].row_index - int(lowestRow)) * electrodeHeight);
 
 			if (electrodeMetadata[i].isSelected)
@@ -749,8 +746,8 @@ void ProbeBrowser::paint(Graphics& g)
 	int shankWidth = electrodeHeight * probeMetadata.columns_per_shank;
 	int totalWidth = shankWidth * probeMetadata.shank_count + shankWidth * (probeMetadata.shank_count - 1);
 
-	leftEdge = 220 + shankOffset - totalWidth / 2;
-	rightEdge = 220 + shankOffset + totalWidth / 2;
+	leftEdge = leftEdgeOffset + shankOffset - totalWidth / 2;
+	rightEdge = leftEdgeOffset + shankOffset + totalWidth / 2;
 
 	if (isSelectionActive)
 	{

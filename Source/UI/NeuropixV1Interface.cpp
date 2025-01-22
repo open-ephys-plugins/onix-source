@@ -270,8 +270,6 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, Oni
 		loadImroComboBox->addListener(this);
 		loadImroComboBox->setTooltip("Load a favorite IMRO setting.");
 
-		File baseDirectory = File::getSpecialLocation(File::currentExecutableFile).getParentDirectory();
-
 		probeSettingsLabel = std::make_unique<Label>("Settings", "Probe settings:");
 		probeSettingsLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
 		probeSettingsLabel->setBounds(40, 610, 300, 20);
@@ -358,21 +356,21 @@ void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
 
 			selectElectrodes(selection);
 		}
-		else if ((comboBox == apGainComboBox.get()) || (comboBox == lfpGainComboBox.get()))
+		else if ((comboBox == apGainComboBox.get()))
 		{
-			updateProbeSettings();
+			device->settings.apGainIndex = apGainComboBox->getSelectedItemIndex();
+		}
+		else if (comboBox == lfpGainComboBox.get())
+		{
+			device->settings.lfpGainIndex = lfpGainComboBox->getSelectedItemIndex();
 		}
 		else if (comboBox == referenceComboBox.get())
 		{
-			updateProbeSettings();
+			device->settings.referenceIndex = referenceComboBox->getSelectedItemIndex();
 		}
 		else if (comboBox == filterComboBox.get())
 		{
-			updateProbeSettings();
-		}
-		else if (comboBox == filterComboBox.get())
-		{
-			updateProbeSettings();
+			device->settings.apFilterState = filterComboBox->getSelectedId() == 1;
 		}
 		else if (comboBox == activityViewComboBox.get())
 		{
@@ -416,8 +414,6 @@ void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
 			CoreServices::sendStatusMessage("Cannot update parameters while acquisition is active"); // no parameter change while acquisition is active
 		}
 	}
-
-	MouseCursor::hideWaitCursor();
 }
 
 void NeuropixV1Interface::setAnnotationLabel(String s, Colour c)
@@ -555,36 +551,32 @@ void NeuropixV1Interface::setApFilterState(bool state)
 
 void NeuropixV1Interface::selectElectrodes(Array<int> electrodes)
 {
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings.electrodeMetadata;
-
 	// update selection state
 	for (int i = 0; i < electrodes.size(); i++)
 	{
-		Bank bank = electrodeMetadata[electrodes[i]].bank;
-		int channel = electrodeMetadata[electrodes[i]].channel;
-		int shank = electrodeMetadata[electrodes[i]].shank;
-		int global_index = electrodeMetadata[electrodes[i]].global_index;
+		Bank bank = device->settings.electrodeMetadata[electrodes[i]].bank;
+		int channel = device->settings.electrodeMetadata[electrodes[i]].channel;
+		int shank = device->settings.electrodeMetadata[electrodes[i]].shank;
+		int global_index = device->settings.electrodeMetadata[electrodes[i]].global_index;
 
-		for (int j = 0; j < electrodeMetadata.size(); j++)
+		for (int j = 0; j < device->settings.electrodeMetadata.size(); j++)
 		{
-			if (electrodeMetadata[j].channel == channel)
+			if (device->settings.electrodeMetadata[j].channel == channel)
 			{
-				if (electrodeMetadata[j].bank == bank && electrodeMetadata[j].shank == shank)
+				if (device->settings.electrodeMetadata[j].bank == bank && device->settings.electrodeMetadata[j].shank == shank)
 				{
-					electrodeMetadata.getReference(j).status = ElectrodeStatus::CONNECTED;
+					device->settings.electrodeMetadata.getReference(j).status = ElectrodeStatus::CONNECTED;
 				}
 
 				else
 				{
-					electrodeMetadata.getReference(j).status = ElectrodeStatus::DISCONNECTED;
+					device->settings.electrodeMetadata.getReference(j).status = ElectrodeStatus::DISCONNECTED;
 				}
 			}
 		}
 	}
 
 	repaint();
-
-	updateProbeSettings();
 
 	CoreServices::updateSignalChain(editor);
 }
@@ -834,75 +826,9 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings p, bool shouldUpdateP
 	return true;
 }
 
-ProbeSettings NeuropixV1Interface::getProbeSettings()
+ProbeSettings NeuropixV1Interface::getProbeSettings() const
 {
-	ProbeSettings p;
-
-	// Get probe constants
-	p.availableElectrodeConfigurations = device->settings.availableElectrodeConfigurations;
-	p.availableApGains = device->settings.availableApGains;
-	p.availableLfpGains = device->settings.availableLfpGains;
-	p.availableReferences = device->settings.availableReferences;
-	p.availableBanks = device->settings.availableBanks;
-
-	// Set probe variables
-	if (electrodeConfigurationComboBox != nullptr)
-		p.electrodeConfigurationIndex = electrodeConfigurationComboBox->getSelectedId() - 2;
-	else
-		p.electrodeConfigurationIndex = -1;
-
-	if (apGainComboBox != nullptr)
-		p.apGainIndex = apGainComboBox->getSelectedId() - 1;
-	else
-		p.apGainIndex = -1;
-
-	if (lfpGainComboBox != nullptr)
-		p.lfpGainIndex = lfpGainComboBox->getSelectedId() - 1;
-	else
-		p.lfpGainIndex = -1;
-
-	if (filterComboBox != nullptr)
-		p.apFilterState = (filterComboBox->getSelectedId()) == 1;
-	else
-		p.apFilterState = false;
-
-	if (referenceComboBox != nullptr)
-		p.referenceIndex = referenceComboBox->getSelectedId() - 1;
-	else
-		p.referenceIndex = -1;
-
-	LOGD("Getting probe settings");
-	int numElectrodes = 0;
-
-	for (const auto& electrode : device->settings.electrodeMetadata)
-	{
-		if (electrode.status == ElectrodeStatus::CONNECTED)
-		{
-			p.selectedChannel.add(electrode.channel);
-			p.selectedBank.add(electrode.bank);
-			p.selectedShank.add(electrode.shank);
-			p.selectedElectrode.add(electrode.global_index);
-			numElectrodes++;
-		}
-
-		p.electrodeMetadata.add(electrode);
-	}
-
-	LOGD("Found ", numElectrodes, " connected electrodes.");
-
-	p.probeType = device->settings.probeType;
-
-	p.probeMetadata.adc_bits = device->settings.probeMetadata.adc_bits;
-	p.probeMetadata.columns_per_shank = device->settings.probeMetadata.columns_per_shank;
-	p.probeMetadata.electrodes_per_shank = device->settings.probeMetadata.electrodes_per_shank;
-	p.probeMetadata.name = device->settings.probeMetadata.name;
-	p.probeMetadata.num_adcs = device->settings.probeMetadata.num_adcs;
-	p.probeMetadata.rows_per_shank = device->settings.probeMetadata.rows_per_shank;
-	p.probeMetadata.shankOutline = device->settings.probeMetadata.shankOutline;
-	p.probeMetadata.shank_count = device->settings.probeMetadata.shank_count;
-	p.probeMetadata.switchable = device->settings.probeMetadata.switchable;
-
-	return p;
+	return device->settings;
 }
 
 void NeuropixV1Interface::saveParameters(XmlElement* xml)
