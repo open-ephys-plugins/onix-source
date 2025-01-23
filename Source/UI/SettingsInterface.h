@@ -90,6 +90,7 @@ public:
     enum Type
     {
         PROBE_SETTINGS_INTERFACE,
+        BNO055_SETTINGS_INTERFACE,
         UNKNOWN_SETTINGS_INTERFACE
     };
 
@@ -113,9 +114,6 @@ public:
 
     /** Called when acquisition ends */
     virtual void stopAcquisition() = 0;
-
-    /** Applies settings to the probe associated with this interface */
-    virtual bool applyProbeSettings (ProbeSettings p, bool shouldUpdateProbe = true) = 0;
 
     /** Saves settings */
     virtual void saveParameters (XmlElement* xml) = 0;

@@ -24,6 +24,7 @@ along with this program.If not, see < http://www.gnu.org/licenses/>.
 #include "OnixSourceCanvas.h"
 
 #include "UI/NeuropixV1Interface.h"
+#include "UI/Bno055Interface.h"
 
 CustomTabButton::CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_) :
 	TabBarButton(name, parent->getTabbedButtonBar()),
@@ -104,6 +105,12 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 			portTab->addTab(source->getName(), Colours::darkgrey, neuropixInterface->viewport.get(), false);
 
 			portTabIndex.add(portTabNumber++);
+		}
+		else if (source->type == OnixDeviceType::BNO)
+		{
+			Bno055Interface* bno055Interface = new Bno055Interface(source, editor, this);
+			settingsInterfaces.add((SettingsInterface*)bno055Interface);
+			portTab->addTab(source->getName(), Colours::darkgrey, bno055Interface->viewport.get(), false);
 		}
 	}
 }

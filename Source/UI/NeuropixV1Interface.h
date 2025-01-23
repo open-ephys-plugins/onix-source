@@ -80,17 +80,17 @@ public:
 	~NeuropixV1Interface();
 
 	/** Draws the legend */
-	void paint(Graphics& g);
+	void paint(Graphics& g) override;
 
 	/** Listener methods*/
-	void buttonClicked(Button*);
-	void comboBoxChanged(ComboBox*);
+	void buttonClicked(Button*) override;
+	void comboBoxChanged(ComboBox*) override;
 
 	/** Disables buttons and starts animation if necessary */
-	void startAcquisition();
+	void startAcquisition() override;
 
 	/** Enables buttons and start animation if necessary */
-	void stopAcquisition();
+	void stopAcquisition() override;
 
 	/** Settings-related functions*/
 	bool applyProbeSettings(ProbeSettings p, bool shouldUpdateProbe = true);
@@ -98,16 +98,16 @@ public:
 	void updateProbeSettings();
 
 	/** Save parameters to XML */
-	void saveParameters(XmlElement* xml);
+	void saveParameters(XmlElement* xml) override;
 
 	/** Load parameters from XML */
-	void loadParameters(XmlElement* xml);
+	void loadParameters(XmlElement* xml) override;
 
 	/** Updates the annotation label */
 	void setAnnotationLabel(String, Colour);
 
 	/** Updates the info string on the right-hand side of the component */
-	void updateInfoString();
+	void updateInfoString() override;
 
 	/** Set parameters */
 	void setApGain(int index);
