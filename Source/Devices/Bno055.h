@@ -31,8 +31,6 @@ enum Bno055Registers
 	ENABLE = 0x00
 };
 
-const int numFrames = 1;
-
 class Bno055 : public OnixDevice
 {
 public:
@@ -44,6 +42,9 @@ public:
 	~Bno055();
 
 	int enableDevice() override;
+
+	/** Update the settings of the device */
+	int updateSettings() override;
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;
@@ -60,6 +61,8 @@ public:
 	DataBuffer* temperatureBuffer;
 
 private:
+
+	static const int numFrames = 1;
 
 	/** Updates buffer during acquisition */
 	void run() override;

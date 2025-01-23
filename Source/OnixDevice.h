@@ -89,6 +89,8 @@ public:
 
 	virtual int enableDevice() = 0;
 
+	virtual int updateSettings() = 0;
+
 	virtual void startAcquisition() = 0;
 
 	virtual void stopAcquisition() = 0;

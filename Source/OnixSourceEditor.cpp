@@ -133,8 +133,10 @@ void OnixSourceEditor::buttonClicked(Button* b)
 {
 	if (b == rescanButton.get())
 	{
-		thread->setPortVoltage((oni_dev_idx_t)PortName::PortB, (int)(portVoltage * 10));
+		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
+		canvas->removeTabs();
 		thread->initializeDevices(true);
+		canvas->refreshTabs();
 	}
 	else if (b == chooseAdcCalibrationFileButton.get())
 	{

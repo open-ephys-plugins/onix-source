@@ -145,22 +145,6 @@ public:
 	}
 };
 
-const int superFramesPerUltraFrame = 12;
-const int framesPerSuperFrame = 13;
-const int framesPerUltraFrame = superFramesPerUltraFrame * framesPerSuperFrame;
-const int numUltraFrames = 12;
-const int dataOffset = 1;
-
-const int shankConfigurationBitCount = 968;
-const int BaseConfigurationBitCount = 2448;
-
-const int numberOfChannels = 384;
-
-const float lfpSampleRate = 2500.0f;
-const float apSampleRate = 30000.0f;
-
-const int ProbeI2CAddress = 0x70;
-
 /**
 
 	Streams data from an ONIX device
@@ -177,7 +161,11 @@ public:
 	/** Destructor */
 	~Neuropixels_1();
 
+	/** Enables the device so that it is ready to stream with default settings */
 	int enableDevice() override;
+
+	/** Update the settings of the device */
+	int updateSettings() override;
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;
@@ -199,12 +187,28 @@ public:
 
 	ProbeSettings settings;
 
+	static const int numberOfChannels = 384;
+
 private:
+
+	static const int superFramesPerUltraFrame = 12;
+	static const int framesPerSuperFrame = 13;
+	static const int framesPerUltraFrame = superFramesPerUltraFrame * framesPerSuperFrame;
+	static const int numUltraFrames = 12;
+	static const int dataOffset = 1;
+
+	static const int shankConfigurationBitCount = 968;
+	static const int BaseConfigurationBitCount = 2448;
+
+	const float lfpSampleRate = 2500.0f;
+	const float apSampleRate = 30000.0f;
+
+	static const int ProbeI2CAddress = 0x70;
 
 	/** Updates buffer during acquisition */
 	void run() override;
 
-	std::bitset<shankConfigurationBitCount> static makeShankBits(NeuropixelsReference reference, Array<int, DummyCriticalSection, numberOfChannels> channelMap);
+	std::bitset<shankConfigurationBitCount> static makeShankBits(NeuropixelsReference reference, Array<int> channelMap);
 
 	std::vector<std::bitset<BaseConfigurationBitCount>> static makeConfigBits(NeuropixelsReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
 

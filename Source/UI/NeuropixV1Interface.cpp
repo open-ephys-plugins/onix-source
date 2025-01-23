@@ -323,7 +323,7 @@ void NeuropixV1Interface::updateInfoString()
 	{
 		nameString += "NeuropixelsV1e";
 
-		infoString = "Device: Neuropixels V1e";
+		infoString = "Device: Neuropixels V1e Probe";
 		infoString += "\n";
 		infoString += "\n";
 
@@ -894,14 +894,12 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 		XmlElement* xposNode = xmlNode->createNewChildElement("ELECTRODE_XPOS");
 		XmlElement* yposNode = xmlNode->createNewChildElement("ELECTRODE_YPOS");
 
-		ProbeSettings p = getProbeSettings();
-
-		for (int i = 0; i < p.selectedChannel.size(); i++)
+		for (int i = 0; i < device->settings.selectedChannel.size(); i++)
 		{
-			int bank = int(p.selectedBank[i]);
-			int shank = p.selectedShank[i];
-			int channel = p.selectedChannel[i];
-			int elec = p.selectedElectrode[i];
+			int bank = int(device->settings.selectedBank[i]);
+			int shank = device->settings.selectedShank[i];
+			int channel = device->settings.selectedChannel[i];
+			int elec = device->settings.selectedElectrode[i];
 
 			String chString = String(bank);
 
@@ -1003,7 +1001,7 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 
 				XmlElement* status = matchingNode->getChildByName("CHANNELS");
 
-				for (int i = 0; i < numberOfChannels; i++)
+				for (int i = 0; i < Neuropixels_1::numberOfChannels; i++)
 				{
 					settings.selectedChannel.add(i);
 

@@ -123,10 +123,10 @@ struct ProbeSettings
 	int referenceIndex;
 	bool apFilterState;
 
-	Array<Bank> selectedBank; // size = channels
-	Array<int> selectedShank; // size = channels
-	Array<int> selectedChannel; // size = channels
-	Array<int> selectedElectrode; // size = channels
+	Array<Bank> selectedBank;
+	Array<int> selectedShank;
+	Array<int> selectedChannel;
+	Array<int> selectedElectrode;
 	Array<ElectrodeMetadata> electrodeMetadata;
 
 	void clearElectrodeSelection()

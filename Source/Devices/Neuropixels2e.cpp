@@ -65,6 +65,11 @@ int Neuropixels2e::enableDevice()
 
 }
 
+int Neuropixels2e::updateSettings()
+{
+	return 0;
+}
+
 void Neuropixels2e::configureProbeStreaming()
 {
 	// Write super sync bits into ASIC

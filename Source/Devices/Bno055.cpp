@@ -98,6 +98,11 @@ int Bno055::enableDevice()
 	return 0;
 }
 
+int Bno055::updateSettings()
+{
+	return 0;
+}
+
 void Bno055::startAcquisition()
 {
 	startThread();

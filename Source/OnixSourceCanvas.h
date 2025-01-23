@@ -102,12 +102,15 @@ public:
 	/** Called when the Visualizer's tab becomes visible after being hidden */
 	void refreshState() override;
 
+	/** Called when tabs need to be removed */
+	void removeTabs();
+
+	/** Called when the number of tabs might have changed, so they are refreshed */
+	void refreshTabs();
+
 	/** Called when the Visualizer is first created, and optionally when
 		the parameters of the underlying processor are changed */
 	void update();
-
-	/** Sets which interface is active */
-	void setSelectedInterface(OnixDevice* d);
 
 	/** Starts animation of sub-interfaces */
 	void startAcquisition();
@@ -116,7 +119,7 @@ public:
 	void stopAcquisition();
 
 	/** Called when the basestation is created or refreshed */
-	void populateSourceTabs(CustomTabComponent* basestationTab, int& topLevelTabNumber);
+	void populateSourceTabs(CustomTabComponent* basestationTab);
 
 	/** Saves custom UI settings */
 	void saveCustomParametersToXml(XmlElement* xml) override;
@@ -138,9 +141,8 @@ private:
 	OnixSource* onixSource;
 
 	std::unique_ptr<CustomTabComponent> topLevelTabComponent;
-	Array<CustomTabComponent*> portTabs;
+	OwnedArray<CustomTabComponent> portTabs;
 
-	Array<int> topLevelTabIndex;
 	Array<int> portTabIndex;
 };
 

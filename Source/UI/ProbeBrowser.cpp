@@ -707,7 +707,7 @@ void ProbeBrowser::paint(Graphics& g)
 		{
 			float xLoc = leftEdgeOffset + shankOffset - electrodeHeight * probeMetadata.columns_per_shank / 2
 				+ electrodeHeight * electrodeMetadata[i].column_index + electrodeMetadata[i].shank * electrodeHeight * 4
-				- (probeMetadata.shank_count / 2 * electrodeHeight * 3);
+				- (floor(probeMetadata.shank_count / 2.0f) * electrodeHeight * 3);
 			float yLoc = lowerBound - ((electrodeMetadata[i].row_index - int(lowestRow)) * electrodeHeight);
 
 			if (electrodeMetadata[i].isSelected)

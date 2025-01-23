@@ -41,7 +41,7 @@ OnixSource::OnixSource(SourceNode* sn) :
 
 	if (!contextInitialized) { LOGE("Failed to initialize context."); return; }
 
-	setPortVoltage((oni_dev_idx_t)PortName::PortB, 5.0);
+	setPortVoltage((oni_dev_idx_t)PortName::PortA, 5.0);
 	initializeDevices();
 
 	if (!devicesFound) { return; }
@@ -419,13 +419,12 @@ bool OnixSource::isReady()
 	if (!devicesFound)
 		return false;
 
-	File adcFile = File(editor->adcCalibrationFile->getText());
-	File gainFile = File(editor->gainCalibrationFile->getText());
-
-	if (!adcFile.existsAsFile() || !gainFile.existsAsFile())
+	for (auto source : sources)
 	{
-		LOGE("Missing calibration file(s). Ensure that all calibration files exist and the file paths are correct.");
-		return false;
+		int result = source->updateSettings();
+
+		if (result != 0)
+			return false;
 	}
 
 	oni_reg_val_t reg = 2;

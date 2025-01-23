@@ -75,8 +75,6 @@ OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEdito
 	topLevelTabComponent = std::make_unique<CustomTabComponent>(editor, true);
 	addAndMakeVisible(topLevelTabComponent.get());
 
-	int topLevelTabNumber = 0;
-
 	CustomTabComponent* portTab = new CustomTabComponent(editor, false);
 
 	topLevelTabComponent->addTab("Devices", Colours::grey, portTab, true);
@@ -87,14 +85,11 @@ OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEdito
 
 	portTabs.add(portTab);
 
-	populateSourceTabs(portTab, topLevelTabNumber);
-
-	topLevelTabComponent->setCurrentTabIndex(0);
-
+	refreshTabs();
 	update();
 }
 
-void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab, int& topLevelTabNumber)
+void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 {
 	Array<OnixDevice*> availableDataSources = onixSource->getDataSources();
 
@@ -108,24 +103,9 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab, int& topL
 			settingsInterfaces.add((SettingsInterface*)neuropixInterface);
 			portTab->addTab(source->getName(), Colours::darkgrey, neuropixInterface->viewport.get(), false);
 
-			topLevelTabIndex.add(topLevelTabNumber);
 			portTabIndex.add(portTabNumber++);
 		}
 	}
-
-	// DEBUG - Only here for testing purposes, remove this once it is fully functional
-	if (availableDataSources.isEmpty() && DEBUG)
-	{
-		OnixDevice* source = new Neuropixels_1("test", 0.0f, "", "", NULL, NULL);
-		NeuropixV1Interface* neuropixInterface = new NeuropixV1Interface(source, editor, this);
-		settingsInterfaces.add((SettingsInterface*)neuropixInterface);
-		portTab->addTab(source->getName(), Colours::darkgrey, neuropixInterface->viewport.get(), false);
-
-		topLevelTabIndex.add(topLevelTabNumber);
-		portTabIndex.add(portTabNumber++);
-	}
-
-	topLevelTabNumber += 1;
 }
 
 OnixSourceCanvas::~OnixSourceCanvas()
@@ -144,6 +124,32 @@ void OnixSourceCanvas::refresh()
 void OnixSourceCanvas::refreshState()
 {
 	resized();
+}
+
+void OnixSourceCanvas::removeTabs()
+{
+	CustomTabComponent* portTab = portTabs.getFirst();
+
+	for (int i = 0; i < portTab->getNumTabs(); i += 1)
+	{
+		portTab->removeTab(0);
+	}
+
+	if (!settingsInterfaces.isEmpty())
+	{
+		settingsInterfaces.clear(true);
+	}
+}
+
+void OnixSourceCanvas::refreshTabs()
+{
+	removeTabs();
+
+	CustomTabComponent* portTab = portTabs.getFirst();
+
+	populateSourceTabs(portTab);
+
+	topLevelTabComponent->setCurrentTabIndex(0);
 }
 
 void OnixSourceCanvas::update()
@@ -199,17 +205,6 @@ void OnixSourceCanvas::stopAcquisition()
 		{
 			settingsInterface->stopAcquisition();
 		}
-	}
-}
-
-void OnixSourceCanvas::setSelectedInterface(OnixDevice* dataSource)
-{
-	if (dataSource != nullptr)
-	{
-		int index = dataSources.indexOf(dataSource);
-
-		topLevelTabComponent->setCurrentTabIndex(topLevelTabIndex[index], false);
-		portTabs[topLevelTabIndex[index]]->setCurrentTabIndex(portTabIndex[index], false);
 	}
 }
 

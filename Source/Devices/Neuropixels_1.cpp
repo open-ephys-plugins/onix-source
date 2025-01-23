@@ -70,7 +70,6 @@ int Neuropixels_1::enableDevice()
 	// Get Probe SN
 	uint32_t eepromOffset = 0;
 	uint32_t i2cAddr = 0x50;
-	uint64_t probeSN = 0;
 	int errorCode = 0;
 
 	for (int i = 0; i < 8; i++)
@@ -84,11 +83,11 @@ int Neuropixels_1::enableDevice()
 
 		if (reg_val <= 0xFF)
 		{
-			probeSN |= (((uint64_t)reg_val) << (i * 8));
+			probeNumber |= (((uint64_t)reg_val) << (i * 8));
 		}
 	}
 
-	LOGD("Probe SN: ", probeSN);
+	LOGD("Probe SN: ", probeNumber);
 
 	// Enable device streaming
 	const oni_reg_addr_t enable_device_stream = 0x8000;
@@ -103,14 +102,17 @@ int Neuropixels_1::enableDevice()
 
 	if (WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD) != 0) return -4;
 
+	// Update all probe settings
+	return updateSettings();
+}
+
+int Neuropixels_1::updateSettings()
+{
 	// Parse ADC and Gain calibration files
 	File adcFile = File(adcCalibrationFile);
 	File gainFile = File(gainCalibrationFile);
 
 	if (!adcFile.existsAsFile() || !gainFile.existsAsFile()) return -3;
-
-	NeuropixelsGain lfpGain = NeuropixelsGain::Gain50;
-	NeuropixelsGain apGain = NeuropixelsGain::Gain1000;
 
 	StringArray gainFileLines;
 	gainFile.readLines(gainFileLines);
@@ -119,7 +121,7 @@ int Neuropixels_1::enableDevice()
 
 	LOGD("Gain calibration file SN = ", gainSN);
 
-	if (gainSN != probeSN) { LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", probeSN, ")."); return -4; };
+	if (gainSN != probeNumber) { LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", probeNumber, ")."); return -4; };
 
 	StringRef gainCalLine = gainFileLines[1];
 	StringRef breakCharacters = ",";
@@ -127,11 +129,8 @@ int Neuropixels_1::enableDevice()
 
 	StringArray calibrationValues = StringArray::fromTokens(gainCalLine, breakCharacters, noQuote);
 
-	int lfpIndex = gainToIndex.find(lfpGain)->second;
-	int apIndex = gainToIndex.find(apGain)->second;
-
-	double apGainCorrection = std::stod(calibrationValues[apIndex + 1].toStdString());
-	double lfpGainCorrection = std::stod(calibrationValues[lfpIndex + 8].toStdString());
+	double apGainCorrection = std::stod(calibrationValues[settings.apGainIndex + 1].toStdString());
+	double lfpGainCorrection = std::stod(calibrationValues[settings.lfpGainIndex + 8].toStdString());
 
 	LOGD("AP gain correction = ", apGainCorrection, ", LFP gain correction = ", lfpGainCorrection);
 
@@ -142,7 +141,7 @@ int Neuropixels_1::enableDevice()
 
 	LOGD("ADC calibration file SN = ", adcSN);
 
-	if (adcSN != probeSN) { LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", probeSN, ")."); return -4; };
+	if (adcSN != probeNumber) { LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", probeNumber, ")."); return -4; };
 
 	Array<NeuropixelsV1Adc> adcs;
 
@@ -160,7 +159,7 @@ int Neuropixels_1::enableDevice()
 				std::stoi(adcLine[6].toStdString()),
 				std::stoi(adcLine[7].toStdString()),
 				std::stoi(adcLine[8].toStdString())
-				));
+			));
 	}
 
 	// Write shift registers
@@ -171,8 +170,8 @@ int Neuropixels_1::enableDevice()
 		channelMap.add(i);
 	}
 
-	auto shankBits = makeShankBits(NeuropixelsReference::External, channelMap);
-	auto configBits = makeConfigBits(NeuropixelsReference::External, lfpGain, apGain, true, adcs);
+	auto shankBits = makeShankBits(NeuropixelsReference::External, settings.selectedChannel);
+	auto configBits = makeConfigBits(NeuropixelsReference::External, (NeuropixelsGain)settings.lfpGainIndex, (NeuropixelsGain)settings.apGainIndex, true, adcs);
 
 	writeShiftRegisters(shankBits, configBits, adcs, lfpGainCorrection, apGainCorrection);
 
@@ -328,7 +327,7 @@ void Neuropixels_1::run()
 	}
 }
 
-std::bitset<shankConfigurationBitCount> Neuropixels_1::makeShankBits(NeuropixelsReference reference, Array<int, DummyCriticalSection, numberOfChannels> channelMap)
+std::bitset<Neuropixels_1::shankConfigurationBitCount> Neuropixels_1::makeShankBits(NeuropixelsReference reference, Array<int> channelMap)
 {
 	const int shankBitExt1 = 965;
 	const int shankBitExt2 = 2;
@@ -366,7 +365,7 @@ std::bitset<shankConfigurationBitCount> Neuropixels_1::makeShankBits(Neuropixels
 	return shankBits;
 }
 
-std::vector<std::bitset<BaseConfigurationBitCount>> Neuropixels_1::makeConfigBits(NeuropixelsReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs)
+std::vector<std::bitset<Neuropixels_1::BaseConfigurationBitCount>> Neuropixels_1::makeConfigBits(NeuropixelsReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs)
 {
 	const int BaseConfigurationConfigOffset = 576;
 
@@ -652,4 +651,6 @@ void Neuropixels_1::defineMetadata(ProbeSettings& settings)
 	settings.availableElectrodeConfigurations.add("Bank C");
 	settings.availableElectrodeConfigurations.add("Single column");
 	settings.availableElectrodeConfigurations.add("Tetrodes");
+
+	settings.electrodeConfigurationIndex = 0;
 }
