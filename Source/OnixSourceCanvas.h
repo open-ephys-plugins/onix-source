@@ -29,6 +29,8 @@
 #include "UI/SettingsInterface.h"
 #include "OnixSourceEditor.h"
 
+class OnixSource;
+
 /**
 
 	TabBarButton with custom appearance
@@ -129,6 +131,9 @@ public:
 
 	/** Sets bounds of sub-components*/
 	void resized();
+
+	/** Get the given parameter from the source node */
+	Parameter* getSourceParameter(String name);
 
 	OwnedArray<SettingsInterface> settingsInterfaces;
 

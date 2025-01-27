@@ -22,7 +22,7 @@
 */
 
 #include "OnixSource.h"
-#include "OnixSourceEditor.h"
+#include "Devices/DeviceList.h"
 
 OnixSource::OnixSource(SourceNode* sn) :
 	DataThread(sn),
@@ -169,7 +169,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
 		{
-			Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]), editor->portVoltage, editor->adcCalibrationFile->getText(), editor->gainCalibrationFile->getText(), devices[dev_idx].idx, ctx);
+			Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]), editor->portVoltage, this, devices[dev_idx].idx, ctx);
 
 			int res = np1->enableDevice();
 
@@ -178,18 +178,21 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				if (res == -1)
 				{
 					LOGE("Device Idx: ", devices[dev_idx].idx, " Unable to read probe serial number. Device not found.");
+
+					delete np1;
+					continue;
 				}
 				else if (res == -2)
 				{
 					LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
-				}
-				else if (res == -3)
-				{
-					LOGE("Missing calibration file(s). Ensure that all calibration files exist and the file paths are correct.");
-				}
 
-				delete np1;
-				continue;
+					delete np1;
+					continue;
+				}
+				else if (res == -3 || res == -4)
+				{
+					LOGE("Missing or invalid calibration file(s). Ensure that all calibration files exist and the file paths are correct.");
+				}
 			}
 
 			sources.add(np1);

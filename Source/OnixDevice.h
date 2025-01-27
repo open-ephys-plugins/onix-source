@@ -36,6 +36,9 @@
 
 #include "I2CRegisterContext.h"
 #include "NeuropixComponents.h"
+#include "UI/SettingsInterface.h"
+
+class SettingsInterface;
 
 using namespace std::chrono;
 
@@ -104,21 +107,17 @@ public:
 
 	Array<StreamInfo> streams;
 
-	int checkLinkState(oni_dev_idx_t port);
+	int checkLinkState(oni_dev_idx_t port) const;
+
+	void setSettingsInterface(SettingsInterface* interface_);
 
 protected:
 
 	const oni_dev_idx_t deviceIdx;
 	const oni_ctx ctx;
+	SettingsInterface* settingsInterface;
 
 private:
-
-	std::vector<float>* data;
-	int availableSamples;
-	int samplesPerBuffer;
-
-	int64 numSamples;
-	uint64 eventCode;
 
 	String name;
 

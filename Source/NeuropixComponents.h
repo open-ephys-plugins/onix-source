@@ -37,7 +37,6 @@
 
 # define MAXPACKETS 64
 
-class Headstage;
 class NeuropixV1Interface;
 
 enum class ProbeType
@@ -140,18 +139,6 @@ struct ProbeSettings
 	ProbeType probeType;
 
 	ProbeMetadata probeMetadata;
-};
-
-/** Base class for all Neuropixels components, which must implement the "getInfo" method */
-class NeuropixComponent
-{
-public:
-
-	/** Constructor */
-	NeuropixComponent() {}
-
-	/** Pure virtual method for getting component info */
-	virtual void getInfo() = 0;
 };
 
 #endif  // __NEUROPIXELCOMPONENTS_H__

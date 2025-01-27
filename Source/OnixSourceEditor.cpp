@@ -53,50 +53,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	rescanButton->addListener(this);
 	addAndMakeVisible(rescanButton.get());
 
-	adcCalibrationLabel = std::make_unique<Label>("ADC CAL LABEL", "ADC CAL.");
-	adcCalibrationLabel->setFont(FontOptions("Small Text", 11, Font::plain));
-	adcCalibrationLabel->setBounds(80, 25, 50, 15);
-	adcCalibrationLabel->setColour(Label::textColourId, Colours::black);
-	addAndMakeVisible(adcCalibrationLabel.get());
-
-	adcCalibrationFile = std::make_unique<TextEditor>("ADC CAL FILE");
-	adcCalibrationFile->setFont(FontOptions("Small Text", 11, Font::plain));
-	adcCalibrationFile->setBounds(80, 40, 90, 16);
-	adcCalibrationFile->setColour(Label::textColourId, Colours::black);
-	adcCalibrationFile->addListener(this);
-	addAndMakeVisible(adcCalibrationFile.get());
-
-	chooseAdcCalibrationFileButton = std::make_unique<UtilityButton>("...");
-	chooseAdcCalibrationFileButton->setFont(FontOptions("Small Text", 9, Font::bold));
-	chooseAdcCalibrationFileButton->setBounds(172, 40, 18, 16);
-	chooseAdcCalibrationFileButton->setRadius(1.0f);
-	chooseAdcCalibrationFileButton->addListener(this);
-	addAndMakeVisible(chooseAdcCalibrationFileButton.get());
-
-	adcCalibrationFileChooser = std::make_unique<FileChooser>("Select ADC Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_ADCCalibration.csv");
-
-	gainCalibrationLabel = std::make_unique<Label>("GAIN CAL LABEL", "GAIN CAL.");
-	gainCalibrationLabel->setFont(FontOptions("Small Text", 11, Font::plain));
-	gainCalibrationLabel->setBounds(80, 57, 50, 15);
-	gainCalibrationLabel->setColour(Label::textColourId, Colours::black);
-	addAndMakeVisible(gainCalibrationLabel.get());
-
-	gainCalibrationFile = std::make_unique<TextEditor>("GAIN CAL FILE");
-	gainCalibrationFile->setFont(FontOptions("Small Text", 11, Font::plain));
-	gainCalibrationFile->setBounds(80, 72, 90, 16);
-	gainCalibrationFile->setColour(Label::textColourId, Colours::black);
-	gainCalibrationFile->addListener(this);
-	addAndMakeVisible(gainCalibrationFile.get());
-
-	chooseGainCalibrationFileButton = std::make_unique<UtilityButton>("...");
-	chooseGainCalibrationFileButton->setFont(FontOptions("Small Text", 9, Font::bold));
-	chooseGainCalibrationFileButton->setBounds(172, 72, 18, 16);
-	chooseGainCalibrationFileButton->setRadius(1.0f);
-	chooseGainCalibrationFileButton->addListener(this);
-	addAndMakeVisible(chooseGainCalibrationFileButton.get());
-
-	gainCalibrationFileChooser = std::make_unique<FileChooser>("Select Gain Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_gainCalValues.csv");
-
 	passthroughEditor = std::make_unique<ToggleParameterEditor>(onixSource->getParameter("is_passthrough_A"), 20, 95);
 	passthroughEditor->setLayout(ParameterEditor::nameOnTop);
 	passthroughEditor->setBounds(80, 90, 100, 36);
@@ -138,20 +94,6 @@ void OnixSourceEditor::buttonClicked(Button* b)
 		thread->initializeDevices(true);
 		canvas->refreshTabs();
 	}
-	else if (b == chooseAdcCalibrationFileButton.get())
-	{
-		if (adcCalibrationFileChooser->browseForFileToOpen())
-		{
-			adcCalibrationFile->setText(adcCalibrationFileChooser->getResult().getFullPathName(), false);
-		}
-	}
-	else if (b == chooseGainCalibrationFileButton.get())
-	{
-		if (gainCalibrationFileChooser->browseForFileToOpen())
-		{
-			gainCalibrationFile->setText(gainCalibrationFileChooser->getResult().getFullPathName(), false);
-		}
-	}
 }
 
 void OnixSourceEditor::updateSettings()
@@ -164,24 +106,12 @@ void OnixSourceEditor::startAcquisition()
 {
 	rescanButton->setEnabled(false);
 	rescanButton->setAlpha(0.3f);
-
-	chooseAdcCalibrationFileButton->setEnabled(false);
-	chooseAdcCalibrationFileButton->setAlpha(0.3f);
-
-	chooseGainCalibrationFileButton->setEnabled(false);
-	chooseGainCalibrationFileButton->setAlpha(0.3f);
 }
 
 void OnixSourceEditor::stopAcquisition()
 {
 	rescanButton->setEnabled(true);
 	rescanButton->setAlpha(1.0f);
-
-	chooseAdcCalibrationFileButton->setEnabled(true);
-	chooseAdcCalibrationFileButton->setAlpha(1.0f);
-
-	chooseGainCalibrationFileButton->setEnabled(true);
-	chooseGainCalibrationFileButton->setAlpha(1.0f);
 }
 
 Visualizer* OnixSourceEditor::createNewCanvas(void)

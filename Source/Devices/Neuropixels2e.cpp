@@ -5,7 +5,6 @@
 
 Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 	: OnixDevice(name, NEUROPIXELS_1, deviceIdx_, ctx_)
-	
 {}
 
 void Neuropixels2e::createDataStream(int n)

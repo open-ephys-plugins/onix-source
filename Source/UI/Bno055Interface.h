@@ -29,6 +29,8 @@
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
 
+#include "../Devices/Bno055.h"
+
 class Bno055Interface : public SettingsInterface
 {
 public:

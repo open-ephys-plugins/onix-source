@@ -22,13 +22,13 @@
 */
 
 #include "Neuropixels_1.h"
+#include "../OnixSource.h"
 
-Neuropixels_1::Neuropixels_1(String name, float portVoltage, String adcFile, String gainFile, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: OnixDevice(name, NEUROPIXELS_1, deviceIdx_, ctx_), I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_)
+Neuropixels_1::Neuropixels_1(String name, float portVoltage, OnixSource* s, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
+	OnixDevice(name, NEUROPIXELS_1, deviceIdx_, ctx_),
+	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
+	source(s)
 {
-	adcCalibrationFile = adcFile;
-	gainCalibrationFile = gainFile;
-
 	StreamInfo apStream;
 	apStream.name = name + "-AP";
 	apStream.description = "Neuropixels 1.0 AP band data stream";
@@ -55,10 +55,33 @@ Neuropixels_1::Neuropixels_1(String name, float portVoltage, String adcFile, Str
 		portVoltage_ = portVoltage;
 
 	defineMetadata(settings);
+
+	// Set parameters
+	StringArray validExtensions = StringArray();
+	validExtensions.add("csv");
+	//validExtensions.add("*_ADCCalibration.csv");
+
+	source->addPathParameter(Parameter::PROCESSOR_SCOPE, getAdcPathParameterName(), "ADC Calibration File", "Path to the ADC calibration file for this Neuropixels probe",
+		File::getSpecialLocation(File::userHomeDirectory).getFullPathName(), validExtensions, false, true, true);
+
+	//validExtensions.set(0, "*_gainCalValues.csv");
+
+	source->addPathParameter(Parameter::PROCESSOR_SCOPE, getGainPathParameterName(), "Gain Calibration File", "Path to the gain calibration file for this Neuropixels probe",
+		File::getSpecialLocation(File::userHomeDirectory).getFullPathName(), validExtensions, false, true, true);
 }
 
 Neuropixels_1::~Neuropixels_1()
 {
+}
+
+String Neuropixels_1::getAdcPathParameterName()
+{
+	return "adcCalibrationFile_" + getName();
+}
+
+String Neuropixels_1::getGainPathParameterName()
+{
+	return "gainCalibrationFile_" + getName();
 }
 
 int Neuropixels_1::enableDevice()
@@ -109,8 +132,10 @@ int Neuropixels_1::enableDevice()
 int Neuropixels_1::updateSettings()
 {
 	// Parse ADC and Gain calibration files
-	File adcFile = File(adcCalibrationFile);
-	File gainFile = File(gainCalibrationFile);
+	Parameter* param = source->getParameter(getAdcPathParameterName());
+
+	File adcFile = File(param->getValueAsString());
+	File gainFile = File(source->getParameter(getGainPathParameterName())->getValue());
 
 	if (!adcFile.existsAsFile() || !gainFile.existsAsFile()) return -3;
 

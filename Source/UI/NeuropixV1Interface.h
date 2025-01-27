@@ -26,7 +26,7 @@
 
 #include <VisualizerEditorHeaders.h>
 
-#include "../NeuropixComponents.h"
+#include "../Devices/Neuropixels_1.h"
 #include "ColourScheme.h"
 #include "SettingsInterface.h"
 
@@ -68,7 +68,8 @@ public:
 */
 class NeuropixV1Interface : public SettingsInterface,
 	public Button::Listener,
-	public ComboBox::Listener
+	public ComboBox::Listener,
+	public TextEditor::Listener
 {
 public:
 	friend class ProbeBrowser;
@@ -131,11 +132,13 @@ private:
 	std::unique_ptr<ComboBox> filterComboBox;
 	std::unique_ptr<ComboBox> activityViewComboBox;
 
-	// Combo box - probe settings
-	std::unique_ptr<ComboBox> loadImroComboBox;
+	std::unique_ptr<PathParameterEditor> adcCalibrationFileEditor;
+	std::unique_ptr<PathParameterEditor> gainCalibrationFileEditor;
+
+	std::unique_ptr<FileChooser> adcCalibrationFileChooser;
+	std::unique_ptr<FileChooser> gainCalibrationFileChooser;
 
 	// LABELS
-	std::unique_ptr<Viewport> infoLabelView;
 	std::unique_ptr<Label> nameLabel;
 	std::unique_ptr<Label> infoLabel;
 	std::unique_ptr<Label> lfpGainLabel;
@@ -144,7 +147,6 @@ private:
 	std::unique_ptr<Label> electrodePresetLabel;
 	std::unique_ptr<Label> referenceLabel;
 	std::unique_ptr<Label> filterLabel;
-	std::unique_ptr<Label> bankViewLabel;
 	std::unique_ptr<Label> activityViewLabel;
 
 	std::unique_ptr<Label> probeSettingsLabel;
@@ -163,10 +165,6 @@ private:
 	std::unique_ptr<UtilityButton> bankViewButton;
 	std::unique_ptr<UtilityButton> activityViewButton;
 
-	std::unique_ptr<UtilityButton> copyButton;
-	std::unique_ptr<UtilityButton> pasteButton;
-	std::unique_ptr<UtilityButton> loadImroButton;
-	std::unique_ptr<UtilityButton> saveImroButton;
 	std::unique_ptr<UtilityButton> loadJsonButton;
 	std::unique_ptr<UtilityButton> saveJsonButton;
 
@@ -180,8 +178,10 @@ private:
 
 	Array<int> getSelectedElectrodes() const;
 
-	Array<String> imroFiles;
-	Array<bool> imroLoadedFromFolder;
+	void setInterfaceEnabledState(bool enabledState);
+
+	String adcPathParameterName;
+	String gainPathParameterName;
 };
 
 #endif //__NEUROPIXINTERFACE_H__

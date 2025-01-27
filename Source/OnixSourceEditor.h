@@ -74,9 +74,6 @@ public:
 
     float portVoltage;
 
-    std::unique_ptr<TextEditor> adcCalibrationFile;
-    std::unique_ptr<TextEditor> gainCalibrationFile;
-
     OnixSourceCanvas* canvas;
 
 private:
@@ -85,15 +82,6 @@ private:
 
     std::unique_ptr<Label> portVoltageLabel;
     std::unique_ptr<Label> portVoltageValue;
-
-    std::unique_ptr<Label> adcCalibrationLabel;
-    std::unique_ptr<Label> gainCalibrationLabel;
-
-    std::unique_ptr<UtilityButton> chooseAdcCalibrationFileButton;
-    std::unique_ptr<UtilityButton> chooseGainCalibrationFileButton;
-
-    std::unique_ptr<FileChooser> adcCalibrationFileChooser;
-    std::unique_ptr<FileChooser> gainCalibrationFileChooser;
 
     std::unique_ptr<UtilityButton> rescanButton;
 

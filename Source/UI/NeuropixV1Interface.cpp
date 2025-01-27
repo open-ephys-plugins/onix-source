@@ -35,18 +35,26 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, Oni
 
 	if (device != nullptr)
 	{
+		device->setSettingsInterface(this);
+
+		adcPathParameterName = device->getAdcPathParameterName();
+		gainPathParameterName = device->getGainPathParameterName();
+
 		type = SettingsInterface::PROBE_SETTINGS_INTERFACE;
 
 		mode = VisualizationMode::ENABLE_VIEW;
 
 		probeBrowser = std::make_unique<ProbeBrowser>(this);
-		probeBrowser->setBounds(0, 0, 800, 600);
+		probeBrowser->setBounds(0, 0, 600, 600);
 		addAndMakeVisible(probeBrowser.get());
 
 		int currentHeight = 55;
 
+		// TODO: Standardize the font options. Make temp variables for the different variations and use those
+
 		probeEnableButton = std::make_unique<UtilityButton>("ENABLED");
-		probeEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
+		probeEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f)); // TODO: 1) Have all of these use a patterned variable so they can all be moved easily. 
+		//		 2) Move everything to the left so it is closer to the probe
 		probeEnableButton->setRadius(3.0f);
 		probeEnableButton->setBounds(630, currentHeight + 25, 100, 22);
 		probeEnableButton->setClickingTogglesState(true);
@@ -236,75 +244,53 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, Oni
 
 		currentHeight += 55;
 
-		// COPY / PASTE / UPLOAD
-		copyButton = std::make_unique<UtilityButton>("COPY");
-		copyButton->setRadius(3.0f);
-		copyButton->setBounds(45, 637, 60, 22);
-		copyButton->addListener(this);
-		copyButton->setTooltip("Copy probe settings");
-		addAndMakeVisible(copyButton.get());
+		probeSettingsLabel = std::make_unique<Label>("Settings", "Probe Settings:");
+		probeSettingsLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
+		probeSettingsLabel->setBounds(630, 110, 150, 15);
+		addAndMakeVisible(probeSettingsLabel.get());
 
-		pasteButton = std::make_unique<UtilityButton>("PASTE");
-		pasteButton->setRadius(3.0f);
-		pasteButton->setBounds(115, 637, 60, 22);
-		pasteButton->addListener(this);
-		pasteButton->setTooltip("Paste probe settings");
-		addAndMakeVisible(pasteButton.get());
+		adcCalibrationFileEditor = std::make_unique<PathParameterEditor>(canvas->getSourceParameter(adcPathParameterName));
+		adcCalibrationFileEditor->setLayout(ParameterEditor::nameOnTop);
+		adcCalibrationFileEditor->setBounds(635, 126, 240, 45);
+		addAndMakeVisible(adcCalibrationFileEditor.get());
+
+		gainCalibrationFileEditor = std::make_unique<PathParameterEditor>(canvas->getSourceParameter(gainPathParameterName));
+		gainCalibrationFileEditor->setLayout(ParameterEditor::nameOnTop);
+		gainCalibrationFileEditor->setBounds(635, 175, 240, 45);
+		addAndMakeVisible(gainCalibrationFileEditor.get());
 
 		saveJsonButton = std::make_unique<UtilityButton>("SAVE TO JSON");
 		saveJsonButton->setRadius(3.0f);
-		saveJsonButton->setBounds(45, 707, 120, 22);
+		saveJsonButton->setBounds(630, 225, 120, 22);
 		saveJsonButton->addListener(this);
 		saveJsonButton->setTooltip("Save channel map to probeinterface .json file");
 		addAndMakeVisible(saveJsonButton.get());
 
 		loadJsonButton = std::make_unique<UtilityButton>("LOAD FROM JSON");
 		loadJsonButton->setRadius(3.0f);
-		loadJsonButton->setBounds(175, 707, 130, 22);
+		loadJsonButton->setBounds(755, 225, 120, 22);
 		loadJsonButton->addListener(this);
 		loadJsonButton->setTooltip("Load channel map from probeinterface .json file");
 		addAndMakeVisible(loadJsonButton.get());
-
-		loadImroComboBox = std::make_unique<ComboBox>("Quick-load IMRO");
-		loadImroComboBox->setBounds(175, 707, 130, 22);
-		loadImroComboBox->addListener(this);
-		loadImroComboBox->setTooltip("Load a favorite IMRO setting.");
-
-		probeSettingsLabel = std::make_unique<Label>("Settings", "Probe settings:");
-		probeSettingsLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
-		probeSettingsLabel->setBounds(40, 610, 300, 20);
-		addAndMakeVisible(probeSettingsLabel.get());
 	}
 	else
 	{
 		type = SettingsInterface::UNKNOWN_SETTINGS_INTERFACE;
 	}
 
-	int verticalOffset = 550;
-
-	if (device == nullptr)
-		verticalOffset = 250;
-
 	// PROBE INFO
+	// TODO: see if I can create a rounded rectangle with a dark background here, instead of in the paint() method
+
 	nameLabel = std::make_unique<Label>("MAIN", "NAME");
 	nameLabel->setFont(FontOptions("Fira Code", "Medium", 30.0f));
-	nameLabel->setBounds(625, 40, 500, 45);
+	nameLabel->setBounds(625, 40, 370, 45);
 	addAndMakeVisible(nameLabel.get());
 
-	infoLabelView = std::make_unique<Viewport>("INFO");
-	infoLabelView->setBounds(625, 110, 750, 400);
-
-	addAndMakeVisible(infoLabelView.get());
-	infoLabelView->toBack();
-
 	infoLabel = std::make_unique<Label>("INFO", "INFO");
-	infoLabelView->setViewedComponent(infoLabel.get(), false);
 	infoLabel->setFont(FontOptions(15.0f));
-	infoLabel = std::make_unique<Label>("INFO", "INFO");
-	infoLabelView->setViewedComponent(infoLabel.get(), false);
-	infoLabel->setFont(FontOptions(15.0f));
-	infoLabel->setBounds(0, 0, 750, 350);
+	infoLabel->setBounds(625, 250, 300, 350);
 	infoLabel->setJustificationType(Justification::topLeft);
+	addAndMakeVisible(infoLabel.get());
 
 	updateInfoString();
 }
@@ -581,11 +567,8 @@ void NeuropixV1Interface::selectElectrodes(Array<int> electrodes)
 	CoreServices::updateSignalChain(editor);
 }
 
-void NeuropixV1Interface::startAcquisition()
+void NeuropixV1Interface::setInterfaceEnabledState(bool enabledState)
 {
-	bool enabledState = false;
-	acquisitionIsActive = true;
-
 	if (enableButton != nullptr)
 		enableButton->setEnabled(enabledState);
 
@@ -604,17 +587,15 @@ void NeuropixV1Interface::startAcquisition()
 	if (referenceComboBox != nullptr)
 		referenceComboBox->setEnabled(enabledState);
 
-	if (copyButton != nullptr)
-		copyButton->setEnabled(enabledState);
-
-	if (pasteButton != nullptr)
-		pasteButton->setEnabled(enabledState);
-
-	if (loadImroButton != nullptr)
-		loadImroButton->setEnabled(enabledState);
-
 	if (loadJsonButton != nullptr)
 		loadJsonButton->setEnabled(enabledState);
+}
+
+void NeuropixV1Interface::startAcquisition()
+{
+	acquisitionIsActive = true;
+
+	setInterfaceEnabledState(false);
 
 	if (mode == ACTIVITY_VIEW)
 		probeBrowser->startTimer(100);
@@ -622,53 +603,19 @@ void NeuropixV1Interface::startAcquisition()
 
 void NeuropixV1Interface::stopAcquisition()
 {
-	bool enabledState = true;
 	acquisitionIsActive = false;
 
-	if (enableButton != nullptr)
-		enableButton->setEnabled(enabledState);
-
-	if (electrodeConfigurationComboBox != nullptr)
-		electrodeConfigurationComboBox->setEnabled(enabledState);
-
-	if (apGainComboBox != nullptr)
-		apGainComboBox->setEnabled(enabledState);
-
-	if (lfpGainComboBox != nullptr)
-		lfpGainComboBox->setEnabled(enabledState);
-
-	if (filterComboBox != nullptr)
-		filterComboBox->setEnabled(enabledState);
-
-	if (referenceComboBox != nullptr)
-		referenceComboBox->setEnabled(enabledState);
-
-	if (copyButton != nullptr)
-		copyButton->setEnabled(enabledState);
-
-	if (pasteButton != nullptr)
-		pasteButton->setEnabled(enabledState);
-
-	if (loadImroButton != nullptr)
-		loadImroButton->setEnabled(enabledState);
-
-	if (loadJsonButton != nullptr)
-		loadJsonButton->setEnabled(enabledState);
+	setInterfaceEnabledState(true);
 }
 
 void NeuropixV1Interface::paint(Graphics& g)
 {
-	if (device != nullptr)
-	{
-		drawLegend(g);
-
-		g.setColour(Colour(60, 60, 60));
-		g.fillRoundedRectangle(30, 600, 290, 145, 8.0f);
-	}
+	drawLegend(g);
 }
 
 void NeuropixV1Interface::drawLegend(Graphics& g)
 {
+	// TODO: Modify this so it is called whenever one of the View buttons is pressed. Should not rely on graphics or the paint() method
 	g.setColour(Colour(55, 55, 55));
 	g.setFont(15);
 
@@ -910,20 +857,6 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 			yposNode->setAttribute(chId, String(device->settings.electrodeMetadata[elec].ypos));
 		}
 
-		if (imroFiles.size() > 0)
-		{
-			XmlElement* imroFilesNode = xmlNode->createNewChildElement("IMRO_FILES");
-
-			for (int i = 0; i < imroFiles.size(); i++)
-			{
-				if (!imroLoadedFromFolder[i])
-				{
-					XmlElement* imroFileNode = imroFilesNode->createNewChildElement("FILE");
-					imroFileNode->setAttribute("PATH", imroFiles[i]);
-				}
-			}
-		}
-
 		xmlNode->setAttribute("visualizationMode", mode);
 		xmlNode->setAttribute("activityToView", probeBrowser->activityToView);
 
@@ -1048,22 +981,6 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 			}
 
 			settings.apFilterState = matchingNode->getIntAttribute("filterCutIndex", 1) == 1;
-
-			for (auto imroNode : matchingNode->getChildIterator())
-			{
-				if (imroNode->hasTagName("IMRO_FILES"))
-				{
-					for (auto fileNode : imroNode->getChildIterator())
-					{
-						if (imroFiles.size() == 0)
-							loadImroComboBox->clear();
-
-						imroFiles.add(fileNode->getStringAttribute("PATH"));
-						imroLoadedFromFolder.add(false);
-						loadImroComboBox->addItem(imroFiles.getLast(), imroFiles.size());
-					}
-				}
-			}
 
 			for (auto annotationNode : matchingNode->getChildIterator())
 			{

@@ -33,6 +33,7 @@
 #include <DataThreadHeaders.h>
 
 #include "OnixDevice.h"
+#include "OnixSourceEditor.h"
 #include "Devices/Neuropixels_1.h"
 #include "Devices/Bno055.h"
 #include "Devices/HeadStageEEPROM.h"

@@ -27,6 +27,8 @@
 #include "../OnixDevice.h"
 #include "../NeuropixComponents.h"
 
+class OnixSource;
+
 #include <ctime>
 #include <chrono>
 #include <bitset>
@@ -156,7 +158,7 @@ class Neuropixels_1 : public OnixDevice,
 public:
 
 	/** Constructor */
-	Neuropixels_1(String name, float portVoltage, String adcFile, String gainFile, const oni_dev_idx_t, const oni_ctx);
+	Neuropixels_1(String name, float portVoltage, OnixSource* s, const oni_dev_idx_t, const oni_ctx);
 
 	/** Destructor */
 	~Neuropixels_1();
@@ -178,6 +180,10 @@ public:
 	int64 getProbeNumber() const { return probeNumber; }
 
 	void updateSettings(ProbeSettings p) { settings = p; }
+
+	String getAdcPathParameterName();
+
+	String getGainPathParameterName();
 
 	/** Select a preset electrode configuration */
 	Array<int> selectElectrodeConfiguration(String config);
@@ -231,9 +237,6 @@ private:
 		{NeuropixelsGain::Gain3000, 7},
 	};
 
-	String adcCalibrationFile;
-	String gainCalibrationFile;
-
 	int64 probeNumber = 0;
 
 	float lfpSamples[384 * numUltraFrames];
@@ -258,6 +261,8 @@ private:
 
 	const float minVoltage = 4.5;
 	const float maxVoltage = 6.5;
+
+	OnixSource* source;
 };
 
 #endif

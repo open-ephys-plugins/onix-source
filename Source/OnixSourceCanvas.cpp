@@ -25,6 +25,7 @@ along with this program.If not, see < http://www.gnu.org/licenses/>.
 
 #include "UI/NeuropixV1Interface.h"
 #include "UI/Bno055Interface.h"
+#include "OnixSource.h"
 
 CustomTabButton::CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_) :
 	TabBarButton(name, parent->getTabbedButtonBar()),
@@ -88,6 +89,11 @@ OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEdito
 
 	refreshTabs();
 	update();
+}
+
+Parameter* OnixSourceCanvas::getSourceParameter(String name)
+{
+	return onixSource->getParameter(name);
 }
 
 void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
@@ -176,10 +182,10 @@ void OnixSourceCanvas::update()
 
 				if (v != nullptr)
 				{
-					OnixDevice* dataSource = v->settingsInterface->dataSource;
+					OnixDevice* device = v->settingsInterface->dataSource;
 
-					if (dataSource != nullptr)
-						t->setTabName(j, " " + dataSource->getName() + " ");
+					if (device != nullptr)
+						t->setTabName(j, " " + device->getName() + " ");
 					else
 						t->setTabName(j, "");
 				}

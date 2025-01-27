@@ -32,6 +32,7 @@
 class OnixSourceEditor;
 class OnixSourceCanvas;
 class SettingsInterface;
+class OnixDevice;
 
 /** 
 
@@ -41,8 +42,12 @@ class SettingsInterface;
 class CustomViewport : public Component
 {
 public:
-    CustomViewport (SettingsInterface* settingsInterface_) : settingsInterface (settingsInterface_)
+    CustomViewport (SettingsInterface* settingsInterface_, int width_, int height_) : 
+        settingsInterface (settingsInterface_)
     {
+        width = width_;
+        height = height_;
+
         viewport = std::make_unique<Viewport>();
         viewport->setViewedComponent ((Component*) settingsInterface, false);
         viewport->setScrollBarsShown (true, true);
@@ -59,12 +64,12 @@ public:
     {
         viewport->setBounds (getLocalBounds());
 
-        int contentWidth = 1000;
+        int contentWidth = width;
 
-        if (getWidth() > 1012)
+        if (getWidth() > width + 12)
             contentWidth = getWidth() - 12;
 
-        viewport->getViewedComponent()->setSize (contentWidth, 820);
+        viewport->getViewedComponent()->setSize (contentWidth, height);
     }
 
     void paint (Graphics& g) override
@@ -76,6 +81,9 @@ public:
 
 private:
     std::unique_ptr<Viewport> viewport;
+
+    int width;
+    int height;
 };
 
 /** 
@@ -101,9 +109,12 @@ public:
         editor = editor_;
         canvas = canvas_;
 
-        setBounds (0, 0, 1000, 820);
+        int width = 1000;
+        int height = 600;
 
-        viewport = std::make_unique<CustomViewport> (this);
+        setBounds (0, 0, width, height);
+
+        viewport = std::make_unique<CustomViewport> (this, width, height);
     }
 
     /** Destructor */

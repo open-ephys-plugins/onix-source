@@ -24,12 +24,22 @@
 #include "OnixDevice.h"
 
 OnixDevice::OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: Thread(name_), type(type_), deviceIdx(deviceIdx_), ctx(ctx_)
+	: Thread(name_), type(type_), deviceIdx(deviceIdx_), ctx(ctx_), deviceBuffer(NULL)
 {
 	name = name_;
+	settingsInterface = nullptr;
 }
 
-int OnixDevice::checkLinkState(oni_dev_idx_t port)
+void OnixDevice::setSettingsInterface(SettingsInterface* interface_)
+{
+	if (settingsInterface == nullptr)
+		settingsInterface = interface_;
+
+	else
+		LOGD("Attempting to set the settings interface twice. Invalid operation.");
+}
+
+int OnixDevice::checkLinkState(oni_dev_idx_t port) const
 {
 	const oni_reg_addr_t linkStateRegister = 5;
 
