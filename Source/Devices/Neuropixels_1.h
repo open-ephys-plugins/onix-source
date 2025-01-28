@@ -36,7 +36,7 @@ class OnixSource;
 #include <string>
 #include <map>
 
-enum NeuropixelsRegisters
+enum class NeuropixelsRegisters : uint32_t
 {
 	OP_MODE = 0x00,
 	REC_MOD = 0x01,
@@ -45,7 +45,7 @@ enum NeuropixelsRegisters
 	SYNC = 0X09
 };
 
-enum CalMode
+enum class CalMode
 {
 	CAL_OFF = 0,
 	OSC_ACTIVE = 1 << 4, // 0 = external osc inactive, 1 = activate the external calibration oscillator
@@ -59,7 +59,7 @@ enum CalMode
 	OSC_ACTIVE_AND_PIX_CAL = OSC_ACTIVE | PIX_CAL,
 };
 
-enum OpMode
+enum class OpMode
 {
 	TEST = 1 << 3, // Enable Test mode
 	DIG_TEST = 1 << 4, // Enable Digital Test mode
@@ -68,7 +68,7 @@ enum OpMode
 	POWER_DOWN = 1 << 7, // Enable power down mode
 };
 
-enum RecMod
+enum class RecMod
 {
 	DIG_AND_CH_RESET = 0,
 	RESET_ALL = 1 << 5, // 1 = Set analog SR chains to default values
@@ -82,13 +82,13 @@ enum RecMod
 	ACTIVE = DIG_NRESET | CH_NRESET
 };
 
-enum NeuropixelsReference
+enum class NeuropixelsReference
 {
 	External = 0b001,
 	Tip = 0b010
 };
 
-enum NeuropixelsGain
+enum class NeuropixelsGain
 {
 	Gain50 = 0b000,
 	Gain125 = 0b001,
@@ -100,7 +100,7 @@ enum NeuropixelsGain
 	Gain3000 = 0b111
 };
 
-enum ShiftRegisters
+enum class ShiftRegisters : uint32_t
 {
 	SR_CHAIN1 = 0X0E,
 	SR_CHAIN3 = 0X0C,

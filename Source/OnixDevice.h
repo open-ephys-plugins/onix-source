@@ -39,13 +39,13 @@
 
 using namespace std::chrono;
 
-enum PortName
+enum class PortName
 {
 	PortA = 1,
 	PortB = 2
 };
 
-enum OnixDeviceType {
+enum class OnixDeviceType {
 	HS64,
 	BNO,
 	NEUROPIXELS_1,

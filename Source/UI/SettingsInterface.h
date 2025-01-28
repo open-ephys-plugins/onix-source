@@ -41,7 +41,7 @@ class SettingsInterface : public Component
 {
 public:
     /** Settings interface type*/
-    enum Type
+    enum class Type
     {
         PROBE_SETTINGS_INTERFACE,
         BNO055_SETTINGS_INTERFACE,
@@ -80,7 +80,7 @@ public:
     virtual void updateInfoString() = 0;
 
     /** Default type */
-    Type type = UNKNOWN_SETTINGS_INTERFACE;
+    Type type = Type::UNKNOWN_SETTINGS_INTERFACE;
 
     /** Pointer to the data source*/
     OnixDevice* dataSource;

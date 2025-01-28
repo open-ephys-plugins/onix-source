@@ -35,7 +35,7 @@
 
 class ProbeBrowser;
 
-enum VisualizationMode
+enum class VisualizationMode
 {
 	ENABLE_VIEW,
 	AP_GAIN_VIEW,

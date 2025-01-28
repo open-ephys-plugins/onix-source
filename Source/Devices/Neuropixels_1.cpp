@@ -25,7 +25,7 @@
 #include "../OnixSource.h"
 
 Neuropixels_1::Neuropixels_1(String name, float portVoltage, OnixSource* s, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
-	OnixDevice(name, NEUROPIXELS_1, deviceIdx_, ctx_),
+	OnixDevice(name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	source(s)
 {
@@ -373,11 +373,11 @@ std::bitset<Neuropixels_1::shankConfigurationBitCount> Neuropixels_1::makeShankB
 
 	switch (reference)
 	{
-	case External:
+	case NeuropixelsReference::External:
 		shankBits[shankBitExt1] = true;
 		shankBits[shankBitExt2] = true;
 		break;
-	case Tip:
+	case NeuropixelsReference::Tip:
 		shankBits[shankBitTip1] = true;
 		shankBits[shankBitTip2] = true;
 		break;
@@ -490,26 +490,26 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 {
 	auto shankBytes = toBitReversedBytes<shankConfigurationBitCount>(shankBits);
 
-	if (WriteByte(ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100) != 0) return;
-	if (WriteByte(ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100) != 0) return;
+	if (WriteByte((uint32_t)ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100) != 0) return;
+	if (WriteByte((uint32_t)ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100) != 0) return;
 
 	for (auto b : shankBytes)
 	{
-		if (WriteByte(ShiftRegisters::SR_CHAIN1, b) != 0) return;
+		if (WriteByte((uint32_t)ShiftRegisters::SR_CHAIN1, b) != 0) return;
 	}
 
 	const uint32_t shiftRegisterSuccess = 1 << 7;
 
 	for (int i = 0; i < configBits.size(); i++)
 	{
-		auto srAddress = i == 0 ? ShiftRegisters::SR_CHAIN2 : ShiftRegisters::SR_CHAIN3;
+		auto srAddress = i == 0 ? (uint32_t)ShiftRegisters::SR_CHAIN2 : (uint32_t)ShiftRegisters::SR_CHAIN3;
 
 		for (int j = 0; j < 2; j++)
 		{
 			auto baseBytes = toBitReversedBytes<BaseConfigurationBitCount>(configBits[i]);
 
-			if (WriteByte(ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100) != 0) return;
-			if (WriteByte(ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100) != 0) return;
+			if (WriteByte((uint32_t)ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100) != 0) return;
+			if (WriteByte((uint32_t)ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100) != 0) return;
 
 			for (auto b : baseBytes)
 			{
@@ -519,7 +519,7 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 
 		oni_reg_val_t value;
 
-		if (ReadByte(NeuropixelsRegisters::STATUS, &value) != 0 || value != shiftRegisterSuccess)
+		if (ReadByte((uint32_t)NeuropixelsRegisters::STATUS, &value) != 0 || value != shiftRegisterSuccess)
 		{
 			LOGE("Shift register ", srAddress, " status check failed.");
 			return;

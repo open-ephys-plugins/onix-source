@@ -24,7 +24,7 @@
 #include "Bno055.h"
 
 Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: OnixDevice(name, BNO, deviceIdx_, ctx_)
+	: OnixDevice(name, OnixDeviceType::BNO, deviceIdx_, ctx_)
 {
 	const float bitVolts = 1.0;
 

@@ -26,7 +26,7 @@
 
 #include "../OnixDevice.h"
 
-enum Bno055Registers
+enum class Bno055Registers
 {
 	ENABLE = 0x00
 };

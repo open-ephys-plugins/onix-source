@@ -38,7 +38,7 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, Oni
 		adcPathParameterName = device->getAdcPathParameterName();
 		gainPathParameterName = device->getGainPathParameterName();
 
-		type = SettingsInterface::PROBE_SETTINGS_INTERFACE;
+		type = SettingsInterface::Type::PROBE_SETTINGS_INTERFACE;
 
 		mode = VisualizationMode::ENABLE_VIEW;
 
@@ -273,7 +273,7 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, Oni
 	}
 	else
 	{
-		type = SettingsInterface::UNKNOWN_SETTINGS_INTERFACE;
+		type = SettingsInterface::Type::UNKNOWN_SETTINGS_INTERFACE;
 	}
 
 	// PROBE INFO
@@ -425,31 +425,31 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 	}
 	else if (button == enableViewButton.get())
 	{
-		mode = ENABLE_VIEW;
+		mode = VisualizationMode::ENABLE_VIEW;
 		probeBrowser->stopTimer();
 		repaint();
 	}
 	else if (button == apGainViewButton.get())
 	{
-		mode = AP_GAIN_VIEW;
+		mode = VisualizationMode::AP_GAIN_VIEW;
 		probeBrowser->stopTimer();
 		repaint();
 	}
 	else if (button == lfpGainViewButton.get())
 	{
-		mode = LFP_GAIN_VIEW;
+		mode = VisualizationMode::LFP_GAIN_VIEW;
 		probeBrowser->stopTimer();
 		repaint();
 	}
 	else if (button == referenceViewButton.get())
 	{
-		mode = REFERENCE_VIEW;
+		mode = VisualizationMode::REFERENCE_VIEW;
 		probeBrowser->stopTimer();
 		repaint();
 	}
 	else if (button == activityViewButton.get())
 	{
-		mode = ACTIVITY_VIEW;
+		mode = VisualizationMode::ACTIVITY_VIEW;
 
 		if (acquisitionIsActive)
 			probeBrowser->startTimer(100);
@@ -595,7 +595,7 @@ void NeuropixV1Interface::startAcquisition()
 
 	setInterfaceEnabledState(false);
 
-	if (mode == ACTIVITY_VIEW)
+	if (mode == VisualizationMode::ACTIVITY_VIEW)
 		probeBrowser->startTimer(100);
 }
 
@@ -622,7 +622,7 @@ void NeuropixV1Interface::drawLegend(Graphics& g)
 
 	switch (mode)
 	{
-	case ENABLE_VIEW:
+	case VisualizationMode::ENABLE_VIEW:
 		g.drawMultiLineText("ENABLED?", xOffset, yOffset, 200);
 		g.drawMultiLineText("YES", xOffset + 30, yOffset + 22, 200);
 		g.drawMultiLineText("NO", xOffset + 30, yOffset + 42, 200);
@@ -641,7 +641,7 @@ void NeuropixV1Interface::drawLegend(Graphics& g)
 
 		break;
 
-	case AP_GAIN_VIEW:
+	case VisualizationMode::AP_GAIN_VIEW:
 		g.drawMultiLineText("AP GAIN", xOffset, yOffset, 200);
 
 		for (int i = 0; i < 8; i++)
@@ -657,7 +657,7 @@ void NeuropixV1Interface::drawLegend(Graphics& g)
 
 		break;
 
-	case LFP_GAIN_VIEW:
+	case VisualizationMode::LFP_GAIN_VIEW:
 		g.drawMultiLineText("LFP GAIN", xOffset, yOffset, 200);
 
 		for (int i = 0; i < 8; i++)
@@ -673,7 +673,7 @@ void NeuropixV1Interface::drawLegend(Graphics& g)
 
 		break;
 
-	case REFERENCE_VIEW:
+	case VisualizationMode::REFERENCE_VIEW:
 		g.drawMultiLineText("REFERENCE", xOffset, yOffset, 200);
 
 		for (int i = 0; i < referenceComboBox->getNumItems(); i++)
@@ -697,7 +697,7 @@ void NeuropixV1Interface::drawLegend(Graphics& g)
 
 		break;
 
-	case ACTIVITY_VIEW:
+	case VisualizationMode::ACTIVITY_VIEW:
 		g.drawMultiLineText("AMPLITUDE", xOffset, yOffset, 200);
 
 		for (int i = 0; i < 6; i++)
@@ -855,8 +855,8 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 			yposNode->setAttribute(chId, String(device->settings.electrodeMetadata[elec].ypos));
 		}
 
-		xmlNode->setAttribute("visualizationMode", mode);
-		xmlNode->setAttribute("activityToView", probeBrowser->activityToView);
+		xmlNode->setAttribute("visualizationMode", (double)mode);
+		xmlNode->setAttribute("activityToView", (double)probeBrowser->activityToView);
 
 		// annotations
 		for (int i = 0; i < annotations.size(); i++)

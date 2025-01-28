@@ -47,7 +47,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	portVoltageValue->addListener(this);
 	addAndMakeVisible(portVoltageValue.get());
 
-	rescanButton = std::make_unique<UtilityButton>("Rescan");
+	rescanButton = std::make_unique<UtilityButton>("Scan");
 	rescanButton->setFont(FontOptions("Small Text", 9, Font::plain));
 	rescanButton->setBounds(10, 100, 50, 17);
 	rescanButton->setRadius(3.0f);

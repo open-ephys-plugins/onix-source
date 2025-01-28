@@ -32,7 +32,7 @@ Bno055Interface::Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceC
 		// TODO: Show something in the canvas that indicates the device is connected
 	}
 
-	type = SettingsInterface::BNO055_SETTINGS_INTERFACE;
+	type = SettingsInterface::Type::BNO055_SETTINGS_INTERFACE;
 }
 
 Bno055Interface::~Bno055Interface()
