@@ -23,10 +23,6 @@ along with this program.If not, see < http://www.gnu.org/licenses/>.
 
 #include "OnixSourceCanvas.h"
 
-#include "UI/NeuropixV1Interface.h"
-#include "UI/Bno055Interface.h"
-#include "OnixSource.h"
-
 CustomTabButton::CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_) :
 	TabBarButton(name, parent->getTabbedButtonBar()),
 	isTopLevel(isTopLevel_)
@@ -50,23 +46,6 @@ CustomTabComponent::CustomTabComponent(OnixSourceEditor* editor_, bool isTopLeve
 	setTabBarDepth(26);
 	setOutline(0);
 	setIndent(0);
-}
-
-void CustomTabComponent::currentTabChanged(int newCurrentTabIndex, const String& newCurrentTabName)
-{
-	if (isTopLevel)
-	{
-		TabbedComponent* currentTab = (TabbedComponent*)getCurrentContentComponent();
-
-		if (currentTab != nullptr)
-		{
-			CustomViewport* viewport = (CustomViewport*)currentTab->getCurrentContentComponent();
-		}
-	}
-	else
-	{
-		CustomViewport* viewport = (CustomViewport*)getCurrentContentComponent();
-	}
 }
 
 OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEditor* editor_, OnixSource* onixSource_) :
@@ -108,7 +87,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		{
 			NeuropixV1Interface* neuropixInterface = new NeuropixV1Interface(source, editor, this);
 			settingsInterfaces.add((SettingsInterface*)neuropixInterface);
-			portTab->addTab(source->getName(), Colours::darkgrey, neuropixInterface->viewport.get(), false);
+			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(neuropixInterface), true);
 
 			portTabIndex.add(portTabNumber++);
 		}
@@ -116,10 +95,20 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		{
 			Bno055Interface* bno055Interface = new Bno055Interface(source, editor, this);
 			settingsInterfaces.add((SettingsInterface*)bno055Interface);
-			portTab->addTab(source->getName(), Colours::darkgrey, bno055Interface->viewport.get(), false);
+			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(bno055Interface), true);
+
+			portTabIndex.add(portTabNumber++);
 		}
 	}
 }
+
+CustomViewport* OnixSourceCanvas::createCustomViewport(SettingsInterface* settingsInterface)
+{
+	Rectangle bounds = settingsInterface->getBounds();
+
+	return new CustomViewport(settingsInterface, bounds.getWidth(), bounds.getHeight());
+}
+
 
 OnixSourceCanvas::~OnixSourceCanvas()
 {

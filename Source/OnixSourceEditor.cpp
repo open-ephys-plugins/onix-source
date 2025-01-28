@@ -22,6 +22,7 @@
 */
 
 #include "OnixSourceEditor.h"
+#include "OnixSource.h"
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* onixSource)
 	: VisualizerEditor(parentNode, "Onix Source"), thread(onixSource)

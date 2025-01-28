@@ -34,15 +34,7 @@
 
 #include "OnixDevice.h"
 #include "OnixSourceEditor.h"
-#include "Devices/Neuropixels_1.h"
-#include "Devices/Bno055.h"
-#include "Devices/HeadStageEEPROM.h"
-#include "Devices/DS90UB9x.h"
-#include "Devices/Neuropixels2e.h"
-
-class OnixSourceEditor;
-class Neuropixels_1;
-class Bno055;
+#include "Devices/DeviceList.h"
 
 /**
 
@@ -70,7 +62,7 @@ public:
 	static DataThread* createDataThread(SourceNode* sn);
 
 	/** Creates the custom editor */
-	std::unique_ptr<GenericEditor> createEditor(SourceNode* sn);
+	std::unique_ptr<GenericEditor> createEditor(SourceNode* sn) override;
 
 	/** Reads frames and adds them to the appropriate device */
 	bool updateBuffer() override;

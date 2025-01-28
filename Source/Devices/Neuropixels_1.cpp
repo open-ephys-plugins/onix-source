@@ -132,9 +132,7 @@ int Neuropixels_1::enableDevice()
 int Neuropixels_1::updateSettings()
 {
 	// Parse ADC and Gain calibration files
-	Parameter* param = source->getParameter(getAdcPathParameterName());
-
-	File adcFile = File(param->getValueAsString());
+	File adcFile = File(source->getParameter(getAdcPathParameterName())->getValue());
 	File gainFile = File(source->getParameter(getGainPathParameterName())->getValue());
 
 	if (!adcFile.existsAsFile() || !gainFile.existsAsFile()) return -3;

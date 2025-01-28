@@ -26,7 +26,6 @@
 
 #include <VisualizerEditorHeaders.h>
 
-#include "OnixSource.h"
 #include "OnixSourceCanvas.h"
 #include "NeuropixComponents.h"
 

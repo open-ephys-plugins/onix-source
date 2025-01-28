@@ -35,8 +35,6 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, Oni
 
 	if (device != nullptr)
 	{
-		device->setSettingsInterface(this);
-
 		adcPathParameterName = device->getAdcPathParameterName();
 		gainPathParameterName = device->getGainPathParameterName();
 

@@ -29,15 +29,12 @@
 #include <string.h>
 
 #include "UI/ActivityView.h"
-#include "UI/ProbeNameConfig.h"
 
 # define SAMPLECOUNT 64
 # define MAX_HEADSTAGE_CLK_SAMPLE 3221225475
 # define MAX_ALLOWABLE_TIMESTAMP_JUMP 4
 
 # define MAXPACKETS 64
-
-class NeuropixV1Interface;
 
 enum class ProbeType
 {

@@ -27,16 +27,6 @@ OnixDevice::OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t d
 	: Thread(name_), type(type_), deviceIdx(deviceIdx_), ctx(ctx_), deviceBuffer(NULL)
 {
 	name = name_;
-	settingsInterface = nullptr;
-}
-
-void OnixDevice::setSettingsInterface(SettingsInterface* interface_)
-{
-	if (settingsInterface == nullptr)
-		settingsInterface = interface_;
-
-	else
-		LOGD("Attempting to set the settings interface twice. Invalid operation.");
 }
 
 int OnixDevice::checkLinkState(oni_dev_idx_t port) const

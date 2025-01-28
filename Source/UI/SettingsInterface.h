@@ -31,60 +31,6 @@
 
 class OnixSourceEditor;
 class OnixSourceCanvas;
-class SettingsInterface;
-class OnixDevice;
-
-/** 
-
-    A viewport with a pointer to the settings interface it holds
-
-*/
-class CustomViewport : public Component
-{
-public:
-    CustomViewport (SettingsInterface* settingsInterface_, int width_, int height_) : 
-        settingsInterface (settingsInterface_)
-    {
-        width = width_;
-        height = height_;
-
-        viewport = std::make_unique<Viewport>();
-        viewport->setViewedComponent ((Component*) settingsInterface, false);
-        viewport->setScrollBarsShown (true, true);
-        viewport->setScrollBarThickness (12);
-
-        addAndMakeVisible (viewport.get());
-    }
-
-    ~CustomViewport()
-    {
-    }
-
-    void resized() override
-    {
-        viewport->setBounds (getLocalBounds());
-
-        int contentWidth = width;
-
-        if (getWidth() > width + 12)
-            contentWidth = getWidth() - 12;
-
-        viewport->getViewedComponent()->setSize (contentWidth, height);
-    }
-
-    void paint (Graphics& g) override
-    {
-        g.fillAll (Colours::grey);
-    }
-
-    SettingsInterface* settingsInterface;
-
-private:
-    std::unique_ptr<Viewport> viewport;
-
-    int width;
-    int height;
-};
 
 /** 
 
@@ -113,8 +59,6 @@ public:
         int height = 600;
 
         setBounds (0, 0, width, height);
-
-        viewport = std::make_unique<CustomViewport> (this, width, height);
     }
 
     /** Destructor */
@@ -137,9 +81,6 @@ public:
 
     /** Default type */
     Type type = UNKNOWN_SETTINGS_INTERFACE;
-
-    /** Viewport for scrolling around this interface */
-    std::unique_ptr<CustomViewport> viewport;
 
     /** Pointer to the data source*/
     OnixDevice* dataSource;

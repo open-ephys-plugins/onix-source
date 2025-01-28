@@ -26,10 +26,10 @@
 
 #include <VisualizerEditorHeaders.h>
 
-#include "UI/SettingsInterface.h"
-#include "OnixSourceEditor.h"
+#include "UI/InterfaceList.h"
 
-class OnixSource;
+#include "OnixSourceEditor.h"
+#include "OnixSource.h"
 
 /**
 
@@ -66,9 +66,6 @@ public:
 	{
 		return new CustomTabButton(name, this, isTopLevel);
 	}
-
-	/**/
-	void currentTabChanged(int newCurrentTabIndex, const String& newCurrentTabName) override;
 
 private:
 	OnixSourceEditor* editor;
@@ -134,6 +131,9 @@ public:
 
 	/** Get the given parameter from the source node */
 	Parameter* getSourceParameter(String name);
+
+	/** Creates a custom viewport for the given interface */
+	CustomViewport* createCustomViewport(SettingsInterface* settingsInterface);
 
 	OwnedArray<SettingsInterface> settingsInterfaces;
 
