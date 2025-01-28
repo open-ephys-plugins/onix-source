@@ -24,6 +24,104 @@
 #include "Neuropixels_1.h"
 #include "../OnixSource.h"
 
+BackgroundUpdaterWithProgressWindow::BackgroundUpdaterWithProgressWindow(Neuropixels_1* d)
+	: ThreadWithProgressWindow("Updating Neuropixels Probe: " + d->getName(), true, false)
+{
+	device = d;
+}
+
+BackgroundUpdaterWithProgressWindow::~BackgroundUpdaterWithProgressWindow()
+{
+}
+
+int BackgroundUpdaterWithProgressWindow::updateSettings()
+{
+	runThread();
+
+	return result;
+}
+
+void BackgroundUpdaterWithProgressWindow::run()
+{
+	setProgress(-1);
+
+	// Parse ADC and Gain calibration files
+	File adcFile = File(device->getAdcPathParameter());
+	File gainFile = File(device->getGainPathParameter());
+
+	if (!adcFile.existsAsFile() || !gainFile.existsAsFile())
+	{
+		result = -3;
+		return;
+	}
+
+	StringArray gainFileLines;
+	gainFile.readLines(gainFileLines);
+
+	auto gainSN = std::stoull(gainFileLines[0].toStdString());
+
+	LOGD("Gain calibration file SN = ", gainSN);
+
+	if (gainSN != device->getProbeNumber()) 
+	{ 
+		LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", device->getProbeNumber(), ").");
+		result = -4;
+		return;
+	}
+
+	StringRef gainCalLine = gainFileLines[1];
+	StringRef breakCharacters = ",";
+	StringRef noQuote = "";
+
+	StringArray calibrationValues = StringArray::fromTokens(gainCalLine, breakCharacters, noQuote);
+
+	double apGainCorrection = std::stod(calibrationValues[device->settings.apGainIndex + 1].toStdString());
+	double lfpGainCorrection = std::stod(calibrationValues[device->settings.lfpGainIndex + 8].toStdString());
+
+	LOGD("AP gain correction = ", apGainCorrection, ", LFP gain correction = ", lfpGainCorrection);
+
+	StringArray adcFileLines;
+	adcFile.readLines(adcFileLines);
+
+	auto adcSN = std::stoull(adcFileLines[0].toStdString());
+
+	LOGD("ADC calibration file SN = ", adcSN);
+
+	if (adcSN != device->getProbeNumber()) 
+	{ 
+		LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", device->getProbeNumber(), ").");
+		result = -4;
+		return;
+	}
+
+	Array<NeuropixelsV1Adc> adcs;
+
+	for (int i = 1; i < adcFileLines.size() - 1; i++)
+	{
+		auto adcLine = StringArray::fromTokens(adcFileLines[i], breakCharacters, noQuote);
+
+		adcs.add(
+			NeuropixelsV1Adc(
+				std::stoi(adcLine[1].toStdString()),
+				std::stoi(adcLine[2].toStdString()),
+				std::stoi(adcLine[3].toStdString()),
+				std::stoi(adcLine[4].toStdString()),
+				std::stoi(adcLine[5].toStdString()),
+				std::stoi(adcLine[6].toStdString()),
+				std::stoi(adcLine[7].toStdString()),
+				std::stoi(adcLine[8].toStdString())
+			));
+	}
+
+	// Write shift registers
+	auto shankBits = device->makeShankBits(device->getReference(device->settings.referenceIndex), device->settings.selectedChannel);
+	auto configBits = device->makeConfigBits(device->getReference(device->settings.referenceIndex), device->getGain(device->settings.apGainIndex), device->getGain(device->settings.lfpGainIndex), true, adcs);
+
+	device->writeShiftRegisters(shankBits, configBits, adcs, lfpGainCorrection, apGainCorrection);
+
+	result = 0;
+}
+
 Neuropixels_1::Neuropixels_1(String name, float portVoltage, OnixSource* s, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
 	OnixDevice(name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
@@ -74,6 +172,16 @@ Neuropixels_1::~Neuropixels_1()
 {
 }
 
+String Neuropixels_1::getAdcPathParameter()
+{
+	return source->getParameter(getAdcPathParameterName())->getValue();
+}
+
+String Neuropixels_1::getGainPathParameter()
+{
+	return source->getParameter(getGainPathParameterName())->getValue();
+}
+
 String Neuropixels_1::getAdcPathParameterName()
 {
 	return "adcCalibrationFile_" + getName();
@@ -82,6 +190,49 @@ String Neuropixels_1::getAdcPathParameterName()
 String Neuropixels_1::getGainPathParameterName()
 {
 	return "gainCalibrationFile_" + getName();
+}
+
+NeuropixelsGain Neuropixels_1::getGain(int index)
+{
+	switch (index)
+	{
+	case 0:
+		return NeuropixelsGain::Gain50;
+	case 1:
+		return NeuropixelsGain::Gain125;
+	case 2:
+		return NeuropixelsGain::Gain250;
+	case 3:
+		return NeuropixelsGain::Gain500;
+	case 4:
+		return NeuropixelsGain::Gain1000;
+	case 5:
+		return NeuropixelsGain::Gain1500;
+	case 6:
+		return NeuropixelsGain::Gain2000;
+	case 7:
+		return NeuropixelsGain::Gain3000;
+
+	default:
+		break;
+	}
+
+	return NeuropixelsGain::Gain50;
+}
+
+NeuropixelsReference Neuropixels_1::getReference(int index)
+{
+	switch (index)
+	{
+	case 0:
+		return NeuropixelsReference::External;
+	case 1:
+		return NeuropixelsReference::Tip;
+	default:
+		break;
+	}
+
+	return NeuropixelsReference::External;
 }
 
 int Neuropixels_1::enableDevice()
@@ -131,74 +282,9 @@ int Neuropixels_1::enableDevice()
 
 int Neuropixels_1::updateSettings()
 {
-	// Parse ADC and Gain calibration files
-	File adcFile = File(source->getParameter(getAdcPathParameterName())->getValue());
-	File gainFile = File(source->getParameter(getGainPathParameterName())->getValue());
+	BackgroundUpdaterWithProgressWindow updater = BackgroundUpdaterWithProgressWindow(this);
 
-	if (!adcFile.existsAsFile() || !gainFile.existsAsFile()) return -3;
-
-	StringArray gainFileLines;
-	gainFile.readLines(gainFileLines);
-
-	auto gainSN = std::stoull(gainFileLines[0].toStdString());
-
-	LOGD("Gain calibration file SN = ", gainSN);
-
-	if (gainSN != probeNumber) { LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", probeNumber, ")."); return -4; };
-
-	StringRef gainCalLine = gainFileLines[1];
-	StringRef breakCharacters = ",";
-	StringRef noQuote = "";
-
-	StringArray calibrationValues = StringArray::fromTokens(gainCalLine, breakCharacters, noQuote);
-
-	double apGainCorrection = std::stod(calibrationValues[settings.apGainIndex + 1].toStdString());
-	double lfpGainCorrection = std::stod(calibrationValues[settings.lfpGainIndex + 8].toStdString());
-
-	LOGD("AP gain correction = ", apGainCorrection, ", LFP gain correction = ", lfpGainCorrection);
-
-	StringArray adcFileLines;
-	adcFile.readLines(adcFileLines);
-
-	auto adcSN = std::stoull(adcFileLines[0].toStdString());
-
-	LOGD("ADC calibration file SN = ", adcSN);
-
-	if (adcSN != probeNumber) { LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", probeNumber, ")."); return -4; };
-
-	Array<NeuropixelsV1Adc> adcs;
-
-	for (int i = 1; i < adcFileLines.size() - 1; i++)
-	{
-		auto adcLine = StringArray::fromTokens(adcFileLines[i], breakCharacters, noQuote);
-
-		adcs.add(
-			NeuropixelsV1Adc(
-				std::stoi(adcLine[1].toStdString()),
-				std::stoi(adcLine[2].toStdString()),
-				std::stoi(adcLine[3].toStdString()),
-				std::stoi(adcLine[4].toStdString()),
-				std::stoi(adcLine[5].toStdString()),
-				std::stoi(adcLine[6].toStdString()),
-				std::stoi(adcLine[7].toStdString()),
-				std::stoi(adcLine[8].toStdString())
-			));
-	}
-
-	// Write shift registers
-	auto channelMap = Array<int, DummyCriticalSection, numberOfChannels>();
-
-	for (int i = 0; i < numberOfChannels; i++)
-	{
-		channelMap.add(i);
-	}
-
-	auto shankBits = makeShankBits(NeuropixelsReference::External, settings.selectedChannel);
-	auto configBits = makeConfigBits(NeuropixelsReference::External, (NeuropixelsGain)settings.lfpGainIndex, (NeuropixelsGain)settings.apGainIndex, true, adcs);
-
-	writeShiftRegisters(shankBits, configBits, adcs, lfpGainCorrection, apGainCorrection);
-
-	return 0;
+	return updater.updateSettings();
 }
 
 Array<int> Neuropixels_1::selectElectrodeConfiguration(String config)

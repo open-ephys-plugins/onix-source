@@ -45,7 +45,7 @@ enum class NeuropixelsRegisters : uint32_t
 	SYNC = 0X09
 };
 
-enum class CalMode
+enum class CalMode : uint32_t
 {
 	CAL_OFF = 0,
 	OSC_ACTIVE = 1 << 4, // 0 = external osc inactive, 1 = activate the external calibration oscillator
@@ -59,7 +59,7 @@ enum class CalMode
 	OSC_ACTIVE_AND_PIX_CAL = OSC_ACTIVE | PIX_CAL,
 };
 
-enum class OpMode
+enum class OpMode : uint32_t
 {
 	TEST = 1 << 3, // Enable Test mode
 	DIG_TEST = 1 << 4, // Enable Digital Test mode
@@ -68,7 +68,7 @@ enum class OpMode
 	POWER_DOWN = 1 << 7, // Enable power down mode
 };
 
-enum class RecMod
+enum class RecMod : uint32_t
 {
 	DIG_AND_CH_RESET = 0,
 	RESET_ALL = 1 << 5, // 1 = Set analog SR chains to default values
@@ -82,13 +82,13 @@ enum class RecMod
 	ACTIVE = DIG_NRESET | CH_NRESET
 };
 
-enum class NeuropixelsReference
+enum class NeuropixelsReference : unsigned char
 {
 	External = 0b001,
 	Tip = 0b010
 };
 
-enum class NeuropixelsGain
+enum class NeuropixelsGain : unsigned char
 {
 	Gain50 = 0b000,
 	Gain125 = 0b001,
@@ -156,7 +156,6 @@ class Neuropixels_1 : public OnixDevice,
 	public I2CRegisterContext
 {
 public:
-
 	/** Constructor */
 	Neuropixels_1(String name, float portVoltage, OnixSource* s, const oni_dev_idx_t, const oni_ctx);
 
@@ -185,8 +184,25 @@ public:
 
 	String getGainPathParameterName();
 
+	String getAdcPathParameter();
+
+	String getGainPathParameter();
+
+	NeuropixelsGain getGain(int index);
+
+	NeuropixelsReference getReference(int index);
+
 	/** Select a preset electrode configuration */
 	Array<int> selectElectrodeConfiguration(String config);
+
+	static const int shankConfigurationBitCount = 968;
+	static const int BaseConfigurationBitCount = 2448;
+
+	std::bitset<shankConfigurationBitCount> static makeShankBits(NeuropixelsReference reference, Array<int> channelMap);
+
+	std::vector<std::bitset<BaseConfigurationBitCount>> static makeConfigBits(NeuropixelsReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
+
+	void writeShiftRegisters(std::bitset<shankConfigurationBitCount> shankBits, std::vector<std::bitset<BaseConfigurationBitCount>> configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
 
 	DataBuffer* apBuffer = deviceBuffer;
 	DataBuffer* lfpBuffer;
@@ -203,9 +219,6 @@ private:
 	static const int numUltraFrames = 12;
 	static const int dataOffset = 1;
 
-	static const int shankConfigurationBitCount = 968;
-	static const int BaseConfigurationBitCount = 2448;
-
 	const float lfpSampleRate = 2500.0f;
 	const float apSampleRate = 30000.0f;
 
@@ -214,28 +227,11 @@ private:
 	/** Updates buffer during acquisition */
 	void run() override;
 
-	std::bitset<shankConfigurationBitCount> static makeShankBits(NeuropixelsReference reference, Array<int> channelMap);
-
-	std::vector<std::bitset<BaseConfigurationBitCount>> static makeConfigBits(NeuropixelsReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
-
 	template<int N> std::vector<unsigned char> static toBitReversedBytes(std::bitset<N> shankBits);
-
-	void writeShiftRegisters(std::bitset<shankConfigurationBitCount> shankBits, std::vector<std::bitset<BaseConfigurationBitCount>> configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
 
 	void defineMetadata(ProbeSettings& settings);
 
 	Array<oni_frame_t*, CriticalSection, numUltraFrames> frameArray;
-
-	const std::map<NeuropixelsGain, int> gainToIndex{
-		{NeuropixelsGain::Gain50, 0},
-		{NeuropixelsGain::Gain125, 1},
-		{NeuropixelsGain::Gain250, 2},
-		{NeuropixelsGain::Gain500, 3},
-		{NeuropixelsGain::Gain1000, 4},
-		{NeuropixelsGain::Gain1500, 5},
-		{NeuropixelsGain::Gain2000, 6},
-		{NeuropixelsGain::Gain3000, 7},
-	};
 
 	int64 probeNumber = 0;
 
@@ -263,6 +259,29 @@ private:
 	const float maxVoltage = 6.5;
 
 	OnixSource* source;
+};
+
+/*
+
+	A thread that updates probe settings in the background and shows a progress bar
+
+*/
+class BackgroundUpdaterWithProgressWindow : public ThreadWithProgressWindow
+{
+public:
+	BackgroundUpdaterWithProgressWindow(Neuropixels_1* d);
+
+	~BackgroundUpdaterWithProgressWindow();
+
+	void run();
+
+	int updateSettings();
+
+private:
+
+	Neuropixels_1* device;
+
+	std::atomic<int> result = 0;
 };
 
 #endif
