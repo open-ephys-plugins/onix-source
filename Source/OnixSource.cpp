@@ -434,6 +434,11 @@ bool OnixSource::startAcquisition()
 {
 	startThread();
 
+	frameReader.reset();
+
+	frameReader = std::make_unique<FrameReader>(sources, ctx);
+	frameReader->startThread();
+
 	for (auto source : sources)
 	{
 		if (!source->isEnabled()) continue;
@@ -448,6 +453,9 @@ bool OnixSource::stopAcquisition()
 {
 	if (isThreadRunning())
 		signalThreadShouldExit();
+
+	if (frameReader->isThreadRunning())
+		frameReader->stopThread(1000);
 
 	waitForThreadToExit(2000);
 
@@ -481,34 +489,11 @@ bool OnixSource::stopAcquisition()
 
 bool OnixSource::updateBuffer()
 {
-	const int nSamps = 120;
-	oni_frame_t* frame;
-
-	for (int samp = 0; samp < nSamps; samp++)
+	for (auto source : sources)
 	{
-		int res = oni_read_frame(ctx, &frame);
+		if (!source->isEnabled()) continue;
 
-		if (res < ONI_ESUCCESS)
-		{
-			LOGE("Error reading ONI frame: ", oni_error_str(res), " code ", res);
-			return false;
-		}
-
-		bool destroyFrame = true;
-
-		for (auto source : sources)
-		{
-			if (frame->dev_idx == source->getDeviceIdx())
-			{
-				source->addFrame(frame);
-				destroyFrame = false;
-			}
-		}
-
-		if (destroyFrame)
-		{
-			oni_destroy_frame(frame);
-		}
+		source->processFrames();
 	}
 
 	return true;

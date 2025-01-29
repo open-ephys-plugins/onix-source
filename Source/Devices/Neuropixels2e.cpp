@@ -198,21 +198,22 @@ void Neuropixels2e::startAcquisition()
 
 	// disconnect i2c bus from both probes to prevent digital interference during acquisition
 	selectProbe(NoProbeSelected); //IMPORTANT! BNO polling thread must be started after this
-	startThread();
-
 }
 
 void Neuropixels2e::stopAcquisition()
 {
-	if (isThreadRunning())
-		signalThreadShouldExit();
-
-	waitForThreadToExit(2000);
 	setProbeSupply(false);
+
+	while (!frameArray.isEmpty())
+	{
+		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
+		oni_destroy_frame(frameArray.removeAndReturn(0));
+	}
 }
 
 void Neuropixels2e::addFrame(oni_frame_t* frame)
 {
+	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
@@ -228,8 +229,14 @@ void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 void Neuropixels2e::run()
 {
-	if (!frameArray.isEmpty())
+
+}
+
+void Neuropixels2e::processFrames()
+{
+	while (!frameArray.isEmpty())
 	{
+		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint16_t* dataPtr;
@@ -251,4 +258,3 @@ void Neuropixels2e::run()
 		oni_destroy_frame(frame);
 	}
 }
-

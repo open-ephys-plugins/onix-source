@@ -81,6 +81,8 @@ public:
 
 	virtual void addFrame(oni_frame_t*) = 0;
 
+	virtual void processFrames() = 0;
+
 	const String getName() { return name; }
 
 	bool isEnabled() const { return enabled; }

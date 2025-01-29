@@ -179,6 +179,8 @@ public:
 
 	void addFrame(oni_frame_t*) override;
 
+	void processFrames() override;
+
 	int64 getProbeNumber() const { return probeNumber; }
 
 	void updateSettings(ProbeSettings p) { settings = p; }

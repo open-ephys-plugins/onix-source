@@ -334,22 +334,16 @@ Array<int> Neuropixels_1::selectElectrodeConfiguration(String config)
 
 void Neuropixels_1::startAcquisition()
 {
-	startThread();
-
 	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::ACTIVE);
 }
 
 void Neuropixels_1::stopAcquisition()
 {
-	if (isThreadRunning())
-		signalThreadShouldExit();
-
-	waitForThreadToExit(2000);
-
 	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::RESET_ALL);
 
 	while (!frameArray.isEmpty())
 	{
+		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
 
@@ -375,74 +369,78 @@ void Neuropixels_1::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 void Neuropixels_1::addFrame(oni_frame_t* frame)
 {
+	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
 void Neuropixels_1::run()
 {
-	while (!threadShouldExit())
+
+}
+
+void Neuropixels_1::processFrames()
+{
+	while (!frameArray.isEmpty())
 	{
-		if (!frameArray.isEmpty())
+		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
+		oni_frame_t* frame = frameArray.removeAndReturn(0);
+
+		uint16_t* dataPtr;
+		dataPtr = (uint16_t*)frame->data;
+
+		auto dataclock = (unsigned char*)frame->data + 936;
+		uint64 hubClock = ((uint64_t)(*(uint16_t*)dataclock) << 48) |
+			((uint64_t)(*(uint16_t*)(dataclock + 2)) << 32) |
+			((uint64_t)(*(uint16_t*)(dataclock + 4)) << 16) |
+			((uint64_t)(*(uint16_t*)(dataclock + 6)) << 0);
+		int64_t clockCounter = hubClock;
+		apTimestamps[superFrameCount] = clockCounter;
+		apSampleNumbers[superFrameCount] = apSampleNumber++;
+
+		for (int i = 0; i < framesPerSuperFrame; i++)
 		{
-			oni_frame_t* frame = frameArray.removeAndReturn(0);
-
-			uint16_t* dataPtr;
-			dataPtr = (uint16_t*)frame->data;
-
-			auto dataclock = (unsigned char*)frame->data + 936;
-			uint64 hubClock = ((uint64_t)(*(uint16_t*)dataclock) << 48) |
-				((uint64_t)(*(uint16_t*)(dataclock + 2)) << 32) |
-				((uint64_t)(*(uint16_t*)(dataclock + 4)) << 16) |
-				((uint64_t)(*(uint16_t*)(dataclock + 6)) << 0);
-			int64_t clockCounter = hubClock;
-			apTimestamps[superFrameCount] = clockCounter;
-			apSampleNumbers[superFrameCount] = apSampleNumber++;
-
-			for (int i = 0; i < framesPerSuperFrame; i++)
+			if (i == 0) // LFP data
 			{
-				if (i == 0) // LFP data
+				int superCountOffset = superFrameCount % superFramesPerUltraFrame;
+				if (superCountOffset == 0)
 				{
-					int superCountOffset = superFrameCount % superFramesPerUltraFrame;
-					if (superCountOffset == 0)
-					{
-						lfpTimestamps[ultraFrameCount] = apTimestamps[superFrameCount];
-						lfpSampleNumbers[ultraFrameCount] = lfpSampleNumber++;
-					}
-
-					for (int adc = 0; adc < 32; adc++)
-					{
-						int chanIndex = adcToChannel[adc] + superCountOffset * 2; // map the ADC to muxed channel
-						lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount] =
-							float(*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) * 0.195f;
-					}
+					lfpTimestamps[ultraFrameCount] = apTimestamps[superFrameCount];
+					lfpSampleNumbers[ultraFrameCount] = lfpSampleNumber++;
 				}
-				else // AP data
+
+				for (int adc = 0; adc < 32; adc++)
 				{
-					int chanOffset = 2 * (i - 1);
-					for (int adc = 0; adc < 32; adc++)
-					{
-						int chanIndex = adcToChannel[adc] + chanOffset; //  map the ADC to muxed channel.
-						apSamples[(chanIndex * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
-							float(*(dataPtr + adcToFrameIndex[adc] + i * 36 + dataOffset) >> 5) * 0.195f;
-					}
+					int chanIndex = adcToChannel[adc] + superCountOffset * 2; // map the ADC to muxed channel
+					lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount] =
+						float(*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) * 0.195f;
 				}
 			}
-
-			oni_destroy_frame(frame);
-
-			superFrameCount++;
-
-			if (superFrameCount % superFramesPerUltraFrame == 0)
+			else // AP data
 			{
-				ultraFrameCount++;
+				int chanOffset = 2 * (i - 1);
+				for (int adc = 0; adc < 32; adc++)
+				{
+					int chanIndex = adcToChannel[adc] + chanOffset; //  map the ADC to muxed channel.
+					apSamples[(chanIndex * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
+						float(*(dataPtr + adcToFrameIndex[adc] + i * 36 + dataOffset) >> 5) * 0.195f;
+				}
 			}
+		}
 
-			if (ultraFrameCount >= numUltraFrames)
-			{
-				ultraFrameCount = 0;
-				superFrameCount = 0;
-				shouldAddToBuffer = true;
-			}
+		oni_destroy_frame(frame);
+
+		superFrameCount++;
+
+		if (superFrameCount % superFramesPerUltraFrame == 0)
+		{
+			ultraFrameCount++;
+		}
+
+		if (ultraFrameCount >= numUltraFrames)
+		{
+			ultraFrameCount = 0;
+			superFrameCount = 0;
+			shouldAddToBuffer = true;
 		}
 
 		if (shouldAddToBuffer)

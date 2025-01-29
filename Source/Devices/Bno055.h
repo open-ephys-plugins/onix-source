@@ -54,6 +54,8 @@ public:
 
 	void addFrame(oni_frame_t*) override;
 
+	void processFrames() override;
+
 	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
 	DataBuffer* eulerBuffer = deviceBuffer;

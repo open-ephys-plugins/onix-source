@@ -35,6 +35,7 @@
 #include "OnixDevice.h"
 #include "OnixSourceEditor.h"
 #include "Devices/DeviceList.h"
+#include "FrameReader.h"
 
 /**
 
@@ -104,6 +105,9 @@ private:
 
 	/** Pointer to the editor */
 	OnixSourceEditor* editor;
+
+	/** Thread that reads frames */
+	std::unique_ptr<FrameReader> frameReader;
 
 	/** The ONI context object */
 	oni_ctx ctx;
