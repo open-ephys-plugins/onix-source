@@ -95,6 +95,9 @@ public:
 
 	virtual void stopAcquisition() = 0;
 
+	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
+	virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) = 0;
+
 	const oni_dev_idx_t getDeviceIdx() const { return deviceIdx; }
 
 	OnixDeviceType type;
@@ -105,6 +108,8 @@ public:
 	Array<StreamInfo> streams;
 
 	int checkLinkState(oni_dev_idx_t port) const;
+
+	const int bufferSizeInSeconds = 10;
 
 protected:
 

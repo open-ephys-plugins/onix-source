@@ -24,6 +24,8 @@ public:
 
 	void addFrame(oni_frame_t*) override;
 
+	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+
 	int getNumProbes() const;
 	DataBuffer* apBuffer[2];
 

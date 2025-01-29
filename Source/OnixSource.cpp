@@ -197,15 +197,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			sources.add(np1);
 
-			for (StreamInfo streamInfo : np1->streams)
-			{
-				sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
-
-				if (streamInfo.channelPrefix.equalsIgnoreCase("AP"))
-					np1->apBuffer = sourceBuffers.getLast();
-				else if (streamInfo.channelPrefix.equalsIgnoreCase("LFP"))
-					np1->lfpBuffer = sourceBuffers.getLast();
-			}
+			np1->addSourceBuffers(sourceBuffers);
 
 			npxProbeIdx++;
 		}
@@ -221,21 +213,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				continue;
 			}
 
-			for (StreamInfo streamInfo : bno->streams)
-			{
-				sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
-
-				if (streamInfo.channelPrefix.equalsIgnoreCase("Euler"))
-					bno->eulerBuffer = sourceBuffers.getLast();
-				else if (streamInfo.channelPrefix.equalsIgnoreCase("Quaternion"))
-					bno->quaternionBuffer = sourceBuffers.getLast();
-				else if (streamInfo.channelPrefix.equalsIgnoreCase("Acceleration"))
-					bno->accelerationBuffer = sourceBuffers.getLast();
-				else if (streamInfo.channelPrefix.equalsIgnoreCase("Gravity"))
-					bno->gravityBuffer = sourceBuffers.getLast();
-				else if (streamInfo.channelPrefix.equalsIgnoreCase("Temperature"))
-					bno->temperatureBuffer = sourceBuffers.getLast();
-			}
+			bno->addSourceBuffers(sourceBuffers);
 
 			sources.add(bno.release());
 
@@ -267,12 +245,8 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				}
 				npxProbeIdx += np2->getNumProbes();
 
-				int bufferIdx = 0;
-				for (StreamInfo streamInfo : np2->streams)
-				{
-					sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
-					np2->apBuffer[bufferIdx++] = sourceBuffers.getLast();
-				}
+				np2->addSourceBuffers(sourceBuffers);
+
 				sources.add(np2.release());
 			}
 		}
@@ -296,6 +270,19 @@ Array<OnixDevice*> OnixSource::getDataSources()
 	}
 
 	return devices;
+}
+
+void OnixSource::updateSourceBuffers()
+{
+	sourceBuffers.clear(true);
+
+	for (auto source : sources)
+	{
+		if (source->isEnabled())
+		{
+			source->addSourceBuffers(sourceBuffers);
+		}
+	}
 }
 
 bool OnixSource::setPortVoltage(oni_dev_idx_t port, int voltage) const
@@ -324,27 +311,28 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 	OwnedArray<DeviceInfo>* deviceInfos,
 	OwnedArray<ConfigurationObject>* configurationObjects)
 {
-
 	LOGD("ONIX Source initializing data streams.");
 
-	dataStreams->clear();
-	eventChannels->clear();
 	continuousChannels->clear();
+	eventChannels->clear();
 	spikeChannels->clear();
+	dataStreams->clear();
 	deviceInfos->clear();
 	configurationObjects->clear();
 
+	updateSourceBuffers();
+
 	if (devicesFound)
 	{
-		DataStream* currentStream;
-
 		for (auto source : sources)
 		{
+			if (!source->isEnabled()) continue;
+
 			// create device info object
 			if (source->type == OnixDeviceType::NEUROPIXELS_1)
 			{
 				DeviceInfo::Settings deviceSettings{
-					source->getName(), // device name
+					source->getName(),
 					"Neuropixels 1.0 Probe",
 					"neuropixels1.probe",
 					"0000000",
@@ -352,7 +340,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				};
 
 				DeviceInfo* device = new DeviceInfo(deviceSettings);
-				deviceInfos->add(device); // unique device object owned by SourceNode
+				deviceInfos->add(device);
 			}
 			else if (source->type == OnixDeviceType::BNO)
 			{
@@ -369,7 +357,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 			else if (source->type == OnixDeviceType::NEUROPIXELS_2)
 			{
 				DeviceInfo::Settings deviceSettings{
-					source->getName(), // device name
+					source->getName(),
 					"Neuropixels 2.0 Probe",
 					"neuropixels1.probe",
 					"0000000",
@@ -380,19 +368,17 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 			// add data streams and channels
 			for (StreamInfo streamInfo : source->streams)
 			{
-				DataStream::Settings apStreamSettings
+				DataStream::Settings streamSettings
 				{
-					streamInfo.name, // stream name
-					streamInfo.description, // stream description
-					streamInfo.identifier, // stream identifier
-					streamInfo.sampleRate // sample rate
-
+					streamInfo.name,
+					streamInfo.description,
+					streamInfo.identifier,
+					streamInfo.sampleRate
 				};
 
-				DataStream* stream = new DataStream(apStreamSettings);
+				DataStream* stream = new DataStream(streamSettings);
 				dataStreams->add(stream);
-				currentStream = stream;
-				currentStream->device = deviceInfos->getLast();
+				stream->device = deviceInfos->getLast();
 
 				// Add continuous channels
 				for (int chan = 0; chan < streamInfo.numChannels; chan++)
@@ -402,8 +388,8 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 						streamInfo.channelPrefix + String(chan + 1),
 						streamInfo.description,
 						streamInfo.identifier,
-						streamInfo.bitVolts, // bitVolts
-						currentStream
+						streamInfo.bitVolts,
+						stream
 					};
 					continuousChannels->add(new ContinuousChannel(channelSettings));
 				}
@@ -424,6 +410,8 @@ bool OnixSource::isReady()
 
 	for (auto source : sources)
 	{
+		if (!source->isEnabled()) continue;
+
 		int result = source->updateSettings();
 
 		if (result != 0)
@@ -448,6 +436,8 @@ bool OnixSource::startAcquisition()
 
 	for (auto source : sources)
 	{
+		if (!source->isEnabled()) continue;
+
 		source->startAcquisition();
 	}
 
@@ -463,6 +453,8 @@ bool OnixSource::stopAcquisition()
 
 	for (auto source : sources)
 	{
+		if (!source->isEnabled()) continue;
+
 		source->stopAcquisition();
 	}
 

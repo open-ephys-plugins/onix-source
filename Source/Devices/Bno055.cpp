@@ -115,7 +115,6 @@ void Bno055::stopAcquisition()
 
 	waitForThreadToExit(2000);
 
-
 	while (!frameArray.isEmpty())
 	{
 		oni_destroy_frame(frameArray.removeAndReturn(0));
@@ -129,6 +128,25 @@ void Bno055::addFrame(oni_frame_t* frame)
 {
 	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
+}
+
+void Bno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+{
+	for (StreamInfo streamInfo : streams)
+	{
+		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+
+		if (streamInfo.channelPrefix.equalsIgnoreCase("Euler"))
+			eulerBuffer = sourceBuffers.getLast();
+		else if (streamInfo.channelPrefix.equalsIgnoreCase("Quaternion"))
+			quaternionBuffer = sourceBuffers.getLast();
+		else if (streamInfo.channelPrefix.equalsIgnoreCase("Acceleration"))
+			accelerationBuffer = sourceBuffers.getLast();
+		else if (streamInfo.channelPrefix.equalsIgnoreCase("Gravity"))
+			gravityBuffer = sourceBuffers.getLast();
+		else if (streamInfo.channelPrefix.equalsIgnoreCase("Temperature"))
+			temperatureBuffer = sourceBuffers.getLast();
+	}
 }
 
 void Bno055::run()
@@ -179,7 +197,7 @@ void Bno055::run()
 
 			oni_destroy_frame(frame);
 
-			sampleNumbers[currentFrame] = sampleNumber;
+			sampleNumbers[currentFrame] = sampleNumber++;
 
 			currentFrame++;
 
@@ -187,6 +205,7 @@ void Bno055::run()
 			{
 				shouldAddToBuffer = true;
 				currentFrame = 0;
+				sampleNumber = 0;
 			}
 		}
 

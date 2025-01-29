@@ -54,6 +54,8 @@ public:
 
 	void addFrame(oni_frame_t*) override;
 
+	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+
 	DataBuffer* eulerBuffer = deviceBuffer;
 	DataBuffer* quaternionBuffer;
 	DataBuffer* accelerationBuffer;
@@ -62,7 +64,7 @@ public:
 
 private:
 
-	static const int numFrames = 1;
+	static const int numFrames = 2;
 
 	/** Updates buffer during acquisition */
 	void run() override;

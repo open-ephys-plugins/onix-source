@@ -174,6 +174,9 @@ public:
 	/** Stops probe data streaming*/
 	void stopAcquisition() override;
 
+	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
+	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+
 	void addFrame(oni_frame_t*) override;
 
 	int64 getProbeNumber() const { return probeNumber; }

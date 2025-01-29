@@ -160,12 +160,12 @@ Neuropixels_1::Neuropixels_1(String name, float portVoltage, OnixSource* s, cons
 	//validExtensions.add("*_ADCCalibration.csv");
 
 	source->addPathParameter(Parameter::PROCESSOR_SCOPE, getAdcPathParameterName(), "ADC Calibration File", "Path to the ADC calibration file for this Neuropixels probe",
-		File::getSpecialLocation(File::userHomeDirectory).getFullPathName(), validExtensions, false, true, true);
+		File::getSpecialLocation(File::userHomeDirectory).getFullPathName(), validExtensions, false, false, true);
 
 	//validExtensions.set(0, "*_gainCalValues.csv");
 
 	source->addPathParameter(Parameter::PROCESSOR_SCOPE, getGainPathParameterName(), "Gain Calibration File", "Path to the gain calibration file for this Neuropixels probe",
-		File::getSpecialLocation(File::userHomeDirectory).getFullPathName(), validExtensions, false, true, true);
+		File::getSpecialLocation(File::userHomeDirectory).getFullPathName(), validExtensions, false, false, true);
 }
 
 Neuropixels_1::~Neuropixels_1()
@@ -348,11 +348,29 @@ void Neuropixels_1::stopAcquisition()
 
 	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::RESET_ALL);
 
+	while (!frameArray.isEmpty())
+	{
+		oni_destroy_frame(frameArray.removeAndReturn(0));
+	}
+
 	superFrameCount = 0;
 	ultraFrameCount = 0;
 	shouldAddToBuffer = false;
 	apSampleNumber = 0;
 	lfpSampleNumber = 0;
+}
+
+void Neuropixels_1::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+{
+	for (StreamInfo streamInfo : streams)
+	{
+		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+
+		if (streamInfo.channelPrefix.equalsIgnoreCase("AP"))
+			apBuffer = sourceBuffers.getLast();
+		else if (streamInfo.channelPrefix.equalsIgnoreCase("LFP"))
+			lfpBuffer = sourceBuffers.getLast();
+	}
 }
 
 void Neuropixels_1::addFrame(oni_frame_t* frame)

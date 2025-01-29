@@ -216,6 +216,16 @@ void Neuropixels2e::addFrame(oni_frame_t* frame)
 	frameArray.add(frame);
 }
 
+void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+{
+	int bufferIdx = 0;
+	for (StreamInfo streamInfo : streams)
+	{
+		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+		apBuffer[bufferIdx++] = sourceBuffers.getLast();
+	}
+}
+
 void Neuropixels2e::run()
 {
 	if (!frameArray.isEmpty())

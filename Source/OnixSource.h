@@ -87,6 +87,8 @@ public:
 
 	Array<OnixDevice*> getDataSources();
 
+	void updateSourceBuffers();
+
 	// DataThread Methods
 	void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
 		OwnedArray<EventChannel>* eventChannels,
