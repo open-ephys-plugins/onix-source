@@ -30,7 +30,8 @@ OnixSource::OnixSource(SourceNode* sn) :
 	devicesFound(false),
 	editor(NULL)
 {
-	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "is_passthrough_A", "Passthrough Mode", "Enables passthrough mode for e-variant headstages", false, true);
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
 
@@ -172,7 +173,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
 		{
-			auto np1 = std::make_unique<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), editor->portVoltage, this, devices[dev_idx].idx, ctx);
+			auto np1 = std::make_unique<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), this, devices[dev_idx].idx, ctx);
 
 			int res = np1->enableDevice();
 

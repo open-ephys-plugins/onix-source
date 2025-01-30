@@ -25,67 +25,88 @@
 #include "OnixSource.h"
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* onixSource)
-	: VisualizerEditor(parentNode, "Onix Source"), thread(onixSource)
+	: VisualizerEditor(parentNode, "Onix Source", 200), thread(onixSource)
 {
 	canvas = nullptr;
 
-	desiredWidth = 200;
+	FontOptions fontOptionSmall = FontOptions("Fira Code", "Regular", 12.0f);
+	FontOptions fontOptionTitle = FontOptions("Fira Code", "Bold", 15.0f);
 
-	portVoltageLabel = std::make_unique<Label>("Voltage", "PORT VOLTAGE [V]");
-	portVoltageLabel->setBounds(5, 20, 85, 20);
-	portVoltageLabel->setFont(FontOptions("Fira Code", "Regular", 11.0f));
-	portVoltageLabel->setColour(Label::textColourId, Colours::black);
-	addAndMakeVisible(portVoltageLabel.get());
+	portLabelA = std::make_unique<Label>("portLabelA", "Port A:");
+	portLabelA->setBounds(4, 25, 60, 16);
+	portLabelA->setFont(fontOptionTitle);
+	addAndMakeVisible(portLabelA.get());
 
-	portVoltage = 5.0f;
-	portVoltageValue = std::make_unique<Label>("VoltageValue", String(portVoltage));
-	portVoltageValue->setBounds(10, 38, 30, 13);
-	portVoltageValue->setFont(FontOptions("Fira Code", "Regular", 11.0f));
-	portVoltageValue->setEditable(true);
-	portVoltageValue->setColour(Label::textColourId, Colours::black);
-	portVoltageValue->setColour(Label::backgroundColourId, Colours::lightgrey);
-	portVoltageValue->addListener(this);
-	addAndMakeVisible(portVoltageValue.get());
+	headstageComboBoxA = std::make_unique<ComboBox>("headstageComboBoxA");
+	headstageComboBoxA->setBounds(portLabelA->getRight() + 2, portLabelA->getY(), 120, portLabelA->getHeight());
+	headstageComboBoxA->addListener(this);
+	headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
+	headstageComboBoxA->addItem("Select headstage...", 1);
+	headstageComboBoxA->setItemEnabled(1, false);
+	headstageComboBoxA->addSeparator();
+	// TODO: Add list of available devices here
+	addAndMakeVisible(headstageComboBoxA.get());
 
-	connectButton = std::make_unique<UtilityButton>("Connect");
-	connectButton->setFont(FontOptions("Fira Code", "Regular", 11.0f));
-	connectButton->setBounds(10, 95, 65, 20);
+	passthroughEditorA = std::make_unique<ToggleParameterEditor>(onixSource->getParameter("passthroughA"));
+	passthroughEditorA->setLayout(ParameterEditor::nameHidden);
+	passthroughEditorA->setBounds(headstageComboBoxA->getX(), headstageComboBoxA->getBottom() + 4, 60, headstageComboBoxA->getHeight());
+	addAndMakeVisible(passthroughEditorA.get());
+
+	portVoltageValueA = std::make_unique<Label>("voltageValueA", "");
+	portVoltageValueA->setBounds(passthroughEditorA->getRight() + 10, passthroughEditorA->getY(), 35, passthroughEditorA->getHeight());
+	portVoltageValueA->setFont(fontOptionSmall);
+	portVoltageValueA->setEditable(true);
+	portVoltageValueA->setColour(Label::textColourId, Colours::black);
+	portVoltageValueA->setColour(Label::backgroundColourId, Colours::lightgrey);
+	portVoltageValueA->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
+	portVoltageValueA->addListener(this);
+	addAndMakeVisible(portVoltageValueA.get());
+
+	portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
+	portLabelB->setBounds(portLabelA->getX(), passthroughEditorA->getBottom() + 5, portLabelA->getWidth(), portLabelA->getHeight());
+	portLabelB->setFont(fontOptionTitle);
+	addAndMakeVisible(portLabelB.get());
+
+	headstageComboBoxB = std::make_unique<ComboBox>("headstageComboBoxB");
+	headstageComboBoxB->setBounds(portLabelB->getRight(), portLabelB->getY(), headstageComboBoxA->getWidth(), portLabelB->getHeight());
+	headstageComboBoxB->addListener(this);
+	headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
+	headstageComboBoxB->addItem("Select headstage...", 1);
+	headstageComboBoxB->setItemEnabled(1, false);
+	headstageComboBoxB->addSeparator();
+	// TODO: Add list of available devices here
+	addAndMakeVisible(headstageComboBoxB.get());
+
+	passthroughEditorB = std::make_unique<ToggleParameterEditor>(onixSource->getParameter("passthroughB"));
+	passthroughEditorB->setLayout(ParameterEditor::nameHidden);
+	passthroughEditorB->setBounds(headstageComboBoxB->getX(), headstageComboBoxB->getBottom() + 4, passthroughEditorA->getWidth(), passthroughEditorA->getHeight());
+	addAndMakeVisible(passthroughEditorB.get());
+
+	portVoltageValueB = std::make_unique<Label>("voltageValueB", "");
+	portVoltageValueB->setBounds(passthroughEditorB->getRight() + 10, passthroughEditorB->getY(), portVoltageValueA->getWidth(), passthroughEditorB->getHeight());
+	portVoltageValueB->setFont(fontOptionSmall);
+	portVoltageValueB->setEditable(true);
+	portVoltageValueB->setColour(Label::textColourId, Colours::black);
+	portVoltageValueB->setColour(Label::backgroundColourId, Colours::lightgrey);
+	portVoltageValueB->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
+	portVoltageValueB->addListener(this);
+	addAndMakeVisible(portVoltageValueB.get());
+
+	connectButton = std::make_unique<UtilityButton>("CONNECT");
+	connectButton->setFont(fontOptionSmall);
+	connectButton->setBounds(portLabelB->getX() + 5, portLabelB->getBottom() + 25, 70, 18);
 	connectButton->setRadius(3.0f);
 	connectButton->setClickingTogglesState(true);
 	connectButton->setToggleState(false, dontSendNotification);
 	connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
 	connectButton->addListener(this);
 	addAndMakeVisible(connectButton.get());
-
-	passthroughEditor = std::make_unique<ToggleParameterEditor>(onixSource->getParameter("is_passthrough_A"), 20, 95);
-	passthroughEditor->setLayout(ParameterEditor::nameOnTop);
-	passthroughEditor->setBounds(80, 90, 100, 36);
-	addAndMakeVisible(passthroughEditor.get());
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)
 {
-	if (l == portVoltageValue.get())
+	if (l == portVoltageValueA.get())
 	{
-		const float minVoltage = 4.5;
-		const float maxVoltage = 6.5;
-
-		float voltage = portVoltageValue->getText().getFloatValue();
-
-		if (voltage >= minVoltage && voltage <= maxVoltage)
-		{
-			portVoltage = voltage;
-		}
-		else if (voltage < minVoltage)
-		{
-			portVoltage = minVoltage;
-			portVoltageValue->setText(String(portVoltage), NotificationType::dontSendNotification);
-		}
-		else if (voltage > maxVoltage)
-		{
-			portVoltage = maxVoltage;
-			portVoltageValue->setText(String(portVoltage), NotificationType::dontSendNotification);
-		}
 	}
 }
 
@@ -95,20 +116,20 @@ void OnixSourceEditor::buttonClicked(Button* b)
 	{
 		if (connectButton->getToggleState() == true)
 		{
-			int result = thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
+			int result = thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltageValueA->getText().getFloatValue() * 10));
 
-			if (result != 0) { CoreServices::sendStatusMessage("Unable to set port voltage to " + String(portVoltage) + " for Port A."); return; }
+			if (result != 0) { CoreServices::sendStatusMessage("Unable to set port voltage to " + portVoltageValueA->getText() + " for Port A."); return; }
 
 			thread->initializeDevices(true);
 			canvas->refreshTabs();
 
-			connectButton->setLabel("Disconnect");
+			connectButton->setLabel("DISCONNECT");
 
 			if (!thread->foundInputSource())
 			{
 				CoreServices::sendStatusMessage("No Onix hardware found.");
 				connectButton->setToggleState(false, NotificationType::dontSendNotification);
-				connectButton->setLabel("Connect");
+				connectButton->setLabel("CONNECT");
 			}
 		}
 		else
@@ -119,8 +140,16 @@ void OnixSourceEditor::buttonClicked(Button* b)
 
 			canvas->removeTabs();
 			thread->disconnectDevices(true);
-			connectButton->setLabel("Connect");
+			connectButton->setLabel("CONNECT");
 		}
+	}
+}
+
+void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
+{
+	if (cb == headstageComboBoxA.get())
+	{
+		// TODO: Call canvas to remove / add tabs as needed depending on what is chosen
 	}
 }
 
@@ -171,5 +200,18 @@ void OnixSourceEditor::resetCanvas()
 			if (dataWindow != nullptr)
 				dataWindow->setContentNonOwned(VisualizerEditor::canvas.get(), false);
 		}
+	}
+}
+
+float OnixSourceEditor::getPortVoltage(PortName port)
+{
+	switch (port)
+	{
+	case PortName::PortA:
+		return 0.0f;
+	case PortName::PortB:
+		return 0.0f;
+	default:
+		return 0.0f;
 	}
 }

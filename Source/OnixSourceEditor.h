@@ -40,7 +40,8 @@ class OnixSource;
 class OnixSourceEditor : public VisualizerEditor,
     public Label::Listener,
     public Button::Listener,
-    public TextEditor::Listener
+    public TextEditor::Listener,
+    public ComboBox::Listener
 {
 public:
 
@@ -51,9 +52,11 @@ public:
     virtual ~OnixSourceEditor() { }
 
     /** Listener methods */
-    void labelTextChanged(Label* l);
+    void labelTextChanged(Label* l) override;
 
-    void buttonClicked(Button* b);
+    void buttonClicked(Button* b) override;
+
+    void comboBoxChanged(ComboBox* cb) override;
 
     /** Called when settings are changed */
     void updateSettings() override;
@@ -71,7 +74,7 @@ public:
 
     void resetCanvas();
 
-    float portVoltage;
+    float getPortVoltage(PortName port);
 
     OnixSourceCanvas* canvas;
 
@@ -79,12 +82,19 @@ private:
 
     OnixSource* thread;
 
-    std::unique_ptr<Label> portVoltageLabel;
-    std::unique_ptr<Label> portVoltageValue;
+    std::unique_ptr<Label> portLabelA;
+    std::unique_ptr<Label> portLabelB;
+
+    std::unique_ptr<ComboBox> headstageComboBoxA;
+    std::unique_ptr<ComboBox> headstageComboBoxB;
+
+    std::unique_ptr<Label> portVoltageValueA;
+    std::unique_ptr<Label> portVoltageValueB;
 
     std::unique_ptr<UtilityButton> connectButton;
 
-    std::unique_ptr<ToggleParameterEditor> passthroughEditor;
+    std::unique_ptr<ToggleParameterEditor> passthroughEditorA;
+    std::unique_ptr<ToggleParameterEditor> passthroughEditorB;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
 };

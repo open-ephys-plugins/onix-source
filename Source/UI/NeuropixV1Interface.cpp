@@ -90,7 +90,6 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, Oni
 		electrodeConfigurationComboBox->setBounds(450, currentHeight, 135, 22);
 		electrodeConfigurationComboBox->addListener(this);
 		electrodeConfigurationComboBox->setTooltip("Enable a pre-configured set of electrodes");
-
 		electrodeConfigurationComboBox->addItem("Select a preset...", 1);
 		electrodeConfigurationComboBox->setItemEnabled(1, false);
 		electrodeConfigurationComboBox->addSeparator();

@@ -157,7 +157,7 @@ class Neuropixels_1 : public OnixDevice,
 {
 public:
 	/** Constructor */
-	Neuropixels_1(String name, float portVoltage, OnixSource* s, const oni_dev_idx_t, const oni_ctx);
+	Neuropixels_1(String name, OnixSource* s, const oni_dev_idx_t, const oni_ctx);
 
 	/** Destructor */
 	~Neuropixels_1();
@@ -252,11 +252,6 @@ private:
 
 	int apSampleNumber = 0;
 	int lfpSampleNumber = 0;
-
-	float portVoltage_ = 5.0;
-
-	const float minVoltage = 4.5;
-	const float maxVoltage = 6.5;
 
 	OnixSource* source;
 };

@@ -122,7 +122,7 @@ void BackgroundUpdaterWithProgressWindow::run()
 	result = 0;
 }
 
-Neuropixels_1::Neuropixels_1(String name, float portVoltage, OnixSource* s, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
+Neuropixels_1::Neuropixels_1(String name, OnixSource* s, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
 	OnixDevice(name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	source(s)
@@ -148,9 +148,6 @@ Neuropixels_1::Neuropixels_1(String name, float portVoltage, OnixSource* s, cons
 	lfpStream.bitVolts = 0.195f;
 	lfpStream.channelType = ContinuousChannel::Type::ELECTRODE;
 	streams.add(lfpStream);
-
-	if (portVoltage >= minVoltage && portVoltage <= maxVoltage)
-		portVoltage_ = portVoltage;
 
 	defineMetadata(settings);
 
