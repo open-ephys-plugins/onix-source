@@ -183,8 +183,6 @@ public:
 
 	int64 getProbeNumber() const { return probeNumber; }
 
-	void updateSettings(ProbeSettings p) { settings = p; }
-
 	String getAdcPathParameterName();
 
 	String getGainPathParameterName();
@@ -228,9 +226,6 @@ private:
 	const float apSampleRate = 30000.0f;
 
 	static const int ProbeI2CAddress = 0x70;
-
-	/** Updates buffer during acquisition */
-	void run() override;
 
 	template<int N> std::vector<unsigned char> static toBitReversedBytes(std::bitset<N> shankBits);
 

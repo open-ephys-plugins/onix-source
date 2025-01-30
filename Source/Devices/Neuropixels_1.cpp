@@ -373,11 +373,6 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 	frameArray.add(frame);
 }
 
-void Neuropixels_1::run()
-{
-
-}
-
 void Neuropixels_1::processFrames()
 {
 	while (!frameArray.isEmpty())

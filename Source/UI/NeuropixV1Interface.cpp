@@ -35,9 +35,6 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, Oni
 
 	if (device != nullptr)
 	{
-		adcPathParameterName = device->getAdcPathParameterName();
-		gainPathParameterName = device->getGainPathParameterName();
-
 		type = SettingsInterface::Type::PROBE_SETTINGS_INTERFACE;
 
 		mode = VisualizationMode::ENABLE_VIEW;
@@ -247,12 +244,12 @@ NeuropixV1Interface::NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, Oni
 		probeSettingsLabel->setBounds(630, 110, 150, 15);
 		addAndMakeVisible(probeSettingsLabel.get());
 
-		adcCalibrationFileEditor = std::make_unique<PathParameterEditor>(canvas->getSourceParameter(adcPathParameterName));
+		adcCalibrationFileEditor = std::make_unique<PathParameterEditor>(canvas->getSourceParameter(device->getAdcPathParameterName()));
 		adcCalibrationFileEditor->setLayout(ParameterEditor::nameOnTop);
 		adcCalibrationFileEditor->setBounds(635, 126, 240, 45);
 		addAndMakeVisible(adcCalibrationFileEditor.get());
 
-		gainCalibrationFileEditor = std::make_unique<PathParameterEditor>(canvas->getSourceParameter(gainPathParameterName));
+		gainCalibrationFileEditor = std::make_unique<PathParameterEditor>(canvas->getSourceParameter(device->getGainPathParameterName()));
 		gainCalibrationFileEditor->setLayout(ParameterEditor::nameOnTop);
 		gainCalibrationFileEditor->setBounds(635, 175, 240, 45);
 		addAndMakeVisible(gainCalibrationFileEditor.get());
@@ -319,13 +316,6 @@ void NeuropixV1Interface::updateInfoString()
 
 	infoLabel->setText(infoString, dontSendNotification);
 	nameLabel->setText(nameString, dontSendNotification);
-}
-
-void NeuropixV1Interface::updateProbeSettings()
-{
-	ProbeSettings settings = getProbeSettings();
-
-	device->updateSettings(settings);
 }
 
 void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
@@ -762,7 +752,6 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings p, bool shouldUpdateP
 
 	if (shouldUpdateProbe)
 	{
-		updateProbeSettings();
 		CoreServices::saveRecoveryConfig();
 	}
 
@@ -878,135 +867,8 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 {
 	if (device != nullptr)
 	{
-		String mySerialNumber = String(device->getProbeNumber());
-
-		// first, set defaults
-		ProbeSettings settings = ProbeSettings(device->settings);
-		settings.probeType = device->settings.probeType;
-		settings.apFilterState = device->settings.apFilterState;
-		settings.lfpGainIndex = device->settings.lfpGainIndex;
-		settings.apGainIndex = device->settings.apGainIndex;
-		settings.referenceIndex = device->settings.referenceIndex;
-		if (settings.referenceIndex >= referenceComboBox->getNumItems())
-			settings.referenceIndex = 0;
-		settings.availableApGains = device->settings.availableApGains;
-		settings.availableLfpGains = device->settings.availableLfpGains;
-		settings.availableBanks = device->settings.availableBanks;
-		settings.availableReferences = device->settings.availableReferences;
-
-		for (int shank = 0; shank < 4; shank++)
-		{
-			for (int i = 0; i < 384; i++)
-			{
-				settings.selectedBank.add(Bank::A);
-				settings.selectedChannel.add(i);
-				settings.selectedShank.add(shank);
-				settings.selectedElectrode.add(i + shank * 1280);
-			}
-		}
-
-		XmlElement* matchingNode = nullptr;
-
-		// find by serial number
-		for (auto xmlNode : xml->getChildIterator())
-		{
-			if (xmlNode->hasTagName("NP_PROBE"))
-			{
-				if (xmlNode->getStringAttribute("probe_serial_number").equalsIgnoreCase(mySerialNumber))
-				{
-					matchingNode = xmlNode;
-					break;
-				}
-			}
-		}
-
-		// if not, search for matching port
-		if (matchingNode != nullptr)
-		{
-			if (matchingNode->getChildByName("CHANNELS"))
-			{
-				settings.selectedBank.clear();
-				settings.selectedChannel.clear();
-				settings.selectedShank.clear();
-				settings.selectedElectrode.clear();
-
-				XmlElement* status = matchingNode->getChildByName("CHANNELS");
-
-				for (int i = 0; i < Neuropixels_1::numberOfChannels; i++)
-				{
-					settings.selectedChannel.add(i);
-
-					String bankInfo = status->getStringAttribute("CH" + String(i));
-					Bank bank = static_cast<Bank> (bankInfo.substring(0, 1).getIntValue());
-					int shank = 0;
-
-					settings.selectedBank.add(bank);
-					settings.selectedShank.add(shank);
-
-					for (int j = 0; j < device->settings.electrodeMetadata.size(); j++)
-					{
-						if (device->settings.electrodeMetadata[j].channel == i)
-						{
-							if (device->settings.electrodeMetadata[j].bank == bank && device->settings.electrodeMetadata[j].shank == shank)
-							{
-								settings.selectedElectrode.add(j);
-							}
-						}
-					}
-				}
-			}
-
-			probeBrowser->setZoomHeightAndOffset(matchingNode->getIntAttribute("ZoomHeight"),
-				matchingNode->getIntAttribute("ZoomOffset"));
-
-			settings.apGainIndex = matchingNode->getIntAttribute("apGainIndex", 3);
-			settings.lfpGainIndex = matchingNode->getIntAttribute("lfpGainIndex", 2);
-			settings.referenceIndex = matchingNode->getIntAttribute("referenceChannelIndex", 0);
-			if (settings.referenceIndex >= referenceComboBox->getNumItems())
-				settings.referenceIndex = 0;
-
-			String configurationName = matchingNode->getStringAttribute("electrodeConfigurationPreset", "NONE");
-
-			for (int i = 0; i < electrodeConfigurationComboBox->getNumItems(); i++)
-			{
-				if (electrodeConfigurationComboBox->getItemText(i).equalsIgnoreCase(configurationName))
-				{
-					electrodeConfigurationComboBox->setSelectedItemIndex(i, dontSendNotification);
-					settings.electrodeConfigurationIndex = i - 1;
-
-					break;
-				}
-			}
-
-			settings.apFilterState = matchingNode->getIntAttribute("filterCutIndex", 1) == 1;
-
-			for (auto annotationNode : matchingNode->getChildIterator())
-			{
-				if (annotationNode->hasTagName("ANNOTATIONS"))
-				{
-					Array<int> annotationChannels;
-					annotationChannels.add(annotationNode->getIntAttribute("electrode"));
-					annotations.add(Annotation(annotationNode->getStringAttribute("text"),
-						annotationChannels,
-						Colour(annotationNode->getIntAttribute("R"),
-							annotationNode->getIntAttribute("G"),
-							annotationNode->getIntAttribute("B"))));
-				}
-			}
-
-			device->setEnabled(matchingNode->getBoolAttribute("isEnabled", true));
-			probeEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
-			if (device->isEnabled())
-				probeEnableButton->setLabel("ENABLED");
-			else
-			{
-				probeEnableButton->setLabel("DISABLED");
-			}
-		}
-
-		device->updateSettings(settings);
-
-		applyProbeSettings(settings, false);
+		// TODO: load parameters, put them into device->settings, and then update the interface
+		applyProbeSettings(device->settings, false);
 	}
 }
 

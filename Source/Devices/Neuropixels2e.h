@@ -33,9 +33,6 @@ public:
 
 private:
 
-	/** Updates buffer during acquisition */
-	void run() override;
-
 	void createDataStream(int n);
 
 	uint64_t getProbeSN(uint8_t probeSelect);

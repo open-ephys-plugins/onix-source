@@ -211,8 +211,3 @@ void Bno055::processFrames()
 		}
 	}
 }
-
-void Bno055::run()
-{
-
-}

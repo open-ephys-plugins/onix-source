@@ -169,7 +169,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
 		{
-			Neuropixels_1* np1 = new Neuropixels_1("Probe-" + String::charToString(probeLetters[npxProbeIdx]), editor->portVoltage, this, devices[dev_idx].idx, ctx);
+			auto np1 = std::make_unique<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), editor->portVoltage, this, devices[dev_idx].idx, ctx);
 
 			int res = np1->enableDevice();
 
@@ -179,14 +179,12 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				{
 					LOGE("Device Idx: ", devices[dev_idx].idx, " Unable to read probe serial number. Device not found.");
 
-					delete np1;
 					continue;
 				}
 				else if (res == -2)
 				{
 					LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
 
-					delete np1;
 					continue;
 				}
 				else if (res == -3 || res == -4)
@@ -195,9 +193,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				}
 			}
 
-			sources.add(np1);
-
 			np1->addSourceBuffers(sourceBuffers);
+
+			sources.add(np1.release());
 
 			npxProbeIdx++;
 		}
@@ -339,8 +337,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 					"imec"
 				};
 
-				DeviceInfo* device = new DeviceInfo(deviceSettings);
-				deviceInfos->add(device);
+				deviceInfos->add(new DeviceInfo(deviceSettings));
 			}
 			else if (source->type == OnixDeviceType::BNO)
 			{
@@ -363,6 +360,8 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 					"0000000",
 					"imec"
 				};
+
+				deviceInfos->add(new DeviceInfo(deviceSettings));
 			}
 
 			// add data streams and channels
@@ -451,6 +450,21 @@ bool OnixSource::startAcquisition()
 
 bool OnixSource::stopAcquisition()
 {
+	if (devicesFound)
+	{
+		oni_size_t reg = 0;
+		int res = oni_set_opt(ctx, ONI_OPT_RUNNING, &reg, sizeof(reg));
+		if (res < ONI_ESUCCESS)
+		{
+			LOGE("Error stopping acquisition: ", oni_error_str(res), " code ", res);
+			return false;
+		}
+
+		uint32_t val = 1;
+		oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
+		oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
+	}
+
 	if (isThreadRunning())
 		signalThreadShouldExit();
 
@@ -468,21 +482,6 @@ bool OnixSource::stopAcquisition()
 
 	for (auto buffers : sourceBuffers)
 		buffers->clear();
-
-	if (devicesFound)
-	{
-		oni_size_t reg = 0;
-		int res = oni_set_opt(ctx, ONI_OPT_RUNNING, &reg, sizeof(reg));
-		if (res < ONI_ESUCCESS)
-		{
-			LOGE("Error stopping acquisition: ", oni_error_str(res), " code ", res);
-			return false;
-		}
-
-		uint32_t val = 1;
-		oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
-		oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
-	}
 
 	return true;
 }

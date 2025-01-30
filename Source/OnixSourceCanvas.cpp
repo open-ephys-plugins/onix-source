@@ -130,17 +130,12 @@ void OnixSourceCanvas::refreshState()
 
 void OnixSourceCanvas::removeTabs()
 {
-	CustomTabComponent* portTab = portTabs.getFirst();
-
-	for (int i = 0; i < portTab->getNumTabs(); i += 1)
+	for (auto tab : portTabs)
 	{
-		portTab->removeTab(0);
+		tab->clearTabs();
 	}
 
-	if (!settingsInterfaces.isEmpty())
-	{
-		settingsInterfaces.clear(true);
-	}
+	settingsInterfaces.clear(true);
 }
 
 void OnixSourceCanvas::refreshTabs()

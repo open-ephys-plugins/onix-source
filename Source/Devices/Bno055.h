@@ -68,9 +68,6 @@ private:
 
 	static const int numFrames = 2;
 
-	/** Updates buffer during acquisition */
-	void run() override;
-
 	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
 	bool shouldAddToBuffer = false;

@@ -96,7 +96,6 @@ public:
 	/** Settings-related functions*/
 	bool applyProbeSettings(ProbeSettings p, bool shouldUpdateProbe = true);
 	ProbeSettings getProbeSettings() const;
-	void updateProbeSettings();
 
 	/** Save parameters to XML */
 	void saveParameters(XmlElement* xml) override;
@@ -134,9 +133,6 @@ private:
 
 	std::unique_ptr<PathParameterEditor> adcCalibrationFileEditor;
 	std::unique_ptr<PathParameterEditor> gainCalibrationFileEditor;
-
-	std::unique_ptr<FileChooser> adcCalibrationFileChooser;
-	std::unique_ptr<FileChooser> gainCalibrationFileChooser;
 
 	// LABELS
 	std::unique_ptr<Label> nameLabel;
@@ -179,9 +175,6 @@ private:
 	Array<int> getSelectedElectrodes() const;
 
 	void setInterfaceEnabledState(bool enabledState);
-
-	String adcPathParameterName;
-	String gainPathParameterName;
 };
 
 #endif //__NEUROPIXINTERFACE_H__

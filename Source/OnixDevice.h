@@ -69,7 +69,7 @@ struct StreamInfo {
 	Streams data from an ONIX device
 
 */
-class OnixDevice : public Thread
+class OnixDevice
 {
 public:
 

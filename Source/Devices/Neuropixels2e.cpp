@@ -227,11 +227,6 @@ void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	}
 }
 
-void Neuropixels2e::run()
-{
-
-}
-
 void Neuropixels2e::processFrames()
 {
 	while (!frameArray.isEmpty())
