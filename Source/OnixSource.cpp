@@ -32,6 +32,8 @@ OnixSource::OnixSource(SourceNode* sn) :
 {
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "is_passthrough_A", "Passthrough Mode", "Enables passthrough mode for e-variant headstages", false, true);
 
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
+
 	LOGD("ONIX Source creating ONI context.");
 	ctx = oni_create_ctx("riffa"); // "riffa" is the PCIe driver name
 	if (ctx == NULL) { LOGE("Failed to create context."); return; }
@@ -78,6 +80,15 @@ void OnixSource::initializeContext()
 	contextInitialized = true;
 }
 
+void OnixSource::disconnectDevices(bool updateStreamInfo)
+{
+	sourceBuffers.clear(true);
+	sources.clear(true);
+	devicesFound = false;
+
+	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
+}
+
 void OnixSource::initializeDevices(bool updateStreamInfo)
 {
 	if (!contextInitialized)
@@ -89,9 +100,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	if (devicesFound)
 	{
-		sourceBuffers.clear(true);
-		sources.clear(true);
-		devicesFound = false;
+		disconnectDevices(false);
 	}
 
 	oni_size_t num_devs = 0;
@@ -115,7 +124,14 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	size_t devices_sz = sizeof(oni_device_t) * num_devs;
 	devices = (oni_device_t*)realloc(devices, devices_sz);
-	if (devices == NULL) { LOGE("No devices found."); return; }
+
+	if (devices == NULL) 
+	{ 
+		LOGE("No devices found."); 
+		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
+		return;
+	}
+
 	oni_get_opt(ctx, ONI_OPT_DEVICETABLE, devices, &devices_sz);
 
 	devicesFound = true;
@@ -237,9 +253,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 	}
 
-	val = 1;
-	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
-
 	oni_size_t frame_size = 0;
 	size_t frame_size_sz = sizeof(frame_size);
 	oni_get_opt(ctx, ONI_OPT_MAXREADFRAMESIZE, &frame_size, &frame_size_sz);
@@ -247,7 +260,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	oni_get_opt(ctx, ONI_OPT_MAXWRITEFRAMESIZE, &frame_size, &frame_size_sz);
 	printf("Max. write frame size: %u bytes\n", frame_size);
-
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 
@@ -290,6 +302,11 @@ bool OnixSource::setPortVoltage(oni_dev_idx_t port, int voltage) const
 	sleep(500);
 
 	result = oni_write_reg(ctx, port, voltageRegister, voltage);
+
+	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
+
+	auto val = 1;
+	result = oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 
 	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
 

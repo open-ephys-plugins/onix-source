@@ -55,6 +55,8 @@ public:
 	{
 		if (ctx != NULL && contextInitialized)
 		{
+			int result = setPortVoltage((oni_dev_idx_t)PortName::PortA, 0);
+			if (result != 0) LOGE("Error setting port voltage to zero.");
 			oni_destroy_ctx(ctx);
 		}
 	}
@@ -85,6 +87,8 @@ public:
 	void initializeContext();
 
 	void initializeDevices(bool updateStreamInfo = false);
+
+	void disconnectDevices(bool updateStreamInfo = false);
 
 	Array<OnixDevice*> getDataSources();
 

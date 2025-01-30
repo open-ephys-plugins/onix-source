@@ -32,27 +32,30 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	desiredWidth = 200;
 
 	portVoltageLabel = std::make_unique<Label>("Voltage", "PORT VOLTAGE [V]");
-	portVoltageLabel->setBounds(5, 20, 75, 20);
-	portVoltageLabel->setFont(FontOptions("Small Text", 11, Font::plain));
+	portVoltageLabel->setBounds(5, 20, 85, 20);
+	portVoltageLabel->setFont(FontOptions("Fira Code", "Regular", 11.0f));
 	portVoltageLabel->setColour(Label::textColourId, Colours::black);
 	addAndMakeVisible(portVoltageLabel.get());
 
 	portVoltage = 5.0f;
 	portVoltageValue = std::make_unique<Label>("VoltageValue", String(portVoltage));
 	portVoltageValue->setBounds(10, 38, 30, 13);
-	portVoltageValue->setFont(FontOptions("Small Text", 11, Font::plain));
+	portVoltageValue->setFont(FontOptions("Fira Code", "Regular", 11.0f));
 	portVoltageValue->setEditable(true);
 	portVoltageValue->setColour(Label::textColourId, Colours::black);
 	portVoltageValue->setColour(Label::backgroundColourId, Colours::lightgrey);
 	portVoltageValue->addListener(this);
 	addAndMakeVisible(portVoltageValue.get());
 
-	scanButton = std::make_unique<UtilityButton>("Scan");
-	scanButton->setFont(FontOptions("Small Text", 9, Font::plain));
-	scanButton->setBounds(10, 100, 50, 17);
-	scanButton->setRadius(3.0f);
-	scanButton->addListener(this);
-	addAndMakeVisible(scanButton.get());
+	connectButton = std::make_unique<UtilityButton>("Connect");
+	connectButton->setFont(FontOptions("Fira Code", "Regular", 11.0f));
+	connectButton->setBounds(10, 95, 65, 20);
+	connectButton->setRadius(3.0f);
+	connectButton->setClickingTogglesState(true);
+	connectButton->setToggleState(false, dontSendNotification);
+	connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
+	connectButton->addListener(this);
+	addAndMakeVisible(connectButton.get());
 
 	passthroughEditor = std::make_unique<ToggleParameterEditor>(onixSource->getParameter("is_passthrough_A"), 20, 95);
 	passthroughEditor->setLayout(ParameterEditor::nameOnTop);
@@ -88,12 +91,36 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 
 void OnixSourceEditor::buttonClicked(Button* b)
 {
-	if (b == scanButton.get())
+	if (b == connectButton.get())
 	{
-		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
-		canvas->removeTabs();
-		thread->initializeDevices(true);
-		canvas->refreshTabs();
+		if (connectButton->getToggleState() == true)
+		{
+			int result = thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
+
+			if (result != 0) { CoreServices::sendStatusMessage("Unable to set port voltage to " + String(portVoltage) + " for Port A."); return; }
+
+			thread->initializeDevices(true);
+			canvas->refreshTabs();
+
+			connectButton->setLabel("Disconnect");
+
+			if (!thread->foundInputSource())
+			{
+				CoreServices::sendStatusMessage("No Onix hardware found.");
+				connectButton->setToggleState(false, NotificationType::dontSendNotification);
+				connectButton->setLabel("Connect");
+			}
+		}
+		else
+		{
+			int result = thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, 0);
+
+			if (result != 0) { CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port A."); return; }
+
+			canvas->removeTabs();
+			thread->disconnectDevices(true);
+			connectButton->setLabel("Connect");
+		}
 	}
 }
 
@@ -105,14 +132,12 @@ void OnixSourceEditor::updateSettings()
 
 void OnixSourceEditor::startAcquisition()
 {
-	scanButton->setEnabled(false);
-	scanButton->setAlpha(0.3f);
+	connectButton->setEnabled(false);
 }
 
 void OnixSourceEditor::stopAcquisition()
 {
-	scanButton->setEnabled(true);
-	scanButton->setAlpha(1.0f);
+	connectButton->setEnabled(true);
 }
 
 Visualizer* OnixSourceEditor::createNewCanvas(void)

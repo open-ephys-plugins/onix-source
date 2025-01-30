@@ -557,6 +557,9 @@ void NeuropixV1Interface::selectElectrodes(Array<int> electrodes)
 
 void NeuropixV1Interface::setInterfaceEnabledState(bool enabledState)
 {
+	if (probeEnableButton != nullptr)
+		probeEnableButton->setEnabled(enabledState);
+
 	if (enableButton != nullptr)
 		enableButton->setEnabled(enabledState);
 
