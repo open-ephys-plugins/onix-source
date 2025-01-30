@@ -41,19 +41,6 @@ OnixSource::OnixSource(SourceNode* sn) :
 
 	if (!contextInitialized) { LOGE("Failed to initialize context."); return; }
 
-	setPortVoltage((oni_dev_idx_t)PortName::PortA, 5.0);
-	initializeDevices();
-
-	if (!devicesFound) { return; }
-
-	oni_size_t frame_size = 0;
-	size_t frame_size_sz = sizeof(frame_size);
-	oni_get_opt(ctx, ONI_OPT_MAXREADFRAMESIZE, &frame_size, &frame_size_sz);
-	printf("Max. read frame size: %u bytes\n", frame_size);
-
-	oni_get_opt(ctx, ONI_OPT_MAXWRITEFRAMESIZE, &frame_size, &frame_size_sz);
-	printf("Max. write frame size: %u bytes\n", frame_size);
-
 	size_t block_size_sz = sizeof(block_read_size);
 
 	// set block read size
@@ -253,6 +240,15 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	val = 1;
 	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 
+	oni_size_t frame_size = 0;
+	size_t frame_size_sz = sizeof(frame_size);
+	oni_get_opt(ctx, ONI_OPT_MAXREADFRAMESIZE, &frame_size, &frame_size_sz);
+	printf("Max. read frame size: %u bytes\n", frame_size);
+
+	oni_get_opt(ctx, ONI_OPT_MAXWRITEFRAMESIZE, &frame_size, &frame_size_sz);
+	printf("Max. write frame size: %u bytes\n", frame_size);
+
+
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 
 	LOGD("All devices initialized.");
@@ -399,7 +395,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 bool OnixSource::foundInputSource()
 {
-	return devicesFound;
+	return devicesFound; // TODO: Check here if the settings tabs match the hardware; only return true if the hardware and tabs match
 }
 
 bool OnixSource::isReady()

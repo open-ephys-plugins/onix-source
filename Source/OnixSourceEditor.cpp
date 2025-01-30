@@ -47,12 +47,12 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	portVoltageValue->addListener(this);
 	addAndMakeVisible(portVoltageValue.get());
 
-	rescanButton = std::make_unique<UtilityButton>("Scan");
-	rescanButton->setFont(FontOptions("Small Text", 9, Font::plain));
-	rescanButton->setBounds(10, 100, 50, 17);
-	rescanButton->setRadius(3.0f);
-	rescanButton->addListener(this);
-	addAndMakeVisible(rescanButton.get());
+	scanButton = std::make_unique<UtilityButton>("Scan");
+	scanButton->setFont(FontOptions("Small Text", 9, Font::plain));
+	scanButton->setBounds(10, 100, 50, 17);
+	scanButton->setRadius(3.0f);
+	scanButton->addListener(this);
+	addAndMakeVisible(scanButton.get());
 
 	passthroughEditor = std::make_unique<ToggleParameterEditor>(onixSource->getParameter("is_passthrough_A"), 20, 95);
 	passthroughEditor->setLayout(ParameterEditor::nameOnTop);
@@ -88,7 +88,7 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 
 void OnixSourceEditor::buttonClicked(Button* b)
 {
-	if (b == rescanButton.get())
+	if (b == scanButton.get())
 	{
 		thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltage * 10));
 		canvas->removeTabs();
@@ -105,14 +105,14 @@ void OnixSourceEditor::updateSettings()
 
 void OnixSourceEditor::startAcquisition()
 {
-	rescanButton->setEnabled(false);
-	rescanButton->setAlpha(0.3f);
+	scanButton->setEnabled(false);
+	scanButton->setAlpha(0.3f);
 }
 
 void OnixSourceEditor::stopAcquisition()
 {
-	rescanButton->setEnabled(true);
-	rescanButton->setAlpha(1.0f);
+	scanButton->setEnabled(true);
+	scanButton->setAlpha(1.0f);
 }
 
 Visualizer* OnixSourceEditor::createNewCanvas(void)

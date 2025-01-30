@@ -82,7 +82,7 @@ private:
     std::unique_ptr<Label> portVoltageLabel;
     std::unique_ptr<Label> portVoltageValue;
 
-    std::unique_ptr<UtilityButton> rescanButton;
+    std::unique_ptr<UtilityButton> scanButton;
 
     std::unique_ptr<ToggleParameterEditor> passthroughEditor;
 
