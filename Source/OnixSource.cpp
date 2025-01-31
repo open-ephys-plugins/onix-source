@@ -446,6 +446,9 @@ bool OnixSource::isReady()
 	if (!devicesFound)
 		return false;
 
+	if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(ctx)) return false;
+	if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(ctx)) return false;
+
 	for (auto source : sources)
 	{
 		if (!source->isEnabled()) continue;

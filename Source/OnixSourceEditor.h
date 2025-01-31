@@ -74,7 +74,7 @@ public:
 
     void resetCanvas();
 
-    float getPortVoltage(PortName port);
+    bool isHeadstageSelected(PortName port);
 
     OnixSourceCanvas* canvas;
 

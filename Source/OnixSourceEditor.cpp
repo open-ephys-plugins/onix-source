@@ -123,7 +123,7 @@ void OnixSourceEditor::buttonClicked(Button* b)
 		if (connectButton->getToggleState() == true)
 		{
 			// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
-			if (headstageComboBoxA->getSelectedItemIndex() > 0)
+			if (isHeadstageSelected(PortName::PortA))
 			{
 				if (!thread->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
 				{
@@ -133,7 +133,7 @@ void OnixSourceEditor::buttonClicked(Button* b)
 				}
 			}
 			
-			if (headstageComboBoxB->getSelectedItemIndex() > 0)
+			if (isHeadstageSelected(PortName::PortB))
 			{
 				if (!thread->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
 				{
@@ -243,15 +243,15 @@ void OnixSourceEditor::resetCanvas()
 	}
 }
 
-float OnixSourceEditor::getPortVoltage(PortName port)
+bool OnixSourceEditor::isHeadstageSelected(PortName port)
 {
 	switch (port)
 	{
 	case PortName::PortA:
-		return 0.0f;
+		return headstageComboBoxA->getSelectedItemIndex() > 0;
 	case PortName::PortB:
-		return 0.0f;
+		return headstageComboBoxB->getSelectedItemIndex() > 0;
 	default:
-		return 0.0f;
+		return false;
 	}
 }
