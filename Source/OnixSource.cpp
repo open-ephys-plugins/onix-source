@@ -109,7 +109,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	uint32_t val = 0;
 
-	if (getParameter("is_passthrough_A")->getValue())
+	if (getParameter("passthroughA")->getValue())
 	{
 		LOGD("Passthrough mode enabled");
 		val = 1;
