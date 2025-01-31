@@ -37,6 +37,10 @@
 #include "I2CRegisterContext.h"
 #include "NeuropixComponents.h"
 
+#define ONI_OK(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));}}
+#define ONI_OK_RETURN_BOOL(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return false;}}
+#define ONI_OK_RETURN_INT(exp, val) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return val;}}
+
 using namespace std::chrono;
 
 enum class PortName
@@ -108,8 +112,6 @@ public:
 	DataBuffer* deviceBuffer;
 
 	Array<StreamInfo> streams;
-
-	int checkLinkState(oni_dev_idx_t port) const;
 
 	const int bufferSizeInSeconds = 10;
 

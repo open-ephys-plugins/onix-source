@@ -46,8 +46,17 @@ void BackgroundUpdaterWithProgressWindow::run()
 	setProgress(-1);
 
 	// Parse ADC and Gain calibration files
-	File adcFile = File(device->getAdcPathParameter());
-	File gainFile = File(device->getGainPathParameter());
+	String adcPath = device->getAdcPathParameter();
+	String gainPath = device->getGainPathParameter();
+
+	if (adcPath == "None" || gainPath == "None")
+	{
+		result = -3;
+		return;
+	}
+
+	File adcFile = File(adcPath);
+	File gainFile = File(gainPath);
 
 	if (!adcFile.existsAsFile() || !gainFile.existsAsFile())
 	{
@@ -157,12 +166,14 @@ Neuropixels_1::Neuropixels_1(String name, OnixSource* s, const oni_dev_idx_t dev
 	//validExtensions.add("*_ADCCalibration.csv");
 
 	source->addPathParameter(Parameter::PROCESSOR_SCOPE, getAdcPathParameterName(), "ADC Calibration File", "Path to the ADC calibration file for this Neuropixels probe",
-		File::getSpecialLocation(File::userHomeDirectory).getFullPathName(), validExtensions, false, false, true);
+		"", validExtensions, false, false, true);
+	source->getParameter(getAdcPathParameterName())->setNextValue(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
 
 	//validExtensions.set(0, "*_gainCalValues.csv");
 
 	source->addPathParameter(Parameter::PROCESSOR_SCOPE, getGainPathParameterName(), "Gain Calibration File", "Path to the gain calibration file for this Neuropixels probe",
-		File::getSpecialLocation(File::userHomeDirectory).getFullPathName(), validExtensions, false, false, true);
+		"", validExtensions, false, false, true);
+	source->getParameter(getGainPathParameterName())->setNextValue(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
 }
 
 Neuropixels_1::~Neuropixels_1()
@@ -234,10 +245,6 @@ NeuropixelsReference Neuropixels_1::getReference(int index)
 
 int Neuropixels_1::enableDevice()
 {
-	int result = checkLinkState((oni_dev_idx_t)PortName::PortA);
-
-	if (result != 0) return result;
-
 	// Get Probe SN
 	uint32_t eepromOffset = 0;
 	uint32_t i2cAddr = 0x50;

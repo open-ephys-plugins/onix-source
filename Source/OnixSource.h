@@ -24,9 +24,6 @@
 #ifndef __OnixSource_H__
 #define __OnixSource_H__
 
-#include <stdio.h>
-#include <string.h>
-
 #include <oni.h>
 #include <onix.h>
 
@@ -36,6 +33,7 @@
 #include "OnixSourceEditor.h"
 #include "Devices/DeviceList.h"
 #include "FrameReader.h"
+#include "PortController.h"
 
 /**
 
@@ -55,8 +53,8 @@ public:
 	{
 		if (ctx != NULL && contextInitialized)
 		{
-			int result = setPortVoltage((oni_dev_idx_t)PortName::PortA, 0);
-			if (result != 0) LOGE("Error setting port voltage to zero.");
+			portA.setVoltage(ctx, 0.0f);
+			portB.setVoltage(ctx, 0.0f);
 			oni_destroy_ctx(ctx);
 		}
 	}
@@ -82,7 +80,13 @@ public:
 	/** Stops data transfer.*/
 	bool stopAcquisition();
 
-	bool setPortVoltage(oni_dev_idx_t port, int voltage) const;
+	void updateDiscoveryParameters(PortName port, DiscoveryParameters parameters);
+
+	/** Takes a string from the editor. Can be an empty string to allow for automated discovery */
+	bool configurePortVoltage(PortName port, String voltage) const;
+
+	/** Sets the port voltage */
+	bool setPortVoltage(PortName port, float voltage) const;
 
 	void initializeContext();
 
@@ -115,6 +119,9 @@ private:
 
 	/** The ONI context object */
 	oni_ctx ctx;
+
+	PortController portA = PortController(PortName::PortA);
+	PortController portB = PortController(PortName::PortB);
 
 	const oni_size_t block_read_size = 2048;
 

@@ -45,6 +45,9 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	headstageComboBoxA->setItemEnabled(1, false);
 	headstageComboBoxA->addSeparator();
 	// TODO: Add list of available devices here
+	headstageComboBoxA->addItem("Neuropixels 1.0f", 2);
+
+	headstageComboBoxA->setSelectedId(1, dontSendNotification);
 	addAndMakeVisible(headstageComboBoxA.get());
 
 	passthroughEditorA = std::make_unique<ToggleParameterEditor>(onixSource->getParameter("passthroughA"));
@@ -75,6 +78,9 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	headstageComboBoxB->setItemEnabled(1, false);
 	headstageComboBoxB->addSeparator();
 	// TODO: Add list of available devices here
+	headstageComboBoxB->addItem("Neuropixels 1.0f", 2);
+
+	headstageComboBoxB->setSelectedId(1, dontSendNotification);
 	addAndMakeVisible(headstageComboBoxB.get());
 
 	passthroughEditorB = std::make_unique<ToggleParameterEditor>(onixSource->getParameter("passthroughB"));
@@ -116,9 +122,26 @@ void OnixSourceEditor::buttonClicked(Button* b)
 	{
 		if (connectButton->getToggleState() == true)
 		{
-			int result = thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, (int)(portVoltageValueA->getText().getFloatValue() * 10));
-
-			if (result != 0) { CoreServices::sendStatusMessage("Unable to set port voltage to " + portVoltageValueA->getText() + " for Port A."); return; }
+			// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
+			if (headstageComboBoxA->getSelectedItemIndex() > 0)
+			{
+				if (!thread->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
+				{
+					CoreServices::sendStatusMessage("Unable to set port voltage for Port A.");
+					connectButton->setToggleState(false, true);
+					return;
+				}
+			}
+			
+			if (headstageComboBoxB->getSelectedItemIndex() > 0)
+			{
+				if (!thread->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
+				{
+					CoreServices::sendStatusMessage("Unable to set port voltage for Port B.");
+					connectButton->setToggleState(false, true);
+					return;
+				}
+			}
 
 			thread->initializeDevices(true);
 			canvas->refreshTabs();
@@ -128,15 +151,22 @@ void OnixSourceEditor::buttonClicked(Button* b)
 			if (!thread->foundInputSource())
 			{
 				CoreServices::sendStatusMessage("No Onix hardware found.");
-				connectButton->setToggleState(false, NotificationType::dontSendNotification);
-				connectButton->setLabel("CONNECT");
+				connectButton->setToggleState(false, true);
 			}
 		}
 		else
 		{
-			int result = thread->setPortVoltage((oni_dev_idx_t)PortName::PortA, 0);
+			if (!thread->setPortVoltage(PortName::PortA, 0))
+			{
+				CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port A.");
+				return;
+			}
 
-			if (result != 0) { CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port A."); return; }
+			if (!thread->setPortVoltage(PortName::PortB, 0))
+			{
+				CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port B.");
+				return;
+			}
 
 			canvas->removeTabs();
 			thread->disconnectDevices(true);
@@ -150,6 +180,16 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 	if (cb == headstageComboBoxA.get())
 	{
 		// TODO: Call canvas to remove / add tabs as needed depending on what is chosen
+		String headstage = headstageComboBoxA->getText();
+
+		thread->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstage));
+	}
+	else if (cb == headstageComboBoxB.get())
+	{
+		// TODO: Call canvas to remove / add tabs as needed depending on what is chosen
+		String headstage = headstageComboBoxB->getText();
+
+		thread->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstage));
 	}
 }
 

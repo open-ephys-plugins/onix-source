@@ -28,15 +28,3 @@ OnixDevice::OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t d
 {
 	name = name_;
 }
-
-int OnixDevice::checkLinkState(oni_dev_idx_t port) const
-{
-	const oni_reg_addr_t linkStateRegister = 5;
-
-	oni_reg_val_t linkState;
-	int result = oni_read_reg(ctx, port, linkStateRegister, &linkState);
-
-	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
-	else if ((linkState & (uint32_t)0x1) == 0) { LOGE("Unable to acquire communication lock."); return -1; }
-	else return result;
-}

@@ -43,11 +43,6 @@ OnixSource::OnixSource(SourceNode* sn) :
 	initializeContext();
 
 	if (!contextInitialized) { LOGE("Failed to initialize context."); return; }
-
-	size_t block_size_sz = sizeof(block_read_size);
-
-	// set block read size
-	oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, block_size_sz);
 }
 
 DataThread* OnixSource::createDataThread(SourceNode* sn)
@@ -254,6 +249,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 	}
 
+	val = 1;
+	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
+
 	oni_size_t frame_size = 0;
 	size_t frame_size_sz = sizeof(frame_size);
 	oni_get_opt(ctx, ONI_OPT_MAXREADFRAMESIZE, &frame_size, &frame_size_sz);
@@ -261,6 +259,10 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	oni_get_opt(ctx, ONI_OPT_MAXWRITEFRAMESIZE, &frame_size, &frame_size_sz);
 	printf("Max. write frame size: %u bytes\n", frame_size);
+
+	// set block read size
+	size_t block_size_sz = sizeof(block_read_size);
+	oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, block_size_sz);
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 
@@ -292,28 +294,51 @@ void OnixSource::updateSourceBuffers()
 	}
 }
 
-bool OnixSource::setPortVoltage(oni_dev_idx_t port, int voltage) const
+void OnixSource::updateDiscoveryParameters(PortName port, DiscoveryParameters parameters)
+{
+	switch (port)
+	{
+	case PortName::PortA:
+		portA.updateDiscoveryParameters(parameters);
+		break;
+	case PortName::PortB:
+		portB.updateDiscoveryParameters(parameters);
+		break;
+	default:
+		break;
+	}
+}
+
+bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 {
 	if (!contextInitialized) return false;
 
-	const oni_reg_addr_t voltageRegister = 3;
+	switch (port)
+	{
+	case PortName::PortA:
+		if (voltage == "") return portA.configureVoltage(ctx);
+		else			   return portA.configureVoltage(ctx, voltage.getFloatValue());
+	case PortName::PortB:
+		if (voltage == "") return portB.configureVoltage(ctx);
+		else			   return portB.configureVoltage(ctx, voltage.getFloatValue());
+	default:
+		return false;
+	}
+}
 
-	auto result = oni_write_reg(ctx, port, voltageRegister, 0);
+bool OnixSource::setPortVoltage(PortName port, float voltage) const
+{
+	if (!contextInitialized) return false;
 
-	sleep(500);
-
-	result = oni_write_reg(ctx, port, voltageRegister, voltage);
-
-	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
-
-	auto val = 1;
-	result = oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
-
-	if (result != 0) { LOGE(oni_error_str(result)); return -1; }
-
-	sleep(200);
-
-	return result;
+	switch (port)
+	{
+	case PortName::PortA:
+		return portA.setVoltage(ctx, voltage);
+	case PortName::PortB:
+		return portB.setVoltage(ctx, voltage);
+	default:
+		return false;
+	}
 }
 
 void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
@@ -464,6 +489,14 @@ bool OnixSource::startAcquisition()
 
 bool OnixSource::stopAcquisition()
 {
+	if (isThreadRunning())
+		signalThreadShouldExit();
+
+	if (frameReader->isThreadRunning())
+		frameReader->signalThreadShouldExit();
+
+	waitForThreadToExit(2000);
+
 	if (devicesFound)
 	{
 		oni_size_t reg = 0;
@@ -478,14 +511,6 @@ bool OnixSource::stopAcquisition()
 		oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 		oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
 	}
-
-	if (isThreadRunning())
-		signalThreadShouldExit();
-
-	if (frameReader->isThreadRunning())
-		frameReader->stopThread(1000);
-
-	waitForThreadToExit(2000);
 
 	for (auto source : sources)
 	{
