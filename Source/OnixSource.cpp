@@ -192,8 +192,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				}
 			}
 
-			np1->addSourceBuffers(sourceBuffers);
-
 			sources.add(np1.release());
 
 			npxProbeIdx++;
@@ -209,8 +207,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
 				continue;
 			}
-
-			bno->addSourceBuffers(sourceBuffers);
 
 			sources.add(bno.release());
 
@@ -241,8 +237,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 					continue;
 				}
 				npxProbeIdx += np2->getNumProbes();
-
-				np2->addSourceBuffers(sourceBuffers);
 
 				sources.add(np2.release());
 			}

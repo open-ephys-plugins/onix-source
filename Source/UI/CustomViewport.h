@@ -76,6 +76,8 @@ private:
 
     int width;
     int height;
+
+    JUCE_LEAK_DETECTOR(CustomViewport);
 };
 
 #endif // __CUSTOMVIEWPORT_H__

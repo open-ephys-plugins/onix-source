@@ -254,6 +254,8 @@ private:
 	int lfpSampleNumber = 0;
 
 	OnixSource* source;
+
+	JUCE_LEAK_DETECTOR(Neuropixels_1);
 };
 
 /*
@@ -277,6 +279,8 @@ private:
 	Neuropixels_1* device;
 
 	std::atomic<int> result = 0;
+
+	JUCE_LEAK_DETECTOR(BackgroundUpdaterWithProgressWindow);
 };
 
 #endif

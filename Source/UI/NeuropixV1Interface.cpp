@@ -461,13 +461,11 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (fileChooser.browseForFileToOpen())
 		{
-			ProbeSettings settings = getProbeSettings();
-
-			bool success = ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), settings);
+			bool success = ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), device->settings);
 
 			if (success)
 			{
-				applyProbeSettings(settings);
+				applyProbeSettings(device->settings);
 			}
 		}
 	}
@@ -477,7 +475,7 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (fileChooser.browseForFileToSave(true))
 		{
-			bool success = ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), getProbeSettings());
+			bool success = ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), device->settings);
 
 			if (!success)
 				CoreServices::sendStatusMessage("Failed to write probe channel map.");
@@ -707,7 +705,7 @@ void NeuropixV1Interface::drawLegend(Graphics& g)
 	}
 }
 
-bool NeuropixV1Interface::applyProbeSettings(ProbeSettings p, bool shouldUpdateProbe)
+bool NeuropixV1Interface::applyProbeSettings(ProbeSettings& p, bool shouldUpdateProbe)
 {
 	if (electrodeConfigurationComboBox != 0)
 		electrodeConfigurationComboBox->setSelectedId(p.electrodeConfigurationIndex + 2, dontSendNotification);
@@ -760,11 +758,6 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings p, bool shouldUpdateP
 	repaint();
 
 	return true;
-}
-
-ProbeSettings NeuropixV1Interface::getProbeSettings() const
-{
-	return device->settings;
 }
 
 void NeuropixV1Interface::saveParameters(XmlElement* xml)

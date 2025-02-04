@@ -59,6 +59,7 @@ public:
 
 private:
 
+	JUCE_LEAK_DETECTOR(Bno055Interface);
 };
 
 #endif // !__BNO055INTERFACE_H__

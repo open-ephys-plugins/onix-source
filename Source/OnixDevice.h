@@ -35,7 +35,6 @@
 #include <onix.h>
 
 #include "I2CRegisterContext.h"
-#include "NeuropixComponents.h"
 
 #define ONI_OK(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));}}
 #define ONI_OK_RETURN_BOOL(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return false;}}
@@ -125,6 +124,8 @@ private:
 	String name;
 
 	bool enabled = true;
+
+	JUCE_LEAK_DETECTOR(OnixDevice);
 };
 
 #endif

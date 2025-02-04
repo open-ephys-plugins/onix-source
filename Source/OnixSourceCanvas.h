@@ -70,6 +70,8 @@ public:
 private:
 	OnixSourceEditor* editor;
 	bool isTopLevel;
+
+	JUCE_LEAK_DETECTOR(CustomTabComponent);
 };
 
 /**
@@ -109,7 +111,7 @@ public:
 
 	/** Called when the Visualizer is first created, and optionally when
 		the parameters of the underlying processor are changed */
-	void update();
+	void update() const;
 
 	/** Starts animation of sub-interfaces */
 	void startAcquisition();
@@ -139,8 +141,6 @@ public:
 
 private:
 
-	Array<OnixDevice*> dataSources;
-
 	OnixSourceEditor* editor;
 
 	OnixSource* onixSource;
@@ -149,6 +149,8 @@ private:
 	OwnedArray<CustomTabComponent> portTabs;
 
 	Array<int> portTabIndex;
+
+	JUCE_LEAK_DETECTOR(OnixSourceCanvas);
 };
 
 # endif // __ONIXSOURCECANVAS_H__

@@ -29,11 +29,10 @@
 #include "../Devices/Neuropixels_1.h"
 #include "ColourScheme.h"
 #include "SettingsInterface.h"
+#include "ProbeBrowser.h"
 
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
-
-class ProbeBrowser;
 
 enum class VisualizationMode
 {
@@ -94,8 +93,7 @@ public:
 	void stopAcquisition() override;
 
 	/** Settings-related functions*/
-	bool applyProbeSettings(ProbeSettings p, bool shouldUpdateProbe = true);
-	ProbeSettings getProbeSettings() const;
+	bool applyProbeSettings(ProbeSettings& p, bool shouldUpdateProbe = true);
 
 	/** Save parameters to XML */
 	void saveParameters(XmlElement* xml) override;
@@ -175,6 +173,8 @@ private:
 	Array<int> getSelectedElectrodes() const;
 
 	void setInterfaceEnabledState(bool enabledState);
+
+	JUCE_LEAK_DETECTOR(NeuropixV1Interface);
 };
 
 #endif //__NEUROPIXINTERFACE_H__

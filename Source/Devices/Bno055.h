@@ -84,6 +84,8 @@ private:
 
 	unsigned short currentFrame = 0;
 	int sampleNumber = 0;
+
+	JUCE_LEAK_DETECTOR(Bno055);
 };
 
 #endif

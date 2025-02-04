@@ -109,7 +109,6 @@ CustomViewport* OnixSourceCanvas::createCustomViewport(SettingsInterface* settin
 	return new CustomViewport(settingsInterface, bounds.getWidth(), bounds.getHeight());
 }
 
-
 OnixSourceCanvas::~OnixSourceCanvas()
 {
 }
@@ -149,33 +148,10 @@ void OnixSourceCanvas::refreshTabs()
 	topLevelTabComponent->setCurrentTabIndex(0);
 }
 
-void OnixSourceCanvas::update()
+void OnixSourceCanvas::update() const
 {
 	for (int i = 0; i < settingsInterfaces.size(); i++)
 		settingsInterfaces[i]->updateInfoString();
-
-	for (int i = 0; i < topLevelTabComponent->getNumTabs(); i++)
-	{
-		CustomTabComponent* t = (CustomTabComponent*)topLevelTabComponent->getTabContentComponent(i);
-
-		for (int j = 0; j < t->getNumTabs(); j++)
-		{
-			if (t->getTabContentComponent(j) != nullptr)
-			{
-				CustomViewport* v = (CustomViewport*)t->getTabContentComponent(j);
-
-				if (v != nullptr)
-				{
-					OnixDevice* device = v->settingsInterface->dataSource;
-
-					if (device != nullptr)
-						t->setTabName(j, " " + device->getName() + " ");
-					else
-						t->setTabName(j, "");
-				}
-			}
-		}
-	}
 }
 
 void OnixSourceCanvas::resized()
@@ -187,7 +163,7 @@ void OnixSourceCanvas::startAcquisition()
 {
 	for (auto settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
+		if (settingsInterface->device != nullptr && settingsInterface->device->isEnabled())
 		{
 			settingsInterface->startAcquisition();
 		}
@@ -198,7 +174,7 @@ void OnixSourceCanvas::stopAcquisition()
 {
 	for (auto settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
+		if (settingsInterface->device != nullptr && settingsInterface->device->isEnabled())
 		{
 			settingsInterface->stopAcquisition();
 		}

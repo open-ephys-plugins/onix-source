@@ -49,9 +49,9 @@ public:
     };
 
     /** Constructor */
-    SettingsInterface (OnixDevice* dataSource_, OnixSourceEditor* editor_, OnixSourceCanvas* canvas_)
+    SettingsInterface (OnixDevice* device_, OnixSourceEditor* editor_, OnixSourceCanvas* canvas_)
     {
-        dataSource = dataSource_;
+        device = device_;
         editor = editor_;
         canvas = canvas_;
 
@@ -83,11 +83,13 @@ public:
     Type type = Type::UNKNOWN_SETTINGS_INTERFACE;
 
     /** Pointer to the data source*/
-    OnixDevice* dataSource;
+    OnixDevice* device;
 
 protected:
     OnixSourceEditor* editor;
     OnixSourceCanvas* canvas;
+
+    JUCE_LEAK_DETECTOR(SettingsInterface);
 };
 
 #endif //__SETTINGSINTERFACE_H__
