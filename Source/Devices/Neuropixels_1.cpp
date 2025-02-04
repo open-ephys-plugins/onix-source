@@ -243,7 +243,7 @@ NeuropixelsReference Neuropixels_1::getReference(int index)
 	return NeuropixelsReference::External;
 }
 
-int Neuropixels_1::enableDevice()
+int Neuropixels_1::configureDevice()
 {
 	// Get Probe SN
 	uint32_t eepromOffset = 0;
