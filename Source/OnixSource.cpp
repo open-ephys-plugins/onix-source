@@ -35,6 +35,9 @@ OnixSource::OnixSource(SourceNode* sn) :
 
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
 
+	portA = std::make_unique<PortController>(PortName::PortA, context.get());
+	portB = std::make_unique<PortController>(PortName::PortB, context.get());
+
 	if (!context.isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
@@ -97,9 +100,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	size_t devices_sz = sizeof(oni_device_t) * num_devs;
 	devices = (oni_device_t*)realloc(devices, devices_sz);
 
-	if (devices == NULL) 
-	{ 
-		LOGE("No devices found."); 
+	if (devices == NULL)
+	{
+		LOGE("No devices found.");
 		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 		return;
 	}
@@ -199,7 +202,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, devices[dev_idx].idx, ctx);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
-			
+
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(devices[dev_idx].idx, ctx);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
@@ -224,6 +227,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 		}
 	}
+
+	portA->enableDevice();
+	portB->enableDevice();
 
 	val = 1;
 	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
@@ -275,10 +281,10 @@ void OnixSource::updateDiscoveryParameters(PortName port, DiscoveryParameters pa
 	switch (port)
 	{
 	case PortName::PortA:
-		portA.updateDiscoveryParameters(parameters);
+		portA->updateDiscoveryParameters(parameters);
 		break;
 	case PortName::PortB:
-		portB.updateDiscoveryParameters(parameters);
+		portB->updateDiscoveryParameters(parameters);
 		break;
 	default:
 		break;
@@ -294,30 +300,32 @@ bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 	switch (port)
 	{
 	case PortName::PortA:
-		if (voltage == "") return portA.configureVoltage(ctx);
-		else			   return portA.configureVoltage(ctx, voltage.getFloatValue());
+		if (voltage == "") return portA->configureVoltage();
+		else			   return portA->configureVoltage(voltage.getFloatValue());
 	case PortName::PortB:
-		if (voltage == "") return portB.configureVoltage(ctx);
-		else			   return portB.configureVoltage(ctx, voltage.getFloatValue());
+		if (voltage == "") return portB->configureVoltage();
+		else			   return portB->configureVoltage(voltage.getFloatValue());
 	default:
 		return false;
 	}
 }
 
-bool OnixSource::setPortVoltage(PortName port, float voltage) const
+void OnixSource::setPortVoltage(PortName port, float voltage) const
 {
-	if (!context.isInitialized()) return false;
+	if (!context.isInitialized()) return;
 
 	oni_ctx ctx = context.get();
 
 	switch (port)
 	{
 	case PortName::PortA:
-		return portA.setVoltage(ctx, voltage);
+		portA->setVoltageOverride(voltage);
+		return;
 	case PortName::PortB:
-		return portB.setVoltage(ctx, voltage);
+		portB->setVoltageOverride(voltage);
+		return;
 	default:
-		return false;
+		return;
 	}
 }
 
@@ -426,8 +434,8 @@ bool OnixSource::isReady()
 	if (!context.isInitialized() || !devicesFound)
 		return false;
 
-	if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(context.get())) return false;
-	if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(context.get())) return false;
+	if (editor->isHeadstageSelected(PortName::PortA) && !portA->checkLinkState()) return false;
+	if (editor->isHeadstageSelected(PortName::PortB) && !portB->checkLinkState()) return false;
 
 	for (auto source : sources)
 	{
@@ -457,7 +465,17 @@ bool OnixSource::startAcquisition()
 
 	frameReader.reset();
 
-	frameReader = std::make_unique<FrameReader>(sources, context.get());
+	Array<OnixDevice*> devices;
+
+	for (auto source : sources)
+	{
+		devices.add(source);
+	}
+
+	devices.add(portA.get());
+	devices.add(portB.get());
+
+	frameReader = std::make_unique<FrameReader>(devices, context.get());
 	frameReader->startThread();
 
 	for (auto source : sources)
@@ -479,6 +497,7 @@ bool OnixSource::stopAcquisition()
 		frameReader->signalThreadShouldExit();
 
 	waitForThreadToExit(2000);
+	frameReader->waitForThreadToExit(1000);
 
 	if (devicesFound)
 	{
@@ -502,6 +521,9 @@ bool OnixSource::stopAcquisition()
 		source->stopAcquisition();
 	}
 
+	portA->stopAcquisition();
+	portB->stopAcquisition();
+
 	for (auto buffers : sourceBuffers)
 		buffers->clear();
 
@@ -517,5 +539,8 @@ bool OnixSource::updateBuffer()
 		source->processFrames();
 	}
 
-	return true;
+	portA->processFrames();
+	portB->processFrames();
+
+	return !portA->getErrorFlag() && !portB->getErrorFlag();
 }

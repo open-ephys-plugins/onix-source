@@ -33,7 +33,6 @@
 #include "OnixSourceEditor.h"
 #include "Devices/DeviceList.h"
 #include "FrameReader.h"
-#include "PortController.h"
 
 class Onix1
 {
@@ -87,8 +86,8 @@ public:
 	{
 		if (context.isInitialized())
 		{
-			portA.setVoltage(context.get(), 0.0f);
-			portB.setVoltage(context.get(), 0.0f);
+			portA->setVoltageOverride(0.0f, false);
+			portB->setVoltageOverride(0.0f, false);
 		}
 	}
 
@@ -119,9 +118,7 @@ public:
 	bool configurePortVoltage(PortName port, String voltage) const;
 
 	/** Sets the port voltage */
-	bool setPortVoltage(PortName port, float voltage) const;
-
-	void initializeContext();
+	void setPortVoltage(PortName port, float voltage) const;
 
 	void initializeDevices(bool updateStreamInfo = false);
 
@@ -152,8 +149,8 @@ private:
 
 	Onix1 context;
 
-	PortController portA = PortController(PortName::PortA);
-	PortController portB = PortController(PortName::PortB);
+	std::unique_ptr<PortController> portA;
+	std::unique_ptr<PortController> portB;
 
 	const oni_size_t block_read_size = 2048;
 

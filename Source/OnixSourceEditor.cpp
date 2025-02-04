@@ -156,17 +156,8 @@ void OnixSourceEditor::buttonClicked(Button* b)
 		}
 		else
 		{
-			if (!thread->setPortVoltage(PortName::PortA, 0))
-			{
-				CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port A.");
-				return;
-			}
-
-			if (!thread->setPortVoltage(PortName::PortB, 0))
-			{
-				CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port B.");
-				return;
-			}
+			thread->setPortVoltage(PortName::PortA, 0);
+			thread->setPortVoltage(PortName::PortB, 0);
 
 			canvas->removeTabs();
 			thread->disconnectDevices(true);
