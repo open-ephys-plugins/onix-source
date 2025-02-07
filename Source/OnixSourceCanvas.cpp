@@ -55,19 +55,18 @@ OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEdito
 {
 	topLevelTabComponent = std::make_unique<CustomTabComponent>(editor, true);
 	addAndMakeVisible(topLevelTabComponent.get());
+}
 
-	CustomTabComponent* portTab = new CustomTabComponent(editor, false);
+CustomTabComponent* OnixSourceCanvas::addTopLevelTab(String tabName, int index)
+{
+	CustomTabComponent* tab = new CustomTabComponent(editor, false);
 
-	topLevelTabComponent->addTab("Devices", Colours::grey, portTab, true);
+	topLevelTabComponent->addTab(tabName, Colours::grey, tab, true, index);
+	tab->setName(tabName);
 
-	portTab->setTabBarDepth(26);
-	portTab->setIndent(0);
-	portTab->setOutline(0);
+	headstageTabs.add(tab);
 
-	portTabs.add(portTab);
-
-	refreshTabs();
-	update();
+	return tab;
 }
 
 Parameter* OnixSourceCanvas::getSourceParameter(String name)
@@ -75,31 +74,60 @@ Parameter* OnixSourceCanvas::getSourceParameter(String name)
 	return onixSource->getParameter(name);
 }
 
-void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
+void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
 {
-	Array<OnixDevice*> availableDataSources = onixSource->getDataSources();
+	int offset = PortController::getPortOffset(port);
+	CustomTabComponent* tab = nullptr;
+	std::vector<std::shared_ptr<OnixDevice>> devices;
 
+	if (headstage == "Neuropixels 1.0f")
+	{
+		tab = addTopLevelTab(getTopLevelTabName(0, port, headstage), (int)port - 1);
+
+		devices.push_back(std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe A", offset, onixSource->getContext()));
+		devices.push_back(std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe B", offset + 1, onixSource->getContext()));
+		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, onixSource->getContext()));
+	}
+
+	if (tab != nullptr && devices.size() > 0)
+	{
+		populateSourceTabs(tab, devices);
+	}
+}
+
+void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, std::vector<std::shared_ptr<OnixDevice>> devices)
+{
 	int portTabNumber = 0;
 
-	for (auto source : availableDataSources)
+	for (std::shared_ptr<OnixDevice> device : devices)
 	{
-		if (source->type == OnixDeviceType::NEUROPIXELS_1)
+		if (device->type == OnixDeviceType::NEUROPIXELS_1)
 		{
-			NeuropixV1Interface* neuropixInterface = new NeuropixV1Interface(source, editor, this);
-			settingsInterfaces.add((SettingsInterface*)neuropixInterface);
-			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(neuropixInterface), true);
-
-			portTabIndex.add(portTabNumber++);
+			NeuropixV1Interface* neuropixInterface = new NeuropixV1Interface(std::static_pointer_cast<Neuropixels_1>(device), editor, this);
+			addInterfaceToTab(getDeviceTabName(device.get()), tab, neuropixInterface);
 		}
-		else if (source->type == OnixDeviceType::BNO)
+		else if (device->type == OnixDeviceType::BNO)
 		{
-			Bno055Interface* bno055Interface = new Bno055Interface(source, editor, this);
-			settingsInterfaces.add((SettingsInterface*)bno055Interface);
-			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(bno055Interface), true);
-
-			portTabIndex.add(portTabNumber++);
+			Bno055Interface* bno055Interface = new Bno055Interface(std::static_pointer_cast<Bno055>(device), editor, this);
+			addInterfaceToTab(getDeviceTabName(device.get()), tab, bno055Interface);
 		}
 	}
+}
+
+void OnixSourceCanvas::addInterfaceToTab(String tabName, CustomTabComponent* tab, SettingsInterface* interface_)
+{
+	settingsInterfaces.add(interface_);
+	tab->addTab(tabName, Colours::darkgrey, createCustomViewport(interface_), true);
+}
+
+String OnixSourceCanvas::getTopLevelTabName(int hub, PortName port, String headstage)
+{
+	return "Hub " + String(hub) + ": " + PortController::getPortName(port) + ": " + headstage;
+}
+
+String OnixSourceCanvas::getDeviceTabName(OnixDevice* device)
+{
+	return String(device->getDeviceIdx()) + ": " + device->getName();
 }
 
 CustomViewport* OnixSourceCanvas::createCustomViewport(SettingsInterface* settingsInterface)
@@ -108,7 +136,6 @@ CustomViewport* OnixSourceCanvas::createCustomViewport(SettingsInterface* settin
 
 	return new CustomViewport(settingsInterface, bounds.getWidth(), bounds.getHeight());
 }
-
 
 OnixSourceCanvas::~OnixSourceCanvas()
 {
@@ -128,25 +155,40 @@ void OnixSourceCanvas::refreshState()
 	resized();
 }
 
-void OnixSourceCanvas::removeTabs()
+void OnixSourceCanvas::removeTabs(PortName port)
 {
-	for (auto tab : portTabs)
+	for (int i = headstageTabs.size() - 1; i >= 0 ; i -= 1)
 	{
-		tab->clearTabs();
+		if (headstageTabs[i]->getName().contains(PortController::getPortName(port)))
+		{
+			headstageTabs.remove(i, true);
+			break;
+		}
 	}
 
+	int offset = PortController::getPortOffset(port);
+	
+	for (int i = settingsInterfaces.size() - 1; i >= 0; i -= 1)
+	{
+		if ((settingsInterfaces[i]->dataSource->getDeviceIdx() & offset) > 0)
+		{
+			settingsInterfaces.remove(i, true);
+		}
+	}
+
+	topLevelTabComponent->removeTab((int)port - 1);
+}
+
+void OnixSourceCanvas::removeAllTabs()
+{
+	headstageTabs.clear(true);
 	settingsInterfaces.clear(true);
+
+	topLevelTabComponent->clearTabs();
 }
 
 void OnixSourceCanvas::refreshTabs()
 {
-	removeTabs();
-
-	CustomTabComponent* portTab = portTabs.getFirst();
-
-	populateSourceTabs(portTab);
-
-	topLevelTabComponent->setCurrentTabIndex(0);
 }
 
 void OnixSourceCanvas::update()
@@ -166,10 +208,8 @@ void OnixSourceCanvas::update()
 
 				if (v != nullptr)
 				{
-					OnixDevice* device = v->settingsInterface->dataSource;
-
-					if (device != nullptr)
-						t->setTabName(j, " " + device->getName() + " ");
+					if (v->settingsInterface->dataSource != nullptr)
+						t->setTabName(j, " " + v->settingsInterface->dataSource->getName() + " ");
 					else
 						t->setTabName(j, "");
 				}

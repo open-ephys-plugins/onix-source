@@ -42,7 +42,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	headstageComboBoxA->addListener(this);
 	headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
 	headstageComboBoxA->addItem("Select headstage...", 1);
-	headstageComboBoxA->setItemEnabled(1, false);
 	headstageComboBoxA->addSeparator();
 	// TODO: Add list of available devices here
 	headstageComboBoxA->addItem("Neuropixels 1.0f", 2);
@@ -75,7 +74,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	headstageComboBoxB->addListener(this);
 	headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
 	headstageComboBoxB->addItem("Select headstage...", 1);
-	headstageComboBoxB->setItemEnabled(1, false);
 	headstageComboBoxB->addSeparator();
 	// TODO: Add list of available devices here
 	headstageComboBoxB->addItem("Neuropixels 1.0f", 2);
@@ -132,7 +130,7 @@ void OnixSourceEditor::buttonClicked(Button* b)
 					return;
 				}
 			}
-			
+
 			if (isHeadstageSelected(PortName::PortB))
 			{
 				if (!thread->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
@@ -168,7 +166,6 @@ void OnixSourceEditor::buttonClicked(Button* b)
 				return;
 			}
 
-			canvas->removeTabs();
 			thread->disconnectDevices(true);
 			connectButton->setLabel("CONNECT");
 		}
@@ -179,17 +176,45 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 {
 	if (cb == headstageComboBoxA.get())
 	{
-		// TODO: Call canvas to remove / add tabs as needed depending on what is chosen
-		String headstage = headstageComboBoxA->getText();
+		if (headstageComboBoxA->getSelectedId() > 1)
+		{
+			String headstage = headstageComboBoxA->getText();
 
-		thread->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstage));
+			thread->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstage));
+			canvas->addHeadstage(headstage, PortName::PortA);
+		}
+		else
+		{
+			if (headstageComboBoxB->getSelectedId() > 1)
+			{
+				canvas->removeTabs(PortName::PortA);
+			}
+			else
+			{
+				canvas->removeAllTabs();
+			}
+		}
 	}
 	else if (cb == headstageComboBoxB.get())
 	{
-		// TODO: Call canvas to remove / add tabs as needed depending on what is chosen
-		String headstage = headstageComboBoxB->getText();
+		if (headstageComboBoxB->getSelectedId() > 1)
+		{
+			String headstage = headstageComboBoxB->getText();
 
-		thread->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstage));
+			thread->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstage));
+			canvas->addHeadstage(headstage, PortName::PortB);
+		}
+		else
+		{
+			if (headstageComboBoxA->getSelectedId() > 1)
+			{
+				canvas->removeTabs(PortName::PortB);
+			}
+			else
+			{
+				canvas->removeAllTabs();
+			}
+		}
 	}
 }
 

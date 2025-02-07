@@ -101,8 +101,11 @@ public:
 	/** Called when the Visualizer's tab becomes visible after being hidden */
 	void refreshState() override;
 
-	/** Called when tabs need to be removed */
-	void removeTabs();
+	/** Removes tabs from the canvas at the specified port */
+	void removeTabs(PortName port);
+
+	/** Removes all tabs from the canvas */
+	void removeAllTabs();
 
 	/** Called when the number of tabs might have changed, so they are refreshed */
 	void refreshTabs();
@@ -117,8 +120,11 @@ public:
 	/** Stops animation of sub-interfaces */
 	void stopAcquisition();
 
+	/** Add the headstage and all of its devices to the canvas */
+	void addHeadstage(String headstage, PortName port);
+
 	/** Called when the basestation is created or refreshed */
-	void populateSourceTabs(CustomTabComponent* basestationTab);
+	void populateSourceTabs(CustomTabComponent*, std::vector<std::shared_ptr<OnixDevice>>);
 
 	/** Saves custom UI settings */
 	void saveCustomParametersToXml(XmlElement* xml) override;
@@ -146,9 +152,15 @@ private:
 	OnixSource* onixSource;
 
 	std::unique_ptr<CustomTabComponent> topLevelTabComponent;
-	OwnedArray<CustomTabComponent> portTabs;
+	OwnedArray<CustomTabComponent> headstageTabs;
 
-	Array<int> portTabIndex;
+	CustomTabComponent* addTopLevelTab(String tabName, int index = -1);
+
+	void addInterfaceToTab(String tabName, CustomTabComponent* tab, SettingsInterface* interface_);
+
+	String getTopLevelTabName(int hub, PortName port, String headstage);
+
+	String getDeviceTabName(OnixDevice* device);
 };
 
 # endif // __ONIXSOURCECANVAS_H__

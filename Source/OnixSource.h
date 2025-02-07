@@ -94,7 +94,7 @@ public:
 
 	void disconnectDevices(bool updateStreamInfo = false);
 
-	Array<OnixDevice*> getDataSources();
+	std::vector<std::shared_ptr<OnixDevice>> getDataSources();
 
 	void updateSourceBuffers();
 
@@ -106,10 +106,12 @@ public:
 		OwnedArray<DeviceInfo>* devices,
 		OwnedArray<ConfigurationObject>* configurationObjects);
 
+	oni_ctx getContext() const { if (contextInitialized) return ctx; else return NULL; }
+
 private:
 
 	/** Available data sources */
-	OwnedArray<OnixDevice> sources;
+	std::vector<std::shared_ptr<OnixDevice>> sources;
 
 	/** Pointer to the editor */
 	OnixSourceEditor* editor;

@@ -67,6 +67,10 @@ public:
 
 	static DiscoveryParameters getHeadstageDiscoveryParameters(String headstage);
 
+	static int getPortOffset(PortName port) { return (uint32_t)port << 8; }
+
+	static String getPortName(PortName port) { return port == PortName::PortA ? "Port A" : "Port B"; }
+
 private:
 	const PortName port;
 

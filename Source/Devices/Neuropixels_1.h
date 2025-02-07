@@ -157,7 +157,7 @@ class Neuropixels_1 : public OnixDevice,
 {
 public:
 	/** Constructor */
-	Neuropixels_1(String name, OnixSource* s, const oni_dev_idx_t, const oni_ctx);
+	Neuropixels_1(String name, const oni_dev_idx_t, const oni_ctx);
 
 	/** Destructor */
 	~Neuropixels_1();
@@ -183,14 +183,6 @@ public:
 
 	int64 getProbeNumber() const { return probeNumber; }
 
-	String getAdcPathParameterName();
-
-	String getGainPathParameterName();
-
-	String getAdcPathParameter();
-
-	String getGainPathParameter();
-
 	NeuropixelsGain getGain(int index);
 
 	NeuropixelsReference getReference(int index);
@@ -210,9 +202,12 @@ public:
 	DataBuffer* apBuffer = deviceBuffer;
 	DataBuffer* lfpBuffer;
 
-	ProbeSettings settings;
+	std::unique_ptr<ProbeSettings> settings;
 
 	static const int numberOfChannels = 384;
+
+	String adcCalibrationFilePath;
+	String gainCalibrationFilePath;
 
 private:
 
@@ -229,7 +224,7 @@ private:
 
 	template<int N> std::vector<unsigned char> static toBitReversedBytes(std::bitset<N> shankBits);
 
-	void defineMetadata(ProbeSettings& settings);
+	void defineMetadata(ProbeSettings* settings);
 
 	Array<oni_frame_t*, CriticalSection, numUltraFrames> frameArray;
 
@@ -252,8 +247,6 @@ private:
 
 	int apSampleNumber = 0;
 	int lfpSampleNumber = 0;
-
-	OnixSource* source;
 };
 
 /*

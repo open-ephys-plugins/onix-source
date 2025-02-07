@@ -32,7 +32,7 @@
 class FrameReader : public Thread
 {
 public:
-	FrameReader(OwnedArray<OnixDevice>& sources_, oni_ctx& ctx_);
+	FrameReader(std::vector<std::shared_ptr<OnixDevice>> sources_, oni_ctx& ctx_);
 
 	~FrameReader();
 
@@ -40,7 +40,7 @@ public:
 
 private:
 
-	OwnedArray<OnixDevice>& sources;
+	std::vector<std::shared_ptr<OnixDevice>> sources;
 	oni_ctx& ctx;
 };
 

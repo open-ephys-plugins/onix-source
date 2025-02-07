@@ -83,9 +83,9 @@ public:
 	/** Destructor */
 	~OnixDevice() { }
 
-	virtual void addFrame(oni_frame_t*) = 0;
+	virtual void addFrame(oni_frame_t*) {};
 
-	virtual void processFrames() = 0;
+	virtual void processFrames() {};
 
 	const String getName() { return name; }
 
@@ -93,16 +93,16 @@ public:
 
 	void setEnabled(bool newState) { enabled = newState; }
 
-	virtual int enableDevice() = 0;
+	virtual int enableDevice() { return -1; };
 
-	virtual int updateSettings() = 0;
+	virtual int updateSettings() { return -1; };
 
-	virtual void startAcquisition() = 0;
+	virtual void startAcquisition() {};
 
-	virtual void stopAcquisition() = 0;
+	virtual void stopAcquisition() {};
 
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
-	virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) = 0;
+	virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
 
 	const oni_dev_idx_t getDeviceIdx() const { return deviceIdx; }
 
