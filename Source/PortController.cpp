@@ -43,6 +43,10 @@ DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String heads
 	{
 		return DiscoveryParameters(5.0f, 7.0f, 1.0f, 0.2f);
 	}
+	else if (headstage == "TEST HEADSTAGE") // NOTE: Remove this before merging
+	{
+		return DiscoveryParameters(1.0f, 2.0f, 0.0f, 0.5f);
+	}
 
 	return DiscoveryParameters();
 }
@@ -51,20 +55,35 @@ bool PortController::configureVoltage(oni_ctx ctx, float voltage) const
 {
 	if (voltage == defaultVoltage)
 	{
+		if (discoveryParameters == DiscoveryParameters()) return false;
+
 		for (voltage = discoveryParameters.minVoltage; voltage <= discoveryParameters.maxVoltage; voltage += discoveryParameters.voltageIncrement)
 		{
-			setVoltage(ctx, voltage);
+			if (!setVoltage(ctx, voltage)) return false;
 
-			if (checkLinkState(ctx) == 0)
+			if (checkLinkState(ctx))
 			{
-				setVoltage(ctx, voltage + discoveryParameters.voltageOffset);
+				if (!setVoltage(ctx, voltage + discoveryParameters.voltageOffset)) return false;
+
+				auto val = 1;
+				ONI_OK_RETURN_BOOL(oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val)));
+
+				sleep_for(std::chrono::milliseconds(200));
+
 				return checkLinkState(ctx);
 			}
 		}
 	}
 	else
 	{
-		return setVoltage(ctx, voltage);
+		if (!setVoltage(ctx, voltage + discoveryParameters.voltageOffset)) return false;
+
+		auto val = 1;
+		ONI_OK_RETURN_BOOL(oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val)));
+
+		sleep_for(std::chrono::milliseconds(200));
+
+		return checkLinkState(ctx);
 	}
 }
 
@@ -80,11 +99,6 @@ bool PortController::setVoltage(oni_ctx ctx, float voltage) const
 
 	sleep_for(std::chrono::milliseconds(500));
 
-	auto val = 1;
-	ONI_OK_RETURN_BOOL(oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val)));
-
-	sleep_for(std::chrono::milliseconds(200));
-
 	return true;
 }
 
@@ -96,4 +110,21 @@ bool PortController::checkLinkState(oni_ctx ctx) const
 	if (result != 0) { LOGE(oni_error_str(result)); return false; }
 	else if ((linkState & (uint32_t)0x1) == 0) { LOGE("Unable to acquire communication lock."); return false; }
 	else return true;
+}
+
+PortName PortController::getPortFromIndex(oni_dev_idx_t index)
+{
+	return index & (1 << 8) ? PortName::PortA : PortName::PortB;
+}
+
+Array<PortName> PortController::getUniquePortsFromIndices(std::vector<int> indices)
+{
+	Array<PortName> ports;
+
+	for (auto index : indices) 
+	{ 
+		ports.addIfNotAlreadyThere(PortController::getPortFromIndex(index)); 
+	}
+
+	return ports;
 }

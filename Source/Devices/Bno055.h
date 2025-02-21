@@ -44,7 +44,7 @@ public:
 	int enableDevice() override;
 
 	/** Update the settings of the device */
-	int updateSettings() override;
+	bool updateSettings() override;
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;

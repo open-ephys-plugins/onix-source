@@ -95,7 +95,7 @@ public:
 
 	virtual int enableDevice() { return -1; };
 
-	virtual int updateSettings() { return -1; };
+	virtual bool updateSettings() { return false; };
 
 	virtual void startAcquisition() {};
 

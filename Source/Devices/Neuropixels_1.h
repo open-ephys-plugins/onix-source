@@ -165,8 +165,10 @@ public:
 	/** Enables the device so that it is ready to stream with default settings */
 	int enableDevice() override;
 
-	/** Update the settings of the device */
-	int updateSettings() override;
+	/** Update the settings of the device by writing to hardware */
+	bool updateSettings() override;
+
+	void setSettings(ProbeSettings* settings_);
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;
@@ -263,13 +265,13 @@ public:
 
 	void run();
 
-	int updateSettings();
+	bool updateSettings();
 
 private:
 
 	Neuropixels_1* device;
 
-	std::atomic<int> result = 0;
+	std::atomic<bool> result = false;
 };
 
 #endif

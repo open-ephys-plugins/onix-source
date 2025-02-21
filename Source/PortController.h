@@ -48,6 +48,11 @@ struct DiscoveryParameters
 		voltageOffset = voltageOffset_;
 		voltageIncrement = voltageIncrement_;
 	}
+
+	bool operator==(const DiscoveryParameters& rhs) const
+	{
+		return rhs.minVoltage == minVoltage && rhs.maxVoltage == maxVoltage && rhs.voltageOffset == voltageOffset && rhs.voltageIncrement == voltageIncrement;
+	}
 };
 
 class PortController
@@ -70,6 +75,10 @@ public:
 	static int getPortOffset(PortName port) { return (uint32_t)port << 8; }
 
 	static String getPortName(PortName port) { return port == PortName::PortA ? "Port A" : "Port B"; }
+
+	static PortName getPortFromIndex(oni_dev_idx_t index);
+
+	static Array<PortName> getUniquePortsFromIndices(std::vector<int>);
 
 private:
 	const PortName port;

@@ -80,12 +80,8 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 {
 	sourceBuffers.clear(true);
 
-	for (std::shared_ptr<OnixDevice> source : sources)
-	{
-		source.reset();
-	}
-
 	sources.clear();
+	headstages.clear();
 
 	devicesFound = false;
 
@@ -193,15 +189,16 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 					continue;
 				}
-				else if (res == -3 || res == -4)
+				else if (res == -3)
 				{
-					LOGE("Missing or invalid calibration file(s). Ensure that all calibration files exist and the file paths are correct.");
+					LOGE("Error enabling device ", devices[dev_idx].idx);
+
+					continue;
 				}
 			}
 
-			np1->addSourceBuffers(sourceBuffers);
-
 			sources.push_back(np1);
+			headstages.insert({ PortController::getPortFromIndex(devices[dev_idx].idx), "Neuropixels 1.0f" });
 
 			npxProbeIdx++;
 		}
@@ -216,8 +213,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
 				continue;
 			}
-
-			bno->addSourceBuffers(sourceBuffers);
 
 			sources.push_back(bno);
 
@@ -249,8 +244,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				}
 				npxProbeIdx += np2->getNumProbes();
 
-				np2->addSourceBuffers(sourceBuffers);
-
 				sources.push_back(np2);
 			}
 		}
@@ -280,7 +273,7 @@ std::vector<std::shared_ptr<OnixDevice>> OnixSource::getDataSources()
 {
 	std::vector<std::shared_ptr<OnixDevice>> devices;
 
-	for (std::shared_ptr<OnixDevice> source : sources)
+	for (const auto& source : sources)
 	{
 		devices.push_back(source);
 	}
@@ -288,11 +281,28 @@ std::vector<std::shared_ptr<OnixDevice>> OnixSource::getDataSources()
 	return devices;
 }
 
+std::map<int, OnixDeviceType> OnixSource::createDeviceMap(std::vector<std::shared_ptr<OnixDevice>> devices)
+{
+	std::map<int, OnixDeviceType> deviceMap;
+
+	for (const auto& device : devices)
+	{
+		deviceMap.insert({ device->getDeviceIdx(), device->type });
+	}
+
+	return deviceMap;
+}
+
+std::map<PortName, String> OnixSource::getHeadstageMap()
+{
+	return headstages;
+}
+
 void OnixSource::updateSourceBuffers()
 {
 	sourceBuffers.clear(true);
 
-	for (std::shared_ptr<OnixDevice> source : sources)
+	for (const auto& source : sources)
 	{
 		if (source->isEnabled())
 		{
@@ -368,7 +378,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 	if (devicesFound)
 	{
-		for (std::shared_ptr<OnixDevice> source : sources)
+		for (const auto& source : sources)
 		{
 			if (!source->isEnabled()) continue;
 
@@ -443,9 +453,17 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 	}
 }
 
+bool OnixSource::isDevicesReady()
+{
+	auto tabMap = editor->canvas->createTabMap(editor->canvas->settingsInterfaces);
+	auto sourceMap = createDeviceMap(sources);
+
+	return tabMap == sourceMap;
+}
+
 bool OnixSource::foundInputSource()
 {
-	return devicesFound; // TODO: Check here if the settings tabs match the hardware; only return true if the hardware and tabs match
+	return devicesFound;
 }
 
 bool OnixSource::isReady()
@@ -453,16 +471,20 @@ bool OnixSource::isReady()
 	if (!devicesFound)
 		return false;
 
+	if (!isDevicesReady())
+	{
+		CoreServices::sendStatusMessage("Selected headstages do not match hardware found.");
+		return false;
+	}
+
 	if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(ctx)) return false;
 	if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(ctx)) return false;
 
-	for (std::shared_ptr<OnixDevice> source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 
-		int result = source->updateSettings();
-
-		if (result != 0)
+		if (!source->updateSettings())
 			return false;
 	}
 
@@ -487,7 +509,7 @@ bool OnixSource::startAcquisition()
 	frameReader = std::make_unique<FrameReader>(sources, ctx);
 	frameReader->startThread();
 
-	for (std::shared_ptr<OnixDevice> source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 
@@ -522,7 +544,7 @@ bool OnixSource::stopAcquisition()
 		oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
 	}
 
-	for (std::shared_ptr<OnixDevice> source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 
@@ -537,7 +559,7 @@ bool OnixSource::stopAcquisition()
 
 bool OnixSource::updateBuffer()
 {
-	for (std::shared_ptr<OnixDevice> source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 

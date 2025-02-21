@@ -74,6 +74,9 @@ public:
 	/** Returns true if the hardware is connected, false otherwise.*/
 	bool foundInputSource();
 
+	/** Returns true if the deviceMap matches the settings tabs that are open */
+	bool isDevicesReady();
+
 	/** Initializes data transfer.*/
 	bool startAcquisition();
 
@@ -96,6 +99,10 @@ public:
 
 	std::vector<std::shared_ptr<OnixDevice>> getDataSources();
 
+	std::map<int, OnixDeviceType> createDeviceMap(std::vector<std::shared_ptr<OnixDevice>>);
+
+	std::map<PortName, String> getHeadstageMap();
+
 	void updateSourceBuffers();
 
 	// DataThread Methods
@@ -112,6 +119,9 @@ private:
 
 	/** Available data sources */
 	std::vector<std::shared_ptr<OnixDevice>> sources;
+
+	/** Available headstages */
+	std::map<PortName, String> headstages;
 
 	/** Pointer to the editor */
 	OnixSourceEditor* editor;

@@ -51,7 +51,7 @@ CustomTabComponent::CustomTabComponent(OnixSourceEditor* editor_, bool isTopLeve
 OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEditor* editor_, OnixSource* onixSource_) :
 	Visualizer(processor_),
 	editor(editor_),
-	onixSource(onixSource_)
+	source(onixSource_)
 {
 	topLevelTabComponent = std::make_unique<CustomTabComponent>(editor, true);
 	addAndMakeVisible(topLevelTabComponent.get());
@@ -71,7 +71,7 @@ CustomTabComponent* OnixSourceCanvas::addTopLevelTab(String tabName, int index)
 
 Parameter* OnixSourceCanvas::getSourceParameter(String name)
 {
-	return onixSource->getParameter(name);
+	return source->getParameter(name);
 }
 
 void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
@@ -84,9 +84,18 @@ void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(0, port, headstage), (int)port - 1);
 
-		devices.push_back(std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe A", offset, onixSource->getContext()));
-		devices.push_back(std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe B", offset + 1, onixSource->getContext()));
-		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, onixSource->getContext()));
+		devices.push_back(std::make_shared<Neuropixels_1>("Probe-A", offset, source->getContext()));
+		devices.push_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, source->getContext()));
+		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, source->getContext()));
+	}
+	else if (headstage == "TEST HEADSTAGE")
+	{
+		// NOTE: This is only a temporary testing headstage used to confirm that the port logic works correctly. Remove before merging
+		tab = addTopLevelTab(getTopLevelTabName(0, port, headstage), (int)port - 1);
+
+		devices.push_back(std::make_shared<Neuropixels_1>("Probe-TEST", offset, source->getContext()));
+		devices.push_back(std::make_shared<Bno055>("BNO055-TEST", offset + 1, source->getContext()));
+		devices.push_back(std::make_shared<Neuropixels_1>("Probe-TEST2", offset + 2, source->getContext()));
 	}
 
 	if (tab != nullptr && devices.size() > 0)
@@ -99,25 +108,51 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, std::vector<s
 {
 	int portTabNumber = 0;
 
-	for (std::shared_ptr<OnixDevice> device : devices)
+	for (const auto& device : devices)
 	{
 		if (device->type == OnixDeviceType::NEUROPIXELS_1)
 		{
-			NeuropixV1Interface* neuropixInterface = new NeuropixV1Interface(std::static_pointer_cast<Neuropixels_1>(device), editor, this);
+			auto neuropixInterface = std::make_shared<NeuropixV1Interface>(std::static_pointer_cast<Neuropixels_1>(device), editor, this);
 			addInterfaceToTab(getDeviceTabName(device.get()), tab, neuropixInterface);
 		}
 		else if (device->type == OnixDeviceType::BNO)
 		{
-			Bno055Interface* bno055Interface = new Bno055Interface(std::static_pointer_cast<Bno055>(device), editor, this);
+			auto bno055Interface = std::make_shared<Bno055Interface>(std::static_pointer_cast<Bno055>(device), editor, this);
 			addInterfaceToTab(getDeviceTabName(device.get()), tab, bno055Interface);
 		}
 	}
 }
 
-void OnixSourceCanvas::addInterfaceToTab(String tabName, CustomTabComponent* tab, SettingsInterface* interface_)
+void OnixSourceCanvas::addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_)
 {
-	settingsInterfaces.add(interface_);
-	tab->addTab(tabName, Colours::darkgrey, createCustomViewport(interface_), true);
+	settingsInterfaces.push_back(interface_);
+	tab->addTab(tabName, Colours::darkgrey, createCustomViewport(interface_.get()), true);
+}
+
+void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice> device) const
+{
+	int ind = -1;
+
+	for (int j = 0; j < settingsInterfaces.size(); j += 1)
+	{
+		if (device->getDeviceIdx() == settingsInterfaces[j]->dataSource->getDeviceIdx())
+		{
+			ind = j;
+			break;
+		}
+	}
+
+	if (ind == -1) { LOGD("Unable to match the device to a settings interface."); return; }
+
+	if (device->type == OnixDeviceType::NEUROPIXELS_1)
+	{
+		// NB: Neuropixels-specific settings need to be updated
+		auto npx1 = std::static_pointer_cast<Neuropixels_1>(device);
+		npx1->setSettings(std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->dataSource)->settings.get());
+	}
+
+	settingsInterfaces[ind]->dataSource.reset();
+	settingsInterfaces[ind]->dataSource = device;
 }
 
 String OnixSourceCanvas::getTopLevelTabName(int hub, PortName port, String headstage)
@@ -128,6 +163,18 @@ String OnixSourceCanvas::getTopLevelTabName(int hub, PortName port, String heads
 String OnixSourceCanvas::getDeviceTabName(OnixDevice* device)
 {
 	return String(device->getDeviceIdx()) + ": " + device->getName();
+}
+
+Array<CustomTabComponent*> OnixSourceCanvas::getHeadstageTabs()
+{
+	Array<CustomTabComponent*> tabs;
+
+	for (const auto headstage : headstageTabs)
+	{
+		tabs.add(headstage);
+	}
+
+	return tabs;
 }
 
 CustomViewport* OnixSourceCanvas::createCustomViewport(SettingsInterface* settingsInterface)
@@ -157,65 +204,328 @@ void OnixSourceCanvas::refreshState()
 
 void OnixSourceCanvas::removeTabs(PortName port)
 {
-	for (int i = headstageTabs.size() - 1; i >= 0 ; i -= 1)
+	bool tabExists = false;
+
+	for (int i = headstageTabs.size() - 1; i >= 0; i -= 1)
 	{
 		if (headstageTabs[i]->getName().contains(PortController::getPortName(port)))
 		{
 			headstageTabs.remove(i, true);
+			tabExists = true;
 			break;
 		}
 	}
 
 	int offset = PortController::getPortOffset(port);
-	
+
 	for (int i = settingsInterfaces.size() - 1; i >= 0; i -= 1)
 	{
 		if ((settingsInterfaces[i]->dataSource->getDeviceIdx() & offset) > 0)
 		{
-			settingsInterfaces.remove(i, true);
+			settingsInterfaces.erase(settingsInterfaces.begin() + i);
+			tabExists = true;
 		}
 	}
 
-	topLevelTabComponent->removeTab((int)port - 1);
+	if (tabExists)
+		topLevelTabComponent->removeTab((int)port - 1);
 }
 
 void OnixSourceCanvas::removeAllTabs()
 {
 	headstageTabs.clear(true);
-	settingsInterfaces.clear(true);
+	settingsInterfaces.clear();
 
 	topLevelTabComponent->clearTabs();
 }
 
-void OnixSourceCanvas::refreshTabs()
+std::map<int, OnixDeviceType> OnixSourceCanvas::createTabMap(std::vector<std::shared_ptr<SettingsInterface>>)
 {
+	std::map<int, OnixDeviceType> tabMap;
+
+	for (const auto& settings : settingsInterfaces)
+	{
+		tabMap.insert({ settings->dataSource->getDeviceIdx(), settings->dataSource->type });
+	}
+
+	return tabMap;
 }
 
-void OnixSourceCanvas::update()
+void OnixSourceCanvas::refreshTabs()
 {
-	for (int i = 0; i < settingsInterfaces.size(); i++)
-		settingsInterfaces[i]->updateInfoString();
+	auto devices = source->getDataSources();
 
-	for (int i = 0; i < topLevelTabComponent->getNumTabs(); i++)
+	auto tabMap = createTabMap(settingsInterfaces);
+	auto sourceMap = source->createDeviceMap(devices);
+
+	if (tabMap == sourceMap)
 	{
-		CustomTabComponent* t = (CustomTabComponent*)topLevelTabComponent->getTabContentComponent(i);
-
-		for (int j = 0; j < t->getNumTabs(); j++)
+		for (int i = 0; i < devices.size(); i += 1)
 		{
-			if (t->getTabContentComponent(j) != nullptr)
-			{
-				CustomViewport* v = (CustomViewport*)t->getTabContentComponent(j);
+			updateSettingsInterfaceDataSource(devices[i]);
+		}
+	}
+	else
+	{
+		std::vector<int> tabIndices, sourceIndices;
 
-				if (v != nullptr)
+		for (const auto& [key, _] : tabMap) { tabIndices.push_back(key); }
+		for (const auto& [key, _] : sourceMap) { sourceIndices.push_back(key); }
+
+		auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
+		auto sourcePorts = PortController::getUniquePortsFromIndices(sourceIndices);
+
+		auto headstages = source->getHeadstageMap();
+
+		if (sourceIndices.size() == 0)
+		{
+		}
+		else if (tabIndices.size() == 0)
+		{
+			for (auto& [port, headstageName] : headstages)
+			{
+				addHeadstage(headstageName, port);
+			}
+		}
+		else if (tabPorts.size() == sourcePorts.size())
+		{
+			if (tabPorts.size() == 1)
+			{
+				if (headstages.size() == 0)
 				{
-					if (v->settingsInterface->dataSource != nullptr)
-						t->setTabName(j, " " + v->settingsInterface->dataSource->getName() + " ");
-					else
-						t->setTabName(j, "");
+					LOGE("Expected to find headstages in the source node.");
+					return;
+				}
+
+				if (tabPorts[0] == sourcePorts[0])
+				{
+					int result = AlertWindow::show(
+						MessageBoxOptions()
+						.withIconType(MessageBoxIconType::WarningIcon)
+						.withTitle("Mismatched Devices")
+						.withMessage("The selected headstage does not match the hardware connected." +
+							String("\n\n[Keep Current] to keep the current selection, ") + 
+							String("[Create New] to close selected tabs and create new tabs from hardware connected, or ") + 
+							String("[Cancel] to do nothing."))
+						.withButton("Keep Current")
+						.withButton("Create New")
+						.withButton("Cancel")
+					);
+
+					switch (result)
+					{
+					case 1: // Keep Current
+						break;
+					case 2: // Create New
+						removeTabs(tabPorts[0]);
+
+						{
+							CustomTabComponent* tab = addTopLevelTab(getTopLevelTabName(0, sourcePorts[0], headstages[sourcePorts[0]]), (int)sourcePorts[0]);
+							populateSourceTabs(tab, devices);
+						}
+						break;
+					case 3: // Cancel
+						break;
+					default:
+						break;
+					}
+				}
+				else
+				{
+					int result = AlertWindow::show(
+						MessageBoxOptions()
+						.withIconType(MessageBoxIconType::WarningIcon)
+						.withTitle("Devices Not Found")
+						.withMessage("The selected headstage does not exist in " + PortController::getPortName(tabPorts[0]) +
+							String(".\n\n[Keep Tabs] to keep the current selected tabs open, ") +
+							String("[Remove Tabs] to close selected tabs, or ") +
+							String("[Cancel] to do nothing."))
+						.withButton("Keep Tabs")
+						.withButton("Remove Tabs")
+						.withButton("Cancel")
+					);
+
+					switch (result)
+					{
+					case 1: // Keep Tabs
+						break;
+					case 2: // Remove Tabs
+						removeTabs(tabPorts[0]);
+						break;
+					case 3: // Cancel
+						break;
+					default:
+						break;
+					}
+
+					addHeadstage(headstages[sourcePorts[0]], sourcePorts[0]);
+				}
+			}
+			else
+			{
+				int result = AlertWindow::show(
+					MessageBoxOptions()
+					.withIconType(MessageBoxIconType::WarningIcon)
+					.withTitle("Mismatched Devices")
+					.withMessage("The selected headstages do not match the hardware connected." +
+						String("\n\n[Keep Current] to keep the current selection, ") +
+						String("[Create New] to close selected tabs and create new tabs from hardware connected, or ") +
+						String("[Cancel] to do nothing."))
+					.withButton("Keep Current")
+					.withButton("Create New")
+					.withButton("Cancel")
+				);
+
+				switch (result)
+				{
+				case 1: // Keep Current
+					break;
+				case 2: // Create New
+					removeAllTabs();
+					for (auto& [port, headstageName] : headstages)
+					{
+						addHeadstage(headstageName, port);
+					}
+					break;
+				case 3: // Cancel
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		else
+		{
+			if (tabPorts.size() > sourcePorts.size())
+			{
+				bool hardwareMatch = true;
+
+				for (const auto& [index, type] : sourceMap)
+				{
+					if (tabMap[index] != type) hardwareMatch = false;
+				}
+
+				if (hardwareMatch)
+				{
+					int result = AlertWindow::show(
+						MessageBoxOptions()
+						.withIconType(MessageBoxIconType::WarningIcon)
+						.withTitle("Extra Tabs")
+						.withMessage("There are more selected headstages than hardware connected." +
+							String("\n\n[Keep Current] to keep the current selection, ") +
+							String("[Remove Extra] to close tabs not found in hardware, or ") +
+							String("[Cancel] to do nothing."))
+						.withButton("Keep Current")
+						.withButton("Remove Extra")
+						.withButton("Cancel")
+					);
+
+					switch (result)
+					{
+					case 1: // Keep Current
+						break;
+					case 2: // Remove Extra
+						{
+							PortName portToRemove = tabPorts[0] == sourcePorts[0] ? tabPorts[1] : tabPorts[0];
+							removeTabs(portToRemove);
+						}
+						break;
+					case 3: // Cancel
+						break;
+					default:
+						break;
+					}
+				}
+				else
+				{
+					int result = AlertWindow::show(
+						MessageBoxOptions()
+						.withIconType(MessageBoxIconType::WarningIcon)
+						.withTitle("Extra Tabs")
+						.withMessage("There are more selected headstages than hardware connected." +
+							String("\n\n[Keep Current] to keep the current selection, ") +
+							String("[Remove All] to close all tabs not found in hardware and add new ones, or ") +
+							String("[Cancel] to do nothing."))
+						.withButton("Keep Current")
+						.withButton("Remove All")
+						.withButton("Cancel")
+					);
+
+					switch (result)
+					{
+					case 1: // Keep Current
+						break;
+					case 2: // Remove All
+						removeAllTabs();
+						addHeadstage(headstages[sourcePorts[0]], sourcePorts[0]);
+
+						break;
+					case 3: // Cancel
+						break;
+					default:
+						break;
+					}
+				}
+			}
+			else
+			{
+				bool hardwareMatch = true;
+
+				for (const auto& [index, type] : tabMap)
+				{
+					if (sourceMap[index] != type) hardwareMatch = false;
+				}
+
+				if (hardwareMatch)
+				{
+					PortName portToAdd = sourcePorts[0] == tabPorts[0] ? sourcePorts[1] : sourcePorts[0];
+					addHeadstage(headstages[portToAdd], portToAdd);
+				}
+				else
+				{
+					int result = AlertWindow::show(
+						MessageBoxOptions()
+						.withIconType(MessageBoxIconType::WarningIcon)
+						.withTitle("Device Mismatch")
+						.withMessage("The selected headstage does not match the hardware connected." +
+							String("\n\n[Keep Current] to keep the current selection, ") +
+							String("[Remove All] to close all tabs not found in hardware and add new ones, or ") +
+							String("[Cancel] to do nothing."))
+						.withButton("Keep Current")
+						.withButton("Remove All")
+						.withButton("Cancel")
+					);
+
+					switch (result)
+					{
+					case 1: // Keep Current
+						break;
+					case 2: // Remove All
+						removeAllTabs();
+						for (auto& [port, headstageName] : headstages)
+						{
+							addHeadstage(headstageName, port);
+						}
+
+						break;
+					case 3: // Cancel
+						break;
+					default:
+						break;
+					}
 				}
 			}
 		}
 	}
+
+	CoreServices::updateSignalChain(editor);
+	editor->refreshComboBoxSelection();
+}
+
+void OnixSourceCanvas::update() const
+{
+	for (int i = 0; i < settingsInterfaces.size(); i++)
+		settingsInterfaces[i]->updateInfoString();
 }
 
 void OnixSourceCanvas::resized()
@@ -225,7 +535,7 @@ void OnixSourceCanvas::resized()
 
 void OnixSourceCanvas::startAcquisition()
 {
-	for (auto settingsInterface : settingsInterfaces)
+	for (const auto& settingsInterface : settingsInterfaces)
 	{
 		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
 		{
@@ -236,7 +546,7 @@ void OnixSourceCanvas::startAcquisition()
 
 void OnixSourceCanvas::stopAcquisition()
 {
-	for (auto settingsInterface : settingsInterfaces)
+	for (const auto& settingsInterface : settingsInterfaces)
 	{
 		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
 		{
@@ -247,12 +557,12 @@ void OnixSourceCanvas::stopAcquisition()
 
 void OnixSourceCanvas::saveCustomParametersToXml(XmlElement* xml)
 {
-	for (int i = 0; i < settingsInterfaces.size(); i++)
-		settingsInterfaces[i]->saveParameters(xml);
+	//for (int i = 0; i < settingsInterfaces.size(); i++)
+	//	settingsInterfaces[i]->saveParameters(xml);
 }
 
 void OnixSourceCanvas::loadCustomParametersFromXml(XmlElement* xml)
 {
-	for (int i = 0; i < settingsInterfaces.size(); i++)
-		settingsInterfaces[i]->loadParameters(xml);
+	//for (int i = 0; i < settingsInterfaces.size(); i++)
+	//	settingsInterfaces[i]->loadParameters(xml);
 }

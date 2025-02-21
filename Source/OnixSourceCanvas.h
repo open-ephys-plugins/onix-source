@@ -107,12 +107,12 @@ public:
 	/** Removes all tabs from the canvas */
 	void removeAllTabs();
 
-	/** Called when the number of tabs might have changed, so they are refreshed */
+	/** Called when the hardware is connected, to ensure the right tabs are present */
 	void refreshTabs();
 
 	/** Called when the Visualizer is first created, and optionally when
 		the parameters of the underlying processor are changed */
-	void update();
+	void update() const;
 
 	/** Starts animation of sub-interfaces */
 	void startAcquisition();
@@ -141,22 +141,26 @@ public:
 	/** Creates a custom viewport for the given interface */
 	CustomViewport* createCustomViewport(SettingsInterface* settingsInterface);
 
-	OwnedArray<SettingsInterface> settingsInterfaces;
+	Array<CustomTabComponent*> getHeadstageTabs();
+
+	std::map<int, OnixDeviceType> createTabMap(std::vector<std::shared_ptr<SettingsInterface>>);
+
+	std::vector<std::shared_ptr<SettingsInterface>> settingsInterfaces;
 
 private:
 
-	Array<OnixDevice*> dataSources;
-
 	OnixSourceEditor* editor;
 
-	OnixSource* onixSource;
+	OnixSource* source;
 
 	std::unique_ptr<CustomTabComponent> topLevelTabComponent;
 	OwnedArray<CustomTabComponent> headstageTabs;
 
 	CustomTabComponent* addTopLevelTab(String tabName, int index = -1);
 
-	void addInterfaceToTab(String tabName, CustomTabComponent* tab, SettingsInterface* interface_);
+	void addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_);
+
+	void updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice>) const;
 
 	String getTopLevelTabName(int hub, PortName port, String headstage);
 

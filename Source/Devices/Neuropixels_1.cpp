@@ -34,11 +34,9 @@ BackgroundUpdaterWithProgressWindow::~BackgroundUpdaterWithProgressWindow()
 {
 }
 
-int BackgroundUpdaterWithProgressWindow::updateSettings()
+bool BackgroundUpdaterWithProgressWindow::updateSettings()
 {
-	runThread();
-
-	return result;
+	return runThread() && result;
 }
 
 void BackgroundUpdaterWithProgressWindow::run()
@@ -51,7 +49,19 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	if (adcPath == "None" || gainPath == "None")
 	{
-		result = -3;
+		result = false;
+
+		LOGE("Missing ADC or Gain calibration files" + device->getName());
+
+		if (adcPath == "None")
+		{
+			CoreServices::sendStatusMessage("Missing ADC calibration file for " + device->getName());
+		}
+		else if (gainPath == "None")
+		{
+			CoreServices::sendStatusMessage("Missing Gain calibration file for " + device->getName());
+		}
+
 		return;
 	}
 
@@ -60,7 +70,19 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	if (!adcFile.existsAsFile() || !gainFile.existsAsFile())
 	{
-		result = -3;
+		result = false;
+
+		LOGE("Invalid ADC or Gain calibration files for " + device->getName());
+
+		if (!adcFile.existsAsFile())
+		{
+			CoreServices::sendStatusMessage("Invalid ADC calibration file for " + device->getName());
+		}
+		else if (!gainFile.existsAsFile())
+		{
+			CoreServices::sendStatusMessage("Invalid Gain calibration file for " + device->getName());
+		}
+
 		return;
 	}
 
@@ -73,8 +95,12 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	if (gainSN != device->getProbeNumber()) 
 	{ 
+		result = false;
+
 		LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", device->getProbeNumber(), ").");
-		result = -4;
+
+		CoreServices::sendStatusMessage("Serial Number Mismatch: Gain calibration (" + String(gainSN) + ") does not match " + String(device->getProbeNumber()));
+
 		return;
 	}
 
@@ -98,8 +124,12 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	if (adcSN != device->getProbeNumber()) 
 	{ 
+		result = false;
+
 		LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", device->getProbeNumber(), ").");
-		result = -4;
+		
+		CoreServices::sendStatusMessage("Serial Number Mismatch: ADC calibration (" + String(adcSN) + ") does not match " + String(device->getProbeNumber()));
+		
 		return;
 	}
 
@@ -128,11 +158,11 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	device->writeShiftRegisters(shankBits, configBits, adcs, lfpGainCorrection, apGainCorrection);
 
-	result = 0;
+	result = true;
 }
 
 Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
-	OnixDevice(name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
+	OnixDevice("Neuropixels 1.0 " + name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_)
 {
 	StreamInfo apStream;
@@ -241,22 +271,26 @@ int Neuropixels_1::enableDevice()
 
 	if (errorCode) { LOGE(oni_error_str(errorCode)); return -2; }
 
-	if (WriteByte((uint32_t)NeuropixelsRegisters::CAL_MOD, (uint32_t)CalMode::CAL_OFF) != 0) return -4;
-	if (WriteByte((uint32_t)NeuropixelsRegisters::SYNC, (uint32_t)0) != 0) return -4;
+	if (WriteByte((uint32_t)NeuropixelsRegisters::CAL_MOD, (uint32_t)CalMode::CAL_OFF) != 0) return -3;
+	if (WriteByte((uint32_t)NeuropixelsRegisters::SYNC, (uint32_t)0) != 0) return -3;
 
-	if (WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::DIG_AND_CH_RESET) != 0) return -4;
+	if (WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::DIG_AND_CH_RESET) != 0) return -3;
 
-	if (WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD) != 0) return -4;
+	if (WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD) != 0) return -3;
 
-	// Update all probe settings
-	return updateSettings();
+	return 0;
 }
 
-int Neuropixels_1::updateSettings()
+bool Neuropixels_1::updateSettings()
 {
 	BackgroundUpdaterWithProgressWindow updater = BackgroundUpdaterWithProgressWindow(this);
 
 	return updater.updateSettings();
+}
+
+void Neuropixels_1::setSettings(ProbeSettings* settings_)
+{
+	settings->updateProbeSettings(settings_);
 }
 
 Array<int> Neuropixels_1::selectElectrodeConfiguration(String config)

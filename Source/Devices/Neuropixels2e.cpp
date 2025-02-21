@@ -62,9 +62,9 @@ int Neuropixels2e::enableDevice()
 
 }
 
-int Neuropixels2e::updateSettings()
+bool Neuropixels2e::updateSettings()
 {
-	return 0;
+	return true;
 }
 
 void Neuropixels2e::configureProbeStreaming()

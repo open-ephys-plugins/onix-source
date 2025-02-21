@@ -116,8 +116,6 @@ public:
 	void setApFilterState(bool state);
 	void selectElectrodes(Array<int> electrodes);
 
-	std::shared_ptr<Neuropixels_1> device;
-
 private:
 	XmlElement neuropix_info;
 

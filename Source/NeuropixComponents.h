@@ -107,6 +107,39 @@ struct ProbeMetadata
 
 struct ProbeSettings
 {
+	void updateProbeSettings(ProbeSettings* newSettings)
+	{
+		availableElectrodeConfigurations = newSettings->availableElectrodeConfigurations;
+		availableApGains = newSettings->availableApGains;
+		availableLfpGains = newSettings->availableLfpGains;
+		availableReferences = newSettings->availableReferences;
+		availableBanks = newSettings->availableBanks;
+
+		electrodeConfigurationIndex = newSettings->electrodeConfigurationIndex;
+		apGainIndex = newSettings->apGainIndex;
+		lfpGainIndex = newSettings->lfpGainIndex;
+		referenceIndex = newSettings->referenceIndex;
+		apFilterState = newSettings->apFilterState;
+
+		selectedBank = newSettings->selectedBank;
+		selectedShank = newSettings->selectedShank;
+		selectedChannel = newSettings->selectedChannel;
+		selectedElectrode = newSettings->selectedElectrode;
+		electrodeMetadata = newSettings->electrodeMetadata;
+
+		probeType = newSettings->probeType;
+
+		probeMetadata = newSettings->probeMetadata;
+	};
+
+	void clearElectrodeSelection()
+	{
+		selectedBank.clear();
+		selectedShank.clear();
+		selectedChannel.clear();
+		selectedElectrode.clear();
+	}
+
 	Array<String> availableElectrodeConfigurations;
 	Array<float> availableApGains; // Available AP gain values for each channel (if any)
 	Array<float> availableLfpGains; // Available LFP gain values for each channel (if any)
@@ -124,14 +157,6 @@ struct ProbeSettings
 	Array<int> selectedChannel;
 	Array<int> selectedElectrode;
 	Array<ElectrodeMetadata> electrodeMetadata;
-
-	void clearElectrodeSelection()
-	{
-		selectedBank.clear();
-		selectedShank.clear();
-		selectedChannel.clear();
-		selectedElectrode.clear();
-	}
 
 	ProbeType probeType;
 

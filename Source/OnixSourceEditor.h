@@ -46,7 +46,7 @@ class OnixSourceEditor : public VisualizerEditor,
 public:
 
     /** Constructor */
-    OnixSourceEditor(GenericProcessor* parentNode, OnixSource* thread);
+    OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_);
 
     /** Destructor */
     virtual ~OnixSourceEditor() { }
@@ -76,11 +76,14 @@ public:
 
     bool isHeadstageSelected(PortName port);
 
+    /** Updates the combo boxes based on the headstages found in the canvas tabs */
+    void refreshComboBoxSelection();
+
     OnixSourceCanvas* canvas;
 
 private:
 
-    OnixSource* thread;
+    OnixSource* source;
 
     std::unique_ptr<Label> portLabelA;
     std::unique_ptr<Label> portLabelB;
@@ -95,6 +98,9 @@ private:
 
     std::unique_ptr<ToggleParameterEditor> passthroughEditorA;
     std::unique_ptr<ToggleParameterEditor> passthroughEditorB;
+
+    void setComboBoxSelection(ComboBox* comboBox, String headstage);
+    void addHeadstageComboBoxOptions(ComboBox* comboBox);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
 };
