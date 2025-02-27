@@ -26,23 +26,16 @@
 
 OnixSource::OnixSource(SourceNode* sn) :
 	DataThread(sn),
-	ctx(NULL),
 	devicesFound(false),
-	editor(NULL)
+	editor(NULL),
+	context()
 {
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
 
-	LOGD("ONIX Source creating ONI context.");
-	ctx = oni_create_ctx("riffa"); // "riffa" is the PCIe driver name
-	if (ctx == NULL) { LOGE("Failed to create context."); return; }
-
-	// Initialize context and discover hardware
-	initializeContext();
-
-	if (!contextInitialized) { LOGE("Failed to initialize context."); return; }
+	if (!context.isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
 DataThread* OnixSource::createDataThread(SourceNode* sn)
@@ -58,24 +51,6 @@ std::unique_ptr<GenericEditor> OnixSource::createEditor(SourceNode* sn)
 	return e;
 }
 
-void OnixSource::initializeContext()
-{
-	if (contextInitialized) { LOGD("Context is already initialized."); return; }
-
-	if (ctx == NULL) 
-	{
-		LOGD("ONIX Source creating ONI context.");
-		ctx = oni_create_ctx("riffa"); // "riffa" is the PCIe driver name
-		if (ctx == NULL) { LOGE("Failed to create context."); return; }
-	}
-
-	int errorCode = oni_init_ctx(ctx, 0);
-
-	if (errorCode) { LOGE(oni_error_str(errorCode)); return; }
-
-	contextInitialized = true;
-}
-
 void OnixSource::disconnectDevices(bool updateStreamInfo)
 {
 	sourceBuffers.clear(true);
@@ -87,17 +62,18 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 
 void OnixSource::initializeDevices(bool updateStreamInfo)
 {
-	if (!contextInitialized)
+	if (!context.isInitialized())
 	{
-		initializeContext();
-
-		if (!contextInitialized) { LOGD("Unable to initialize context. Cannot initialize devices."); return; }
+		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again."); 
+		return;
 	}
 
 	if (devicesFound)
 	{
 		disconnectDevices(false);
 	}
+
+	oni_ctx ctx = context.get();
 
 	oni_size_t num_devs = 0;
 	oni_device_t* devices = NULL;
@@ -311,7 +287,9 @@ void OnixSource::updateDiscoveryParameters(PortName port, DiscoveryParameters pa
 
 bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 {
-	if (!contextInitialized) return false;
+	if (!context.isInitialized()) return false;
+
+	oni_ctx ctx = context.get();
 
 	switch (port)
 	{
@@ -328,7 +306,9 @@ bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 
 bool OnixSource::setPortVoltage(PortName port, float voltage) const
 {
-	if (!contextInitialized) return false;
+	if (!context.isInitialized()) return false;
+
+	oni_ctx ctx = context.get();
 
 	switch (port)
 	{
@@ -443,11 +423,11 @@ bool OnixSource::foundInputSource()
 
 bool OnixSource::isReady()
 {
-	if (!devicesFound)
+	if (!context.isInitialized() || !devicesFound)
 		return false;
 
-	if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(ctx)) return false;
-	if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(ctx)) return false;
+	if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(context.get())) return false;
+	if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(context.get())) return false;
 
 	for (auto source : sources)
 	{
@@ -460,7 +440,7 @@ bool OnixSource::isReady()
 	}
 
 	oni_reg_val_t reg = 2;
-	int res = oni_set_opt(ctx, ONI_OPT_RESETACQCOUNTER, &reg, sizeof(oni_size_t));
+	int res = oni_set_opt(context.get(), ONI_OPT_RESETACQCOUNTER, &reg, sizeof(oni_size_t));
 	if (res < ONI_ESUCCESS)
 	{
 		LOGE("Error starting acquisition: ", oni_error_str(res), " code ", res);
@@ -477,7 +457,7 @@ bool OnixSource::startAcquisition()
 
 	frameReader.reset();
 
-	frameReader = std::make_unique<FrameReader>(sources, ctx);
+	frameReader = std::make_unique<FrameReader>(sources, context.get());
 	frameReader->startThread();
 
 	for (auto source : sources)
@@ -503,7 +483,7 @@ bool OnixSource::stopAcquisition()
 	if (devicesFound)
 	{
 		oni_size_t reg = 0;
-		int res = oni_set_opt(ctx, ONI_OPT_RUNNING, &reg, sizeof(reg));
+		int res = oni_set_opt(context.get(), ONI_OPT_RUNNING, &reg, sizeof(reg));
 		if (res < ONI_ESUCCESS)
 		{
 			LOGE("Error stopping acquisition: ", oni_error_str(res), " code ", res);
@@ -511,8 +491,8 @@ bool OnixSource::stopAcquisition()
 		}
 
 		uint32_t val = 1;
-		oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
-		oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
+		oni_set_opt(context.get(), ONI_OPT_RESET, &val, sizeof(val));
+		oni_set_opt(context.get(), ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
 	}
 
 	for (auto source : sources)
