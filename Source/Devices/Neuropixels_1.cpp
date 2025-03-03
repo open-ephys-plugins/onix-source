@@ -288,7 +288,7 @@ bool Neuropixels_1::updateSettings()
 	return updater.updateSettings();
 }
 
-void Neuropixels_1::setSettings(ProbeSettings* settings_)
+void Neuropixels_1::setSettings(ProbeSettings* settings_) const
 {
 	settings->updateProbeSettings(settings_);
 }

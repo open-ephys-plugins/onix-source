@@ -182,6 +182,9 @@ private:
 	Array<int> getSelectedElectrodes() const;
 
 	void setInterfaceEnabledState(bool enabledState);
+
+	/** Checks if the current channel map matches an existing channel preset, and updates the combo box if it does */
+	void checkForExistingChannelPreset();
 };
 
 #endif //__NEUROPIXINTERFACE_H__

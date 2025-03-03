@@ -100,7 +100,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 			electrodeConfigurationComboBox->addItem(device->settings->availableElectrodeConfigurations[i], i + 2);
 		}
 
-		electrodeConfigurationComboBox->setSelectedId(1, dontSendNotification); // TODO: Check if the current electrode selection matches a preset
+		checkForExistingChannelPreset();
 
 		addAndMakeVisible(electrodeConfigurationComboBox.get());
 
@@ -424,6 +424,86 @@ void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
 	}
 }
 
+void NeuropixV1Interface::checkForExistingChannelPreset()
+{
+	auto device = std::static_pointer_cast<Neuropixels_1>(dataSource);
+
+	std::set<Bank> uniqueBanks;
+	std::vector<ElectrodeMetadata> electrodes;
+
+	for (int i = 0; i < device->settings->electrodeMetadata.size(); i += 1)
+	{
+		if (device->settings->electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
+		{
+			uniqueBanks.insert(device->settings->electrodeMetadata[i].bank);
+			electrodes.push_back(device->settings->electrodeMetadata[i]);
+		}
+	}
+
+	if (uniqueBanks.size() == 1)
+	{
+		if (*uniqueBanks.begin() == Bank::A)
+		{
+			device->settings->electrodeConfigurationIndex = 0;
+		}
+		else if (*uniqueBanks.begin() == Bank::B)
+		{
+			device->settings->electrodeConfigurationIndex = 1;
+		}
+	}
+	else if (uniqueBanks.size() == 2)
+	{
+		bool isBankC = true, isSingleColumn = true, isTetrode = true;
+
+		for (int i = 0; i < electrodes.size(); i += 1)
+		{
+			if (electrodes[i].global_index < 576 || electrodes[i].global_index >= 960)
+			{
+				isBankC = false;
+			}
+
+			if ((electrodes[i].global_index % 2 != 0 && electrodes[i].bank == Bank::A) ||
+				(electrodes[i].global_index % 2 != 1 && electrodes[i].bank == Bank::B) ||
+				electrodes[i].bank == Bank::C)
+			{
+				isSingleColumn = false;
+			}
+
+			if ((electrodes[i].global_index % 8 >= 4 && electrodes[i].bank == Bank::A) ||
+				(electrodes[i].global_index % 8 <= 3 && electrodes[i].bank == Bank::B) ||
+				electrodes[i].bank == Bank::C)
+			{
+				isTetrode = false;
+			}
+
+			if (!isBankC && !isSingleColumn && !isTetrode) break;
+		}
+
+		if (isBankC)
+		{
+			device->settings->electrodeConfigurationIndex = 2;
+		}
+		else if (isSingleColumn)
+		{
+			device->settings->electrodeConfigurationIndex = 3;
+		}
+		else if (isTetrode)
+		{
+			device->settings->electrodeConfigurationIndex = 4;
+		}
+		else
+		{
+			device->settings->electrodeConfigurationIndex = -1;
+		}
+	}
+	else
+	{
+		device->settings->electrodeConfigurationIndex = -1;
+	}
+
+	electrodeConfigurationComboBox->setSelectedId(device->settings->electrodeConfigurationIndex + 2, dontSendNotification);
+}
+
 void NeuropixV1Interface::setAnnotationLabel(String s, Colour c)
 {
 	annotationLabel->setText(s, NotificationType::dontSendNotification);
@@ -488,9 +568,10 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (selection.size() > 0)
 		{
-			electrodeConfigurationComboBox->setSelectedId(1);
 			selectElectrodes(selection);
 		}
+
+		checkForExistingChannelPreset();
 	}
 	else if (button == loadJsonButton.get())
 	{
