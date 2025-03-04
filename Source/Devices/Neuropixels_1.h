@@ -255,9 +255,6 @@ private:
 	int apGain = 1000;
 	int lfpGain = 50;
 
-	int apGain = 1000;
-	int lfpGain = 50;
-
 	JUCE_LEAK_DETECTOR(Neuropixels_1);
 };
 

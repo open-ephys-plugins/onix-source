@@ -129,7 +129,7 @@ void OnixSourceCanvas::addInterfaceToTab(String tabName, CustomTabComponent* tab
 	tab->addTab(tabName, Colours::darkgrey, createCustomViewport(interface_.get()), true);
 }
 
-void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice> device) const
+void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice> device)
 {
 	int ind = -1;
 

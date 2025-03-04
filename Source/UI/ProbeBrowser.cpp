@@ -636,9 +636,9 @@ MouseCursor ProbeBrowser::getMouseCursor()
 
 void ProbeBrowser::paint(Graphics& g)
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
+	if (parent->device == NULL) return;
 
-	if (!device->settings) return;
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	int LEFT_BORDER = 30;
 	int TOP_BORDER = 33;

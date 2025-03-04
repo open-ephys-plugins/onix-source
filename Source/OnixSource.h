@@ -124,8 +124,6 @@ public:
 	/** Sets the port voltage */
 	bool setPortVoltage(PortName port, float voltage) const;
 
-	void initializeContext();
-
 	void initializeDevices(bool updateStreamInfo = false);
 
 	void disconnectDevices(bool updateStreamInfo = false);
@@ -146,7 +144,7 @@ public:
 		OwnedArray<DeviceInfo>* devices,
 		OwnedArray<ConfigurationObject>* configurationObjects);
 
-	oni_ctx getContext() const { if (contextInitialized) return ctx; else return NULL; }
+	oni_ctx getContext() const { if (context.isInitialized()) return context.get(); else return NULL; }
 
 private:
 

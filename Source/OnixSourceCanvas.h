@@ -160,7 +160,7 @@ private:
 
 	void addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_);
 
-	void updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice>) const;
+	void updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice>);
 
 	String getTopLevelTabName(int hub, PortName port, String headstage);
 

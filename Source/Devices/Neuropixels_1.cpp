@@ -166,7 +166,7 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	setProgress(1);
 
-	result = 0;
+	result = true;
 }
 
 Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
@@ -374,8 +374,8 @@ Array<int> Neuropixels_1::selectElectrodeConfiguration(String config)
 
 void Neuropixels_1::startAcquisition()
 {
-	apGain = getGainValue(getGainEnum(settings.apGainIndex));
-	lfpGain = getGainValue(getGainEnum(settings.lfpGainIndex));
+	apGain = getGainValue(getGainEnum(settings->apGainIndex));
+	lfpGain = getGainValue(getGainEnum(settings->lfpGainIndex));
 
 	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::ACTIVE);
 }
