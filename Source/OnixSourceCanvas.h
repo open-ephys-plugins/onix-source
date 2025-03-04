@@ -165,6 +165,8 @@ private:
 	String getTopLevelTabName(int hub, PortName port, String headstage);
 
 	String getDeviceTabName(OnixDevice* device);
+
+	JUCE_LEAK_DETECTOR(OnixSourceCanvas);
 };
 
 # endif // __ONIXSOURCECANVAS_H__

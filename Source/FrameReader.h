@@ -42,6 +42,8 @@ private:
 
 	std::vector<std::shared_ptr<OnixDevice>> sources;
 	oni_ctx& ctx;
+
+	JUCE_LEAK_DETECTOR(FrameReader);
 };
 
 #endif // __FRAMEREADER_H__

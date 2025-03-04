@@ -135,7 +135,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 
 	for (int j = 0; j < settingsInterfaces.size(); j += 1)
 	{
-		if (device->getDeviceIdx() == settingsInterfaces[j]->dataSource->getDeviceIdx())
+		if (device->getDeviceIdx() == settingsInterfaces[j]->device->getDeviceIdx())
 		{
 			ind = j;
 			break;
@@ -148,11 +148,11 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	{
 		// NB: Neuropixels-specific settings need to be updated
 		auto npx1 = std::static_pointer_cast<Neuropixels_1>(device);
-		npx1->setSettings(std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->dataSource)->settings.get());
+		npx1->setSettings(std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device)->settings.get());
 	}
 
-	settingsInterfaces[ind]->dataSource.reset();
-	settingsInterfaces[ind]->dataSource = device;
+	settingsInterfaces[ind]->device.reset();
+	settingsInterfaces[ind]->device = device;
 }
 
 String OnixSourceCanvas::getTopLevelTabName(int hub, PortName port, String headstage)
@@ -220,7 +220,7 @@ void OnixSourceCanvas::removeTabs(PortName port)
 
 	for (int i = settingsInterfaces.size() - 1; i >= 0; i -= 1)
 	{
-		if ((settingsInterfaces[i]->dataSource->getDeviceIdx() & offset) > 0)
+		if ((settingsInterfaces[i]->device->getDeviceIdx() & offset) > 0)
 		{
 			settingsInterfaces.erase(settingsInterfaces.begin() + i);
 			tabExists = true;
@@ -239,13 +239,13 @@ void OnixSourceCanvas::removeAllTabs()
 	topLevelTabComponent->clearTabs();
 }
 
-std::map<int, OnixDeviceType> OnixSourceCanvas::createTabMap(std::vector<std::shared_ptr<SettingsInterface>>)
+std::map<int, OnixDeviceType> OnixSourceCanvas::createTabMap(std::vector<std::shared_ptr<SettingsInterface>> interfaces)
 {
 	std::map<int, OnixDeviceType> tabMap;
 
-	for (const auto& settings : settingsInterfaces)
+	for (const auto& settings : interfaces)
 	{
-		tabMap.insert({ settings->dataSource->getDeviceIdx(), settings->dataSource->type });
+		tabMap.insert({ settings->device->getDeviceIdx(), settings->device->type });
 	}
 
 	return tabMap;
@@ -537,7 +537,7 @@ void OnixSourceCanvas::startAcquisition()
 {
 	for (const auto& settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
+		if (settingsInterface->device != nullptr && settingsInterface->device->isEnabled())
 		{
 			settingsInterface->startAcquisition();
 		}
@@ -548,7 +548,7 @@ void OnixSourceCanvas::stopAcquisition()
 {
 	for (const auto& settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
+		if (settingsInterface->device != nullptr && settingsInterface->device->isEnabled())
 		{
 			settingsInterface->stopAcquisition();
 		}

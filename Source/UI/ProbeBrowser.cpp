@@ -23,13 +23,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ProbeBrowser.h"
 
-ProbeBrowser::ProbeBrowser(NeuropixV1Interface* parent_) : parent(parent_)
+#include "../Devices/Neuropixels_1.h"
+#include "NeuropixV1Interface.h"
+
+ProbeBrowser::ProbeBrowser(SettingsInterface* parent_) : parent(parent_)
 {
 	cursorType = MouseCursor::NormalCursor;
 
 	activityToView = ActivityToView::APVIEW;
 
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->dataSource);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	if (device->settings->probeType == ProbeType::NPX_V2E || device->settings->probeType == ProbeType::NPX_V2E_BETA)
 	{
@@ -130,7 +133,7 @@ ProbeBrowser::~ProbeBrowser()
 
 void ProbeBrowser::mouseMove(const MouseEvent& event)
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->dataSource);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	if (!device->settings) return;
 
@@ -228,7 +231,7 @@ void ProbeBrowser::mouseMove(const MouseEvent& event)
 
 int ProbeBrowser::getNearestElectrode(int x, int y) const
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->dataSource);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	if (!device->settings) return -1;
 
@@ -273,7 +276,7 @@ Array<int> ProbeBrowser::getElectrodesWithinBounds(int x, int y, int w, int h) c
 {
 	Array<int> inds;
 
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->dataSource);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	if (!device->settings) return inds;
 
@@ -320,7 +323,7 @@ Array<int> ProbeBrowser::getElectrodesWithinBounds(int x, int y, int w, int h) c
 
 String ProbeBrowser::getElectrodeInfoString(int index)
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->dataSource);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	if (!device->settings) return "";
 
@@ -401,22 +404,24 @@ String ProbeBrowser::getElectrodeInfoString(int index)
 			a += "NO";
 	}
 
-	if (parent->apGainComboBox != nullptr)
+	NeuropixV1Interface* neuropixInterface = (NeuropixV1Interface*)parent;
+
+	if (neuropixInterface->apGainComboBox != nullptr)
 	{
 		a += "\nAP Gain: ";
-		a += String(parent->apGainComboBox->getText());
+		a += String(neuropixInterface->apGainComboBox->getText());
 	}
 
-	if (parent->lfpGainComboBox != nullptr)
+	if (neuropixInterface->lfpGainComboBox != nullptr)
 	{
 		a += "\nLFP Gain: ";
-		a += String(parent->lfpGainComboBox->getText());
+		a += String(neuropixInterface->lfpGainComboBox->getText());
 	}
 
-	if (parent->referenceComboBox != nullptr)
+	if (neuropixInterface->referenceComboBox != nullptr)
 	{
 		a += "\nReference: ";
-		a += String(parent->referenceComboBox->getText());
+		a += String(neuropixInterface->referenceComboBox->getText());
 	}
 
 	return a;
@@ -433,7 +438,7 @@ void ProbeBrowser::mouseUp(const MouseEvent& event)
 
 void ProbeBrowser::mouseDown(const MouseEvent& event)
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->dataSource);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	if (!device->settings) return;
 
@@ -468,9 +473,11 @@ void ProbeBrowser::mouseDown(const MouseEvent& event)
 		{
 			int currentAnnotationNum = 0;
 
-			for (int i = 0; i < parent->annotations.size(); i++)
+			NeuropixV1Interface* neuropixInterface = (NeuropixV1Interface*)parent;
+
+			for (int i = 0; i < neuropixInterface->annotations.size(); i++)
 			{
-				Annotation& a = parent->annotations.getReference(i);
+				Annotation& a = neuropixInterface->annotations.getReference(i);
 				float yLoc = a.currentYLoc;
 
 				if (float(event.y) < yLoc && float(event.y) > yLoc - 12)
@@ -497,7 +504,7 @@ void ProbeBrowser::mouseDown(const MouseEvent& event)
 				case 0:
 					break;
 				case 1:
-					parent->annotations.removeRange(currentAnnotationNum, 1);
+					neuropixInterface->annotations.removeRange(currentAnnotationNum, 1);
 					repaint();
 					break;
 				default:
@@ -511,7 +518,7 @@ void ProbeBrowser::mouseDown(const MouseEvent& event)
 
 void ProbeBrowser::mouseDrag(const MouseEvent& event)
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->dataSource);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	if (!device->settings) return;
 
@@ -629,7 +636,7 @@ MouseCursor ProbeBrowser::getMouseCursor()
 
 void ProbeBrowser::paint(Graphics& g)
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->dataSource);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	if (!device->settings) return;
 
@@ -796,11 +803,13 @@ void ProbeBrowser::paint(Graphics& g)
 
 void ProbeBrowser::drawAnnotations(Graphics& g)
 {
-	for (int i = 0; i < parent->annotations.size(); i++)
+	NeuropixV1Interface* neuropixInterface = (NeuropixV1Interface*)parent;
+
+	for (int i = 0; i < neuropixInterface->annotations.size(); i++)
 	{
 		bool shouldAppear = false;
 
-		Annotation& a = parent->annotations.getReference(i);
+		Annotation& a = neuropixInterface->annotations.getReference(i);
 
 		for (int j = 0; j < a.electrodes.size(); j++)
 		{
@@ -856,7 +865,8 @@ void ProbeBrowser::drawAnnotations(Graphics& g)
 
 Colour ProbeBrowser::getElectrodeColour(int i)
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->dataSource);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);		
+	NeuropixV1Interface* neuropixInterface = (NeuropixV1Interface*)parent;
 
 	if (!device->settings) return Colours::grey;
 
@@ -870,23 +880,23 @@ Colour ProbeBrowser::getElectrodeColour(int i)
 		return Colours::black;
 	else
 	{
-		if (parent->mode == VisualizationMode::ENABLE_VIEW) // ENABLED STATE
+		if (neuropixInterface->mode == VisualizationMode::ENABLE_VIEW) // ENABLED STATE
 		{
 			return Colours::yellow;
 		}
-		else if (parent->mode == VisualizationMode::AP_GAIN_VIEW) // AP GAIN
+		else if (neuropixInterface->mode == VisualizationMode::AP_GAIN_VIEW) // AP GAIN
 		{
 		    return Colour (25 * device->settings->apGainIndex, 25 * device->settings->apGainIndex, 50);
 		}
-		else if (parent->mode == VisualizationMode::LFP_GAIN_VIEW) // LFP GAIN
+		else if (neuropixInterface->mode == VisualizationMode::LFP_GAIN_VIEW) // LFP GAIN
 		{
 		    return Colour (66, 25 * device->settings->lfpGainIndex, 35 * device->settings->lfpGainIndex);
 		}
-		else if (parent->mode == VisualizationMode::REFERENCE_VIEW)
+		else if (neuropixInterface->mode == VisualizationMode::REFERENCE_VIEW)
 		{
-			if (parent->referenceComboBox != nullptr)
+			if (neuropixInterface->referenceComboBox != nullptr)
 			{
-				String referenceDescription = parent->referenceComboBox->getText();
+				String referenceDescription = neuropixInterface->referenceComboBox->getText();
 
 				if (referenceDescription.contains("Ext"))
 					return Colours::darksalmon;
@@ -900,7 +910,7 @@ Colour ProbeBrowser::getElectrodeColour(int i)
 				return Colours::black;
 			}
 		}
-		else if (parent->mode == VisualizationMode::ACTIVITY_VIEW)
+		else if (neuropixInterface->mode == VisualizationMode::ACTIVITY_VIEW)
 		{
 			if (electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
 			{

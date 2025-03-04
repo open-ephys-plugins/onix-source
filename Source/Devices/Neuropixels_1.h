@@ -249,6 +249,8 @@ private:
 
 	int apSampleNumber = 0;
 	int lfpSampleNumber = 0;
+
+	JUCE_LEAK_DETECTOR(Neuropixels_1);
 };
 
 /*
@@ -272,6 +274,8 @@ private:
 	Neuropixels_1* device;
 
 	std::atomic<bool> result = false;
+
+	JUCE_LEAK_DETECTOR(BackgroundUpdaterWithProgressWindow);
 };
 
 #endif

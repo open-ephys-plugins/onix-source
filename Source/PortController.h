@@ -89,6 +89,8 @@ private:
 	const oni_reg_addr_t linkStateRegister = 5;
 
 	DiscoveryParameters discoveryParameters;
+
+	JUCE_LEAK_DETECTOR(PortController);
 };
 
 #endif // !__PORTCONTROLLER_H__

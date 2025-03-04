@@ -29,11 +29,10 @@
 #include "../Devices/Neuropixels_1.h"
 #include "ColourScheme.h"
 #include "SettingsInterface.h"
+#include "ProbeBrowser.h"
 
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
-
-class ProbeBrowser;
 
 enum class VisualizationMode
 {
@@ -95,7 +94,6 @@ public:
 
 	/** Settings-related functions*/
 	bool applyProbeSettings(ProbeSettings* p, bool shouldUpdateProbe = true);
-	ProbeSettings* getProbeSettings() const;
 
 	/** Save parameters to XML */
 	void saveParameters(XmlElement* xml) override;
@@ -185,6 +183,8 @@ private:
 
 	/** Checks if the current channel map matches an existing channel preset, and updates the combo box if it does */
 	void checkForExistingChannelPreset();
+
+	JUCE_LEAK_DETECTOR(NeuropixV1Interface);
 };
 
 #endif //__NEUROPIXINTERFACE_H__

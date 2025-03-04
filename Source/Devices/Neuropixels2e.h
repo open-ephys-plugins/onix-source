@@ -115,4 +115,5 @@ private:
 
 	Array<oni_frame_t*, CriticalSection, 2 * FramesPerSuperFrame> frameArray;
 
+	JUCE_LEAK_DETECTOR(Neuropixels2e);
 };

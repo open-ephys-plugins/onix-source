@@ -49,9 +49,9 @@ public:
     };
 
     /** Constructor */
-    SettingsInterface (std::shared_ptr<OnixDevice> dataSource_, OnixSourceEditor* editor_, OnixSourceCanvas* canvas_)
+    SettingsInterface (std::shared_ptr<OnixDevice> device_, OnixSourceEditor* editor_, OnixSourceCanvas* canvas_)
     {
-        dataSource = dataSource_;
+        device = device_;
         editor = editor_;
         canvas = canvas_;
 
@@ -83,7 +83,7 @@ public:
     Type type = Type::UNKNOWN_SETTINGS_INTERFACE;
 
     /** Pointer to the data source*/
-    std::shared_ptr<OnixDevice> dataSource;
+    std::shared_ptr<OnixDevice> device;
 
 protected:
     OnixSourceEditor* editor;

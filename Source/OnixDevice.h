@@ -125,6 +125,8 @@ private:
 	String name;
 
 	bool enabled = true;
+
+	JUCE_LEAK_DETECTOR(OnixDevice);
 };
 
 #endif

@@ -46,6 +46,8 @@ private:
 	const oni_dev_idx_t deviceIndex;
 
 	const uint32_t i2caddress;
+
+	JUCE_LEAK_DETECTOR(I2CRegisterContext);
 };
 
 #endif // !__I2CRegisterContext_H__
