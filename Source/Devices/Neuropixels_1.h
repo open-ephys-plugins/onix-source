@@ -163,7 +163,7 @@ public:
 	~Neuropixels_1();
 
 	/** Enables the device so that it is ready to stream with default settings */
-	int enableDevice() override;
+	int configureDevice() override;
 
 	/** Update the settings of the device */
 	int updateSettings() override;

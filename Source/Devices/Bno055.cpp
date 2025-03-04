@@ -91,7 +91,7 @@ Bno055::~Bno055()
 {
 }
 
-int Bno055::enableDevice()
+int Bno055::configureDevice()
 {
 	oni_write_reg(ctx, deviceIdx, (uint32_t)Bno055Registers::ENABLE, (uint32_t)1);
 

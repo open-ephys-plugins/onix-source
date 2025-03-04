@@ -93,7 +93,7 @@ public:
 
 	void setEnabled(bool newState) { enabled = newState; }
 
-	virtual int enableDevice() = 0;
+	virtual int configureDevice() = 0;
 
 	virtual int updateSettings() = 0;
 
