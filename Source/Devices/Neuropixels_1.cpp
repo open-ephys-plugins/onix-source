@@ -25,7 +25,7 @@
 #include "../OnixSource.h"
 
 BackgroundUpdaterWithProgressWindow::BackgroundUpdaterWithProgressWindow(Neuropixels_1* d)
-	: ThreadWithProgressWindow("Updating Neuropixels Probe: " + d->getName(), true, false)
+	: ThreadWithProgressWindow("Writing calibration files to Neuropixels Probe: " + d->getName(), true, false)
 {
 	device = d;
 }
@@ -43,7 +43,7 @@ int BackgroundUpdaterWithProgressWindow::updateSettings()
 
 void BackgroundUpdaterWithProgressWindow::run()
 {
-	setProgress(-1);
+	setProgress(0);
 
 	// Parse ADC and Gain calibration files
 	String adcPath = device->getAdcPathParameter();
@@ -63,6 +63,8 @@ void BackgroundUpdaterWithProgressWindow::run()
 		result = -3;
 		return;
 	}
+
+	setProgress(0.2);
 
 	StringArray gainFileLines;
 	gainFile.readLines(gainFileLines);
@@ -88,6 +90,8 @@ void BackgroundUpdaterWithProgressWindow::run()
 	double lfpGainCorrection = std::stod(calibrationValues[device->settings.lfpGainIndex + 8].toStdString());
 
 	LOGD("AP gain correction = ", apGainCorrection, ", LFP gain correction = ", lfpGainCorrection);
+
+	setProgress(0.5);
 
 	StringArray adcFileLines;
 	adcFile.readLines(adcFileLines);
@@ -122,11 +126,15 @@ void BackgroundUpdaterWithProgressWindow::run()
 			));
 	}
 
+	setProgress(0.8);
+
 	// Write shift registers
 	auto shankBits = device->makeShankBits(device->getReference(device->settings.referenceIndex), device->settings.selectedChannel);
-	auto configBits = device->makeConfigBits(device->getReference(device->settings.referenceIndex), device->getGain(device->settings.apGainIndex), device->getGain(device->settings.lfpGainIndex), true, adcs);
+	auto configBits = device->makeConfigBits(device->getReference(device->settings.referenceIndex), device->getGainEnum(device->settings.apGainIndex), device->getGainEnum(device->settings.lfpGainIndex), true, adcs);
 
 	device->writeShiftRegisters(shankBits, configBits, adcs, lfpGainCorrection, apGainCorrection);
+
+	setProgress(1);
 
 	result = 0;
 }
@@ -200,7 +208,7 @@ String Neuropixels_1::getGainPathParameterName()
 	return "gainCalibrationFile_" + getName();
 }
 
-NeuropixelsGain Neuropixels_1::getGain(int index)
+NeuropixelsGain Neuropixels_1::getGainEnum(int index)
 {
 	switch (index)
 	{
@@ -226,6 +234,32 @@ NeuropixelsGain Neuropixels_1::getGain(int index)
 	}
 
 	return NeuropixelsGain::Gain50;
+}
+
+int Neuropixels_1::getGainValue(NeuropixelsGain gain)
+{
+	switch (gain)
+	{
+	case NeuropixelsGain::Gain50:
+		return 50;
+	case NeuropixelsGain::Gain125:
+		return 125;
+	case NeuropixelsGain::Gain250:
+		return 250;
+	case NeuropixelsGain::Gain500:
+		return 500;
+	case NeuropixelsGain::Gain1000:
+		return 1000;
+	case NeuropixelsGain::Gain1500:
+		return 1500;
+	case NeuropixelsGain::Gain2000:
+		return 2000;
+	case NeuropixelsGain::Gain3000:
+		return 3000;
+
+	default:
+		break;
+	}
 }
 
 NeuropixelsReference Neuropixels_1::getReference(int index)
@@ -338,6 +372,9 @@ Array<int> Neuropixels_1::selectElectrodeConfiguration(String config)
 
 void Neuropixels_1::startAcquisition()
 {
+	apGain = getGainValue(getGainEnum(settings.apGainIndex));
+	lfpGain = getGainValue(getGainEnum(settings.lfpGainIndex));
+
 	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::ACTIVE);
 }
 
@@ -379,6 +416,9 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 
 void Neuropixels_1::processFrames()
 {
+	float apConversion = 1171.875 / apGain;
+	float lfpConversion = 1171.875 / lfpGain;
+
 	while (!frameArray.isEmpty())
 	{
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
@@ -411,7 +451,7 @@ void Neuropixels_1::processFrames()
 				{
 					int chanIndex = adcToChannel[adc] + superCountOffset * 2; // map the ADC to muxed channel
 					lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount] =
-						float(*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) * 0.195f;
+						lfpConversion * float((*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) - 512);
 				}
 			}
 			else // AP data
@@ -421,7 +461,7 @@ void Neuropixels_1::processFrames()
 				{
 					int chanIndex = adcToChannel[adc] + chanOffset; //  map the ADC to muxed channel.
 					apSamples[(chanIndex * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
-						float(*(dataPtr + adcToFrameIndex[adc] + i * 36 + dataOffset) >> 5) * 0.195f;
+						apConversion * float((*(dataPtr + adcToFrameIndex[adc] + i * 36 + dataOffset) >> 5) - 512);
 				}
 			}
 		}
@@ -736,8 +776,8 @@ void Neuropixels_1::defineMetadata(ProbeSettings& settings)
 		settings.electrodeMetadata.add(metadata);
 	}
 
-	settings.apGainIndex = 3;
-	settings.lfpGainIndex = 2;
+	settings.apGainIndex = 4;	// NB:  AP Gain Index of 4 = Gain1000
+	settings.lfpGainIndex = 0;	// NB: LFP Gain Index of 0 = Gain50
 	settings.referenceIndex = 0;
 	settings.apFilterState = true;
 
