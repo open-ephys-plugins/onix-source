@@ -39,7 +39,7 @@
 
 #define ONI_OK(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));}}
 #define ONI_OK_RETURN_BOOL(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return false;}}
-#define ONI_OK_RETURN_INT(exp, val) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return val;}}
+#define ONI_OK_RETURN_INT(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return res;}}
 
 using namespace std::chrono;
 
@@ -54,7 +54,8 @@ enum class OnixDeviceType {
 	BNO,
 	NEUROPIXELS_1,
 	NEUROPIXELS_2,
-	ADC
+	ADC,
+	PORT_CONTROL
 };
 
 struct StreamInfo {

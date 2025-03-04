@@ -93,7 +93,7 @@ Bno055::~Bno055()
 
 int Bno055::enableDevice()
 {
-	oni_write_reg(ctx, deviceIdx, (uint32_t)Bno055Registers::ENABLE, (uint32_t)1);
+	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)Bno055Registers::ENABLE, (uint32_t)1))
 
 	return 0;
 }
