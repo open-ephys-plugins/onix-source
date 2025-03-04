@@ -191,7 +191,9 @@ public:
 
 	String getGainPathParameter();
 
-	NeuropixelsGain getGain(int index);
+	NeuropixelsGain getGainEnum(int index);
+
+	int getGainValue(NeuropixelsGain);
 
 	NeuropixelsReference getReference(int index);
 
@@ -252,6 +254,9 @@ private:
 
 	int apSampleNumber = 0;
 	int lfpSampleNumber = 0;
+
+	int apGain = 1000;
+	int lfpGain = 50;
 
 	OnixSource* source;
 

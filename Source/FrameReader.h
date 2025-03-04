@@ -32,7 +32,7 @@
 class FrameReader : public Thread
 {
 public:
-	FrameReader(OwnedArray<OnixDevice>& sources_, oni_ctx& ctx_);
+	FrameReader(OwnedArray<OnixDevice>& sources_, oni_ctx ctx_);
 
 	~FrameReader();
 
@@ -41,7 +41,7 @@ public:
 private:
 
 	OwnedArray<OnixDevice>& sources;
-	oni_ctx& ctx;
+	oni_ctx ctx;
 
 	JUCE_LEAK_DETECTOR(FrameReader);
 };
