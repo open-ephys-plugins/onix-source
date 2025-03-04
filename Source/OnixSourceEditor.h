@@ -88,13 +88,13 @@ private:
     std::unique_ptr<ComboBox> headstageComboBoxA;
     std::unique_ptr<ComboBox> headstageComboBoxB;
 
+    std::unique_ptr<Label> portVoltageOverrideLabelA;
+    std::unique_ptr<Label> portVoltageOverrideLabelB;
+
     std::unique_ptr<Label> portVoltageValueA;
     std::unique_ptr<Label> portVoltageValueB;
 
     std::unique_ptr<UtilityButton> connectButton;
-
-    std::unique_ptr<ToggleParameterEditor> passthroughEditorA;
-    std::unique_ptr<ToggleParameterEditor> passthroughEditorB;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
 };
