@@ -177,18 +177,31 @@ void OnixSourceEditor::buttonClicked(Button* b)
 
 void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 {
+	auto deviceMap = source->createDeviceMap(source->getDataSources());
+	auto tabMap = canvas->createTabMap(canvas->settingsInterfaces);
+	std::vector<int> deviceIndices;
+	std::vector<int> tabIndices;
+
+	for (auto& [key, _] : deviceMap) { deviceIndices.push_back(key); }
+	for (auto& [key, _] : tabMap) { tabIndices.push_back(key); }
+
+	auto devicePorts = PortController::getUniquePortsFromIndices(deviceIndices);
+	auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
+
 	if (cb == headstageComboBoxA.get())
 	{
+		if (tabPorts.contains(PortName::PortA) && devicePorts.contains(PortName::PortA) && source->foundInputSource())
+		{
+			AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Devices Connected", "Cannot replace settings tabs while devices are conncted. Disconnect from hardware before changing the selected headstage.");
+
+			refreshComboBoxSelection();
+			return;
+		}
+
 		if (headstageComboBoxB->getSelectedId() > 1)
-		{
-			// TODO: If there are devices connected, ask before removing tabs
 			canvas->removeTabs(PortName::PortA);
-		}
 		else
-		{
-			// TODO: If there are devices connected, ask before removing tabs
 			canvas->removeAllTabs();
-		}
 
 		if (headstageComboBoxA->getSelectedId() > 1)
 		{
@@ -200,16 +213,18 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 	}
 	else if (cb == headstageComboBoxB.get())
 	{
+		if (tabPorts.contains(PortName::PortB) && devicePorts.contains(PortName::PortB) && source->foundInputSource())
+		{
+			AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Devices Connected", "Cannot replace settings tabs while devices are conncted. Disconnect from hardware before changing the selected headstage.");
+
+			refreshComboBoxSelection();
+			return;
+		}
+
 		if (headstageComboBoxA->getSelectedId() > 1)
-		{
-			// TODO: If there are devices connected, ask before removing tabs
 			canvas->removeTabs(PortName::PortB);
-		}
 		else
-		{
-			// TODO: If there are devices connected, ask before removing tabs
 			canvas->removeAllTabs();
-		}
 
 		if (headstageComboBoxB->getSelectedId() > 1)
 		{
