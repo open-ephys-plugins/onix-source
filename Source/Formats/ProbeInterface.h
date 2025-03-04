@@ -29,7 +29,7 @@
 class ProbeInterfaceJson
 {
 public:
-	static bool writeProbeSettingsToJson(File& file, ProbeSettings& settings)
+	static bool writeProbeSettingsToJson(File& file, ProbeSettings* settings)
 	{
 		DynamicObject output;
 
@@ -49,20 +49,20 @@ public:
 		Array<var> ax2 = { 0.0f, 1.0f };
 		Array<var> contact_plane_axis = { ax1, ax2 };
 
-		for (int elec = 0; elec < settings.electrodeMetadata.size(); elec++)
+		for (int elec = 0; elec < settings->electrodeMetadata.size(); elec++)
 		{
-			ElectrodeMetadata& em = settings.electrodeMetadata.getReference(elec);
-			int channelIndex = settings.selectedElectrode.indexOf(elec);
+			ElectrodeMetadata& em = settings->electrodeMetadata.getReference(elec);
+			int channelIndex = settings->selectedElectrode.indexOf(elec);
 			int channel = -1;
 			if (channelIndex > -1)
-				channel = settings.selectedChannel[channelIndex];
+				channel = settings->selectedChannel[channelIndex];
 
 			Array<var> contact_position;
 			contact_position.add(em.xpos + 250 * em.shank);
 			contact_position.add(em.ypos);
 
 			DynamicObject::Ptr contact_shape_param = new DynamicObject;
-			contact_shape_param->setProperty(Identifier("width"), settings.electrodeMetadata.getReference(elec).site_width);
+			contact_shape_param->setProperty(Identifier("width"), settings->electrodeMetadata.getReference(elec).site_width);
 
 			contact_positions.add(contact_position);
 			shank_ids.add(String(em.shank));
@@ -74,7 +74,7 @@ public:
 
 		DynamicObject::Ptr probe = new DynamicObject();
 		DynamicObject::Ptr annotations = new DynamicObject();
-		//annotations->setProperty(Identifier("name"), settings.probe->name);
+		//annotations->setProperty(Identifier("name"), settings->probe->name);
 		annotations->setProperty(Identifier("manufacturer"), "imec");
 
 		probe->setProperty(Identifier("ndim"), 2);
@@ -107,7 +107,7 @@ public:
 		return true;
 	}
 
-	static bool readProbeSettingsFromJson(File& file, ProbeSettings& settings)
+	static bool readProbeSettingsFromJson(File& file, ProbeSettings* settings)
 	{
 		var result;
 

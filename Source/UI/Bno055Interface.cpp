@@ -23,14 +23,18 @@
 
 #include "Bno055Interface.h"
 
-Bno055Interface::Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c) :
-	SettingsInterface(d, e,c),
-	device((Bno055*)d)
+Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
+	SettingsInterface(d, e,c)
 {
+	device = d;
+
 	if (device != nullptr)
 	{
 		// TODO: Show something in the canvas that indicates the device is connected
 	}
+
+	// TODO: Add information to this canvas panel, such as the device and the status
+	// TODO: Add a toggle button to enable / disable this device
 
 	type = SettingsInterface::Type::BNO055_SETTINGS_INTERFACE;
 }

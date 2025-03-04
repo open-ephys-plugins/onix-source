@@ -34,11 +34,9 @@ BackgroundUpdaterWithProgressWindow::~BackgroundUpdaterWithProgressWindow()
 {
 }
 
-int BackgroundUpdaterWithProgressWindow::updateSettings()
+bool BackgroundUpdaterWithProgressWindow::updateSettings()
 {
-	runThread();
-
-	return result;
+	return runThread() && result;
 }
 
 void BackgroundUpdaterWithProgressWindow::run()
@@ -46,12 +44,24 @@ void BackgroundUpdaterWithProgressWindow::run()
 	setProgress(0);
 
 	// Parse ADC and Gain calibration files
-	String adcPath = device->getAdcPathParameter();
-	String gainPath = device->getGainPathParameter();
+	String adcPath = device->adcCalibrationFilePath;
+	String gainPath = device->gainCalibrationFilePath;
 
 	if (adcPath == "None" || gainPath == "None")
 	{
-		result = -3;
+		result = false;
+
+		LOGE("Missing ADC or Gain calibration files" + device->getName());
+
+		if (adcPath == "None")
+		{
+			CoreServices::sendStatusMessage("Missing ADC calibration file for " + device->getName());
+		}
+		else if (gainPath == "None")
+		{
+			CoreServices::sendStatusMessage("Missing Gain calibration file for " + device->getName());
+		}
+
 		return;
 	}
 
@@ -60,7 +70,19 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	if (!adcFile.existsAsFile() || !gainFile.existsAsFile())
 	{
-		result = -3;
+		result = false;
+
+		LOGE("Invalid ADC or Gain calibration files for " + device->getName());
+
+		if (!adcFile.existsAsFile())
+		{
+			CoreServices::sendStatusMessage("Invalid ADC calibration file for " + device->getName());
+		}
+		else if (!gainFile.existsAsFile())
+		{
+			CoreServices::sendStatusMessage("Invalid Gain calibration file for " + device->getName());
+		}
+
 		return;
 	}
 
@@ -75,8 +97,12 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	if (gainSN != device->getProbeNumber()) 
 	{ 
+		result = false;
+
 		LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", device->getProbeNumber(), ").");
-		result = -4;
+
+		CoreServices::sendStatusMessage("Serial Number Mismatch: Gain calibration (" + String(gainSN) + ") does not match " + String(device->getProbeNumber()));
+
 		return;
 	}
 
@@ -86,8 +112,8 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	StringArray calibrationValues = StringArray::fromTokens(gainCalLine, breakCharacters, noQuote);
 
-	double apGainCorrection = std::stod(calibrationValues[device->settings.apGainIndex + 1].toStdString());
-	double lfpGainCorrection = std::stod(calibrationValues[device->settings.lfpGainIndex + 8].toStdString());
+	double apGainCorrection = std::stod(calibrationValues[device->settings->apGainIndex + 1].toStdString());
+	double lfpGainCorrection = std::stod(calibrationValues[device->settings->lfpGainIndex + 8].toStdString());
 
 	LOGD("AP gain correction = ", apGainCorrection, ", LFP gain correction = ", lfpGainCorrection);
 
@@ -102,8 +128,12 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	if (adcSN != device->getProbeNumber()) 
 	{ 
+		result = false;
+
 		LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", device->getProbeNumber(), ").");
-		result = -4;
+		
+		CoreServices::sendStatusMessage("Serial Number Mismatch: ADC calibration (" + String(adcSN) + ") does not match " + String(device->getProbeNumber()));
+		
 		return;
 	}
 
@@ -129,20 +159,19 @@ void BackgroundUpdaterWithProgressWindow::run()
 	setProgress(0.8);
 
 	// Write shift registers
-	auto shankBits = device->makeShankBits(device->getReference(device->settings.referenceIndex), device->settings.selectedChannel);
-	auto configBits = device->makeConfigBits(device->getReference(device->settings.referenceIndex), device->getGainEnum(device->settings.apGainIndex), device->getGainEnum(device->settings.lfpGainIndex), true, adcs);
+	auto shankBits = device->makeShankBits(device->getReference(device->settings->referenceIndex), device->settings->selectedChannel);
+	auto configBits = device->makeConfigBits(device->getReference(device->settings->referenceIndex), device->getGainEnum(device->settings->apGainIndex), device->getGainEnum(device->settings->lfpGainIndex), true, adcs);
 
 	device->writeShiftRegisters(shankBits, configBits, adcs, lfpGainCorrection, apGainCorrection);
 
 	setProgress(1);
 
-	result = 0;
+	result = true;
 }
 
-Neuropixels_1::Neuropixels_1(String name, OnixSource* s, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
-	OnixDevice(name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
-	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
-	source(s)
+Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
+	OnixDevice("Neuropixels 1.0 " + name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
+	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_)
 {
 	StreamInfo apStream;
 	apStream.name = name + "-AP";
@@ -166,46 +195,15 @@ Neuropixels_1::Neuropixels_1(String name, OnixSource* s, const oni_dev_idx_t dev
 	lfpStream.channelType = ContinuousChannel::Type::ELECTRODE;
 	streams.add(lfpStream);
 
-	defineMetadata(settings);
+	settings = std::make_unique<ProbeSettings>();
+	defineMetadata(settings.get());
 
-	// Set parameters
-	StringArray validExtensions = StringArray();
-	validExtensions.add("csv");
-	//validExtensions.add("*_ADCCalibration.csv");
-
-	source->addPathParameter(Parameter::PROCESSOR_SCOPE, getAdcPathParameterName(), "ADC Calibration File", "Path to the ADC calibration file for this Neuropixels probe",
-		"", validExtensions, false, false, true);
-	source->getParameter(getAdcPathParameterName())->setNextValue(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
-
-	//validExtensions.set(0, "*_gainCalValues.csv");
-
-	source->addPathParameter(Parameter::PROCESSOR_SCOPE, getGainPathParameterName(), "Gain Calibration File", "Path to the gain calibration file for this Neuropixels probe",
-		"", validExtensions, false, false, true);
-	source->getParameter(getGainPathParameterName())->setNextValue(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
+	adcCalibrationFilePath = "None";
+	gainCalibrationFilePath = "None";
 }
 
 Neuropixels_1::~Neuropixels_1()
 {
-}
-
-String Neuropixels_1::getAdcPathParameter()
-{
-	return source->getParameter(getAdcPathParameterName())->getValue();
-}
-
-String Neuropixels_1::getGainPathParameter()
-{
-	return source->getParameter(getGainPathParameterName())->getValue();
-}
-
-String Neuropixels_1::getAdcPathParameterName()
-{
-	return "adcCalibrationFile_" + getName();
-}
-
-String Neuropixels_1::getGainPathParameterName()
-{
-	return "gainCalibrationFile_" + getName();
 }
 
 NeuropixelsGain Neuropixels_1::getGainEnum(int index)
@@ -307,22 +305,26 @@ int Neuropixels_1::enableDevice()
 
 	if (errorCode) { LOGE(oni_error_str(errorCode)); return -2; }
 
-	if (WriteByte((uint32_t)NeuropixelsRegisters::CAL_MOD, (uint32_t)CalMode::CAL_OFF) != 0) return -4;
-	if (WriteByte((uint32_t)NeuropixelsRegisters::SYNC, (uint32_t)0) != 0) return -4;
+	if (WriteByte((uint32_t)NeuropixelsRegisters::CAL_MOD, (uint32_t)CalMode::CAL_OFF) != 0) return -3;
+	if (WriteByte((uint32_t)NeuropixelsRegisters::SYNC, (uint32_t)0) != 0) return -3;
 
-	if (WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::DIG_AND_CH_RESET) != 0) return -4;
+	if (WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::DIG_AND_CH_RESET) != 0) return -3;
 
-	if (WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD) != 0) return -4;
+	if (WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD) != 0) return -3;
 
-	// Update all probe settings
-	return updateSettings();
+	return 0;
 }
 
-int Neuropixels_1::updateSettings()
+bool Neuropixels_1::updateSettings()
 {
 	BackgroundUpdaterWithProgressWindow updater = BackgroundUpdaterWithProgressWindow(this);
 
 	return updater.updateSettings();
+}
+
+void Neuropixels_1::setSettings(ProbeSettings* settings_) const
+{
+	settings->updateProbeSettings(settings_);
 }
 
 Array<int> Neuropixels_1::selectElectrodeConfiguration(String config)
@@ -372,8 +374,8 @@ Array<int> Neuropixels_1::selectElectrodeConfiguration(String config)
 
 void Neuropixels_1::startAcquisition()
 {
-	apGain = getGainValue(getGainEnum(settings.apGainIndex));
-	lfpGain = getGainValue(getGainEnum(settings.lfpGainIndex));
+	apGain = getGainValue(getGainEnum(settings->apGainIndex));
+	lfpGain = getGainValue(getGainEnum(settings->lfpGainIndex));
 
 	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::ACTIVE);
 }
@@ -700,10 +702,10 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 	}
 }
 
-void Neuropixels_1::defineMetadata(ProbeSettings& settings)
+void Neuropixels_1::defineMetadata(ProbeSettings* settings)
 {
-	settings.probeType = ProbeType::NPX_V1E;
-	settings.probeMetadata.name = "Neuropixels 1.0e";
+	settings->probeType = ProbeType::NPX_V1E;
+	settings->probeMetadata.name = "Neuropixels 1.0e";
 
 	Path path;
 	path.startNewSubPath(27, 31);
@@ -713,15 +715,15 @@ void Neuropixels_1::defineMetadata(ProbeSettings& settings)
 	path.lineTo(27 + 10, 31);
 	path.closeSubPath();
 
-	settings.probeMetadata.shank_count = 1;
-	settings.probeMetadata.electrodes_per_shank = 960;
-	settings.probeMetadata.rows_per_shank = 960 / 2;
-	settings.probeMetadata.columns_per_shank = 2;
-	settings.probeMetadata.shankOutline = path;
-	settings.probeMetadata.num_adcs = 32; // NB: Is this right for 1.0e?
-	settings.probeMetadata.adc_bits = 10; // NB: Is this right for 1.0e?
+	settings->probeMetadata.shank_count = 1;
+	settings->probeMetadata.electrodes_per_shank = 960;
+	settings->probeMetadata.rows_per_shank = 960 / 2;
+	settings->probeMetadata.columns_per_shank = 2;
+	settings->probeMetadata.shankOutline = path;
+	settings->probeMetadata.num_adcs = 32; // NB: Is this right for 1.0e?
+	settings->probeMetadata.adc_bits = 10; // NB: Is this right for 1.0e?
 
-	settings.availableBanks = {
+	settings->availableBanks = {
 		Bank::A,
 		Bank::B,
 		Bank::C,
@@ -730,12 +732,12 @@ void Neuropixels_1::defineMetadata(ProbeSettings& settings)
 
 	Array<float> xpositions = { 27.0f, 59.0f, 11.0f, 43.0f };
 
-	for (int i = 0; i < settings.probeMetadata.electrodes_per_shank * settings.probeMetadata.shank_count; i++)
+	for (int i = 0; i < settings->probeMetadata.electrodes_per_shank * settings->probeMetadata.shank_count; i++)
 	{
 		ElectrodeMetadata metadata;
 
 		metadata.shank = 0;
-		metadata.shank_local_index = i % settings.probeMetadata.electrodes_per_shank;
+		metadata.shank_local_index = i % settings->probeMetadata.electrodes_per_shank;
 		metadata.global_index = i;
 		metadata.xpos = xpositions[i % 4];
 		metadata.ypos = (i - (i % 2)) * 10.0f;
@@ -773,48 +775,48 @@ void Neuropixels_1::defineMetadata(ProbeSettings& settings)
 			metadata.type = ElectrodeType::ELECTRODE;
 		}
 
-		settings.electrodeMetadata.add(metadata);
+		settings->electrodeMetadata.add(metadata);
 	}
 
-	settings.apGainIndex = 4;	// NB:  AP Gain Index of 4 = Gain1000
-	settings.lfpGainIndex = 0;	// NB: LFP Gain Index of 0 = Gain50
-	settings.referenceIndex = 0;
-	settings.apFilterState = true;
+	settings->apGainIndex = 4;	// NB:  AP Gain Index of 4 = Gain1000
+	settings->lfpGainIndex = 0;	// NB: LFP Gain Index of 0 = Gain50
+	settings->referenceIndex = 0;
+	settings->apFilterState = true;
 
 	for (int i = 0; i < numberOfChannels; i++)
 	{
-		settings.selectedBank.add(Bank::A);
-		settings.selectedChannel.add(i);
-		settings.selectedShank.add(0);
-		settings.selectedElectrode.add(i);
+		settings->selectedBank.add(Bank::A);
+		settings->selectedChannel.add(i);
+		settings->selectedShank.add(0);
+		settings->selectedElectrode.add(i);
 	}
 
-	settings.availableApGains.add(50.0f);
-	settings.availableApGains.add(125.0f);
-	settings.availableApGains.add(250.0f);
-	settings.availableApGains.add(500.0f);
-	settings.availableApGains.add(1000.0f);
-	settings.availableApGains.add(1500.0f);
-	settings.availableApGains.add(2000.0f);
-	settings.availableApGains.add(3000.0f);
+	settings->availableApGains.add(50.0f);
+	settings->availableApGains.add(125.0f);
+	settings->availableApGains.add(250.0f);
+	settings->availableApGains.add(500.0f);
+	settings->availableApGains.add(1000.0f);
+	settings->availableApGains.add(1500.0f);
+	settings->availableApGains.add(2000.0f);
+	settings->availableApGains.add(3000.0f);
 
-	settings.availableLfpGains.add(50.0f);
-	settings.availableLfpGains.add(125.0f);
-	settings.availableLfpGains.add(250.0f);
-	settings.availableLfpGains.add(500.0f);
-	settings.availableLfpGains.add(1000.0f);
-	settings.availableLfpGains.add(1500.0f);
-	settings.availableLfpGains.add(2000.0f);
-	settings.availableLfpGains.add(3000.0f);
+	settings->availableLfpGains.add(50.0f);
+	settings->availableLfpGains.add(125.0f);
+	settings->availableLfpGains.add(250.0f);
+	settings->availableLfpGains.add(500.0f);
+	settings->availableLfpGains.add(1000.0f);
+	settings->availableLfpGains.add(1500.0f);
+	settings->availableLfpGains.add(2000.0f);
+	settings->availableLfpGains.add(3000.0f);
 
-	settings.availableReferences.add("Ext");
-	settings.availableReferences.add("Tip");
+	settings->availableReferences.add("Ext");
+	settings->availableReferences.add("Tip");
 
-	settings.availableElectrodeConfigurations.add("Bank A");
-	settings.availableElectrodeConfigurations.add("Bank B");
-	settings.availableElectrodeConfigurations.add("Bank C");
-	settings.availableElectrodeConfigurations.add("Single column");
-	settings.availableElectrodeConfigurations.add("Tetrodes");
+	settings->availableElectrodeConfigurations.add("Bank A");
+	settings->availableElectrodeConfigurations.add("Bank B");
+	settings->availableElectrodeConfigurations.add("Bank C");
+	settings->availableElectrodeConfigurations.add("Single column");
+	settings->availableElectrodeConfigurations.add("Tetrodes");
 
-	settings.electrodeConfigurationIndex = 0;
+	settings->electrodeConfigurationIndex = 0;
 }

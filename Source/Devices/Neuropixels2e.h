@@ -14,7 +14,7 @@ public:
 	int enableDevice() override;
 
 	/** Update the settings of the device */
-	int updateSettings() override;
+	bool updateSettings() override;
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;
@@ -115,4 +115,5 @@ private:
 
 	Array<oni_frame_t*, CriticalSection, 2 * FramesPerSuperFrame> frameArray;
 
+	JUCE_LEAK_DETECTOR(Neuropixels2e);
 };

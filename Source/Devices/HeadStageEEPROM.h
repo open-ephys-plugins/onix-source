@@ -17,5 +17,6 @@ private:
 	static const uint32_t EEPROM_ADDRESS = 0x51;
 	static const uint32_t DEVID_START_ADDR = 18;
 
+	JUCE_LEAK_DETECTOR(HeadStageEEPROM);
 };
 

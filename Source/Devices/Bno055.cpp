@@ -98,9 +98,9 @@ int Bno055::enableDevice()
 	return 0;
 }
 
-int Bno055::updateSettings()
+bool Bno055::updateSettings()
 {
-	return 0;
+	return true;
 }
 
 void Bno055::startAcquisition()
