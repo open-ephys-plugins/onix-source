@@ -23,7 +23,7 @@
 
 #include "FrameReader.h"
 
-FrameReader::FrameReader(std::vector<std::shared_ptr<OnixDevice>> sources_, oni_ctx& ctx_)
+FrameReader::FrameReader(std::vector<std::shared_ptr<OnixDevice>> sources_, oni_ctx ctx_)
 	: Thread("FrameReader"),
 	sources(sources_),
 	ctx(ctx_)
@@ -36,6 +36,12 @@ FrameReader::~FrameReader()
 
 void FrameReader::run()
 {
+	if (ctx == NULL)
+	{
+		LOGE("Context is not initialized, no data will be read from the hardware.");
+		return;
+	}
+
 	while (!threadShouldExit())
 	{
 		oni_frame_t* frame;

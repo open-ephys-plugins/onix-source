@@ -53,6 +53,8 @@ DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String heads
 
 bool PortController::configureVoltage(oni_ctx ctx, float voltage) const
 {
+	if (ctx == NULL) return false;
+
 	if (voltage == defaultVoltage)
 	{
 		if (discoveryParameters == DiscoveryParameters()) return false;
@@ -89,6 +91,8 @@ bool PortController::configureVoltage(oni_ctx ctx, float voltage) const
 
 bool PortController::setVoltage(oni_ctx ctx, float voltage) const
 {
+	if (ctx == NULL) return false;
+
 	ONI_OK_RETURN_BOOL(oni_write_reg(ctx, (oni_dev_idx_t)port, voltageRegister, 0));
 
 	if (voltage == 0.0f) return true;
@@ -104,6 +108,8 @@ bool PortController::setVoltage(oni_ctx ctx, float voltage) const
 
 bool PortController::checkLinkState(oni_ctx ctx) const
 {
+	if (ctx == NULL) return false;
+
 	oni_reg_val_t linkState;
 	int result = oni_read_reg(ctx, (oni_dev_idx_t)port, linkStateRegister, &linkState);
 

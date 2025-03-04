@@ -35,6 +35,40 @@
 #include "FrameReader.h"
 #include "PortController.h"
 
+class Onix1
+{
+public:
+	Onix1()
+	{
+		LOGD("ONIX Source creating ONI context.");
+		ctx = oni_create_ctx("riffa");
+		if (ctx == NULL) { LOGE("Failed to create context."); return; }
+
+		int errorCode = oni_init_ctx(ctx, 0);
+
+		if (errorCode) 
+		{ 
+			LOGE(oni_error_str(errorCode));
+			ctx = NULL;
+			return; 
+		}
+	};
+
+	~Onix1()
+	{ 
+		oni_destroy_ctx(ctx);
+	};
+
+	bool isInitialized() const { return ctx != NULL; }
+
+	oni_ctx get() const { return ctx; }
+
+private:
+
+	/** The ONI context object */
+	oni_ctx ctx;
+};
+
 /**
 
 	@see DataThread, SourceNode
@@ -51,11 +85,10 @@ public:
 	/** Destructor */
 	~OnixSource()
 	{
-		if (ctx != NULL && contextInitialized)
+		if (context.isInitialized())
 		{
-			portA.setVoltage(ctx, 0.0f);
-			portB.setVoltage(ctx, 0.0f);
-			oni_destroy_ctx(ctx);
+			portA.setVoltage(context.get(), 0.0f);
+			portB.setVoltage(context.get(), 0.0f);
 		}
 	}
 
@@ -129,15 +162,13 @@ private:
 	/** Thread that reads frames */
 	std::unique_ptr<FrameReader> frameReader;
 
-	/** The ONI context object */
-	oni_ctx ctx;
+	Onix1 context;
 
 	PortController portA = PortController(PortName::PortA);
 	PortController portB = PortController(PortName::PortB);
 
 	const oni_size_t block_read_size = 2048;
 
-	bool contextInitialized = false;
 	bool devicesFound = false;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);

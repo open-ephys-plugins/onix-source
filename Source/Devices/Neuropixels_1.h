@@ -185,7 +185,9 @@ public:
 
 	int64 getProbeNumber() const { return probeNumber; }
 
-	NeuropixelsGain getGain(int index);
+	NeuropixelsGain getGainEnum(int index);
+
+	int getGainValue(NeuropixelsGain);
 
 	NeuropixelsReference getReference(int index);
 
@@ -249,6 +251,12 @@ private:
 
 	int apSampleNumber = 0;
 	int lfpSampleNumber = 0;
+
+	int apGain = 1000;
+	int lfpGain = 50;
+
+	int apGain = 1000;
+	int lfpGain = 50;
 
 	JUCE_LEAK_DETECTOR(Neuropixels_1);
 };
