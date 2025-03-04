@@ -39,7 +39,7 @@ extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 {
 	/* API version, defined by the GUI source.
 	Should not be changed to ensure it is always equal to the one used in the latest codebase.
-	The GUI refueses to load plugins with mismatched API versions */
+	The GUI refuses to load plugins with mismatched API versions */
 	info->apiVersion = PLUGIN_API_VER;
 
 	//Name of the Library, used only for information

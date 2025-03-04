@@ -21,10 +21,31 @@
 
 */
 
-#include "OnixDevice.h"
+#ifndef __I2CRegisterContext_H__
+#define __I2CRegisterContext_H__
 
-OnixDevice::OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: type(type_), deviceIdx(deviceIdx_), ctx(ctx_), deviceBuffer(NULL)
+#include "ProcessorHeaders.h"
+
+#include <oni.h>
+
+#include <cstddef>
+
+class I2CRegisterContext
 {
-	name = name_;
-}
+public:
+
+	I2CRegisterContext(uint32_t address, const oni_dev_idx_t, const oni_ctx);
+
+	int WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
+
+	int ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
+
+private:
+
+	const oni_ctx context;
+	const oni_dev_idx_t deviceIndex;
+
+	const uint32_t i2caddress;
+};
+
+#endif // !__I2CRegisterContext_H__

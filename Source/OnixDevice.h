@@ -32,11 +32,24 @@
 #include <thread>
 
 #include <oni.h>
+#include <onix.h>
+
+#include "I2CRegisterContext.h"
+#include "NeuropixComponents.h"
+
+#define ONI_OK(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));}}
+#define ONI_OK_RETURN_BOOL(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return false;}}
+#define ONI_OK_RETURN_INT(exp, val) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return val;}}
 
 using namespace std::chrono;
 
+enum class PortName
+{
+	PortA = 1,
+	PortB = 2
+};
 
-enum OnixDeviceType {
+enum class OnixDeviceType {
 	HS64,
 	BNO,
 	NEUROPIXELS_1,
@@ -55,32 +68,43 @@ struct StreamInfo {
 	float bitVolts;
 };
 
-/** 
-	
+/**
+
 	Streams data from an ONIX device
 
 */
-class OnixDevice : public Thread
+class OnixDevice
 {
 public:
 
 	/** Constructor */
-	OnixDevice(String name, OnixDeviceType type, const oni_dev_idx_t, const oni_ctx);
+	OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t, const oni_ctx);
 
 	/** Destructor */
 	~OnixDevice() { }
 
 	virtual void addFrame(oni_frame_t*) = 0;
 
+	virtual void processFrames() = 0;
+
 	const String getName() { return name; }
 
+	bool isEnabled() const { return enabled; }
+
+	void setEnabled(bool newState) { enabled = newState; }
+
 	virtual int enableDevice() = 0;
-	
+
+	virtual int updateSettings() = 0;
+
 	virtual void startAcquisition() = 0;
 
 	virtual void stopAcquisition() = 0;
 
-	const oni_dev_idx_t getDeviceIdx() { return deviceIdx; }
+	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
+	virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) = 0;
+
+	const oni_dev_idx_t getDeviceIdx() const { return deviceIdx; }
 
 	OnixDeviceType type;
 
@@ -89,6 +113,8 @@ public:
 
 	Array<StreamInfo> streams;
 
+	const int bufferSizeInSeconds = 10;
+
 protected:
 
 	const oni_dev_idx_t deviceIdx;
@@ -96,24 +122,9 @@ protected:
 
 private:
 
-	/** Updates buffer during acquisition */
-	// void run() override;
-
-	std::vector<float>* data;
-	int availableSamples;
-    int samplesPerBuffer;
-
-	int64 numSamples;
-	uint64 eventCode;
-
 	String name;
 
-	// float samples[384 * MAX_SAMPLES_PER_BUFFER];
-	// int64 sampleNumbers[MAX_SAMPLES_PER_BUFFER];
-    // double timestamps[MAX_SAMPLES_PER_BUFFER];
-	// uint64 event_codes[MAX_SAMPLES_PER_BUFFER];
-
+	bool enabled = true;
 };
-
 
 #endif

@@ -24,9 +24,12 @@
 #ifndef __OnixSourceEditor_H__
 #define __OnixSourceEditor_H__
 
-#include <EditorHeaders.h>
+#include <VisualizerEditorHeaders.h>
 
-#include "OnixSource.h"
+#include "OnixSourceCanvas.h"
+#include "NeuropixComponents.h"
+
+class OnixSource;
 
 /** 
 
@@ -34,31 +37,66 @@
 	number of channels per stream.
 
 */
-class OnixSourceEditor : public GenericEditor
+class OnixSourceEditor : public VisualizerEditor,
+    public Label::Listener,
+    public Button::Listener,
+    public TextEditor::Listener,
+    public ComboBox::Listener
 {
 public:
 
-	/** Constructor */
-	OnixSourceEditor(GenericProcessor* parentNode, OnixSource* thread);
+    /** Constructor */
+    OnixSourceEditor(GenericProcessor* parentNode, OnixSource* thread);
 
-	/** Destructor */
-	virtual ~OnixSourceEditor() { }
+    /** Destructor */
+    virtual ~OnixSourceEditor() { }
+
+    /** Listener methods */
+    void labelTextChanged(Label* l) override;
+
+    void buttonClicked(Button* b) override;
+
+    void comboBoxChanged(ComboBox* cb) override;
 
     /** Called when settings are changed */
     void updateSettings() override;
 
-	/** Called at start of acquisition */
-	void startAcquisition() override;
+    /** Called at start of acquisition */
+    void startAcquisition() override;
 
-	/** Called when acquisition finishes */
-	void stopAcquisition() override;
+    /** Called when acquisition finishes */
+    void stopAcquisition() override;
+
+    /** Creates the Onix Source settings interface*/
+    Visualizer* createNewCanvas(void) override;
+
+    void checkCanvas() { checkForCanvas(); };
+
+    void resetCanvas();
+
+    bool isHeadstageSelected(PortName port);
+
+    OnixSourceCanvas* canvas;
 
 private:
 
-	OnixSource* thread;
+    OnixSource* thread;
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
+    std::unique_ptr<Label> portLabelA;
+    std::unique_ptr<Label> portLabelB;
 
+    std::unique_ptr<ComboBox> headstageComboBoxA;
+    std::unique_ptr<ComboBox> headstageComboBoxB;
+
+    std::unique_ptr<Label> portVoltageValueA;
+    std::unique_ptr<Label> portVoltageValueB;
+
+    std::unique_ptr<UtilityButton> connectButton;
+
+    std::unique_ptr<ToggleParameterEditor> passthroughEditorA;
+    std::unique_ptr<ToggleParameterEditor> passthroughEditorB;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
 };
 
 #endif // __OnixSourceEditor_H__

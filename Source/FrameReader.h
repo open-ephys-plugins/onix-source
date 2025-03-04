@@ -2,7 +2,7 @@
 	------------------------------------------------------------------
 
 	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,10 +21,27 @@
 
 */
 
-#include "OnixDevice.h"
+#ifndef __FRAMEREADER_H__
+#define __FRAMEREADER_H__
 
-OnixDevice::OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: type(type_), deviceIdx(deviceIdx_), ctx(ctx_), deviceBuffer(NULL)
+#include <DataThreadHeaders.h>
+
+#include "OnixDevice.h"
+#include "oni.h"
+
+class FrameReader : public Thread
 {
-	name = name_;
-}
+public:
+	FrameReader(OwnedArray<OnixDevice>& sources_, oni_ctx ctx_);
+
+	~FrameReader();
+
+	void run() override;
+
+private:
+
+	OwnedArray<OnixDevice>& sources;
+	oni_ctx ctx;
+};
+
+#endif // __FRAMEREADER_H__

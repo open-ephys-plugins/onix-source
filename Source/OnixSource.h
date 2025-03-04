@@ -1,32 +1,28 @@
 /*
-    ------------------------------------------------------------------
+	------------------------------------------------------------------
 
-    This file is part of the Open Ephys GUI
-    Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
+	This file is part of the Open Ephys GUI
+	Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
 
-    ------------------------------------------------------------------
+	------------------------------------------------------------------
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-
 #ifndef __OnixSource_H__
 #define __OnixSource_H__
-
-#include <stdio.h>
-#include <string.h>
 
 #include <oni.h>
 #include <onix.h>
@@ -34,14 +30,46 @@
 #include <DataThreadHeaders.h>
 
 #include "OnixDevice.h"
-#include "Devices/Neuropixels_1.h"
+#include "OnixSourceEditor.h"
+#include "Devices/DeviceList.h"
+#include "FrameReader.h"
+#include "PortController.h"
 
-class OnixSourceEditor;
-class Neuropixels_1;
+class Onix1
+{
+public:
+	Onix1()
+	{
+		LOGD("ONIX Source creating ONI context.");
+		ctx = oni_create_ctx("riffa");
+		if (ctx == NULL) { LOGE("Failed to create context."); return; }
+
+		int errorCode = oni_init_ctx(ctx, 0);
+
+		if (errorCode) 
+		{ 
+			LOGE(oni_error_str(errorCode));
+			ctx = NULL;
+			return; 
+		}
+	};
+
+	~Onix1()
+	{ 
+		oni_destroy_ctx(ctx);
+	};
+
+	bool isInitialized() const { return ctx != NULL; }
+
+	oni_ctx get() const { return ctx; }
+
+private:
+
+	/** The ONI context object */
+	oni_ctx ctx;
+};
 
 /**
-
-	Simulates multiple data streams, for testing purposes.
 
 	@see DataThread, SourceNode
 
@@ -49,20 +77,18 @@ class Neuropixels_1;
 
 class OnixSource : public DataThread
 {
-
 public:
 
 	/** Constructor */
 	OnixSource(SourceNode* sn);
 
 	/** Destructor */
-	~OnixSource() 
+	~OnixSource()
 	{
-		if (ctx != NULL)
+		if (context.isInitialized())
 		{
-			uint32_t val = 1;
-        	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
-			oni_destroy_ctx(ctx);
+			portA.setVoltage(context.get(), 0.0f);
+			portB.setVoltage(context.get(), 0.0f);
 		}
 	}
 
@@ -70,10 +96,13 @@ public:
 	static DataThread* createDataThread(SourceNode* sn);
 
 	/** Creates the custom editor */
-	std::unique_ptr<GenericEditor> createEditor(SourceNode* sn);
+	std::unique_ptr<GenericEditor> createEditor(SourceNode* sn) override;
 
-	/** Not used -- data buffers are updated for each source stream */
+	/** Reads frames and adds them to the appropriate device */
 	bool updateBuffer() override;
+
+	/** Returns true if the processor is ready to stream data, including all hardware initialization. Returns false if not ready. */
+	bool isReady() override;
 
 	/** Returns true if the hardware is connected, false otherwise.*/
 	bool foundInputSource();
@@ -83,6 +112,24 @@ public:
 
 	/** Stops data transfer.*/
 	bool stopAcquisition();
+
+	void updateDiscoveryParameters(PortName port, DiscoveryParameters parameters);
+
+	/** Takes a string from the editor. Can be an empty string to allow for automated discovery */
+	bool configurePortVoltage(PortName port, String voltage) const;
+
+	/** Sets the port voltage */
+	bool setPortVoltage(PortName port, float voltage) const;
+
+	void initializeContext();
+
+	void initializeDevices(bool updateStreamInfo = false);
+
+	void disconnectDevices(bool updateStreamInfo = false);
+
+	Array<OnixDevice*> getDataSources();
+
+	void updateSourceBuffers();
 
 	// DataThread Methods
 	void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
@@ -98,26 +145,21 @@ private:
 	OwnedArray<OnixDevice> sources;
 
 	/** Pointer to the editor */
-	OnixSourceEditor* ed;
+	OnixSourceEditor* editor;
 
-	/** The ONI context object */
-	oni_ctx ctx;
+	/** Thread that reads frames */
+	std::unique_ptr<FrameReader> frameReader;
 
-	static const oni_dev_idx_t DEVICE_NPX1_1 = 0x0100;
-	static const oni_dev_idx_t DEVICE_NPX1_2 = 0x0101;
-	
+	Onix1 context;
+
+	PortController portA = PortController(PortName::PortA);
+	PortController portB = PortController(PortName::PortB);
+
 	const oni_size_t block_read_size = 2048;
 
 	bool devicesFound = false;
 
-	void initializeDevices();
-
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
-
 };
-
-
-
-
 
 #endif  // __OnixSource_H__
