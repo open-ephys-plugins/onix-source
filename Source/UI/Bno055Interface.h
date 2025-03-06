@@ -31,11 +31,12 @@
 
 #include "../Devices/Bno055.h"
 
-class Bno055Interface : public SettingsInterface
+class Bno055Interface : public SettingsInterface,
+	public Button::Listener
 {
 public:
 	/** Constructor */
-	Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c, String headstageName = "");
 
 	/** Destructor */
 	~Bno055Interface();
@@ -55,10 +56,19 @@ public:
 	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override;
 
+	/** Listener methods*/
+	void buttonClicked(Button*) override;
+
 	Bno055* device;
 
 private:
 
+	std::unique_ptr<Label> nameLabel;
+	std::unique_ptr<Label> infoLabel;
+
+	std::unique_ptr<UtilityButton> deviceEnableButton;
+
+	String headstageName;
 };
 
 #endif // !__BNO055INTERFACE_H__

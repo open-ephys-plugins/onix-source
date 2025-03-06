@@ -44,23 +44,6 @@ enum class VisualizationMode
 	ACTIVITY_VIEW
 };
 
-class Annotation
-{
-public:
-	Annotation(String text, Array<int> channels, Colour c);
-	~Annotation();
-
-	Array<int> electrodes;
-	String text;
-
-	float currentYLoc;
-
-	bool isMouseOver;
-	bool isSelected;
-
-	Colour colour;
-};
-
 /**
 
 	Extended graphical interface for updating probe settings
@@ -79,9 +62,6 @@ public:
 
 	/** Destructor */
 	~NeuropixV1Interface();
-
-	/** Draws the legend */
-	void paint(Graphics& g) override;
 
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
@@ -102,9 +82,6 @@ public:
 
 	/** Load parameters from XML */
 	void loadParameters(XmlElement* xml) override;
-
-	/** Updates the annotation label */
-	void setAnnotationLabel(String, Colour);
 
 	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override;
@@ -145,11 +122,6 @@ private:
 	std::unique_ptr<Label> filterLabel;
 	std::unique_ptr<Label> activityViewLabel;
 
-	std::unique_ptr<Label> probeSettingsLabel;
-
-	std::unique_ptr<Label> annotationLabelLabel;
-	std::unique_ptr<Label> annotationLabel;
-
 	// BUTTONS
 	std::unique_ptr<UtilityButton> probeEnableButton;
 	std::unique_ptr<UtilityButton> enableButton;
@@ -166,11 +138,27 @@ private:
 
 	std::unique_ptr<ProbeBrowser> probeBrowser;
 
+	std::unique_ptr<Component> enableViewComponent;
+	std::unique_ptr<Component> apGainViewComponent;
+	std::unique_ptr<Component> lfpGainViewComponent;
+	std::unique_ptr<Component> referenceViewComponent;
+	std::unique_ptr<Component> activityViewComponent;
+
+	std::vector<std::unique_ptr<Label>> enableViewLabels;
+	std::vector<std::unique_ptr<Label>> apGainViewLabels;
+	std::vector<std::unique_ptr<Label>> lfpGainViewLabels;
+	std::vector<std::unique_ptr<Label>> referenceViewLabels;
+	std::vector<std::unique_ptr<Label>> activityViewLabels;
+
+	std::vector<std::unique_ptr<DrawableRectangle>> enableViewRectangles;
+	std::vector<std::unique_ptr<DrawableRectangle>> apGainViewRectangles;
+	std::vector<std::unique_ptr<DrawableRectangle>> lfpGainViewRectangles;
+	std::vector<std::unique_ptr<DrawableRectangle>> referenceViewRectangles;
+	std::vector<std::unique_ptr<DrawableRectangle>> activityViewRectangles;
+
 	VisualizationMode mode;
 
-	void drawLegend(Graphics& g);
-
-	Array<Annotation> annotations;
+	void drawLegend();
 
 	Array<int> getSelectedElectrodes() const;
 
