@@ -63,6 +63,12 @@ public:
 
 	oni_ctx get() const { return ctx; }
 
+	int issueReset() const
+	{
+		int val = 1;
+		return oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
+	}
+
 private:
 
 	/** The ONI context object */
@@ -122,6 +128,8 @@ public:
 	bool setPortVoltage(PortName port, float voltage) const;
 
 	void initializeContext();
+
+	int resetContext() { return context.issueReset(); }
 
 	void initializeDevices(bool updateStreamInfo = false);
 

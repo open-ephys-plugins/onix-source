@@ -87,8 +87,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	}
 	oni_set_opt(ctx, ONIX_OPT_PASSTHROUGH, &val, sizeof(val));
 
-	val = 1;
-	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
+	context.issueReset();
 
 	// Examine device table
 	size_t num_devs_sz = sizeof(num_devs);
@@ -225,8 +224,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 	}
 
-	val = 1;
-	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
+	context.issueReset();
 
 	oni_size_t frame_size = 0;
 	size_t frame_size_sz = sizeof(frame_size);
@@ -490,9 +488,7 @@ bool OnixSource::stopAcquisition()
 			return false;
 		}
 
-		uint32_t val = 1;
-		oni_set_opt(context.get(), ONI_OPT_RESET, &val, sizeof(val));
-		oni_set_opt(context.get(), ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
+		context.issueReset();
 	}
 
 	for (auto source : sources)

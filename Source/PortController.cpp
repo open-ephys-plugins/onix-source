@@ -85,7 +85,7 @@ bool PortController::setVoltage(oni_ctx ctx, float voltage) const
 	sleep_for(std::chrono::milliseconds(500));
 
 	auto val = 1;
-	ONI_OK_RETURN_BOOL(oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val)));
+	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
 
 	sleep_for(std::chrono::milliseconds(200));
 

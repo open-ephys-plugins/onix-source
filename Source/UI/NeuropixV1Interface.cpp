@@ -583,6 +583,8 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 	if (button == probeEnableButton.get())
 	{
 		device->setEnabled(probeEnableButton->getToggleState());
+		device->enableDevice();
+		canvas->resetContext();
 
 		if (device->isEnabled())
 		{
