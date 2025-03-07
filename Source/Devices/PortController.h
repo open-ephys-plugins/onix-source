@@ -102,13 +102,13 @@ public:
 
 	void updateDiscoveryParameters(DiscoveryParameters parameters);
 
-	bool configureVoltage(float voltage = defaultVoltage) const;
+	bool configureVoltage(float voltage = defaultVoltage);
 
 	/** Sets the voltage to the given value, after setting the voltage to zero */
-	void setVoltage(float voltage) const;
+	void setVoltage(float voltage);
 
 	/** Overrides the voltage setting and directly sets it to the given voltage */
-	void setVoltageOverride(float voltage, bool waitToSettle = true) const;
+	void setVoltageOverride(float voltage, bool waitToSettle = true);
 
 	bool checkLinkState() const;
 

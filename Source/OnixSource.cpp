@@ -461,8 +461,6 @@ bool OnixSource::isReady()
 
 bool OnixSource::startAcquisition()
 {
-	startThread();
-
 	frameReader.reset();
 
 	Array<OnixDevice*> devices;
@@ -475,15 +473,17 @@ bool OnixSource::startAcquisition()
 	devices.add(portA.get());
 	devices.add(portB.get());
 
-	frameReader = std::make_unique<FrameReader>(devices, context.get());
-	frameReader->startThread();
-
-	for (auto source : sources)
+	for (auto source : devices)
 	{
 		if (!source->isEnabled()) continue;
 
 		source->startAcquisition();
 	}
+
+	frameReader = std::make_unique<FrameReader>(devices, context.get());
+	frameReader->startThread();
+
+	startThread();
 
 	return true;
 }
@@ -496,8 +496,8 @@ bool OnixSource::stopAcquisition()
 	if (frameReader->isThreadRunning())
 		frameReader->signalThreadShouldExit();
 
-	waitForThreadToExit(2000);
-	frameReader->waitForThreadToExit(1000);
+	if (!portA->getErrorFlag() && !portB->getErrorFlag())
+		waitForThreadToExit(2000);
 
 	if (devicesFound)
 	{

@@ -67,21 +67,19 @@ void PortController::processFrames()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
-		int16_t* dataPtr = (int16_t*)frame->data;
+		int8_t* dataPtr = (int8_t*)frame->data;
 
-		int dataOffset = 4;
+		int dataOffset = 8;
 
-		PortStatusCode code = (PortStatusCode) *(int8_t*)(dataPtr + dataOffset);
+		uint32_t code = (uint32_t) *(dataPtr + dataOffset);
+		uint32_t data = (uint32_t) *(dataPtr + dataOffset + 1);
 
-		errorFlag = ((uint32_t)code & LINKSTATE_SL) == 0;
+		if (code & (uint32_t)PortStatusCode::SerdesLock)
+			errorFlag = ((uint32_t)data & LINKSTATE_SL) == 0;
 
 		oni_destroy_frame(frame);
 
-		if (errorFlag)
-		{
-			LOGE("Port status changed and indicated an error occurred. Port status code is " + String((uint32_t)code))
-			return;
-		}
+		LOGE("Port status changed for " + getName() + ". Port status code is " + String((uint32_t)code));
 	}
 }
 
@@ -100,7 +98,7 @@ DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String heads
 	return DiscoveryParameters();
 }
 
-bool PortController::configureVoltage(float voltage) const
+bool PortController::configureVoltage(float voltage)
 {
 	if (ctx == NULL) return false;
 
@@ -129,7 +127,7 @@ bool PortController::configureVoltage(float voltage) const
 	return false;
 }
 
-void PortController::setVoltageOverride(float voltage, bool waitToSettle) const
+void PortController::setVoltageOverride(float voltage, bool waitToSettle)
 {
 	if (ctx == NULL) return;
 
@@ -137,7 +135,7 @@ void PortController::setVoltageOverride(float voltage, bool waitToSettle) const
 	if (waitToSettle) sleep_for(std::chrono::milliseconds(500));
 }
 
-void PortController::setVoltage(float voltage) const
+void PortController::setVoltage(float voltage)
 {
 	if (ctx == NULL) return;
 

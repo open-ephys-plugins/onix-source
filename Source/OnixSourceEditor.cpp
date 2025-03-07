@@ -127,20 +127,28 @@ void OnixSourceEditor::buttonClicked(Button* b)
 			{
 				if (!thread->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
 				{
-					CoreServices::sendStatusMessage("Unable to set port voltage for Port A.");
+					CoreServices::sendStatusMessage("Unable to acquire communication lock on Port A.");
 					connectButton->setToggleState(false, true);
 					return;
 				}
+			}
+			else
+			{
+				thread->setPortVoltage(PortName::PortA, 0);
 			}
 			
 			if (isHeadstageSelected(PortName::PortB))
 			{
 				if (!thread->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
 				{
-					CoreServices::sendStatusMessage("Unable to set port voltage for Port B.");
+					CoreServices::sendStatusMessage("Unable to acquire communication lock on Port B.");
 					connectButton->setToggleState(false, true);
 					return;
 				}
+			}
+			else
+			{
+				thread->setPortVoltage(PortName::PortB, 0);
 			}
 
 			thread->initializeDevices(true);
