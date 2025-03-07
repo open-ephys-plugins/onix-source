@@ -30,10 +30,11 @@ OnixSource::OnixSource(SourceNode* sn) :
 	editor(NULL),
 	context()
 {
+	// TODO: Add these parameters in the registerParameters() override?
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 
-	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true); 
 
 	if (!context.isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
@@ -223,6 +224,22 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				sources.add(np2.release());
 			}
 		}
+		else if (devices[dev_idx].id == ONIX_MEMUSAGE)
+		{
+			auto memoryMonitor = std::make_unique<MemoryMonitor>("MemoryMonitor", devices[dev_idx].idx, ctx);
+
+			int result = memoryMonitor->enableDevice();
+
+			if (result != 0)
+			{
+				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				continue;
+			}
+
+			memoryMonitor->addSourceBuffers(sourceBuffers);
+
+			sources.add(memoryMonitor.release());
+		}
 	}
 
 	val = 1;
@@ -375,9 +392,21 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
 					"Neuropixels 2.0 Probe",
-					"neuropixels1.probe",
+					"neuropixels2.probe",
 					"0000000",
 					"imec"
+				};
+
+				deviceInfos->add(new DeviceInfo(deviceSettings));
+			}
+			else if (source->type == OnixDeviceType::MEMORYMONITOR)
+			{
+				DeviceInfo::Settings deviceSettings{
+					source->getName(),
+					"Memory Monitor",
+					"memorymonitor",
+					"0000000",
+					""
 				};
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));

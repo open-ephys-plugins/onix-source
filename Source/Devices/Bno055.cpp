@@ -105,6 +105,8 @@ int Bno055::updateSettings()
 
 void Bno055::startAcquisition()
 {
+	currentFrame = 0;
+	sampleNumber = 0;
 }
 
 void Bno055::stopAcquisition()
@@ -197,7 +199,6 @@ void Bno055::processFrames()
 		{
 			shouldAddToBuffer = true;
 			currentFrame = 0;
-			sampleNumber = 0;
 		}
 
 		if (shouldAddToBuffer)

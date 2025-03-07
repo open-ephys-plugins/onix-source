@@ -424,8 +424,7 @@ void Neuropixels_1::processFrames()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
-		uint16_t* dataPtr;
-		dataPtr = (uint16_t*)frame->data;
+		uint16_t* dataPtr = (uint16_t*)frame->data;
 
 		auto dataclock = (unsigned char*)frame->data + 936;
 		uint64 hubClock = ((uint64_t)(*(uint16_t*)dataclock) << 48) |

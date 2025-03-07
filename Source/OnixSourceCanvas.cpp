@@ -99,6 +99,14 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 
 			portTabIndex.add(portTabNumber++);
 		}
+		else if (source->type == OnixDeviceType::MEMORYMONITOR)
+		{
+			MemoryMonitorInterface* memoryMonitorInterface = new MemoryMonitorInterface(source, editor, this);
+			settingsInterfaces.add((SettingsInterface*)memoryMonitorInterface);
+			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(memoryMonitorInterface), true);
+
+			portTabIndex.add(portTabNumber++);
+		}
 	}
 }
 
