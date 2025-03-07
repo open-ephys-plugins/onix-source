@@ -137,7 +137,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	static const String probeLetters = "ABCDEFGHI";
 	const int bufferSizeInSeconds = 10;
 	int npxProbeIdx = 0;
-	int bnoIdx = 0;
 
 	for (size_t dev_idx = 0; dev_idx < num_devs; dev_idx++)
 	{
@@ -175,7 +174,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 		else if (devices[dev_idx].id == ONIX_BNO055)
 		{
-			auto bno = std::make_unique<Bno055>("BNO-" + String::charToString(probeLetters[bnoIdx]), devices[dev_idx].idx, ctx);
+			auto bno = std::make_unique<Bno055>("BNO055", devices[dev_idx].idx, ctx);
 
 			int result = bno->enableDevice();
 
@@ -188,8 +187,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			bno->addSourceBuffers(sourceBuffers);
 
 			sources.add(bno.release());
-
-			bnoIdx++;
 		}
 		else if (devices[dev_idx].id == ONIX_DS90UB9RAW)
 		{

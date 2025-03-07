@@ -601,29 +601,29 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 	{
 		mode = VisualizationMode::ENABLE_VIEW;
 		probeBrowser->stopTimer();
-		repaint();
 		drawLegend();
+		repaint();
 	}
 	else if (button == apGainViewButton.get())
 	{
 		mode = VisualizationMode::AP_GAIN_VIEW;
 		probeBrowser->stopTimer();
-		repaint();
 		drawLegend();
+		repaint();
 	}
 	else if (button == lfpGainViewButton.get())
 	{
 		mode = VisualizationMode::LFP_GAIN_VIEW;
 		probeBrowser->stopTimer();
-		repaint();
 		drawLegend();
+		repaint();
 	}
 	else if (button == referenceViewButton.get())
 	{
 		mode = VisualizationMode::REFERENCE_VIEW;
 		probeBrowser->stopTimer();
-		repaint();
 		drawLegend();
+		repaint();
 	}
 	else if (button == activityViewButton.get())
 	{
@@ -632,8 +632,8 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 		if (acquisitionIsActive)
 			probeBrowser->startTimer(100);
 
-		repaint();
 		drawLegend();
+		repaint();
 	}
 	else if (button == enableButton.get())
 	{
@@ -868,8 +868,8 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings p, bool shouldUpdateP
 		CoreServices::saveRecoveryConfig();
 	}
 
-	repaint();
 	drawLegend();
+	repaint();
 
 	return true;
 }

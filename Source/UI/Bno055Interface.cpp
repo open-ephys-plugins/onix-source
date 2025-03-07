@@ -23,43 +23,24 @@
 
 #include "Bno055Interface.h"
 
-Bno055Interface::Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c, String headstageName_) :
+Bno055Interface::Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c),
 	device((Bno055*)d)
 {
 	if (device != nullptr)
 	{
-		nameLabel = std::make_unique<Label>("MAIN", "NAME");
-		nameLabel->setFont(FontOptions("Fira Code", "Medium", 30.0f));
-		nameLabel->setBounds(625, 40, 370, 45);
-		addAndMakeVisible(nameLabel.get());
-
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
 		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
 		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
+		deviceEnableButton->setBounds(35, 35, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
-		deviceEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
+		deviceEnableButton->setTooltip("If disabled, BNO055 device will not stream data during acquisition");
 		deviceEnableButton->addListener(this);
 		addAndMakeVisible(deviceEnableButton.get());
-
-		infoLabel = std::make_unique<Label>("INFO", "INFO");
-		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, 300, 20);
-		infoLabel->setJustificationType(Justification::topLeft);
-		addAndMakeVisible(infoLabel.get());
-
-		updateInfoString();
 	}
 
-	headstageName = headstageName_;
-
 	type = SettingsInterface::Type::BNO055_SETTINGS_INTERFACE;
-}
-
-Bno055Interface::~Bno055Interface()
-{
 }
 
 void Bno055Interface::buttonClicked(Button* button)
@@ -97,22 +78,4 @@ void Bno055Interface::saveParameters(XmlElement* xml)
 
 void Bno055Interface::loadParameters(XmlElement* xml)
 {
-}
-
-void Bno055Interface::updateInfoString()
-{
-	String nameString, infoString;
-
-	if (headstageName != "")
-		nameString = "Headstage: " + headstageName;
-
-	if (device != nullptr)
-	{
-		infoString = "Device: BNO055";
-		infoString += "\n";
-		infoString += "\n";
-	}
-
-	infoLabel->setText(infoString, dontSendNotification);
-	nameLabel->setText(nameString, dontSendNotification);
 }

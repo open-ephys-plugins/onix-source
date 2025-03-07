@@ -36,10 +36,7 @@ class Bno055Interface : public SettingsInterface,
 {
 public:
 	/** Constructor */
-	Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c, String headstageName = "");
-
-	/** Destructor */
-	~Bno055Interface();
+	Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override;
@@ -54,21 +51,16 @@ public:
 	void loadParameters(XmlElement* xml) override;
 
 	/** Updates the info string on the right-hand side of the component */
-	void updateInfoString() override;
+	void updateInfoString() override {};
 
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
 
-	Bno055* device;
-
 private:
 
-	std::unique_ptr<Label> nameLabel;
-	std::unique_ptr<Label> infoLabel;
+	Bno055* device;
 
 	std::unique_ptr<UtilityButton> deviceEnableButton;
-
-	String headstageName;
 };
 
 #endif // !__BNO055INTERFACE_H__
