@@ -146,7 +146,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		{
 			auto np1 = std::make_unique<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), this, devices[dev_idx].idx, ctx);
 
-			int res = np1->enableDevice();
+			int res = np1->configureDevice();
 
 			if (res != 0)
 			{
@@ -178,7 +178,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		{
 			auto bno = std::make_unique<Bno055>("BNO-" + String::charToString(probeLetters[bnoIdx]), devices[dev_idx].idx, ctx);
 
-			int result = bno->enableDevice();
+			int result = bno->configureDevice();
 
 			if (result != 0)
 			{
@@ -206,7 +206,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
 			{
 				auto np2 = std::make_unique<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
-				int res = np2->enableDevice();
+				int res = np2->configureDevice();
 				if (res != 0)
 				{
 					if (res == -1)

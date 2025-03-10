@@ -11,7 +11,7 @@ public:
 	/** Destructor */
 	~Neuropixels2e();
 
-	int enableDevice() override;
+	int configureDevice() override;
 
 	/** Update the settings of the device */
 	int updateSettings() override;
