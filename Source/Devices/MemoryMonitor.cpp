@@ -56,7 +56,7 @@ MemoryMonitor::~MemoryMonitor()
 {
 }
 
-int MemoryMonitor::enableDevice()
+int MemoryMonitor::configureDevice()
 {
 	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0)));
 

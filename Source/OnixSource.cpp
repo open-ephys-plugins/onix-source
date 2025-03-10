@@ -228,7 +228,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		{
 			auto memoryMonitor = std::make_unique<MemoryMonitor>("MemoryMonitor", devices[dev_idx].idx, ctx);
 
-			int result = memoryMonitor->enableDevice();
+			int result = memoryMonitor->configureDevice();
 
 			if (result != 0)
 			{

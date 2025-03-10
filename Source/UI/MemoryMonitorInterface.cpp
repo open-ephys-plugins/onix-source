@@ -78,7 +78,7 @@ void MemoryMonitorInterface::buttonClicked(Button* button)
 	if (button == deviceEnableButton.get())
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
-		device->enableDevice();
+		device->configureDevice();
 		//canvas->resetContext(); // TODO: Once issue-23 is merged, uncomment this line
 
 		if (device->isEnabled())
