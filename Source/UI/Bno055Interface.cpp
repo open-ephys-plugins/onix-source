@@ -23,9 +23,8 @@
 
 #include "Bno055Interface.h"
 
-Bno055Interface::Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c) :
-	SettingsInterface(d, e,c),
-	device((Bno055*)d)
+Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
+	SettingsInterface(d, e,c)
 {
 	if (device != nullptr)
 	{

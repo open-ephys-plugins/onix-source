@@ -25,15 +25,20 @@
 #include "OnixSource.h"
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* onixSource)
-	: VisualizerEditor(parentNode, "Onix Source", 200), thread(onixSource)
+	: VisualizerEditor(parentNode, "Onix Source", 220), thread(onixSource)
 {
 	canvas = nullptr;
 
 	FontOptions fontOptionSmall = FontOptions("Fira Code", "Regular", 12.0f);
 	FontOptions fontOptionTitle = FontOptions("Fira Code", "Bold", 15.0f);
 
+	memoryUsage = std::make_unique<MemoryMonitorUsage>(parentNode);
+	memoryUsage->setBounds(10, 30, 15, 95);
+	memoryUsage->setTooltip("Monitors the percent of the hardware memory buffer used.");
+	addAndMakeVisible(memoryUsage.get());
+
 	portLabelA = std::make_unique<Label>("portLabelA", "Port A:");
-	portLabelA->setBounds(4, 25, 60, 16);
+	portLabelA->setBounds(memoryUsage->getRight() + 5, memoryUsage->getY(), 60, 16);
 	portLabelA->setFont(fontOptionTitle);
 	addAndMakeVisible(portLabelA.get());
 
@@ -66,7 +71,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 	addAndMakeVisible(portVoltageValueA.get());
 
 	portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
-	portLabelB->setBounds(portLabelA->getX(), portVoltageOverrideLabelA->getBottom() + 5, portLabelA->getWidth(), portLabelA->getHeight());
+	portLabelB->setBounds(portLabelA->getX(), portVoltageOverrideLabelA->getBottom() + 3, portLabelA->getWidth(), portLabelA->getHeight());
 	portLabelB->setFont(fontOptionTitle);
 	addAndMakeVisible(portLabelB.get());
 
@@ -100,7 +105,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 
 	connectButton = std::make_unique<UtilityButton>("CONNECT");
 	connectButton->setFont(fontOptionSmall);
-	connectButton->setBounds(portLabelB->getX() + 5, portLabelB->getBottom() + 25, 70, 18);
+	connectButton->setBounds(portLabelB->getX() + 5, portVoltageOverrideLabelB->getBottom() + 3, 70, 18);
 	connectButton->setRadius(3.0f);
 	connectButton->setClickingTogglesState(true);
 	connectButton->setToggleState(false, dontSendNotification);
@@ -219,12 +224,33 @@ void OnixSourceEditor::updateSettings()
 
 void OnixSourceEditor::startAcquisition()
 {
+	// TODO: Disable all UI elements that should not be changed during acquisition...
 	connectButton->setEnabled(false);
+
+	for (const auto& source : thread->getDataSources())
+	{
+		if (source->type == OnixDeviceType::MEMORYMONITOR)
+		{
+			memoryUsage->setMemoryMonitor(std::static_pointer_cast<MemoryMonitor>(source));
+			memoryUsage->startAcquisition();
+			break;
+		}
+	}
 }
 
 void OnixSourceEditor::stopAcquisition()
 {
+  // TODO: Re-enable all of the UI elements 
 	connectButton->setEnabled(true);
+
+	for (const auto& source : thread->getDataSources())
+	{
+		if (source->type == OnixDeviceType::MEMORYMONITOR)
+		{
+			memoryUsage->stopAcquisition();
+			break;
+		}
+	}
 }
 
 Visualizer* OnixSourceEditor::createNewCanvas(void)

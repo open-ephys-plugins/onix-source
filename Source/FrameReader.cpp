@@ -23,7 +23,7 @@
 
 #include "FrameReader.h"
 
-FrameReader::FrameReader(OwnedArray<OnixDevice>& sources_, oni_ctx ctx_)
+FrameReader::FrameReader(std::vector<std::shared_ptr<OnixDevice>> sources_, oni_ctx ctx_)
 	: Thread("FrameReader"),
 	sources(sources_),
 	ctx(ctx_)
@@ -56,7 +56,7 @@ void FrameReader::run()
 
 		bool destroyFrame = true;
 
-		for (auto source : sources)
+		for (const auto& source : sources)
 		{
 			if (frame->dev_idx == source->getDeviceIdx())
 			{

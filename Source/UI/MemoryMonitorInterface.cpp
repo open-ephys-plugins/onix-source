@@ -23,15 +23,14 @@
 
 #include "MemoryMonitorInterface.h"
 
-MemoryMonitorInterface::MemoryMonitorInterface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c) :
-	SettingsInterface(d, e, c),
-	device((MemoryMonitor*)d)
+MemoryMonitorInterface::MemoryMonitorInterface(std::shared_ptr<MemoryMonitor> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
+	SettingsInterface(d, e, c)
 {
 	if (device != nullptr)
 	{
 		nameLabel = std::make_unique<Label>("MAIN", "NAME");
 		nameLabel->setFont(FontOptions("Fira Code", "Medium", 30.0f));
-		nameLabel->setBounds(625, 40, 370, 45);
+		nameLabel->setBounds(50, 40, 370, 45);
 		addAndMakeVisible(nameLabel.get());
 
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
@@ -54,7 +53,7 @@ MemoryMonitorInterface::MemoryMonitorInterface(OnixDevice* d, OnixSourceEditor* 
 		sampleRateLabel->setBounds(infoLabel->getX(), infoLabel->getBottom() + 10, 130, 20);
 		addAndMakeVisible(sampleRateLabel.get());
 
-		sampleRateValue = std::make_unique<Label>("sampleRateValue", String(device->getSamplesPerSecond()));
+		sampleRateValue = std::make_unique<Label>("sampleRateValue", String(std::static_pointer_cast<MemoryMonitor>(device)->getSamplesPerSecond()));
 		sampleRateValue->setEditable(true);
 		sampleRateValue->setBounds(sampleRateLabel->getRight() + 3, sampleRateLabel->getY(), 50, 20);
 		sampleRateValue->setTooltip("Sets the sample rate of the Memory Monitor device in Hz. Must be between 1 and 1000 Hz.");
@@ -98,15 +97,17 @@ void MemoryMonitorInterface::labelTextChanged(Label* l)
 {
 	if (l == sampleRateValue.get())
 	{
+		auto d = std::static_pointer_cast<MemoryMonitor>(device);
+
 		int rate = l->getText().getIntValue();
 
 		if (rate < 1 || rate > 1000)
 		{
-			l->setText(String(device->getSamplesPerSecond()), dontSendNotification);
+			l->setText(String(d->getSamplesPerSecond()), dontSendNotification);
 			return;
 		}
 
-		device->setSamplesPerSecond((uint32_t)rate);
+		d->setSamplesPerSecond((uint32_t)rate);
 	}
 }
 

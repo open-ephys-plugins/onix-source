@@ -77,15 +77,15 @@ Parameter* OnixSourceCanvas::getSourceParameter(String name)
 
 void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 {
-	Array<OnixDevice*> availableDataSources = onixSource->getDataSources();
+	auto availableDataSources = onixSource->getDataSources();
 
 	int portTabNumber = 0;
 
-	for (auto source : availableDataSources)
+	for (const auto& source : availableDataSources)
 	{
 		if (source->type == OnixDeviceType::NEUROPIXELS_1)
 		{
-			NeuropixV1Interface* neuropixInterface = new NeuropixV1Interface(source, editor, this);
+			NeuropixV1Interface* neuropixInterface = new NeuropixV1Interface(std::static_pointer_cast<Neuropixels_1>(source), editor, this);
 			settingsInterfaces.add((SettingsInterface*)neuropixInterface);
 			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(neuropixInterface), true);
 
@@ -93,7 +93,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		}
 		else if (source->type == OnixDeviceType::BNO)
 		{
-			Bno055Interface* bno055Interface = new Bno055Interface(source, editor, this);
+			Bno055Interface* bno055Interface = new Bno055Interface(std::static_pointer_cast<Bno055>(source), editor, this);
 			settingsInterfaces.add((SettingsInterface*)bno055Interface);
 			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(bno055Interface), true);
 
@@ -101,7 +101,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		}
 		else if (source->type == OnixDeviceType::MEMORYMONITOR)
 		{
-			MemoryMonitorInterface* memoryMonitorInterface = new MemoryMonitorInterface(source, editor, this);
+			MemoryMonitorInterface* memoryMonitorInterface = new MemoryMonitorInterface(std::static_pointer_cast<MemoryMonitor>(source), editor, this);
 			settingsInterfaces.add((SettingsInterface*)memoryMonitorInterface);
 			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(memoryMonitorInterface), true);
 
@@ -174,10 +174,8 @@ void OnixSourceCanvas::update()
 
 				if (v != nullptr)
 				{
-					OnixDevice* device = v->settingsInterface->dataSource;
-
-					if (device != nullptr)
-						t->setTabName(j, " " + device->getName() + " ");
+					if (v->settingsInterface->device != nullptr)
+						t->setTabName(j, " " + v->settingsInterface->device->getName() + " ");
 					else
 						t->setTabName(j, "");
 				}
@@ -195,7 +193,7 @@ void OnixSourceCanvas::startAcquisition()
 {
 	for (auto settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
+		if (settingsInterface->device != nullptr && settingsInterface->device->isEnabled())
 		{
 			settingsInterface->startAcquisition();
 		}
@@ -206,7 +204,7 @@ void OnixSourceCanvas::stopAcquisition()
 {
 	for (auto settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->dataSource != nullptr && settingsInterface->dataSource->isEnabled())
+		if (settingsInterface->device != nullptr && settingsInterface->device->isEnabled())
 		{
 			settingsInterface->stopAcquisition();
 		}

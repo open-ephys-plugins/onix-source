@@ -37,7 +37,7 @@ class MemoryMonitorInterface : public SettingsInterface,
 {
 public:
 
-	MemoryMonitorInterface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	MemoryMonitorInterface(std::shared_ptr<MemoryMonitor> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	~MemoryMonitorInterface();
 
@@ -59,8 +59,6 @@ public:
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
 	void labelTextChanged(Label* l) override;
-
-	MemoryMonitor* device;
 
 private:
 

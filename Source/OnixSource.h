@@ -121,13 +121,11 @@ public:
 	/** Sets the port voltage */
 	bool setPortVoltage(PortName port, float voltage) const;
 
-	void initializeContext();
-
 	void initializeDevices(bool updateStreamInfo = false);
 
 	void disconnectDevices(bool updateStreamInfo = false);
 
-	Array<OnixDevice*> getDataSources();
+	std::vector<std::shared_ptr<OnixDevice>> getDataSources();
 
 	void updateSourceBuffers();
 
@@ -142,7 +140,7 @@ public:
 private:
 
 	/** Available data sources */
-	OwnedArray<OnixDevice> sources;
+	std::vector<std::shared_ptr<OnixDevice>> sources;
 
 	/** Pointer to the editor */
 	OnixSourceEditor* editor;

@@ -28,6 +28,7 @@
 
 #include "OnixSourceCanvas.h"
 #include "NeuropixComponents.h"
+#include "Devices/MemoryMonitor.h"
 
 class OnixSource;
 
@@ -95,6 +96,8 @@ private:
     std::unique_ptr<Label> portVoltageValueB;
 
     std::unique_ptr<UtilityButton> connectButton;
+
+    std::unique_ptr<MemoryMonitorUsage> memoryUsage;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
 };

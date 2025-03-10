@@ -70,6 +70,8 @@ public:
 	DataBuffer* percentUsedBuffer = deviceBuffer;
 	DataBuffer* bytesUsedBuffer;
 
+	float getLastPercentUsedValue() { return lastPercentUsedValue; }
+
 private:
 
 	static const int numFrames = 2;
@@ -93,6 +95,31 @@ private:
 	double timestamps[numFrames];
 	int64 sampleNumbers[numFrames];
 	uint64 eventCodes[numFrames];
+
+	std::atomic<float> lastPercentUsedValue = 0.0f;
+};
+
+/*
+	Tracks the MemoryMonitor usage while data acquisition is running
+*/
+class MemoryMonitorUsage : public LevelMonitor
+{
+public:
+	MemoryMonitorUsage(GenericProcessor*);
+
+	~MemoryMonitorUsage();
+
+	void timerCallback() override;
+
+	void setMemoryMonitor(std::shared_ptr<MemoryMonitor> memoryMonitor);
+
+	void startAcquisition();
+
+	void stopAcquisition();
+
+private:
+
+	std::shared_ptr<MemoryMonitor> device;
 };
 
 #endif

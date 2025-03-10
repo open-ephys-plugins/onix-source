@@ -23,6 +23,42 @@
 
 #include "MemoryMonitor.h"
 
+MemoryMonitorUsage::MemoryMonitorUsage(GenericProcessor* p)
+	: LevelMonitor(p)
+{
+	device = nullptr;
+}
+
+MemoryMonitorUsage::~MemoryMonitorUsage()
+{
+}
+
+void MemoryMonitorUsage::timerCallback()
+{
+	if (device != nullptr)
+	{
+		setFillPercentage(device->getLastPercentUsedValue() / 100.0f);
+		repaint();
+	}
+}
+
+void MemoryMonitorUsage::setMemoryMonitor(std::shared_ptr<MemoryMonitor> memoryMonitor)
+{
+	device = memoryMonitor;
+}
+
+void MemoryMonitorUsage::startAcquisition()
+{
+	startTimerHz(10);
+}
+
+void MemoryMonitorUsage::stopAcquisition()
+{
+	stopTimer(); 
+	setFillPercentage(0.0f);
+	repaint();
+}
+
 MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 	: OnixDevice(name, OnixDeviceType::MEMORYMONITOR, deviceIdx_, ctx_)
 {
@@ -33,7 +69,7 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, const 
 	percentUsedStream.numChannels = 1;
 	percentUsedStream.sampleRate = samplesPerSecond;
 	percentUsedStream.channelPrefix = "Percent";
-	//percentUsedStream.bitVolts = 0.195f; // Is this needed?
+	percentUsedStream.bitVolts = 1.0f;
 	percentUsedStream.channelType = ContinuousChannel::Type::AUX;
 	streams.add(percentUsedStream);
 
@@ -44,7 +80,7 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, const 
 	bytesUsedStream.numChannels = 1;
 	bytesUsedStream.sampleRate = samplesPerSecond;
 	bytesUsedStream.channelPrefix = "Bytes";
-	//bytesUsedStream.bitVolts = 0.195f; // Is this needed?
+	bytesUsedStream.bitVolts = 1.0f;
 	bytesUsedStream.channelType = ContinuousChannel::Type::AUX;
 	streams.add(bytesUsedStream);
 
@@ -80,6 +116,7 @@ void MemoryMonitor::startAcquisition()
 {
 	currentFrame = 0;
 	sampleNumber = 0;
+	lastPercentUsedValue = 0.0f;
 }
 
 void MemoryMonitor::stopAcquisition()
@@ -120,12 +157,15 @@ void MemoryMonitor::processFrames()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
-		int16_t* dataPtr = (int16_t*)frame->data;
+		uint32_t* dataPtr = (uint32_t*)frame->data;
 
 		timestamps[currentFrame] = *(uint64_t*)frame->data;
 
-		percentUsedSamples[currentFrame] = 100.0f * float(*(dataPtr + 4)) / totalMemory;
-		bytesUsedSamples[currentFrame] = float(*(dataPtr + 4)) * 4.0f;
+		percentUsedSamples[currentFrame] = 100.0f * float(*(dataPtr + 2)) / totalMemory;
+
+		lastPercentUsedValue = percentUsedSamples[currentFrame];
+
+		bytesUsedSamples[currentFrame] = float(*(dataPtr + 2)) * 4.0f;
 
 		oni_destroy_frame(frame);
 

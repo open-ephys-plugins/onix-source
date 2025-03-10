@@ -75,7 +75,7 @@ public:
 	friend class ProbeBrowser;
 
 	/** Constructor */
-	NeuropixV1Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	/** Destructor */
 	~NeuropixV1Interface();
@@ -115,8 +115,6 @@ public:
 	void setReference(int index);
 	void setApFilterState(bool state);
 	void selectElectrodes(Array<int> electrodes);
-
-	Neuropixels_1* device;
 
 private:
 	XmlElement neuropix_info;

@@ -55,7 +55,7 @@ std::unique_ptr<GenericEditor> OnixSource::createEditor(SourceNode* sn)
 void OnixSource::disconnectDevices(bool updateStreamInfo)
 {
 	sourceBuffers.clear(true);
-	sources.clear(true);
+	sources.clear();
 	devicesFound = false;
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
@@ -145,7 +145,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
 		{
-			auto np1 = std::make_unique<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), this, devices[dev_idx].idx, ctx);
+			auto np1 = std::make_shared<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), this, devices[dev_idx].idx, ctx);
 
 			int res = np1->configureDevice();
 
@@ -171,13 +171,13 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			np1->addSourceBuffers(sourceBuffers);
 
-			sources.add(np1.release());
+			sources.push_back(np1);
 
 			npxProbeIdx++;
 		}
 		else if (devices[dev_idx].id == ONIX_BNO055)
 		{
-			auto bno = std::make_unique<Bno055>("BNO-" + String::charToString(probeLetters[bnoIdx]), devices[dev_idx].idx, ctx);
+			auto bno = std::make_shared<Bno055>("BNO-" + String::charToString(probeLetters[bnoIdx]), devices[dev_idx].idx, ctx);
 
 			int result = bno->configureDevice();
 
@@ -189,7 +189,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			bno->addSourceBuffers(sourceBuffers);
 
-			sources.add(bno.release());
+			sources.push_back(bno);
 
 			bnoIdx++;
 		}
@@ -206,7 +206,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			LOGD("Detected headstage ", hsid);
 			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
 			{
-				auto np2 = std::make_unique<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
+				auto np2 = std::make_shared<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
 				int res = np2->configureDevice();
 				if (res != 0)
 				{
@@ -221,12 +221,12 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 				np2->addSourceBuffers(sourceBuffers);
 
-				sources.add(np2.release());
+				sources.push_back(np2);
 			}
 		}
 		else if (devices[dev_idx].id == ONIX_MEMUSAGE)
 		{
-			auto memoryMonitor = std::make_unique<MemoryMonitor>("MemoryMonitor", devices[dev_idx].idx, ctx);
+			auto memoryMonitor = std::make_shared<MemoryMonitor>("MemoryMonitor", devices[dev_idx].idx, ctx);
 
 			int result = memoryMonitor->configureDevice();
 
@@ -238,7 +238,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			memoryMonitor->addSourceBuffers(sourceBuffers);
 
-			sources.add(memoryMonitor.release());
+			sources.push_back(memoryMonitor);
 		}
 	}
 
@@ -262,13 +262,13 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	LOGD("All devices initialized.");
 }
 
-Array<OnixDevice*> OnixSource::getDataSources()
+std::vector<std::shared_ptr<OnixDevice>> OnixSource::getDataSources()
 {
-	Array<OnixDevice*> devices;
+	std::vector<std::shared_ptr<OnixDevice>> devices;
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
-		devices.add(source);
+		devices.push_back(source);
 	}
 
 	return devices;
@@ -278,7 +278,7 @@ void OnixSource::updateSourceBuffers()
 {
 	sourceBuffers.clear(true);
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
 		if (source->isEnabled())
 		{
@@ -358,7 +358,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 	if (devicesFound)
 	{
-		for (auto source : sources)
+		for (const auto& source : sources)
 		{
 			if (!source->isEnabled()) continue;
 
@@ -458,7 +458,7 @@ bool OnixSource::isReady()
 	if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(context.get())) return false;
 	if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(context.get())) return false;
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 
@@ -489,7 +489,7 @@ bool OnixSource::startAcquisition()
 	frameReader = std::make_unique<FrameReader>(sources, context.get());
 	frameReader->startThread();
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 
@@ -524,7 +524,7 @@ bool OnixSource::stopAcquisition()
 		oni_set_opt(context.get(), ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
 	}
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 
@@ -539,7 +539,7 @@ bool OnixSource::stopAcquisition()
 
 bool OnixSource::updateBuffer()
 {
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 

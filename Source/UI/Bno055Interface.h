@@ -35,7 +35,7 @@ class Bno055Interface : public SettingsInterface
 {
 public:
 	/** Constructor */
-	Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	/** Destructor */
 	~Bno055Interface();
@@ -54,8 +54,6 @@ public:
 
 	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override;
-
-	Bno055* device;
 
 private:
 
