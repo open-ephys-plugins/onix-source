@@ -47,8 +47,6 @@ public:
 
     void paint (Graphics& g);
 
-    void drawAnnotations (Graphics& g);
-
     int getZoomHeight() const;
     int getZoomOffset() const;
 

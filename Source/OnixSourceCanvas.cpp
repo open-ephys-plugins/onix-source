@@ -183,6 +183,11 @@ void OnixSourceCanvas::resized()
 	topLevelTabComponent->setBounds(0, -3, getWidth(), getHeight() + 3);
 }
 
+int OnixSourceCanvas::resetContext()
+{
+	return onixSource->resetContext();
+}
+
 void OnixSourceCanvas::startAcquisition()
 {
 	for (auto settingsInterface : settingsInterfaces)

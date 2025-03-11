@@ -419,72 +419,24 @@ void ProbeBrowser::mouseDown(const MouseEvent& event)
 	initialOffset = zoomOffset;
 	initialHeight = zoomHeight;
 	
-	if (!event.mods.isRightButtonDown())
+	if (event.x > 150 && event.x < 400)
 	{
-		if (event.x > 150 && event.x < 400)
+		if (!event.mods.isShiftDown())
 		{
-			if (!event.mods.isShiftDown())
-			{
-				for (int i = 0; i < parent->device->settings.electrodeMetadata.size(); i++)
-					parent->device->settings.electrodeMetadata.getReference(i).isSelected = false;
-			}
-
-			if (event.x > leftEdge && event.x < rightEdge)
-			{
-				int chan = getNearestElectrode(event.x, event.y);
-
-				if (chan >= 0 && chan < parent->device->settings.electrodeMetadata.size())
-				{
-					parent->device->settings.electrodeMetadata.getReference(chan).isSelected = !parent->device->settings.electrodeMetadata.getReference(chan).isSelected;
-				}
-			}
-			repaint();
+			for (int i = 0; i < parent->device->settings.electrodeMetadata.size(); i++)
+				parent->device->settings.electrodeMetadata.getReference(i).isSelected = false;
 		}
-	}
-	else
-	{
-		if (event.x > 225 + 10 && event.x < 225 + 150)
+
+		if (event.x > leftEdge && event.x < rightEdge)
 		{
-			int currentAnnotationNum = 0;
+			int chan = getNearestElectrode(event.x, event.y);
 
-			for (int i = 0; i < parent->annotations.size(); i++)
+			if (chan >= 0 && chan < parent->device->settings.electrodeMetadata.size())
 			{
-				Annotation& a = parent->annotations.getReference(i);
-				float yLoc = a.currentYLoc;
-
-				if (float(event.y) < yLoc && float(event.y) > yLoc - 12)
-				{
-					currentAnnotationNum = i;
-					break;
-				}
-				else
-				{
-					currentAnnotationNum = -1;
-				}
-			}
-
-			if (currentAnnotationNum > -1)
-			{
-				PopupMenu annotationMenu;
-
-				annotationMenu.addItem(1, "Delete annotation", true);
-
-				const int result = annotationMenu.show();
-
-				switch (result)
-				{
-				case 0:
-					break;
-				case 1:
-					parent->annotations.removeRange(currentAnnotationNum, 1);
-					repaint();
-					break;
-				default:
-
-					break;
-				}
+				parent->device->settings.electrodeMetadata.getReference(chan).isSelected = !parent->device->settings.electrodeMetadata.getReference(chan).isSelected;
 			}
 		}
+		repaint();
 	}
 }
 
@@ -762,66 +714,6 @@ void ProbeBrowser::paint(Graphics& g)
 			250 + shankOffset + 45,
 			330,
 			250);
-	}
-}
-
-void ProbeBrowser::drawAnnotations(Graphics& g)
-{
-	for (int i = 0; i < parent->annotations.size(); i++)
-	{
-		bool shouldAppear = false;
-
-		Annotation& a = parent->annotations.getReference(i);
-
-		for (int j = 0; j < a.electrodes.size(); j++)
-		{
-			if (j > lowestElectrode || j < highestElectrode)
-			{
-				shouldAppear = true;
-				break;
-			}
-		}
-
-		if (shouldAppear)
-		{
-			float xLoc = 225 + 30;
-			int ch = a.electrodes[0];
-
-			float midpoint = lowerBound / 2.0f + 8;
-
-			float yLoc = lowerBound - ((ch - lowestElectrode - (ch % 2)) / 2.0f * electrodeHeight) + 10;
-
-			yLoc = (midpoint + 3 * yLoc) / 4;
-			a.currentYLoc = yLoc;
-
-			float alpha;
-
-			if (yLoc > lowerBound - 250)
-				alpha = (lowerBound - yLoc) / (250.f);
-			else if (yLoc < 250)
-				alpha = 1.0f - (250.f - yLoc) / 200.f;
-			else
-				alpha = 1.0f;
-
-			if (alpha < 0)
-				alpha = -alpha;
-
-			if (alpha < 0)
-				alpha = 0;
-
-			if (alpha > 1.0f)
-				alpha = 1.0f;
-
-			g.setColour(a.colour.withAlpha(alpha));
-
-			g.drawMultiLineText(a.text, xLoc + 2, yLoc, 150);
-
-			float xLoc2 = 225 - electrodeHeight * (1 - (ch % 2)) + electrodeHeight / 2;
-			float yLoc2 = lowerBound - ((ch - lowestElectrode - (ch % 2)) / 2.0f * electrodeHeight) + electrodeHeight / 2;
-
-			g.drawLine(xLoc - 5, yLoc - 3, xLoc2, yLoc2);
-			g.drawLine(xLoc - 5, yLoc - 3, xLoc, yLoc - 3);
-		}
 	}
 }
 
