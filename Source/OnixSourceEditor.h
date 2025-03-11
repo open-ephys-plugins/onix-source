@@ -76,6 +76,8 @@ public:
 
     bool isHeadstageSelected(PortName port);
 
+    void updateConnectedStatus(bool);
+
     OnixSourceCanvas* canvas;
 
 private:

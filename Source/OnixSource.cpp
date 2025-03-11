@@ -314,8 +314,6 @@ void OnixSource::setPortVoltage(PortName port, float voltage) const
 {
 	if (!context.isInitialized()) return;
 
-	oni_ctx ctx = context.get();
-
 	switch (port)
 	{
 	case PortName::PortA:
@@ -512,6 +510,23 @@ bool OnixSource::stopAcquisition()
 		uint32_t val = 1;
 		oni_set_opt(context.get(), ONI_OPT_RESET, &val, sizeof(val));
 		oni_set_opt(context.get(), ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
+	}
+
+	if (portA->getErrorFlag() || portB->getErrorFlag())
+	{
+		if (portA->getErrorFlag())
+		{
+			LOGE("Port A lost communication lock. Reconnect hardware to continue.");
+			CoreServices::sendStatusMessage("Port A lost communication lock");
+		}
+
+		if (portB->getErrorFlag())
+		{
+			LOGE("Port B lost communication lock. Reconnect hardware to continue.");
+			CoreServices::sendStatusMessage("Port B lost communication lock");
+		}
+
+		editor->updateConnectedStatus(false);
 	}
 
 	for (auto source : sources)
