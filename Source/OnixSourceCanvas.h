@@ -137,6 +137,8 @@ public:
 
 	OwnedArray<SettingsInterface> settingsInterfaces;
 
+	int resetContext();
+
 private:
 
 	Array<OnixDevice*> dataSources;

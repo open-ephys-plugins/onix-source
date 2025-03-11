@@ -31,14 +31,12 @@
 
 #include "../Devices/Bno055.h"
 
-class Bno055Interface : public SettingsInterface
+class Bno055Interface : public SettingsInterface,
+	public Button::Listener
 {
 public:
 	/** Constructor */
 	Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c);
-
-	/** Destructor */
-	~Bno055Interface();
 
 	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override;
@@ -53,12 +51,16 @@ public:
 	void loadParameters(XmlElement* xml) override;
 
 	/** Updates the info string on the right-hand side of the component */
-	void updateInfoString() override;
+	void updateInfoString() override {};
 
-	Bno055* device;
+	/** Listener methods*/
+	void buttonClicked(Button*) override;
 
 private:
 
+	Bno055* device;
+
+	std::unique_ptr<UtilityButton> deviceEnableButton;
 };
 
 #endif // !__BNO055INTERFACE_H__

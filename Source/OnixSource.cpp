@@ -83,15 +83,14 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	uint32_t val = 0;
 
-	if (getParameter("passthroughA")->getValue())
+	if (getParameter("passthroughA")->getValue() || getParameter("passthroughB")->getValue())
 	{
 		LOGD("Passthrough mode enabled");
 		val = 1;
 	}
 	oni_set_opt(ctx, ONIX_OPT_PASSTHROUGH, &val, sizeof(val));
 
-	val = 1;
-	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
+	context.issueReset();
 
 	// Examine device table
 	size_t num_devs_sz = sizeof(num_devs);
@@ -141,7 +140,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	static const String probeLetters = "ABCDEFGHI";
 	const int bufferSizeInSeconds = 10;
 	int npxProbeIdx = 0;
-	int bnoIdx = 0;
 
 	for (size_t dev_idx = 0; dev_idx < num_devs; dev_idx++)
 	{
@@ -149,7 +147,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		{
 			auto np1 = std::make_unique<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), this, devices[dev_idx].idx, ctx);
 
-			int res = np1->enableDevice();
+			int res = np1->configureDevice();
 
 			if (res != 0)
 			{
@@ -179,9 +177,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 		else if (devices[dev_idx].id == ONIX_BNO055)
 		{
-			auto bno = std::make_unique<Bno055>("BNO-" + String::charToString(probeLetters[bnoIdx]), devices[dev_idx].idx, ctx);
+			auto bno = std::make_unique<Bno055>("BNO055", devices[dev_idx].idx, ctx);
 
-			int result = bno->enableDevice();
+			int result = bno->configureDevice();
 
 			if (result != 0)
 			{
@@ -192,8 +190,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			bno->addSourceBuffers(sourceBuffers);
 
 			sources.add(bno.release());
-
-			bnoIdx++;
 		}
 		else if (devices[dev_idx].id == ONIX_DS90UB9RAW)
 		{
@@ -209,7 +205,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
 			{
 				auto np2 = std::make_unique<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
-				int res = np2->enableDevice();
+				int res = np2->configureDevice();
 				if (res != 0)
 				{
 					if (res == -1)
@@ -231,8 +227,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	portA->enableDevice();
 	portB->enableDevice();
 
-	val = 1;
-	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
+	context.issueReset();
 
 	oni_size_t frame_size = 0;
 	size_t frame_size_sz = sizeof(frame_size);
@@ -507,9 +502,7 @@ bool OnixSource::stopAcquisition()
 			return false;
 		}
 
-		uint32_t val = 1;
-		oni_set_opt(context.get(), ONI_OPT_RESET, &val, sizeof(val));
-		oni_set_opt(context.get(), ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
+		context.issueReset();
 	}
 
 	if (portA->getErrorFlag() || portB->getErrorFlag())

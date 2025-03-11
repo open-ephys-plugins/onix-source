@@ -91,9 +91,9 @@ Bno055::~Bno055()
 {
 }
 
-int Bno055::enableDevice()
+int Bno055::configureDevice()
 {
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)Bno055Registers::ENABLE, (uint32_t)1))
+	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)Bno055Registers::ENABLE, isEnabled() ? (oni_reg_val_t)1 : (oni_reg_val_t)0));
 
 	return 0;
 }

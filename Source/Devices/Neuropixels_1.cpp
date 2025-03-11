@@ -277,7 +277,7 @@ NeuropixelsReference Neuropixels_1::getReference(int index)
 	return NeuropixelsReference::External;
 }
 
-int Neuropixels_1::enableDevice()
+int Neuropixels_1::configureDevice()
 {
 	// Get Probe SN
 	uint32_t eepromOffset = 0;
@@ -303,7 +303,7 @@ int Neuropixels_1::enableDevice()
 
 	// Enable device streaming
 	const oni_reg_addr_t enable_device_stream = 0x8000;
-	errorCode = oni_write_reg(ctx, deviceIdx, enable_device_stream, 1);
+	errorCode = oni_write_reg(ctx, deviceIdx, enable_device_stream, isEnabled() ? (oni_reg_val_t)1 : (oni_reg_val_t)0);
 
 	if (errorCode) { LOGE(oni_error_str(errorCode)); return -2; }
 
