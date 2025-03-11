@@ -224,8 +224,8 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 	}
 
-	portA->enableDevice();
-	portB->enableDevice();
+	portA->configureDevice();
+	portB->configureDevice();
 
 	context.issueReset();
 

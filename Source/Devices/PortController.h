@@ -86,7 +86,7 @@ public:
 
 	~PortController();
 
-	int enableDevice() override;
+	int configureDevice() override;
 
 	int updateSettings() override { return 0; }
 

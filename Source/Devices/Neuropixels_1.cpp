@@ -36,7 +36,10 @@ BackgroundUpdaterWithProgressWindow::~BackgroundUpdaterWithProgressWindow()
 
 int BackgroundUpdaterWithProgressWindow::updateSettings()
 {
-	runThread();
+	if (device->isEnabled())
+		runThread();
+	else
+		return 0;
 
 	return result;
 }

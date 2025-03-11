@@ -48,7 +48,7 @@ void Bno055Interface::buttonClicked(Button* button)
 	if (button == deviceEnableButton.get())
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
-		device->enableDevice();
+		device->configureDevice();
 		canvas->resetContext();
 
 		if (device->isEnabled())
