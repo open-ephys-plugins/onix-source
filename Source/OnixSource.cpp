@@ -67,7 +67,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 {
 	if (!context.isInitialized())
 	{
-		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again."); 
+		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
 		return;
 	}
 
@@ -505,6 +505,19 @@ bool OnixSource::stopAcquisition()
 		context.issueReset();
 	}
 
+	for (auto source : sources)
+	{
+		if (!source->isEnabled()) continue;
+
+		source->stopAcquisition();
+	}
+
+	portA->stopAcquisition();
+	portB->stopAcquisition();
+
+	for (auto buffers : sourceBuffers)
+		buffers->clear();
+
 	if (portA->getErrorFlag() || portB->getErrorFlag())
 	{
 		if (portA->getErrorFlag())
@@ -519,21 +532,11 @@ bool OnixSource::stopAcquisition()
 			CoreServices::sendStatusMessage("Port B lost communication lock");
 		}
 
-		editor->updateConnectedStatus(false);
+		devicesFound = false;
+
+		MessageManager::callAsync([] { AlertWindow::showMessageBoxAsync(MessageBoxIconType::WarningIcon, "Port Communication Lock Lost",
+			"The port communication lock was lost during acquisition. To continue, please disconnect and reconnect the hardware.", "Okay"); });
 	}
-
-	for (auto source : sources)
-	{
-		if (!source->isEnabled()) continue;
-
-		source->stopAcquisition();
-	}
-
-	portA->stopAcquisition();
-	portB->stopAcquisition();
-
-	for (auto buffers : sourceBuffers)
-		buffers->clear();
 
 	return true;
 }

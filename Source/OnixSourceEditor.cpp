@@ -144,11 +144,11 @@ void OnixSourceEditor::buttonClicked(Button* b)
 {
 	if (b == connectButton.get())
 	{
-		updateConnectedStatus(connectButton->getToggleState());
+		setConnectedStatus(connectButton->getToggleState());
 	}
 }
 
-void OnixSourceEditor::updateConnectedStatus(bool connected)
+void OnixSourceEditor::setConnectedStatus(bool connected)
 {
 	connectButton->setToggleState(connected, dontSendNotification);
 
