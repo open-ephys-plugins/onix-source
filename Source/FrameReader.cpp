@@ -23,7 +23,7 @@
 
 #include "FrameReader.h"
 
-FrameReader::FrameReader(OwnedArray<OnixDevice>& sources_, oni_ctx ctx_)
+FrameReader::FrameReader(Array<OnixDevice*> sources_, oni_ctx ctx_)
 	: Thread("FrameReader"),
 	sources(sources_),
 	ctx(ctx_)
@@ -62,6 +62,7 @@ void FrameReader::run()
 			{
 				source->addFrame(frame);
 				destroyFrame = false;
+				break;
 			}
 		}
 
