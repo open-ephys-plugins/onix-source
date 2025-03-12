@@ -335,3 +335,8 @@ void OnixSourceEditor::refreshComboBoxSelection()
 	if (resetPortA) headstageComboBoxA->setSelectedItemIndex(0, dontSendNotification);
 	if (resetPortB) headstageComboBoxB->setSelectedItemIndex(0, dontSendNotification);
 }
+
+std::map<int, OnixDeviceType> OnixSourceEditor::createTabMapFromCanvas()
+{
+	return canvas->createTabMap(canvas->settingsInterfaces);
+}

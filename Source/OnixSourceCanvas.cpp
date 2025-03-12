@@ -84,18 +84,18 @@ void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(0, port, headstage), (int)port - 1);
 
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-A", offset, source->getContext()));
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, source->getContext()));
-		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, source->getContext()));
+		devices.push_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
+		devices.push_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
+		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
 	}
 	else if (headstage == "TEST HEADSTAGE")
 	{
 		// NOTE: This is only a temporary testing headstage used to confirm that the port logic works correctly. Remove before merging
 		tab = addTopLevelTab(getTopLevelTabName(0, port, headstage), (int)port - 1);
 
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-TEST", offset, source->getContext()));
-		devices.push_back(std::make_shared<Bno055>("BNO055-TEST", offset + 1, source->getContext()));
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-TEST2", offset + 2, source->getContext()));
+		devices.push_back(std::make_shared<Neuropixels_1>("Probe-TEST", offset, nullptr));
+		devices.push_back(std::make_shared<Bno055>("BNO055-TEST", offset + 1, nullptr));
+		devices.push_back(std::make_shared<Neuropixels_1>("Probe-TEST2", offset + 2, nullptr));
 	}
 
 	if (tab != nullptr && devices.size() > 0)
@@ -151,6 +151,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 		npx1->setSettings(std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device)->settings.get());
 	}
 
+	device->setEnabled(settingsInterfaces[ind]->device->isEnabled());
 	settingsInterfaces[ind]->device.reset();
 	settingsInterfaces[ind]->device = device;
 }

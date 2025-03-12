@@ -24,57 +24,20 @@
 #ifndef __OnixSource_H__
 #define __OnixSource_H__
 
-#include <oni.h>
-#include <onix.h>
-
 #include <DataThreadHeaders.h>
 
+#include "Onix1.h"
 #include "OnixDevice.h"
 #include "OnixSourceEditor.h"
 #include "Devices/DeviceList.h"
 #include "FrameReader.h"
 #include "PortController.h"
 
-class Onix1
-{
-public:
-	Onix1()
-	{
-		LOGD("ONIX Source creating ONI context.");
-		ctx = oni_create_ctx("riffa");
-		if (ctx == NULL) { LOGE("Failed to create context."); return; }
-
-		int errorCode = oni_init_ctx(ctx, 0);
-
-		if (errorCode) 
-		{ 
-			LOGE(oni_error_str(errorCode));
-			ctx = NULL;
-			return; 
-		}
-	};
-
-	~Onix1()
-	{ 
-		oni_destroy_ctx(ctx);
-	};
-
-	bool isInitialized() const { return ctx != NULL; }
-
-	oni_ctx get() const { return ctx; }
-
-private:
-
-	/** The ONI context object */
-	oni_ctx ctx;
-};
-
 /**
 
 	@see DataThread, SourceNode
 
 */
-
 class OnixSource : public DataThread
 {
 public:
@@ -85,10 +48,13 @@ public:
 	/** Destructor */
 	~OnixSource()
 	{
-		if (context.isInitialized())
+		if (context != nullptr)
 		{
-			portA.setVoltage(context.get(), 0.0f);
-			portB.setVoltage(context.get(), 0.0f);
+			// TODO: convert back to port controller calls, once issue-2 is merged
+			//portA.setVoltage(context->get(), 0.0f);
+			//portB.setVoltage(context->get(), 0.0f);
+			context->writeRegister((oni_dev_idx_t)PortName::PortA, 3, 0);
+			context->writeRegister((oni_dev_idx_t)PortName::PortB, 3, 0);
 		}
 	}
 
@@ -105,16 +71,16 @@ public:
 	bool isReady() override;
 
 	/** Returns true if the hardware is connected, false otherwise.*/
-	bool foundInputSource();
+	bool foundInputSource() override;
 
 	/** Returns true if the deviceMap matches the settings tabs that are open */
 	bool isDevicesReady();
 
 	/** Initializes data transfer.*/
-	bool startAcquisition();
+	bool startAcquisition() override;
 
 	/** Stops data transfer.*/
-	bool stopAcquisition();
+	bool stopAcquisition() override;
 
 	void updateDiscoveryParameters(PortName port, DiscoveryParameters parameters);
 
@@ -144,8 +110,6 @@ public:
 		OwnedArray<DeviceInfo>* devices,
 		OwnedArray<ConfigurationObject>* configurationObjects);
 
-	oni_ctx getContext() const { if (context.isInitialized()) return context.get(); else return NULL; }
-
 private:
 
 	/** Available data sources */
@@ -160,7 +124,7 @@ private:
 	/** Thread that reads frames */
 	std::unique_ptr<FrameReader> frameReader;
 
-	Onix1 context;
+	std::shared_ptr<Onix1> context = nullptr;
 
 	PortController portA = PortController(PortName::PortA);
 	PortController portB = PortController(PortName::PortB);

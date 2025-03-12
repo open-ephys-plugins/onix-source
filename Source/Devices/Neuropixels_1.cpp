@@ -95,8 +95,8 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	LOGD("Gain calibration file SN = ", gainSN);
 
-	if (gainSN != device->getProbeNumber()) 
-	{ 
+	if (gainSN != device->getProbeNumber())
+	{
 		result = false;
 
 		LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", device->getProbeNumber(), ").");
@@ -126,14 +126,14 @@ void BackgroundUpdaterWithProgressWindow::run()
 
 	LOGD("ADC calibration file SN = ", adcSN);
 
-	if (adcSN != device->getProbeNumber()) 
-	{ 
+	if (adcSN != device->getProbeNumber())
+	{
 		result = false;
 
 		LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", device->getProbeNumber(), ").");
-		
+
 		CoreServices::sendStatusMessage("Serial Number Mismatch: ADC calibration (" + String(adcSN) + ") does not match " + String(device->getProbeNumber()));
-		
+
 		return;
 	}
 
@@ -169,7 +169,7 @@ void BackgroundUpdaterWithProgressWindow::run()
 	result = true;
 }
 
-Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_) :
+Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
 	OnixDevice("Neuropixels 1.0 " + name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_)
 {
@@ -285,11 +285,10 @@ int Neuropixels_1::enableDevice()
 	for (int i = 0; i < 8; i++)
 	{
 		oni_reg_addr_t reg_addr = ((eepromOffset + i) << 7) | i2cAddr;
-		oni_reg_val_t reg_val;
 
-		errorCode = oni_read_reg(ctx, deviceIdx, reg_addr, &reg_val);
+		oni_reg_val_t reg_val = deviceContext->readRegister(deviceIdx, reg_addr);
 
-		if (errorCode) { LOGE(oni_error_str(errorCode)); return -1; }
+		if (deviceContext->getLastResult() != ONI_ESUCCESS) return -1;
 
 		if (reg_val <= 0xFF)
 		{
@@ -300,17 +299,20 @@ int Neuropixels_1::enableDevice()
 	LOGD("Probe SN: ", probeNumber);
 
 	// Enable device streaming
-	const oni_reg_addr_t enable_device_stream = 0x8000;
-	errorCode = oni_write_reg(ctx, deviceIdx, enable_device_stream, 1);
+	deviceContext->writeRegister(deviceIdx, 0x8000, 1);
+	if (deviceContext->getLastResult() != ONI_ESUCCESS) return -2;
 
-	if (errorCode) { LOGE(oni_error_str(errorCode)); return -2; }
+	WriteByte((uint32_t)NeuropixelsRegisters::CAL_MOD, (uint32_t)CalMode::CAL_OFF);
+	if (i2cContext->getLastResult() != ONI_ESUCCESS) return -3;
 
-	if (WriteByte((uint32_t)NeuropixelsRegisters::CAL_MOD, (uint32_t)CalMode::CAL_OFF) != 0) return -3;
-	if (WriteByte((uint32_t)NeuropixelsRegisters::SYNC, (uint32_t)0) != 0) return -3;
+	WriteByte((uint32_t)NeuropixelsRegisters::SYNC, (uint32_t)0);
+	if (i2cContext->getLastResult() != ONI_ESUCCESS) return -3;
 
-	if (WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::DIG_AND_CH_RESET) != 0) return -3;
+	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::DIG_AND_CH_RESET);
+	if (i2cContext->getLastResult() != ONI_ESUCCESS) return -3;
 
-	if (WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD) != 0) return -3;
+	WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD);
+	if (i2cContext->getLastResult() != ONI_ESUCCESS) return -3;
 
 	return 0;
 }
@@ -633,12 +635,16 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 {
 	auto shankBytes = toBitReversedBytes<shankConfigurationBitCount>(shankBits);
 
-	if (WriteByte((uint32_t)ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100) != 0) return;
-	if (WriteByte((uint32_t)ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100) != 0) return;
+	WriteByte((uint32_t)ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
+	if (i2cContext->getLastResult() != ONI_ESUCCESS) return;
+	
+	WriteByte((uint32_t)ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
+	if (i2cContext->getLastResult() != ONI_ESUCCESS) return;
 
 	for (auto b : shankBytes)
 	{
-		if (WriteByte((uint32_t)ShiftRegisters::SR_CHAIN1, b) != 0) return;
+		WriteByte((uint32_t)ShiftRegisters::SR_CHAIN1, b);
+		if (i2cContext->getLastResult() != ONI_ESUCCESS) return;
 	}
 
 	const uint32_t shiftRegisterSuccess = 1 << 7;
@@ -651,18 +657,23 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 		{
 			auto baseBytes = toBitReversedBytes<BaseConfigurationBitCount>(configBits[i]);
 
-			if (WriteByte((uint32_t)ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100) != 0) return;
-			if (WriteByte((uint32_t)ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100) != 0) return;
+			WriteByte((uint32_t)ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100);
+			if (i2cContext->getLastResult() != ONI_ESUCCESS) return;
+
+			WriteByte((uint32_t)ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100);
+			if (i2cContext->getLastResult() != ONI_ESUCCESS) return;
 
 			for (auto b : baseBytes)
 			{
-				if (WriteByte(srAddress, b) != 0) return;
+				WriteByte(srAddress, b);
+				if (i2cContext->getLastResult() != ONI_ESUCCESS) return;
 			}
 		}
 
 		oni_reg_val_t value;
+		ReadByte((uint32_t)NeuropixelsRegisters::STATUS, &value);
 
-		if (ReadByte((uint32_t)NeuropixelsRegisters::STATUS, &value) != 0 || value != shiftRegisterSuccess)
+		if (i2cContext->getLastResult() != ONI_ESUCCESS || value != shiftRegisterSuccess)
 		{
 			LOGE("Shift register ", srAddress, " status check failed.");
 			return;
@@ -673,7 +684,10 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 
 	for (uint32_t i = 0; i < adcs.size(); i += 2)
 	{
-		if (oni_write_reg(ctx, deviceIdx, ADC01_00_OFF_THRESH + i, (uint32_t)(adcs[i + 1].offset << 26 | adcs[i + 1].threshold << 16 | adcs[i].offset << 10 | adcs[i].threshold)) != 0)
+		auto value = (uint32_t)(adcs[i + 1].offset << 26 | adcs[i + 1].threshold << 16 | adcs[i].offset << 10 | adcs[i].threshold);
+		deviceContext->writeRegister(deviceIdx, ADC01_00_OFF_THRESH + i, value);
+
+		if (deviceContext->getLastResult() != ONI_ESUCCESS)
 		{
 			LOGE("Error writing to register ", ADC01_00_OFF_THRESH + i, ".");
 			return;
@@ -688,13 +702,15 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 
 	for (uint32_t i = 0; i < numberOfChannels / 2; i++)
 	{
-		if (oni_write_reg(ctx, deviceIdx, CHAN001_000_LFPGAIN + i, fixedPointLfPGain << 16 | fixedPointLfPGain) != 0)
+		deviceContext->writeRegister(deviceIdx, CHAN001_000_LFPGAIN + i, fixedPointLfPGain << 16 | fixedPointLfPGain);
+		if (deviceContext->getLastResult() != ONI_ESUCCESS)
 		{
 			LOGE("Error writing to register ", CHAN001_000_LFPGAIN + i, ".");
 			return;
 		}
 
-		if (oni_write_reg(ctx, deviceIdx, CHAN001_000_APGAIN + i, fixedPointApGain << 16 | fixedPointApGain) != 0)
+		deviceContext->writeRegister(deviceIdx, CHAN001_000_APGAIN + i, fixedPointApGain << 16 | fixedPointApGain);
+		if (deviceContext->getLastResult() != ONI_ESUCCESS)
 		{
 			LOGE("Error writing to register ", CHAN001_000_APGAIN + i, ".");
 			return;

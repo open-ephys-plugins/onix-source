@@ -157,7 +157,7 @@ class Neuropixels_1 : public OnixDevice,
 {
 public:
 	/** Constructor */
-	Neuropixels_1(String name, const oni_dev_idx_t, const oni_ctx);
+	Neuropixels_1(String name, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 	/** Destructor */
 	~Neuropixels_1();
@@ -203,9 +203,6 @@ public:
 
 	void writeShiftRegisters(std::bitset<shankConfigurationBitCount> shankBits, std::vector<std::bitset<BaseConfigurationBitCount>> configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
 
-	DataBuffer* apBuffer = deviceBuffer;
-	DataBuffer* lfpBuffer;
-
 	std::unique_ptr<ProbeSettings> settings;
 
 	static const int numberOfChannels = 384;
@@ -214,6 +211,9 @@ public:
 	String gainCalibrationFilePath;
 
 private:
+
+	DataBuffer* apBuffer;
+	DataBuffer* lfpBuffer;
 
 	static const int superFramesPerUltraFrame = 12;
 	static const int framesPerSuperFrame = 13;

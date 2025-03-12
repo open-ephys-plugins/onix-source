@@ -27,15 +27,27 @@
 OnixSource::OnixSource(SourceNode* sn) :
 	DataThread(sn),
 	devicesFound(false),
-	editor(NULL),
-	context()
+	editor(NULL)
 {
+	try
+	{
+		context = std::make_shared<Onix1>();
+	}
+	catch (const std::system_error& e)
+	{
+		LOGE("Failed to create context.");
+		return;
+	}
+	catch (const error_t& e)
+	{
+		LOGE("Failed to initialize context. ", e.what());
+		return;
+	}
+
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
-
-	if (!context.isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
 DataThread* OnixSource::createDataThread(SourceNode* sn)
@@ -65,7 +77,7 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 
 void OnixSource::initializeDevices(bool updateStreamInfo)
 {
-	if (!context.isInitialized())
+	if (context == nullptr)
 	{
 		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again."); 
 		return;
@@ -76,78 +88,43 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		disconnectDevices(false);
 	}
 
-	oni_ctx ctx = context.get();
-
-	oni_size_t num_devs = 0;
-	oni_device_t* devices = NULL;
-
 	uint32_t val = 0;
 
+	// TODO: How to set passthrough for Port A vs. Port B?
 	if (getParameter("passthroughA")->getValue())
 	{
 		LOGD("Passthrough mode enabled");
 		val = 1;
 	}
-	oni_set_opt(ctx, ONIX_OPT_PASSTHROUGH, &val, sizeof(val));
+
+	context->setOption(ONIX_OPT_PASSTHROUGH, val);
 
 	val = 1;
-	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
+	context->setOption(ONI_OPT_RESET, val);
 
-	// Examine device table
-	size_t num_devs_sz = sizeof(num_devs);
-	oni_get_opt(ctx, ONI_OPT_NUMDEVICES, &num_devs, &num_devs_sz);
+	context->updateDeviceTable();
+	if (context->getLastResult() != ONI_ESUCCESS) return;
+	device_map_t deviceMap = context->getDeviceTable();
 
-	size_t devices_sz = sizeof(oni_device_t) * num_devs;
-	devices = (oni_device_t*)realloc(devices, devices_sz);
-
-	if (devices == NULL) 
-	{ 
-		LOGE("No devices found."); 
+	if (deviceMap.size() == 0)
+	{
+		LOGE("No devices found.");
 		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 		return;
 	}
 
-	oni_get_opt(ctx, ONI_OPT_DEVICETABLE, devices, &devices_sz);
-
 	devicesFound = true;
-
-#ifdef DEBUG
-
-	// print device info
-	printf("   +--------------------+-------+-------+-------+-------+---------------------\n");
-	printf("   |        \t\t|  \t|Firm.\t|Read\t|Wrt. \t|     \n");
-	printf("   |Dev. idx\t\t|ID\t|ver. \t|size\t|size \t|Desc.\n");
-	printf("   +--------------------+-------+-------+-------+-------+---------------------\n");
-
-	for (size_t dev_idx = 0; dev_idx < num_devs; dev_idx++) {
-		if (devices[dev_idx].id != ONIX_NULL) {
-
-			const char* dev_str = onix_device_str(devices[dev_idx].id);
-
-			printf("%02zd |%05zd: 0x%02x.0x%02x\t|%d\t|%d\t|%u\t|%u\t|%s\n",
-				dev_idx,
-				devices[dev_idx].idx,
-				(uint8_t)(devices[dev_idx].idx >> 8),
-				(uint8_t)devices[dev_idx].idx,
-				devices[dev_idx].id,
-				devices[dev_idx].version,
-				devices[dev_idx].read_size,
-				devices[dev_idx].write_size,
-				dev_str);
-		}
-	}
-#endif
 
 	static const String probeLetters = "ABCDEFGHI";
 	const int bufferSizeInSeconds = 10;
 	int npxProbeIdx = 0;
 	int bnoIdx = 0;
 
-	for (size_t dev_idx = 0; dev_idx < num_devs; dev_idx++)
+	for (const auto& [index, device] : deviceMap)
 	{
-		if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
+		if (device.id == ONIX_NEUROPIX1R0)
 		{
-			auto np1 = std::make_shared<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
+			auto np1 = std::make_shared<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
 
 			int res = np1->enableDevice();
 
@@ -155,38 +132,38 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			{
 				if (res == -1)
 				{
-					LOGE("Device Idx: ", devices[dev_idx].idx, " Unable to read probe serial number. Device not found.");
+					LOGE("Device Idx: ", index, " Unable to read probe serial number. Device not found.");
 
 					continue;
 				}
 				else if (res == -2)
 				{
-					LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+					LOGE("Device Idx: ", index, " Error enabling device stream.");
 
 					continue;
 				}
 				else if (res == -3)
 				{
-					LOGE("Error enabling device ", devices[dev_idx].idx);
+					LOGE("Error enabling device ", index);
 
 					continue;
 				}
 			}
 
 			sources.push_back(np1);
-			headstages.insert({ PortController::getPortFromIndex(devices[dev_idx].idx), "Neuropixels 1.0f" });
+			headstages.insert({ PortController::getPortFromIndex(index), "Neuropixels 1.0f" });
 
 			npxProbeIdx++;
 		}
-		else if (devices[dev_idx].id == ONIX_BNO055)
+		else if (device.id == ONIX_BNO055)
 		{
-			auto bno = std::make_shared<Bno055>("BNO-" + String::charToString(probeLetters[bnoIdx]), devices[dev_idx].idx, ctx);
+			auto bno = std::make_shared<Bno055>("BNO-" + String::charToString(probeLetters[bnoIdx]), index, context);
 
 			int result = bno->enableDevice();
 
 			if (result != 0)
 			{
-				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				LOGE("Device Idx: ", index, " Error enabling device stream.");
 				continue;
 			}
 
@@ -194,26 +171,26 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			bnoIdx++;
 		}
-		else if (devices[dev_idx].id == ONIX_DS90UB9RAW)
+		else if (device.id == ONIX_DS90UB9RAW)
 		{
 			LOGD("Passthrough device detected");
 			//initialize main i2c parameter
-			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, devices[dev_idx].idx, ctx);
+			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, index, context);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
 			
-			auto EEPROM = std::make_unique<HeadStageEEPROM>(devices[dev_idx].idx, ctx);
+			auto EEPROM = std::make_unique<HeadStageEEPROM>(index, context);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
 			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
 			{
-				auto np2 = std::make_shared<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
+				auto np2 = std::make_shared<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
 				int res = np2->enableDevice();
 				if (res != 0)
 				{
 					if (res == -1)
 					{
-						LOGE("Device Idx: ", devices[dev_idx].idx, " Unable to read probe serial number. Device not found.");
+						LOGE("Device Idx: ", index, " Unable to read probe serial number. Device not found.");
 					}
 					//TODO add other errors if needed
 					continue;
@@ -226,19 +203,15 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	}
 
 	val = 1;
-	oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
+	context->setOption(ONI_OPT_RESET, val);
 
-	oni_size_t frame_size = 0;
-	size_t frame_size_sz = sizeof(frame_size);
-	oni_get_opt(ctx, ONI_OPT_MAXREADFRAMESIZE, &frame_size, &frame_size_sz);
-	printf("Max. read frame size: %u bytes\n", frame_size);
+	//oni_size_t frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE);
+	//printf("Max. read frame size: %u bytes\n", frame_size);
 
-	oni_get_opt(ctx, ONI_OPT_MAXWRITEFRAMESIZE, &frame_size, &frame_size_sz);
-	printf("Max. write frame size: %u bytes\n", frame_size);
+	//frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE);
+	//printf("Max. write frame size: %u bytes\n", frame_size);
 
-	// set block read size
-	size_t block_size_sz = sizeof(block_read_size);
-	oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, block_size_sz);
+	context->setOption(ONI_OPT_BLOCKREADSIZE, block_read_size);
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 
@@ -304,38 +277,36 @@ void OnixSource::updateDiscoveryParameters(PortName port, DiscoveryParameters pa
 
 bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 {
-	if (!context.isInitialized()) return false;
+	// TODO: Update this once issue-2 is merged
+	return false;
 
-	oni_ctx ctx = context.get();
-
-	switch (port)
-	{
-	case PortName::PortA:
-		if (voltage == "") return portA.configureVoltage(ctx);
-		else			   return portA.configureVoltage(ctx, voltage.getFloatValue());
-	case PortName::PortB:
-		if (voltage == "") return portB.configureVoltage(ctx);
-		else			   return portB.configureVoltage(ctx, voltage.getFloatValue());
-	default:
-		return false;
-	}
+	//switch (port)
+	//{
+	//case PortName::PortA:
+	//	if (voltage == "") return portA.configureVoltage(ctx);
+	//	else			   return portA.configureVoltage(ctx, voltage.getFloatValue());
+	//case PortName::PortB:
+	//	if (voltage == "") return portB.configureVoltage(ctx);
+	//	else			   return portB.configureVoltage(ctx, voltage.getFloatValue());
+	//default:
+	//	return false;
+	//}
 }
 
 bool OnixSource::setPortVoltage(PortName port, float voltage) const
 {
-	if (!context.isInitialized()) return false;
+	// TODO: Update this once issue-2 is merged
+	return false;
 
-	oni_ctx ctx = context.get();
-
-	switch (port)
-	{
-	case PortName::PortA:
-		return portA.setVoltage(ctx, voltage);
-	case PortName::PortB:
-		return portB.setVoltage(ctx, voltage);
-	default:
-		return false;
-	}
+	//switch (port)
+	//{
+	//case PortName::PortA:
+	//	return portA.setVoltage(ctx, voltage);
+	//case PortName::PortB:
+	//	return portB.setVoltage(ctx, voltage);
+	//default:
+	//	return false;
+	//}
 }
 
 void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
@@ -435,7 +406,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 bool OnixSource::isDevicesReady()
 {
-	auto tabMap = editor->canvas->createTabMap(editor->canvas->settingsInterfaces);
+	auto tabMap = editor->createTabMapFromCanvas();
 	auto sourceMap = createDeviceMap(sources);
 
 	return tabMap == sourceMap;
@@ -448,7 +419,7 @@ bool OnixSource::foundInputSource()
 
 bool OnixSource::isReady()
 {
-	if (!context.isInitialized() || !devicesFound)
+	if (context == nullptr || !devicesFound)
 		return false;
 
 	if (!isDevicesReady())
@@ -457,8 +428,9 @@ bool OnixSource::isReady()
 		return false;
 	}
 
-	if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(context.get())) return false;
-	if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(context.get())) return false;
+	// TODO: update with issue-2
+	//if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(context.get())) return false;
+	//if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(context.get())) return false;
 
 	for (const auto& source : sources)
 	{
@@ -468,14 +440,9 @@ bool OnixSource::isReady()
 			return false;
 	}
 
-	oni_reg_val_t reg = 2;
-	int res = oni_set_opt(context.get(), ONI_OPT_RESETACQCOUNTER, &reg, sizeof(oni_size_t));
-	if (res < ONI_ESUCCESS)
-	{
-		LOGE("Error starting acquisition: ", oni_error_str(res), " code ", res);
-
-		return false;
-	}
+	uint32_t val = 2;
+	context->setOption(ONI_OPT_RESETACQCOUNTER, val);
+	if (context->getLastResult() != ONI_ESUCCESS) return false;
 
 	return true;
 }
@@ -486,7 +453,7 @@ bool OnixSource::startAcquisition()
 
 	frameReader.reset();
 
-	frameReader = std::make_unique<FrameReader>(sources, context.get());
+	frameReader = std::make_unique<FrameReader>(sources, context);
 	frameReader->startThread();
 
 	for (const auto& source : sources)
@@ -512,16 +479,11 @@ bool OnixSource::stopAcquisition()
 	if (devicesFound)
 	{
 		oni_size_t reg = 0;
-		int res = oni_set_opt(context.get(), ONI_OPT_RUNNING, &reg, sizeof(reg));
-		if (res < ONI_ESUCCESS)
-		{
-			LOGE("Error stopping acquisition: ", oni_error_str(res), " code ", res);
-			return false;
-		}
+		context->setOption(ONI_OPT_RUNNING, reg);
+		if (context->getLastResult() != ONI_ESUCCESS) return false;
 
 		uint32_t val = 1;
-		oni_set_opt(context.get(), ONI_OPT_RESET, &val, sizeof(val));
-		oni_set_opt(context.get(), ONI_OPT_BLOCKREADSIZE, &block_read_size, sizeof(block_read_size));
+		context->setOption(ONI_OPT_RESET, val);
 	}
 
 	for (const auto& source : sources)

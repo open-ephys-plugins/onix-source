@@ -79,10 +79,11 @@ public:
     /** Updates the combo boxes based on the headstages found in the canvas tabs */
     void refreshComboBoxSelection();
 
-    OnixSourceCanvas* canvas;
+    std::map<int, OnixDeviceType> createTabMapFromCanvas();
 
 private:
 
+    OnixSourceCanvas* canvas;
     OnixSource* source;
 
     std::unique_ptr<Label> portLabelA;

@@ -36,6 +36,7 @@
 
 #include "I2CRegisterContext.h"
 #include "NeuropixComponents.h"
+#include "Onix1.h"
 
 #define ONI_OK(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));}}
 #define ONI_OK_RETURN_BOOL(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return false;}}
@@ -78,7 +79,7 @@ class OnixDevice
 public:
 
 	/** Constructor */
-	OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t, const oni_ctx);
+	OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 	/** Destructor */
 	~OnixDevice() { }
@@ -108,9 +109,6 @@ public:
 
 	OnixDeviceType type;
 
-	/** Holds incoming data */
-	DataBuffer* deviceBuffer;
-
 	Array<StreamInfo> streams;
 
 	const int bufferSizeInSeconds = 10;
@@ -118,7 +116,7 @@ public:
 protected:
 
 	const oni_dev_idx_t deviceIdx;
-	const oni_ctx ctx;
+	std::shared_ptr<Onix1> deviceContext;
 
 private:
 
