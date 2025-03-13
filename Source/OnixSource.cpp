@@ -169,8 +169,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				}
 			}
 
-			np1->addSourceBuffers(sourceBuffers);
-
 			sources.push_back(np1);
 
 			npxProbeIdx++;
@@ -186,8 +184,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
 				continue;
 			}
-
-			bno->addSourceBuffers(sourceBuffers);
 
 			sources.push_back(bno);
 
@@ -219,8 +215,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				}
 				npxProbeIdx += np2->getNumProbes();
 
-				np2->addSourceBuffers(sourceBuffers);
-
 				sources.push_back(np2);
 			}
 		}
@@ -235,8 +229,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
 				continue;
 			}
-
-			memoryMonitor->addSourceBuffers(sourceBuffers);
 
 			sources.push_back(memoryMonitor);
 		}
@@ -413,7 +405,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 			}
 
 			// add data streams and channels
-			for (StreamInfo streamInfo : source->streams)
+			for (const auto& streamInfo : source->streams)
 			{
 				DataStream::Settings streamSettings
 				{

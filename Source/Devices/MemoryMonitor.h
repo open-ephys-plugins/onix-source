@@ -65,14 +65,14 @@ public:
 
 	uint32_t getSamplesPerSecond() const { return samplesPerSecond; }
 
-	void setSamplesPerSecond(uint32_t samplesPerSecond_) { samplesPerSecond = samplesPerSecond_; }
+	void setSamplesPerSecond(uint32_t samplesPerSecond_);
 
-	DataBuffer* percentUsedBuffer = deviceBuffer;
-	DataBuffer* bytesUsedBuffer;
-
-	float getLastPercentUsedValue() { return lastPercentUsedValue; }
+	float getLastPercentUsedValue();
 
 private:
+
+	DataBuffer* percentUsedBuffer;
+	DataBuffer* bytesUsedBuffer;
 
 	static const int numFrames = 2;
 

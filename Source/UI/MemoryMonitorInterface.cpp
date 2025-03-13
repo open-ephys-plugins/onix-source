@@ -101,7 +101,7 @@ void MemoryMonitorInterface::labelTextChanged(Label* l)
 
 		int rate = l->getText().getIntValue();
 
-		if (rate < 1 || rate > 1000)
+		if (rate < 0.1 || rate > 1000)
 		{
 			l->setText(String(d->getSamplesPerSecond()), dontSendNotification);
 			return;

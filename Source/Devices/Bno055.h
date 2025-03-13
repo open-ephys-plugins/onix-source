@@ -58,13 +58,13 @@ public:
 
 	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
-	DataBuffer* eulerBuffer = deviceBuffer;
+private:
+
+	DataBuffer* eulerBuffer;
 	DataBuffer* quaternionBuffer;
 	DataBuffer* accelerationBuffer;
 	DataBuffer* gravityBuffer;
 	DataBuffer* temperatureBuffer;
-
-private:
 
 	static const int numFrames = 2;
 

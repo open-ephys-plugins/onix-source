@@ -54,7 +54,7 @@ void MemoryMonitorUsage::startAcquisition()
 
 void MemoryMonitorUsage::stopAcquisition()
 {
-	stopTimer(); 
+	stopTimer();
 	setFillPercentage(0.0f);
 	repaint();
 }
@@ -148,6 +148,21 @@ void MemoryMonitor::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 		else if (streamInfo.channelPrefix.equalsIgnoreCase("Bytes"))
 			bytesUsedBuffer = sourceBuffers.getLast();
 	}
+}
+
+void MemoryMonitor::setSamplesPerSecond(uint32_t samplesPerSecond_) 
+{
+	samplesPerSecond = samplesPerSecond_;
+
+	for (const auto& stream : streams)
+	{
+		streams.getReference(0).sampleRate = samplesPerSecond;
+	}
+}
+
+float MemoryMonitor::getLastPercentUsedValue()
+{
+	return lastPercentUsedValue;
 }
 
 void MemoryMonitor::processFrames()

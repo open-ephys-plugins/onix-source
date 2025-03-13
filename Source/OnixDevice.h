@@ -109,9 +109,6 @@ public:
 
 	OnixDeviceType type;
 
-	/** Holds incoming data */
-	DataBuffer* deviceBuffer;
-
 	Array<StreamInfo> streams;
 
 	const int bufferSizeInSeconds = 10;

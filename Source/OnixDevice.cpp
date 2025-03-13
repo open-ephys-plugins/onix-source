@@ -24,7 +24,7 @@
 #include "OnixDevice.h"
 
 OnixDevice::OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: type(type_), deviceIdx(deviceIdx_), ctx(ctx_), deviceBuffer(NULL)
+	: type(type_), deviceIdx(deviceIdx_), ctx(ctx_)
 {
 	name = name_;
 }

@@ -209,14 +209,14 @@ public:
 
 	void writeShiftRegisters(std::bitset<shankConfigurationBitCount> shankBits, std::vector<std::bitset<BaseConfigurationBitCount>> configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
 
-	DataBuffer* apBuffer = deviceBuffer;
-	DataBuffer* lfpBuffer;
-
 	ProbeSettings settings;
 
 	static const int numberOfChannels = 384;
 
 private:
+
+	DataBuffer* apBuffer;
+	DataBuffer* lfpBuffer;
 
 	static const int superFramesPerUltraFrame = 12;
 	static const int framesPerSuperFrame = 13;
