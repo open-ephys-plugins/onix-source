@@ -721,7 +721,7 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 void Neuropixels_1::defineMetadata(ProbeSettings* settings)
 {
 	settings->probeType = ProbeType::NPX_V1E;
-	settings->probeMetadata.name = "Neuropixels 1.0e";
+	settings->probeMetadata.name = "Neuropixels 1.0f";
 
 	Path path;
 	path.startNewSubPath(27, 31);

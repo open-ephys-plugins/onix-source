@@ -78,9 +78,9 @@ void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
 {
 	int offset = PortController::getPortOffset(port);
 	CustomTabComponent* tab = nullptr;
-	std::vector<std::shared_ptr<OnixDevice>> devices;
+	OnixDeviceVector devices;
 
-	if (headstage == "Neuropixels 1.0f")
+	if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(0, port, headstage), (int)port - 1);
 
@@ -104,7 +104,7 @@ void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
 	}
 }
 
-void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, std::vector<std::shared_ptr<OnixDevice>> devices)
+void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVector devices)
 {
 	int portTabNumber = 0;
 
@@ -113,12 +113,12 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, std::vector<s
 		if (device->type == OnixDeviceType::NEUROPIXELS_1)
 		{
 			auto neuropixInterface = std::make_shared<NeuropixV1Interface>(std::static_pointer_cast<Neuropixels_1>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device.get()), tab, neuropixInterface);
+			addInterfaceToTab(getDeviceTabName(device), tab, neuropixInterface);
 		}
 		else if (device->type == OnixDeviceType::BNO)
 		{
 			auto bno055Interface = std::make_shared<Bno055Interface>(std::static_pointer_cast<Bno055>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device.get()), tab, bno055Interface);
+			addInterfaceToTab(getDeviceTabName(device), tab, bno055Interface);
 		}
 	}
 }
@@ -135,14 +135,15 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 
 	for (int j = 0; j < settingsInterfaces.size(); j += 1)
 	{
-		if (device->getDeviceIdx() == settingsInterfaces[j]->device->getDeviceIdx())
+		if (device->getDeviceIdx() == settingsInterfaces[j]->device->getDeviceIdx() &&
+			device->getName() == settingsInterfaces[j]->device->getName())
 		{
 			ind = j;
 			break;
 		}
 	}
 
-	if (ind == -1) { LOGD("Unable to match the device to a settings interface."); return; }
+	if (ind == -1) { LOGD("Unable to match " + device->getName() + " to an open tab."); return; }
 
 	if (device->type == OnixDeviceType::NEUROPIXELS_1)
 	{
@@ -150,6 +151,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 		auto npx1 = std::static_pointer_cast<Neuropixels_1>(device);
 		npx1->setSettings(std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device)->settings.get());
 	}
+	// TODO: Add more devices, since they will have device-specific settings to be updated
 
 	device->setEnabled(settingsInterfaces[ind]->device->isEnabled());
 	settingsInterfaces[ind]->device.reset();
@@ -161,7 +163,7 @@ String OnixSourceCanvas::getTopLevelTabName(int hub, PortName port, String heads
 	return "Hub " + String(hub) + ": " + PortController::getPortName(port) + ": " + headstage;
 }
 
-String OnixSourceCanvas::getDeviceTabName(OnixDevice* device)
+String OnixSourceCanvas::getDeviceTabName(std::shared_ptr<OnixDevice> device)
 {
 	return String(device->getDeviceIdx()) + ": " + device->getName();
 }
@@ -240,7 +242,7 @@ void OnixSourceCanvas::removeAllTabs()
 	topLevelTabComponent->clearTabs();
 }
 
-std::map<int, OnixDeviceType> OnixSourceCanvas::createTabMap(std::vector<std::shared_ptr<SettingsInterface>> interfaces)
+std::map<int, OnixDeviceType> OnixSourceCanvas::createSelectedMap(std::vector<std::shared_ptr<SettingsInterface>> interfaces)
 {
 	std::map<int, OnixDeviceType> tabMap;
 
@@ -252,271 +254,173 @@ std::map<int, OnixDeviceType> OnixSourceCanvas::createTabMap(std::vector<std::sh
 	return tabMap;
 }
 
+void OnixSourceCanvas::askKeepRemove(PortName port)
+{
+	String selectedHeadstage = editor->getHeadstageSelected(port);
+
+	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(port) + ", but was not discovered there.\n\n";
+	msg += "Select one of the options below to continue:\n";
+	msg += " - [Keep Current] to keep " + selectedHeadstage + " selected.\n";
+	msg += " - [Remove] to remove " + selectedHeadstage + ". Note: this will delete any settings that were modified.";
+
+	int result = AlertWindow::show(
+		MessageBoxOptions()
+		.withIconType(MessageBoxIconType::WarningIcon)
+		.withTitle("Headstage Not Found")
+		.withMessage(msg)
+		.withButton("Keep Current")
+		.withButton("Remove")
+	);
+
+	switch (result)
+	{
+	case 1: // Keep Current
+		break;
+	case 2: // Remove
+		removeTabs(port);
+		break;
+	default:
+		break;
+	}
+}
+
+void OnixSourceCanvas::askKeepUpdate(PortName port, String foundHeadstage, OnixDeviceVector devices)
+{
+	String selectedHeadstage = editor->getHeadstageSelected(port);
+
+	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(port) + ". ";
+	msg += "However, headstage " + foundHeadstage + " was found on " + PortController::getPortName(port) + ". \n\n";
+	msg += "Select one of the options below to continue:\n";
+	msg += " - [Keep Current] to keep " + selectedHeadstage + " selected.\n";
+	msg += " - [Update] to change the selected headstage to " + foundHeadstage + ". Note: this will delete any settings that were modified.";
+
+	int result = AlertWindow::show(
+		MessageBoxOptions()
+		.withIconType(MessageBoxIconType::WarningIcon)
+		.withTitle("Mismatched Headstages")
+		.withMessage(msg)
+		.withButton("Keep Current")
+		.withButton("Update")
+	);
+
+	switch (result)
+	{
+	case 1: // Keep Current
+		break;
+	case 2: // Update
+		removeTabs(port);
+
+		{
+			CustomTabComponent* tab = addTopLevelTab(getTopLevelTabName(0, port, foundHeadstage), (int)port);
+			populateSourceTabs(tab, devices);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void OnixSourceCanvas::refreshTabs()
 {
-	auto devices = source->getDataSources();
+	auto selectedMap = createSelectedMap(settingsInterfaces);
+	auto foundMap = source->createDeviceMap();
 
-	auto tabMap = createTabMap(settingsInterfaces);
-	auto sourceMap = source->createDeviceMap(devices);
-
-	if (tabMap == sourceMap)
+	if (selectedMap != foundMap)
 	{
-		for (int i = 0; i < devices.size(); i += 1)
+		std::vector<int> selectedIndices, foundIndices;
+
+		for (const auto& [key, _] : selectedMap) { selectedIndices.push_back(key); }
+		for (const auto& [key, _] : foundMap) { foundIndices.push_back(key); }
+
+		auto selectedPorts = PortController::getUniquePortsFromIndices(selectedIndices);
+		auto foundPorts = PortController::getUniquePortsFromIndices(foundIndices);
+
+		if (foundIndices.size() == 0) {} // NB: No devices found, do nothing
+		else if (selectedIndices.size() == 0) // NB: No headstages selected, add all found headstages
 		{
-			updateSettingsInterfaceDataSource(devices[i]);
-		}
-	}
-	else
-	{
-		std::vector<int> tabIndices, sourceIndices;
-
-		for (const auto& [key, _] : tabMap) { tabIndices.push_back(key); }
-		for (const auto& [key, _] : sourceMap) { sourceIndices.push_back(key); }
-
-		auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
-		auto sourcePorts = PortController::getUniquePortsFromIndices(sourceIndices);
-
-		auto headstages = source->getHeadstageMap();
-
-		if (sourceIndices.size() == 0)
-		{
-		}
-		else if (tabIndices.size() == 0)
-		{
-			for (auto& [port, headstageName] : headstages)
+			for (auto& [port, headstageName] : source->getHeadstageMap())
 			{
 				addHeadstage(headstageName, port);
 			}
 		}
-		else if (tabPorts.size() == sourcePorts.size())
+		else if (selectedPorts.size() == foundPorts.size()) // NB: Same number of ports selected and found
 		{
-			if (tabPorts.size() == 1)
+			auto headstages = source->getHeadstageMap();
+
+			if (selectedPorts.size() == 1)
 			{
-				if (headstages.size() == 0)
+				if (headstages.size() != 1)
 				{
-					LOGE("Expected to find headstages in the source node.");
+					LOGE("Wrong number of headstages found in the source node.");
 					return;
 				}
 
-				if (tabPorts[0] == sourcePorts[0])
+				if (selectedPorts[0] == foundPorts[0]) // NB: Selected headstage is different from the found headstage on the same port
 				{
-					int result = AlertWindow::show(
-						MessageBoxOptions()
-						.withIconType(MessageBoxIconType::WarningIcon)
-						.withTitle("Mismatched Devices")
-						.withMessage("The selected headstage does not match the hardware connected." +
-							String("\n\n[Keep Current] to keep the current selection, ") + 
-							String("[Create New] to close selected tabs and create new tabs from hardware connected, or ") + 
-							String("[Cancel] to do nothing."))
-						.withButton("Keep Current")
-						.withButton("Create New")
-						.withButton("Cancel")
-					);
-
-					switch (result)
-					{
-					case 1: // Keep Current
-						break;
-					case 2: // Create New
-						removeTabs(tabPorts[0]);
-
-						{
-							CustomTabComponent* tab = addTopLevelTab(getTopLevelTabName(0, sourcePorts[0], headstages[sourcePorts[0]]), (int)sourcePorts[0]);
-							populateSourceTabs(tab, devices);
-						}
-						break;
-					case 3: // Cancel
-						break;
-					default:
-						break;
-					}
+					askKeepUpdate(selectedPorts[0], headstages[foundPorts[0]], source->getDataSources());
 				}
-				else
+				else // NB: Selected headstage on one port is not found, and the found headstage is not selected on the other port
 				{
-					int result = AlertWindow::show(
-						MessageBoxOptions()
-						.withIconType(MessageBoxIconType::WarningIcon)
-						.withTitle("Devices Not Found")
-						.withMessage("The selected headstage does not exist in " + PortController::getPortName(tabPorts[0]) +
-							String(".\n\n[Keep Tabs] to keep the current selected tabs open, ") +
-							String("[Remove Tabs] to close selected tabs, or ") +
-							String("[Cancel] to do nothing."))
-						.withButton("Keep Tabs")
-						.withButton("Remove Tabs")
-						.withButton("Cancel")
-					);
+					askKeepRemove(selectedPorts[0]);
 
-					switch (result)
-					{
-					case 1: // Keep Tabs
-						break;
-					case 2: // Remove Tabs
-						removeTabs(tabPorts[0]);
-						break;
-					case 3: // Cancel
-						break;
-					default:
-						break;
-					}
-
-					addHeadstage(headstages[sourcePorts[0]], sourcePorts[0]);
+					addHeadstage(headstages[foundPorts[0]], foundPorts[0]);
 				}
 			}
-			else
+			else // NB: Two headstages are selected on different ports, and at least one of those headstages does not match the found headstages
 			{
-				int result = AlertWindow::show(
-					MessageBoxOptions()
-					.withIconType(MessageBoxIconType::WarningIcon)
-					.withTitle("Mismatched Devices")
-					.withMessage("The selected headstages do not match the hardware connected." +
-						String("\n\n[Keep Current] to keep the current selection, ") +
-						String("[Create New] to close selected tabs and create new tabs from hardware connected, or ") +
-						String("[Cancel] to do nothing."))
-					.withButton("Keep Current")
-					.withButton("Create New")
-					.withButton("Cancel")
-				);
-
-				switch (result)
+				for (auto port : foundPorts)
 				{
-				case 1: // Keep Current
-					break;
-				case 2: // Create New
-					removeAllTabs();
-					for (auto& [port, headstageName] : headstages)
+					if (headstages[port] != editor->getHeadstageSelected(port))
 					{
-						addHeadstage(headstageName, port);
+						askKeepUpdate(port, headstages[port], source->getDataSourcesFromPort(port));
 					}
-					break;
-				case 3: // Cancel
-					break;
-				default:
-					break;
 				}
 			}
 		}
-		else
+		else // NB: Different number of ports selected versus found
 		{
-			if (tabPorts.size() > sourcePorts.size())
+			auto headstages = source->getHeadstageMap();
+
+			if (selectedPorts.size() > foundPorts.size()) // NB: More headstages selected than found
 			{
-				bool hardwareMatch = true;
-
-				for (const auto& [index, type] : sourceMap)
+				for (auto port : selectedPorts)
 				{
-					if (tabMap[index] != type) hardwareMatch = false;
-				}
-
-				if (hardwareMatch)
-				{
-					int result = AlertWindow::show(
-						MessageBoxOptions()
-						.withIconType(MessageBoxIconType::WarningIcon)
-						.withTitle("Extra Tabs")
-						.withMessage("There are more selected headstages than hardware connected." +
-							String("\n\n[Keep Current] to keep the current selection, ") +
-							String("[Remove Extra] to close tabs not found in hardware, or ") +
-							String("[Cancel] to do nothing."))
-						.withButton("Keep Current")
-						.withButton("Remove Extra")
-						.withButton("Cancel")
-					);
-
-					switch (result)
+					if (port == foundPorts[0])
 					{
-					case 1: // Keep Current
-						break;
-					case 2: // Remove Extra
+						if (headstages[port] != editor->getHeadstageSelected(port))
 						{
-							PortName portToRemove = tabPorts[0] == sourcePorts[0] ? tabPorts[1] : tabPorts[0];
-							removeTabs(portToRemove);
+							askKeepUpdate(port, headstages[port], source->getDataSourcesFromPort(port));
 						}
-						break;
-					case 3: // Cancel
-						break;
-					default:
-						break;
 					}
-				}
-				else
-				{
-					int result = AlertWindow::show(
-						MessageBoxOptions()
-						.withIconType(MessageBoxIconType::WarningIcon)
-						.withTitle("Extra Tabs")
-						.withMessage("There are more selected headstages than hardware connected." +
-							String("\n\n[Keep Current] to keep the current selection, ") +
-							String("[Remove All] to close all tabs not found in hardware and add new ones, or ") +
-							String("[Cancel] to do nothing."))
-						.withButton("Keep Current")
-						.withButton("Remove All")
-						.withButton("Cancel")
-					);
-
-					switch (result)
+					else
 					{
-					case 1: // Keep Current
-						break;
-					case 2: // Remove All
-						removeAllTabs();
-						addHeadstage(headstages[sourcePorts[0]], sourcePorts[0]);
-
-						break;
-					case 3: // Cancel
-						break;
-					default:
-						break;
+						askKeepRemove(port);
 					}
 				}
 			}
-			else
+			else // NB: More headstages found than selected
 			{
-				bool hardwareMatch = true;
-
-				for (const auto& [index, type] : tabMap)
+				for (auto port : foundPorts)
 				{
-					if (sourceMap[index] != type) hardwareMatch = false;
-				}
-
-				if (hardwareMatch)
-				{
-					PortName portToAdd = sourcePorts[0] == tabPorts[0] ? sourcePorts[1] : sourcePorts[0];
-					addHeadstage(headstages[portToAdd], portToAdd);
-				}
-				else
-				{
-					int result = AlertWindow::show(
-						MessageBoxOptions()
-						.withIconType(MessageBoxIconType::WarningIcon)
-						.withTitle("Device Mismatch")
-						.withMessage("The selected headstage does not match the hardware connected." +
-							String("\n\n[Keep Current] to keep the current selection, ") +
-							String("[Remove All] to close all tabs not found in hardware and add new ones, or ") +
-							String("[Cancel] to do nothing."))
-						.withButton("Keep Current")
-						.withButton("Remove All")
-						.withButton("Cancel")
-					);
-
-					switch (result)
+					if (port == selectedPorts[0])
 					{
-					case 1: // Keep Current
-						break;
-					case 2: // Remove All
-						removeAllTabs();
-						for (auto& [port, headstageName] : headstages)
+						if (headstages[port] != editor->getHeadstageSelected(port))
 						{
-							addHeadstage(headstageName, port);
+							askKeepUpdate(port, headstages[port], source->getDataSourcesFromPort(port));
 						}
-
-						break;
-					case 3: // Cancel
-						break;
-					default:
-						break;
+					}
+					else
+					{
+						addHeadstage(headstages[port], port);
 					}
 				}
 			}
 		}
+	}
+
+	for (const auto& device : source->getDataSources())
+	{
+		updateSettingsInterfaceDataSource(device);
 	}
 
 	CoreServices::updateSignalChain(editor);

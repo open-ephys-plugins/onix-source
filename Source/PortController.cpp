@@ -39,7 +39,7 @@ void PortController::updateDiscoveryParameters(DiscoveryParameters parameters)
 
 DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String headstage)
 {
-	if (headstage == "Neuropixels 1.0f")
+	if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
 		return DiscoveryParameters(5.0f, 7.0f, 1.0f, 0.2f);
 	}

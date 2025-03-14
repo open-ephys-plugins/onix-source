@@ -334,9 +334,9 @@ void NeuropixV1Interface::updateInfoString()
 
 	if (device != nullptr)
 	{
-		nameString += "NeuropixelsV1e";
+		nameString += "NeuropixelsV1f";
 
-		infoString = "Device: Neuropixels V1e Probe";
+		infoString = "Device: Neuropixels V1 Probe";
 		infoString += "\n";
 		infoString += "\n";
 

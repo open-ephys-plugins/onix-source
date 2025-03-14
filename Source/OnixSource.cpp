@@ -151,7 +151,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(np1);
-			headstages.insert({ PortController::getPortFromIndex(index), "Neuropixels 1.0f" });
+			headstages.insert({ PortController::getPortFromIndex(index), NEUROPIXELSV1F_HEADSTAGE_NAME });
 
 			npxProbeIdx++;
 		}
@@ -218,9 +218,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	LOGD("All devices initialized.");
 }
 
-std::vector<std::shared_ptr<OnixDevice>> OnixSource::getDataSources()
+OnixDeviceVector OnixSource::getDataSources() const
 {
-	std::vector<std::shared_ptr<OnixDevice>> devices;
+	OnixDeviceVector devices{};
 
 	for (const auto& source : sources)
 	{
@@ -230,7 +230,20 @@ std::vector<std::shared_ptr<OnixDevice>> OnixSource::getDataSources()
 	return devices;
 }
 
-std::map<int, OnixDeviceType> OnixSource::createDeviceMap(std::vector<std::shared_ptr<OnixDevice>> devices)
+OnixDeviceVector OnixSource::getDataSourcesFromPort(PortName port) const
+{
+	OnixDeviceVector devices{};
+
+	for (const auto& source : sources)
+	{
+		if (PortController::getPortFromIndex(source->getDeviceIdx()) == port)
+			devices.push_back(source);
+	}
+
+	return devices;
+}
+
+std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devices)
 {
 	std::map<int, OnixDeviceType> deviceMap;
 
@@ -240,6 +253,11 @@ std::map<int, OnixDeviceType> OnixSource::createDeviceMap(std::vector<std::share
 	}
 
 	return deviceMap;
+}
+
+std::map<int, OnixDeviceType> OnixSource::createDeviceMap()
+{
+	return createDeviceMap(getDataSources());
 }
 
 std::map<PortName, String> OnixSource::getHeadstageMap()

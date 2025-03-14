@@ -76,6 +76,8 @@ public:
 
     bool isHeadstageSelected(PortName port);
 
+    String getHeadstageSelected(PortName port);
+
     /** Updates the combo boxes based on the headstages found in the canvas tabs */
     void refreshComboBoxSelection();
 

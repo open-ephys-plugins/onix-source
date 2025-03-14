@@ -124,7 +124,7 @@ public:
 	void addHeadstage(String headstage, PortName port);
 
 	/** Called when the basestation is created or refreshed */
-	void populateSourceTabs(CustomTabComponent*, std::vector<std::shared_ptr<OnixDevice>>);
+	void populateSourceTabs(CustomTabComponent*, OnixDeviceVector);
 
 	/** Saves custom UI settings */
 	void saveCustomParametersToXml(XmlElement* xml) override;
@@ -143,7 +143,7 @@ public:
 
 	Array<CustomTabComponent*> getHeadstageTabs();
 
-	std::map<int, OnixDeviceType> createTabMap(std::vector<std::shared_ptr<SettingsInterface>>);
+	std::map<int, OnixDeviceType> createSelectedMap(std::vector<std::shared_ptr<SettingsInterface>>);
 
 	std::vector<std::shared_ptr<SettingsInterface>> settingsInterfaces;
 
@@ -164,7 +164,19 @@ private:
 
 	String getTopLevelTabName(int hub, PortName port, String headstage);
 
-	String getDeviceTabName(OnixDevice* device);
+	String getDeviceTabName(std::shared_ptr<OnixDevice> device);
+
+	/**
+		Create an alert window that asks whether to keep the selected headstage on the given port,
+		or to remove it since the hardware was not found
+	*/
+	void askKeepRemove(PortName port);
+
+	/**
+		Create an alert window that asks whether to keep the selected headstage on the given port,
+		or to update to the headstage that was found
+	*/
+	void askKeepUpdate(PortName port, String foundHeadstage, OnixDeviceVector devices);
 
 	JUCE_LEAK_DETECTOR(OnixSourceCanvas);
 };

@@ -23,7 +23,7 @@
 
 #include "FrameReader.h"
 
-FrameReader::FrameReader(std::vector<std::shared_ptr<OnixDevice>> sources_, std::shared_ptr<Onix1> ctx_)
+FrameReader::FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1> ctx_)
 	: Thread("FrameReader"),
 	sources(sources_)
 {

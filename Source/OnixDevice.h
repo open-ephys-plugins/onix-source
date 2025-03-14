@@ -31,9 +31,6 @@
 #include <chrono>
 #include <thread>
 
-#include <oni.h>
-#include <onix.h>
-
 #include "I2CRegisterContext.h"
 #include "NeuropixComponents.h"
 #include "Onix1.h"
@@ -126,5 +123,7 @@ private:
 
 	JUCE_LEAK_DETECTOR(OnixDevice);
 };
+
+using OnixDeviceVector = std::vector<std::shared_ptr<OnixDevice>>;
 
 #endif

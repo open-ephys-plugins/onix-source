@@ -94,9 +94,13 @@ public:
 
 	void disconnectDevices(bool updateStreamInfo = false);
 
-	std::vector<std::shared_ptr<OnixDevice>> getDataSources();
+	OnixDeviceVector getDataSources() const;
 
-	std::map<int, OnixDeviceType> createDeviceMap(std::vector<std::shared_ptr<OnixDevice>>);
+	OnixDeviceVector getDataSourcesFromPort(PortName port) const;
+
+	std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector);
+
+	std::map<int, OnixDeviceType> createDeviceMap();
 
 	std::map<PortName, String> getHeadstageMap();
 
@@ -113,7 +117,7 @@ public:
 private:
 
 	/** Available data sources */
-	std::vector<std::shared_ptr<OnixDevice>> sources;
+	OnixDeviceVector sources;
 
 	/** Available headstages */
 	std::map<PortName, String> headstages;

@@ -42,7 +42,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	headstageComboBoxA->addListener(this);
 	headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
 	addHeadstageComboBoxOptions(headstageComboBoxA.get());
-
 	headstageComboBoxA->setSelectedId(1, dontSendNotification);
 	addAndMakeVisible(headstageComboBoxA.get());
 
@@ -105,9 +104,10 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 {
 	comboBox->addItem("Select headstage...", 1);
 	comboBox->addSeparator();
-	comboBox->addItem("Neuropixels 1.0f", 2);
+	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
 	comboBox->addItem("TEST HEADSTAGE", 99);
 	// TODO: Add list of available devices here
+	// TODO: Create const char* for the headstage names so they are shared across the plugin
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)
@@ -178,7 +178,7 @@ void OnixSourceEditor::buttonClicked(Button* b)
 void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 {
 	auto deviceMap = source->createDeviceMap(source->getDataSources());
-	auto tabMap = canvas->createTabMap(canvas->settingsInterfaces);
+	auto tabMap = canvas->createSelectedMap(canvas->settingsInterfaces);
 	std::vector<int> deviceIndices;
 	std::vector<int> tabIndices;
 
@@ -299,6 +299,19 @@ bool OnixSourceEditor::isHeadstageSelected(PortName port)
 	}
 }
 
+String OnixSourceEditor::getHeadstageSelected(PortName port)
+{
+	switch (port)
+	{
+	case PortName::PortA:
+		return headstageComboBoxA->getText();
+	case PortName::PortB:
+		return headstageComboBoxB->getText();
+	default:
+		return "";
+	}
+}
+
 void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage)
 {
 	for (int i = 0; i < comboBox->getNumItems(); i += 1)
@@ -338,5 +351,5 @@ void OnixSourceEditor::refreshComboBoxSelection()
 
 std::map<int, OnixDeviceType> OnixSourceEditor::createTabMapFromCanvas()
 {
-	return canvas->createTabMap(canvas->settingsInterfaces);
+	return canvas->createSelectedMap(canvas->settingsInterfaces);
 }
