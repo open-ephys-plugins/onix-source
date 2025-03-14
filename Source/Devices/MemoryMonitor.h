@@ -120,6 +120,10 @@ public:
 private:
 
 	std::shared_ptr<MemoryMonitor> device;
+
+	// NB: Calculate the maximum logarithmic value to convert from linear scale (x: 0-100) to logarithmic scale (y: 0-1)
+	//	   using the following equation: y = log_e(x + 1) / log_e(x_max + 1);
+	const float maxLogarithmicValue = std::log(101);
 };
 
 #endif

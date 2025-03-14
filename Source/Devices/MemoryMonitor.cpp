@@ -37,7 +37,7 @@ void MemoryMonitorUsage::timerCallback()
 {
 	if (device != nullptr)
 	{
-		setFillPercentage(device->getLastPercentUsedValue() / 100.0f);
+		setFillPercentage(std::log(device->getLastPercentUsedValue() + 1) / maxLogarithmicValue);
 		repaint();
 	}
 }
