@@ -149,7 +149,7 @@ public:
 
 /**
 
-	Streams data from an ONIX device
+	Configures and streams data from a Neuropixels 1.0f device
 
 */
 class Neuropixels_1 : public OnixDevice,
@@ -159,10 +159,7 @@ public:
 	/** Constructor */
 	Neuropixels_1(String name, OnixSource* s, const oni_dev_idx_t, const oni_ctx);
 
-	/** Destructor */
-	~Neuropixels_1();
-
-	/** Enables the device so that it is ready to stream with default settings */
+	/** Configures the device so that it is ready to stream with default settings */
 	int configureDevice() override;
 
 	/** Update the settings of the device */
@@ -270,8 +267,6 @@ class BackgroundUpdaterWithProgressWindow : public ThreadWithProgressWindow
 {
 public:
 	BackgroundUpdaterWithProgressWindow(Neuropixels_1* d);
-
-	~BackgroundUpdaterWithProgressWindow();
 
 	void run();
 

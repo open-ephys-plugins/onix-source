@@ -39,19 +39,17 @@ public:
 
 	MemoryMonitorInterface(std::shared_ptr<MemoryMonitor> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	~MemoryMonitorInterface();
-
 	/** Disables buttons and starts animation if necessary */
-	void startAcquisition() override;
+	void startAcquisition() override {};
 
 	/** Enables buttons and start animation if necessary */
-	void stopAcquisition() override;
+	void stopAcquisition() override {};
 
 	/** Save parameters to XML */
-	void saveParameters(XmlElement* xml) override;
+	void saveParameters(XmlElement* xml) override {};
 
 	/** Load parameters from XML */
-	void loadParameters(XmlElement* xml) override;
+	void loadParameters(XmlElement* xml) override {};
 
 	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override;
@@ -69,6 +67,8 @@ private:
 	std::unique_ptr<Label> sampleRateValue;
 
 	std::unique_ptr<UtilityButton> deviceEnableButton;
+
+	JUCE_LEAK_DETECTOR(MemoryMonitorInterface);
 };
 
 #endif

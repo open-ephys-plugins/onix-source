@@ -56,6 +56,7 @@ enum class OnixDeviceType {
 	NEUROPIXELS_2,
 	ADC,
 	MEMORYMONITOR,
+	OUTPUTCLOCK,
 };
 
 struct StreamInfo {

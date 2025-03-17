@@ -86,7 +86,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		if (source->type == OnixDeviceType::NEUROPIXELS_1)
 		{
 			NeuropixV1Interface* neuropixInterface = new NeuropixV1Interface(std::static_pointer_cast<Neuropixels_1>(source), editor, this);
-			settingsInterfaces.add((SettingsInterface*)neuropixInterface);
+			settingsInterfaces.add(neuropixInterface);
 			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(neuropixInterface), true);
 
 			portTabIndex.add(portTabNumber++);
@@ -94,7 +94,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		else if (source->type == OnixDeviceType::BNO)
 		{
 			Bno055Interface* bno055Interface = new Bno055Interface(std::static_pointer_cast<Bno055>(source), editor, this);
-			settingsInterfaces.add((SettingsInterface*)bno055Interface);
+			settingsInterfaces.add(bno055Interface);
 			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(bno055Interface), true);
 
 			portTabIndex.add(portTabNumber++);
@@ -102,8 +102,16 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		else if (source->type == OnixDeviceType::MEMORYMONITOR)
 		{
 			MemoryMonitorInterface* memoryMonitorInterface = new MemoryMonitorInterface(std::static_pointer_cast<MemoryMonitor>(source), editor, this);
-			settingsInterfaces.add((SettingsInterface*)memoryMonitorInterface);
+			settingsInterfaces.add(memoryMonitorInterface);
 			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(memoryMonitorInterface), true);
+
+			portTabIndex.add(portTabNumber++);
+		}
+		else if (source->type == OnixDeviceType::OUTPUTCLOCK)
+		{
+			OutputClockInterface* outputClockInterface = new OutputClockInterface(std::static_pointer_cast<OutputClock>(source), editor, this);
+			settingsInterfaces.add(outputClockInterface);
+			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(outputClockInterface), true);
 
 			portTabIndex.add(portTabNumber++);
 		}

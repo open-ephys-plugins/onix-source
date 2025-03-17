@@ -220,7 +220,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 		else if (devices[dev_idx].id == ONIX_MEMUSAGE)
 		{
-			auto memoryMonitor = std::make_shared<MemoryMonitor>("MemoryMonitor", devices[dev_idx].idx, ctx);
+			auto memoryMonitor = std::make_shared<MemoryMonitor>("Memory Monitor", devices[dev_idx].idx, ctx);
 
 			int result = memoryMonitor->configureDevice();
 
@@ -231,6 +231,20 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(memoryMonitor);
+		}
+		else if (devices[dev_idx].id == ONIX_FMCCLKOUT1R3)
+		{
+			auto outputClock = std::make_shared<OutputClock>("Output Clock", devices[dev_idx].idx, ctx);
+
+			int result = outputClock->configureDevice();
+
+			if (result != 0)
+			{
+				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				continue;
+			}
+
+			sources.push_back(outputClock);
 		}
 	}
 

@@ -29,10 +29,6 @@ MemoryMonitorUsage::MemoryMonitorUsage(GenericProcessor* p)
 	device = nullptr;
 }
 
-MemoryMonitorUsage::~MemoryMonitorUsage()
-{
-}
-
 void MemoryMonitorUsage::timerCallback()
 {
 	if (device != nullptr)
@@ -86,10 +82,6 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, const 
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
-}
-
-MemoryMonitor::~MemoryMonitor()
-{
 }
 
 int MemoryMonitor::configureDevice()

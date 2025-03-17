@@ -4,3 +4,4 @@
 #include "Neuropixels_1.h"
 #include "Neuropixels2e.h"
 #include "MemoryMonitor.h"
+#include "OutputClock.h"

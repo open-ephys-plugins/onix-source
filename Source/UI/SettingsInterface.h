@@ -46,13 +46,14 @@ public:
         PROBE_SETTINGS_INTERFACE,
         BNO055_SETTINGS_INTERFACE,
         MEMORYMONITOR_SETTINGS_INTERFACE,
+        OUTPUTCLOCK_SETTINGS_INTERFACE,
         UNKNOWN_SETTINGS_INTERFACE
     };
 
     /** Constructor */
-    SettingsInterface (std::shared_ptr<OnixDevice> dataSource_, OnixSourceEditor* editor_, OnixSourceCanvas* canvas_)
+    SettingsInterface (std::shared_ptr<OnixDevice> device_, OnixSourceEditor* editor_, OnixSourceCanvas* canvas_)
     {
-        device = dataSource_;
+        device = device_;
         editor = editor_;
         canvas = canvas_;
 
@@ -61,9 +62,6 @@ public:
 
         setBounds (0, 0, width, height);
     }
-
-    /** Destructor */
-    ~SettingsInterface() {}
 
     /** Called when acquisition begins */
     virtual void startAcquisition() = 0;
@@ -84,7 +82,7 @@ public:
     Type type = Type::UNKNOWN_SETTINGS_INTERFACE;
 
     /** Pointer to the data source*/
-    std::shared_ptr<OnixDevice> device;
+    std::shared_ptr<OnixDevice> device = nullptr;
 
 protected:
     OnixSourceEditor* editor;

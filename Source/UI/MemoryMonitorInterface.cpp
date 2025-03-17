@@ -68,10 +68,6 @@ MemoryMonitorInterface::MemoryMonitorInterface(std::shared_ptr<MemoryMonitor> d,
 	type = SettingsInterface::Type::MEMORYMONITOR_SETTINGS_INTERFACE;
 }
 
-MemoryMonitorInterface::~MemoryMonitorInterface()
-{
-}
-
 void MemoryMonitorInterface::buttonClicked(Button* button)
 {
 	if (button == deviceEnableButton.get())
@@ -101,7 +97,7 @@ void MemoryMonitorInterface::labelTextChanged(Label* l)
 
 		int rate = l->getText().getIntValue();
 
-		if (rate < 0.1 || rate > 1000)
+		if (rate < 1 || rate > 1000)
 		{
 			l->setText(String(d->getSamplesPerSecond()), dontSendNotification);
 			return;
@@ -109,22 +105,6 @@ void MemoryMonitorInterface::labelTextChanged(Label* l)
 
 		d->setSamplesPerSecond((uint32_t)rate);
 	}
-}
-
-void MemoryMonitorInterface::startAcquisition()
-{
-}
-
-void MemoryMonitorInterface::stopAcquisition()
-{
-}
-
-void MemoryMonitorInterface::saveParameters(XmlElement* xml)
-{
-}
-
-void MemoryMonitorInterface::loadParameters(XmlElement* xml)
-{
 }
 
 void MemoryMonitorInterface::updateInfoString()

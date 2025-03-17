@@ -124,10 +124,6 @@ ProbeBrowser::ProbeBrowser(NeuropixV1Interface* parent_) : parent(parent_)
 	dragZoneWidth = 10;
 }
 
-ProbeBrowser::~ProbeBrowser()
-{
-}
-
 void ProbeBrowser::mouseMove(const MouseEvent& event)
 {
 	float y = event.y;

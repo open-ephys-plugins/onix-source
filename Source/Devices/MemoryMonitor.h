@@ -35,16 +35,14 @@ enum class MemoryMonitorRegisters : uint32_t
 };
 
 /*
-	Streams data from a MemoryMonitor device on a Breakout Board
+	Configures and streams data from a MemoryMonitor device on a Breakout Board
 */
 class MemoryMonitor : public OnixDevice
 {
 public:
 	MemoryMonitor(String name, const oni_dev_idx_t, const oni_ctx);
 
-	~MemoryMonitor();
-
-	/** Enables the device so that it is ready to stream with default settings */
+	/** Configures the device so that it is ready to stream with default settings */
 	int configureDevice() override;
 
 	/** Update the settings of the device */
@@ -97,6 +95,8 @@ private:
 	uint64 eventCodes[numFrames];
 
 	std::atomic<float> lastPercentUsedValue = 0.0f;
+
+	JUCE_LEAK_DETECTOR(MemoryMonitor);
 };
 
 /*
@@ -106,8 +106,6 @@ class MemoryMonitorUsage : public LevelMonitor
 {
 public:
 	MemoryMonitorUsage(GenericProcessor*);
-
-	~MemoryMonitorUsage();
 
 	void timerCallback() override;
 
@@ -124,6 +122,8 @@ private:
 	// NB: Calculate the maximum logarithmic value to convert from linear scale (x: 0-100) to logarithmic scale (y: 0-1)
 	//	   using the following equation: y = log_e(x + 1) / log_e(x_max + 1);
 	const float maxLogarithmicValue = std::log(101);
+
+	JUCE_LEAK_DETECTOR(MemoryMonitorUsage);
 };
 
 #endif

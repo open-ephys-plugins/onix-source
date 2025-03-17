@@ -77,9 +77,6 @@ public:
 	/** Constructor */
 	NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	/** Destructor */
-	~NeuropixV1Interface();
-
 	/** Draws the legend */
 	void paint(Graphics& g) override;
 

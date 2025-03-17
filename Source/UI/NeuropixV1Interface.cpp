@@ -290,10 +290,6 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 	updateInfoString();
 }
 
-NeuropixV1Interface::~NeuropixV1Interface()
-{
-}
-
 void NeuropixV1Interface::updateInfoString()
 {
 	String nameString, infoString;

@@ -33,7 +33,6 @@ class ProbeBrowser : public Component,
 {
 public:
     ProbeBrowser (NeuropixV1Interface*);
-    virtual ~ProbeBrowser();
 
     void mouseMove (const MouseEvent& event);
     void mouseDown (const MouseEvent& event);

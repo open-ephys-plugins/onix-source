@@ -19,11 +19,6 @@ void Neuropixels2e::createDataStream(int n)
 	streams.add(apStream);
 }
 
-Neuropixels2e::~Neuropixels2e()
-{
-
-}
-
 int Neuropixels2e::getNumProbes() const
 {
 	return m_numProbes;

@@ -87,10 +87,6 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 		eventCodes[i] = 0;
 }
 
-Bno055::~Bno055()
-{
-}
-
 int Bno055::configureDevice()
 {
 	oni_write_reg(ctx, deviceIdx, (uint32_t)Bno055Registers::ENABLE, (uint32_t)1);

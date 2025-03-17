@@ -30,10 +30,6 @@ BackgroundUpdaterWithProgressWindow::BackgroundUpdaterWithProgressWindow(Neuropi
 	device = d;
 }
 
-BackgroundUpdaterWithProgressWindow::~BackgroundUpdaterWithProgressWindow()
-{
-}
-
 int BackgroundUpdaterWithProgressWindow::updateSettings()
 {
 	runThread();
@@ -182,10 +178,6 @@ Neuropixels_1::Neuropixels_1(String name, OnixSource* s, const oni_dev_idx_t dev
 	source->addPathParameter(Parameter::PROCESSOR_SCOPE, getGainPathParameterName(), "Gain Calibration File", "Path to the gain calibration file for this Neuropixels probe",
 		"", validExtensions, false, false, true);
 	source->getParameter(getGainPathParameterName())->setNextValue(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
-}
-
-Neuropixels_1::~Neuropixels_1()
-{
 }
 
 String Neuropixels_1::getAdcPathParameter()

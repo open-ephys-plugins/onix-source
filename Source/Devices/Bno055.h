@@ -31,15 +31,15 @@ enum class Bno055Registers
 	ENABLE = 0x00
 };
 
+/*
+	Configures and streams data from a BNO055 device
+*/
 class Bno055 : public OnixDevice
 {
 public:
 
 	/** Constructor */
 	Bno055(String name, const oni_dev_idx_t, const oni_ctx);
-
-	/** Destructor */
-	~Bno055();
 
 	int configureDevice() override;
 
