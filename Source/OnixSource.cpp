@@ -535,7 +535,8 @@ bool OnixSource::stopAcquisition()
 		devicesFound = false;
 
 		MessageManager::callAsync([] { AlertWindow::showMessageBoxAsync(MessageBoxIconType::WarningIcon, "Port Communication Lock Lost",
-			"The port communication lock was lost during acquisition. To continue, please disconnect and reconnect the hardware.", "Okay"); });
+			"The port communication lock was lost during acquisition, inspect hardware connections and port switch." + 
+			String("\n\nTo continue, press disconnect in the GUI, then press connect."), "Okay"); });
 	}
 
 	return true;
