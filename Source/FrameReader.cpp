@@ -50,6 +50,8 @@ void FrameReader::run()
 
 		if (res < ONI_ESUCCESS)
 		{
+			if (threadShouldExit()) return;
+
 			LOGE("Error reading ONI frame: ", oni_error_str(res), " code ", res);
 			return;
 		}
