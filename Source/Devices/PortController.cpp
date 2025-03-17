@@ -74,12 +74,11 @@ void PortController::processFrames()
 		uint32_t code = (uint32_t) *(dataPtr + dataOffset);
 		uint32_t data = (uint32_t) *(dataPtr + dataOffset + 1);
 
-		if (code & (uint32_t)PortStatusCode::SerdesLock)
-			errorFlag = ((uint32_t)data & LINKSTATE_SL) == 0;
+		errorFlag = errorFlag || ((uint32_t)data & LINKSTATE_SL) == 0;
 
 		oni_destroy_frame(frame);
 
-		LOGE("Port status changed for " + getName() + ". Port status code is " + String((uint32_t)code));
+		LOGE("Port status changed for " + getName() + ".");
 	}
 }
 
