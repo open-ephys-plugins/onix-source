@@ -93,11 +93,9 @@ Bno055::~Bno055()
 
 int Bno055::configureDevice()
 {
-	int result = oni_write_reg(ctx, deviceIdx, (uint32_t)Bno055Registers::ENABLE, isEnabled() ? (oni_reg_val_t)1 : (oni_reg_val_t)0);
+	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)Bno055Registers::ENABLE, isEnabled() ? (oni_reg_val_t)1 : (oni_reg_val_t)0));
 
-	if (result != ONI_ESUCCESS) LOGE(oni_error_str(result));
-
-	return result;
+	return 0;
 }
 
 int Bno055::updateSettings()

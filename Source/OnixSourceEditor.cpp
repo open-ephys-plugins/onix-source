@@ -111,8 +111,32 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* oni
 
 void OnixSourceEditor::labelTextChanged(Label* l)
 {
+	// TODO: Add headstage specific parameters to limit voltage within safe levels
 	if (l == portVoltageValueA.get())
 	{
+		float input = l->getText().getFloatValue();
+
+		if (input < 0.0f)
+		{
+			l->setText("0.0", dontSendNotification);
+		}
+		else if (input > 7.0f)
+		{
+			l->setText("7.0", dontSendNotification);
+		}
+	}
+	else if (l == portVoltageValueB.get())
+	{
+		float input = l->getText().getFloatValue();
+
+		if (input < 0.0f)
+		{
+			l->setText("0.0", dontSendNotification);
+		}
+		else if (input > 7.0f)
+		{
+			l->setText("7.0", dontSendNotification);
+		}
 	}
 }
 
@@ -120,58 +144,64 @@ void OnixSourceEditor::buttonClicked(Button* b)
 {
 	if (b == connectButton.get())
 	{
-		if (connectButton->getToggleState() == true)
+		setConnectedStatus(connectButton->getToggleState());
+	}
+}
+
+void OnixSourceEditor::setConnectedStatus(bool connected)
+{
+	connectButton->setToggleState(connected, dontSendNotification);
+
+	if (connected)
+	{
+		// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
+		if (isHeadstageSelected(PortName::PortA))
 		{
-			// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
-			if (isHeadstageSelected(PortName::PortA))
+			if (!thread->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
 			{
-				if (!thread->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
-				{
-					CoreServices::sendStatusMessage("Unable to set port voltage for Port A.");
-					connectButton->setToggleState(false, true);
-					return;
-				}
-			}
-			
-			if (isHeadstageSelected(PortName::PortB))
-			{
-				if (!thread->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
-				{
-					CoreServices::sendStatusMessage("Unable to set port voltage for Port B.");
-					connectButton->setToggleState(false, true);
-					return;
-				}
-			}
-
-			thread->initializeDevices(true);
-			canvas->refreshTabs();
-
-			connectButton->setLabel("DISCONNECT");
-
-			if (!thread->foundInputSource())
-			{
-				CoreServices::sendStatusMessage("No Onix hardware found.");
-				connectButton->setToggleState(false, true);
+				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port A.");
+				connectButton->setToggleState(false, dontSendNotification);
+				return;
 			}
 		}
 		else
 		{
-			if (!thread->setPortVoltage(PortName::PortA, 0))
-			{
-				CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port A.");
-				return;
-			}
-
-			if (!thread->setPortVoltage(PortName::PortB, 0))
-			{
-				CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port B.");
-				return;
-			}
-
-			canvas->removeTabs();
-			thread->disconnectDevices(true);
-			connectButton->setLabel("CONNECT");
+			thread->setPortVoltage(PortName::PortA, 0);
 		}
+
+		if (isHeadstageSelected(PortName::PortB))
+		{
+			if (!thread->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
+			{
+				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port B.");
+				connectButton->setToggleState(false, dontSendNotification);
+				return;
+			}
+		}
+		else
+		{
+			thread->setPortVoltage(PortName::PortB, 0);
+		}
+
+		thread->initializeDevices(true);
+		canvas->refreshTabs();
+
+		connectButton->setLabel("DISCONNECT");
+
+		if (!thread->foundInputSource())
+		{
+			CoreServices::sendStatusMessage("No Onix hardware found.");
+			connectButton->setToggleState(false, sendNotification);
+		}
+	}
+	else
+	{
+		thread->setPortVoltage(PortName::PortA, 0);
+		thread->setPortVoltage(PortName::PortB, 0);
+
+		canvas->removeTabs();
+		thread->disconnectDevices(true);
+		connectButton->setLabel("CONNECT");
 	}
 }
 

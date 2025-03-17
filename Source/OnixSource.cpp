@@ -35,6 +35,9 @@ OnixSource::OnixSource(SourceNode* sn) :
 
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
 
+	portA = std::make_unique<PortController>(PortName::PortA, context.get());
+	portB = std::make_unique<PortController>(PortName::PortB, context.get());
+
 	if (!context.isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
@@ -64,7 +67,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 {
 	if (!context.isInitialized())
 	{
-		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again."); 
+		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
 		return;
 	}
 
@@ -96,9 +99,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	size_t devices_sz = sizeof(oni_device_t) * num_devs;
 	devices = (oni_device_t*)realloc(devices, devices_sz);
 
-	if (devices == NULL) 
-	{ 
-		LOGE("No devices found."); 
+	if (devices == NULL)
+	{
+		LOGE("No devices found.");
 		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 		return;
 	}
@@ -195,7 +198,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, devices[dev_idx].idx, ctx);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
-			
+
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(devices[dev_idx].idx, ctx);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
@@ -220,6 +223,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 		}
 	}
+
+	portA->configureDevice();
+	portB->configureDevice();
 
 	context.issueReset();
 
@@ -270,10 +276,10 @@ void OnixSource::updateDiscoveryParameters(PortName port, DiscoveryParameters pa
 	switch (port)
 	{
 	case PortName::PortA:
-		portA.updateDiscoveryParameters(parameters);
+		portA->updateDiscoveryParameters(parameters);
 		break;
 	case PortName::PortB:
-		portB.updateDiscoveryParameters(parameters);
+		portB->updateDiscoveryParameters(parameters);
 		break;
 	default:
 		break;
@@ -289,30 +295,30 @@ bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 	switch (port)
 	{
 	case PortName::PortA:
-		if (voltage == "") return portA.configureVoltage(ctx);
-		else			   return portA.configureVoltage(ctx, voltage.getFloatValue());
+		if (voltage == "") return portA->configureVoltage();
+		else			   return portA->configureVoltage(voltage.getFloatValue());
 	case PortName::PortB:
-		if (voltage == "") return portB.configureVoltage(ctx);
-		else			   return portB.configureVoltage(ctx, voltage.getFloatValue());
+		if (voltage == "") return portB->configureVoltage();
+		else			   return portB->configureVoltage(voltage.getFloatValue());
 	default:
 		return false;
 	}
 }
 
-bool OnixSource::setPortVoltage(PortName port, float voltage) const
+void OnixSource::setPortVoltage(PortName port, float voltage) const
 {
-	if (!context.isInitialized()) return false;
-
-	oni_ctx ctx = context.get();
+	if (!context.isInitialized()) return;
 
 	switch (port)
 	{
 	case PortName::PortA:
-		return portA.setVoltage(ctx, voltage);
+		portA->setVoltageOverride(voltage);
+		return;
 	case PortName::PortB:
-		return portB.setVoltage(ctx, voltage);
+		portB->setVoltageOverride(voltage);
+		return;
 	default:
-		return false;
+		return;
 	}
 }
 
@@ -421,8 +427,8 @@ bool OnixSource::isReady()
 	if (!context.isInitialized() || !devicesFound)
 		return false;
 
-	if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(context.get())) return false;
-	if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(context.get())) return false;
+	if (editor->isHeadstageSelected(PortName::PortA) && !portA->checkLinkState()) return false;
+	if (editor->isHeadstageSelected(PortName::PortB) && !portB->checkLinkState()) return false;
 
 	for (auto source : sources)
 	{
@@ -448,19 +454,29 @@ bool OnixSource::isReady()
 
 bool OnixSource::startAcquisition()
 {
-	startThread();
-
 	frameReader.reset();
 
-	frameReader = std::make_unique<FrameReader>(sources, context.get());
-	frameReader->startThread();
+	Array<OnixDevice*> devices;
 
 	for (auto source : sources)
+	{
+		devices.add(source);
+	}
+
+	devices.add(portA.get());
+	devices.add(portB.get());
+
+	for (auto source : devices)
 	{
 		if (!source->isEnabled()) continue;
 
 		source->startAcquisition();
 	}
+
+	frameReader = std::make_unique<FrameReader>(devices, context.get());
+	frameReader->startThread();
+
+	startThread();
 
 	return true;
 }
@@ -473,7 +489,8 @@ bool OnixSource::stopAcquisition()
 	if (frameReader->isThreadRunning())
 		frameReader->signalThreadShouldExit();
 
-	waitForThreadToExit(2000);
+	if (!portA->getErrorFlag() && !portB->getErrorFlag())
+		waitForThreadToExit(2000);
 
 	if (devicesFound)
 	{
@@ -495,8 +512,32 @@ bool OnixSource::stopAcquisition()
 		source->stopAcquisition();
 	}
 
+	portA->stopAcquisition();
+	portB->stopAcquisition();
+
 	for (auto buffers : sourceBuffers)
 		buffers->clear();
+
+	if (portA->getErrorFlag() || portB->getErrorFlag())
+	{
+		if (portA->getErrorFlag())
+		{
+			LOGE("Port A lost communication lock. Reconnect hardware to continue.");
+			CoreServices::sendStatusMessage("Port A lost communication lock");
+		}
+
+		if (portB->getErrorFlag())
+		{
+			LOGE("Port B lost communication lock. Reconnect hardware to continue.");
+			CoreServices::sendStatusMessage("Port B lost communication lock");
+		}
+
+		devicesFound = false;
+
+		MessageManager::callAsync([] { AlertWindow::showMessageBoxAsync(MessageBoxIconType::WarningIcon, "Port Communication Lock Lost",
+			"The port communication lock was lost during acquisition, inspect hardware connections and port switch." + 
+			String("\n\nTo continue, press disconnect in the GUI, then press connect."), "Okay"); });
+	}
 
 	return true;
 }
@@ -510,5 +551,8 @@ bool OnixSource::updateBuffer()
 		source->processFrames();
 	}
 
-	return true;
+	portA->processFrames();
+	portB->processFrames();
+
+	return !portA->getErrorFlag() && !portB->getErrorFlag();
 }
