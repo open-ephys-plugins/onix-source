@@ -3,3 +3,4 @@
 #include "Bno055Interface.h"
 #include "MemoryMonitorInterface.h"
 #include "OutputClockInterface.h"
+#include "HeartbeatInterface.h"

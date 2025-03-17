@@ -246,6 +246,20 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			sources.push_back(outputClock);
 		}
+		else if (devices[dev_idx].id == ONIX_HEARTBEAT)
+		{
+			auto heartbeat = std::make_shared<Heartbeat>("Heartbeat", devices[dev_idx].idx, ctx);
+
+			int result = heartbeat->configureDevice();
+
+			if (result != 0)
+			{
+				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				continue;
+			}
+
+			sources.push_back(heartbeat);
+		}
 	}
 
 	val = 1;

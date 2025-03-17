@@ -93,7 +93,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		}
 		else if (source->type == OnixDeviceType::BNO)
 		{
-			Bno055Interface* bno055Interface = new Bno055Interface(std::static_pointer_cast<Bno055>(source), editor, this);
+			auto bno055Interface = new Bno055Interface(std::static_pointer_cast<Bno055>(source), editor, this);
 			settingsInterfaces.add(bno055Interface);
 			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(bno055Interface), true);
 
@@ -101,7 +101,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		}
 		else if (source->type == OnixDeviceType::MEMORYMONITOR)
 		{
-			MemoryMonitorInterface* memoryMonitorInterface = new MemoryMonitorInterface(std::static_pointer_cast<MemoryMonitor>(source), editor, this);
+			auto memoryMonitorInterface = new MemoryMonitorInterface(std::static_pointer_cast<MemoryMonitor>(source), editor, this);
 			settingsInterfaces.add(memoryMonitorInterface);
 			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(memoryMonitorInterface), true);
 
@@ -109,9 +109,17 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 		}
 		else if (source->type == OnixDeviceType::OUTPUTCLOCK)
 		{
-			OutputClockInterface* outputClockInterface = new OutputClockInterface(std::static_pointer_cast<OutputClock>(source), editor, this);
+			auto outputClockInterface = new OutputClockInterface(std::static_pointer_cast<OutputClock>(source), editor, this);
 			settingsInterfaces.add(outputClockInterface);
 			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(outputClockInterface), true);
+
+			portTabIndex.add(portTabNumber++);
+		}
+		else if (source->type == OnixDeviceType::HEARTBEAT)
+		{
+			auto heartbeatInterface = new HeartbeatInterface(std::static_pointer_cast<Heartbeat>(source), editor, this);
+			settingsInterfaces.add(heartbeatInterface);
+			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(heartbeatInterface), true);
 
 			portTabIndex.add(portTabNumber++);
 		}

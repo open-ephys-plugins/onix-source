@@ -5,3 +5,4 @@
 #include "Neuropixels2e.h"
 #include "MemoryMonitor.h"
 #include "OutputClock.h"
+#include "Heartbeat.h"
