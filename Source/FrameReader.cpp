@@ -50,6 +50,7 @@ void FrameReader::run()
 			{
 				source->addFrame(frame);
 				destroyFrame = false;
+				break;
 			}
 		}
 

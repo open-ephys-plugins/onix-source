@@ -147,6 +147,8 @@ public:
 
 	std::vector<std::shared_ptr<SettingsInterface>> settingsInterfaces;
 
+	int resetContext();
+
 private:
 
 	OnixSourceEditor* editor;

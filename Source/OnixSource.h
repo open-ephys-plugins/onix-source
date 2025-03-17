@@ -31,7 +31,6 @@
 #include "OnixSourceEditor.h"
 #include "Devices/DeviceList.h"
 #include "FrameReader.h"
-#include "PortController.h"
 
 /**
 
@@ -50,11 +49,8 @@ public:
 	{
 		if (context != nullptr)
 		{
-			// TODO: convert back to port controller calls, once issue-2 is merged
-			//portA.setVoltage(context->get(), 0.0f);
-			//portB.setVoltage(context->get(), 0.0f);
-			context->writeRegister((oni_dev_idx_t)PortName::PortA, 3, 0);
-			context->writeRegister((oni_dev_idx_t)PortName::PortB, 3, 0);
+			portA->setVoltageOverride(0.0f, false);
+			portB->setVoltageOverride(0.0f, false);
 		}
 	}
 
@@ -88,7 +84,9 @@ public:
 	bool configurePortVoltage(PortName port, String voltage) const;
 
 	/** Sets the port voltage */
-	bool setPortVoltage(PortName port, float voltage) const;
+	void setPortVoltage(PortName port, float voltage) const;
+
+	int resetContext() { return context.issueReset(); }
 
 	void initializeDevices(bool updateStreamInfo = false);
 
@@ -130,8 +128,8 @@ private:
 
 	std::shared_ptr<Onix1> context = nullptr;
 
-	PortController portA = PortController(PortName::PortA);
-	PortController portB = PortController(PortName::PortB);
+	std::shared_ptr<PortController> portA;
+	std::shared_ptr<PortController> portB;
 
 	const oni_size_t block_read_size = 2048;
 

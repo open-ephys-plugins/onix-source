@@ -91,7 +91,7 @@ Bno055::~Bno055()
 {
 }
 
-int Bno055::enableDevice()
+int Bno055::configureDevice()
 {
 	deviceContext->writeRegister(deviceIdx, (uint32_t)Bno055Registers::ENABLE, isEnabled() ? 1 : 0);
 

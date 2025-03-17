@@ -41,7 +41,7 @@ public:
 	/** Destructor */
 	~Bno055();
 
-	int enableDevice() override;
+	int configureDevice() override;
 
 	/** Update the settings of the device */
 	bool updateSettings() override;

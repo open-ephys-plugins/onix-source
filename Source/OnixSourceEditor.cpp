@@ -45,13 +45,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	headstageComboBoxA->setSelectedId(1, dontSendNotification);
 	addAndMakeVisible(headstageComboBoxA.get());
 
-	passthroughEditorA = std::make_unique<ToggleParameterEditor>(source->getParameter("passthroughA"));
-	passthroughEditorA->setLayout(ParameterEditor::nameHidden);
-	passthroughEditorA->setBounds(headstageComboBoxA->getX(), headstageComboBoxA->getBottom() + 4, 60, headstageComboBoxA->getHeight());
-	addAndMakeVisible(passthroughEditorA.get());
+	portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage");
+	portVoltageOverrideLabelA->setBounds(headstageComboBoxA->getX(), headstageComboBoxA->getBottom() + 4, 50, headstageComboBoxA->getHeight());
+	portVoltageOverrideLabelA->setFont(fontOptionSmall);
+	addAndMakeVisible(portVoltageOverrideLabelA.get());
 
 	portVoltageValueA = std::make_unique<Label>("voltageValueA", "");
-	portVoltageValueA->setBounds(passthroughEditorA->getRight() + 10, passthroughEditorA->getY(), 35, passthroughEditorA->getHeight());
+	portVoltageValueA->setBounds(portVoltageOverrideLabelA->getRight() + 3, portVoltageOverrideLabelA->getY(), 25, portVoltageOverrideLabelA->getHeight());
 	portVoltageValueA->setFont(fontOptionSmall);
 	portVoltageValueA->setEditable(true);
 	portVoltageValueA->setColour(Label::textColourId, Colours::black);
@@ -61,7 +61,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	addAndMakeVisible(portVoltageValueA.get());
 
 	portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
-	portLabelB->setBounds(portLabelA->getX(), passthroughEditorA->getBottom() + 5, portLabelA->getWidth(), portLabelA->getHeight());
+	portLabelB->setBounds(portLabelA->getX(), portVoltageOverrideLabelA->getBottom() + 5, portLabelA->getWidth(), portLabelA->getHeight());
 	portLabelB->setFont(fontOptionTitle);
 	addAndMakeVisible(portLabelB.get());
 
@@ -74,13 +74,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	headstageComboBoxB->setSelectedId(1, dontSendNotification);
 	addAndMakeVisible(headstageComboBoxB.get());
 
-	passthroughEditorB = std::make_unique<ToggleParameterEditor>(source->getParameter("passthroughB"));
-	passthroughEditorB->setLayout(ParameterEditor::nameHidden);
-	passthroughEditorB->setBounds(headstageComboBoxB->getX(), headstageComboBoxB->getBottom() + 4, passthroughEditorA->getWidth(), passthroughEditorA->getHeight());
-	addAndMakeVisible(passthroughEditorB.get());
+	portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage");
+	portVoltageOverrideLabelB->setBounds(headstageComboBoxB->getX(), headstageComboBoxB->getBottom() + 4, portVoltageOverrideLabelA->getWidth(), portVoltageOverrideLabelA->getHeight());
+	portVoltageOverrideLabelB->setFont(fontOptionSmall);
+	addAndMakeVisible(portVoltageOverrideLabelB.get());
 
 	portVoltageValueB = std::make_unique<Label>("voltageValueB", "");
-	portVoltageValueB->setBounds(passthroughEditorB->getRight() + 10, passthroughEditorB->getY(), portVoltageValueA->getWidth(), passthroughEditorB->getHeight());
+	portVoltageValueB->setBounds(portVoltageValueA->getX(), portVoltageOverrideLabelB->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
 	portVoltageValueB->setFont(fontOptionSmall);
 	portVoltageValueB->setEditable(true);
 	portVoltageValueB->setColour(Label::textColourId, Colours::black);
@@ -112,8 +112,32 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 
 void OnixSourceEditor::labelTextChanged(Label* l)
 {
+	// TODO: Add headstage specific parameters to limit voltage within safe levels
 	if (l == portVoltageValueA.get())
 	{
+		float input = l->getText().getFloatValue();
+
+		if (input < 0.0f)
+		{
+			l->setText("0.0", dontSendNotification);
+		}
+		else if (input > 7.0f)
+		{
+			l->setText("7.0", dontSendNotification);
+		}
+	}
+	else if (l == portVoltageValueB.get())
+	{
+		float input = l->getText().getFloatValue();
+
+		if (input < 0.0f)
+		{
+			l->setText("0.0", dontSendNotification);
+		}
+		else if (input > 7.0f)
+		{
+			l->setText("7.0", dontSendNotification);
+		}
 	}
 }
 
@@ -121,53 +145,60 @@ void OnixSourceEditor::buttonClicked(Button* b)
 {
 	if (b == connectButton.get())
 	{
-		if (connectButton->getToggleState() == true)
+		setConnectedStatus(connectButton->getToggleState());
+	}
+}
+
+void OnixSourceEditor::setConnectedStatus(bool connected)
+{
+	connectButton->setToggleState(connected, dontSendNotification);
+
+	if (connected)
+	{
+		// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
+		if (isHeadstageSelected(PortName::PortA))
 		{
-			// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
-			if (isHeadstageSelected(PortName::PortA) || !portVoltageValueA->getText().isEmpty())
+			if (!thread->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
 			{
-				if (!source->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
-				{
-					CoreServices::sendStatusMessage("Unable to set port voltage for Port A.");
-					connectButton->setToggleState(false, true);
-					return;
-				}
-			}
-
-			if (isHeadstageSelected(PortName::PortB) || !portVoltageValueB->getText().isEmpty())
-			{
-				if (!source->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
-				{
-					CoreServices::sendStatusMessage("Unable to set port voltage for Port B.");
-					connectButton->setToggleState(false, true);
-					return;
-				}
-			}
-
-			source->initializeDevices(false);
-			canvas->refreshTabs();
-
-			connectButton->setLabel("DISCONNECT");
-
-			if (!source->foundInputSource())
-			{
-				CoreServices::sendStatusMessage("No Onix hardware found.");
-				connectButton->setToggleState(false, true);
+				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port A.");
+				connectButton->setToggleState(false, dontSendNotification);
+				return;
 			}
 		}
 		else
 		{
-			if (!source->setPortVoltage(PortName::PortA, 0))
-			{
-				CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port A.");
-				return;
-			}
+			thread->setPortVoltage(PortName::PortA, 0);
+		}
 
-			if (!source->setPortVoltage(PortName::PortB, 0))
+		if (isHeadstageSelected(PortName::PortB))
+		{
+			if (!thread->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
 			{
-				CoreServices::sendStatusMessage("Unable to set port voltage to 0 for Port B.");
+				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port B.");
+				connectButton->setToggleState(false, dontSendNotification);
 				return;
 			}
+		}
+		else
+		{
+			thread->setPortVoltage(PortName::PortB, 0);
+		}
+
+		source->initializeDevices(false);
+		canvas->refreshTabs();
+
+		connectButton->setLabel("DISCONNECT");
+
+		if (!source->foundInputSource())
+		{
+			CoreServices::sendStatusMessage("No Onix hardware found.");
+			connectButton->setToggleState(false, sendNotification);
+		}
+	}
+	else
+	{
+		source->setPortVoltage(PortName::PortA, 0);
+		source->setPortVoltage(PortName::PortB, 0);
 
 			source->disconnectDevices(true);
 			connectButton->setLabel("CONNECT");
@@ -210,6 +241,15 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 			source->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstage));
 			canvas->addHeadstage(headstage, PortName::PortA);
 		}
+
+		if (headstage == "Neuropixels 1.0f")
+		{
+			thread->getParameter("passthroughA")->setNextValue(false);
+		}
+		else
+		{
+			thread->getParameter("passthroughA")->setNextValue(true);
+		}
 	}
 	else if (cb == headstageComboBoxB.get())
 	{
@@ -232,6 +272,15 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 
 			source->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstage));
 			canvas->addHeadstage(headstage, PortName::PortB);
+		}
+
+		if (headstage == "Neuropixels 1.0f")
+		{
+			thread->getParameter("passthroughB")->setNextValue(false);
+		}
+		else
+		{
+			thread->getParameter("passthroughB")->setNextValue(true);
 		}
 	}
 }

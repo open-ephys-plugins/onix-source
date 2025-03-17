@@ -36,7 +36,12 @@ BackgroundUpdaterWithProgressWindow::~BackgroundUpdaterWithProgressWindow()
 
 bool BackgroundUpdaterWithProgressWindow::updateSettings()
 {
-	return runThread() && result;
+	if (device->isEnabled())
+		runThread();
+	else
+		return 0;
+
+	return result;
 }
 
 void BackgroundUpdaterWithProgressWindow::run()
@@ -275,7 +280,7 @@ NeuropixelsReference Neuropixels_1::getReference(int index)
 	return NeuropixelsReference::External;
 }
 
-int Neuropixels_1::enableDevice()
+int Neuropixels_1::configureDevice()
 {
 	// Get Probe SN
 	uint32_t eepromOffset = 0;

@@ -28,12 +28,34 @@
 #include <chrono>
 
 #include "oni.h"
-#include "OnixDevice.h"
+#include "../OnixDevice.h"
 
 using namespace std::this_thread;
 
-struct DiscoveryParameters
+enum class PortControllerRegister : uint32_t
 {
+	ENABLE = 0,
+	GPOSTATE = 1,
+	DESPWR = 2,
+	PORTVOLTAGE = 3,
+	SAVEVOLTAGE = 4,
+	LINKSTATE = 5
+};
+
+enum class PortStatusCode : uint32_t
+{
+	SerdesLock = 0x0001,
+	SerdesParityPass = 0x0002,
+	CrcError = 0x0100,
+	TooManyDevices = 0x0200,
+	InitializationError = 0x0400,
+	BadPacketFormat = 0x0800,
+	InitializationCrcError = 0x1000,
+};
+
+class DiscoveryParameters
+{
+public:
 	float minVoltage = 0.0f;
 	float maxVoltage = 0.0f;
 	float voltageOffset = 0.0f;
@@ -49,48 +71,67 @@ struct DiscoveryParameters
 		voltageIncrement = voltageIncrement_;
 	}
 
+	~DiscoveryParameters() {};
+
 	bool operator==(const DiscoveryParameters& rhs) const
 	{
 		return rhs.minVoltage == minVoltage && rhs.maxVoltage == maxVoltage && rhs.voltageOffset == voltageOffset && rhs.voltageIncrement == voltageIncrement;
 	}
 };
 
-class PortController
+class PortController : public OnixDevice
 {
 public:
-	PortController(PortName port_);
+	PortController(PortName port_, const oni_ctx ctx_);
 
 	~PortController();
 
+	int configureDevice() override;
+
+	int updateSettings() override { return 0; }
+
+	void startAcquisition() override;
+
+	void stopAcquisition() override;
+
+	void addFrame(oni_frame_t*) override;
+
+	void processFrames() override;
+
+	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
+
 	void updateDiscoveryParameters(DiscoveryParameters parameters);
 
-	bool configureVoltage(oni_ctx ctx, float voltage = defaultVoltage) const;
+	bool configureVoltage(float voltage = defaultVoltage);
 
-	bool setVoltage(oni_ctx ctx, float voltage) const;
+	/** Sets the voltage to the given value, after setting the voltage to zero */
+	void setVoltage(float voltage);
 
-	bool checkLinkState(oni_ctx ctx) const;
+	/** Overrides the voltage setting and directly sets it to the given voltage */
+	void setVoltageOverride(float voltage, bool waitToSettle = true);
+
+	bool checkLinkState() const;
+
+	String getPortNameString(PortName portName);
 
 	static DiscoveryParameters getHeadstageDiscoveryParameters(String headstage);
 
-	static int getPortOffset(PortName port) { return (uint32_t)port << 8; }
-
-	static String getPortName(PortName port) { return port == PortName::PortA ? "Port A" : "Port B"; }
-
-	static PortName getPortFromIndex(oni_dev_idx_t index);
-
-	static Array<PortName> getUniquePortsFromIndices(std::vector<int>);
+	/** Check if the port status changed and there is an error reported */
+	bool getErrorFlag() { return errorFlag; }
 
 private:
+	Array<oni_frame_t*, CriticalSection, 10> frameArray;
+
 	const PortName port;
 
 	static constexpr float defaultVoltage = -1.0f;
 
-	const oni_reg_addr_t voltageRegister = 3;
-	const oni_reg_addr_t linkStateRegister = 5;
+	const uint32_t LINKSTATE_PP = 0x2; // parity check pass bit
+	const uint32_t LINKSTATE_SL = 0x1; // SERDES lock bit
 
 	DiscoveryParameters discoveryParameters;
 
-	JUCE_LEAK_DETECTOR(PortController);
+	std::atomic<bool> errorFlag = false;
 };
 
 #endif // !__PORTCONTROLLER_H__

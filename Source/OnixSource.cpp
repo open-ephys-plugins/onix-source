@@ -48,6 +48,11 @@ OnixSource::OnixSource(SourceNode* sn) :
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
+
+	portA = std::make_unique<PortController>(PortName::PortA, context.get());
+	portB = std::make_unique<PortController>(PortName::PortB, context.get());
+
+	if (!context->isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
 DataThread* OnixSource::createDataThread(SourceNode* sn)
@@ -79,7 +84,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 {
 	if (context == nullptr)
 	{
-		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again."); 
+		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
 		return;
 	}
 
@@ -91,7 +96,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	uint32_t val = 0;
 
 	// TODO: How to set passthrough for Port A vs. Port B?
-	if (getParameter("passthroughA")->getValue())
+	if (getParameter("passthroughA")->getValue() || getParameter("passthroughB")->getValue())
 	{
 		LOGD("Passthrough mode enabled");
 		val = 1;
@@ -106,9 +111,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	if (context->getLastResult() != ONI_ESUCCESS) return;
 	device_map_t deviceMap = context->getDeviceTable();
 
-	if (deviceMap.size() == 0)
-	{
-		LOGE("No devices found.");
+	if (deviceMap.size() == 0) 
+	{ 
+		LOGE("No devices found."); 
 		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 		return;
 	}
@@ -118,7 +123,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	static const String probeLetters = "ABCDEFGHI";
 	const int bufferSizeInSeconds = 10;
 	int npxProbeIdx = 0;
-	int bnoIdx = 0;
 
 	for (const auto& [index, device] : deviceMap)
 	{
@@ -126,7 +130,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		{
 			auto np1 = std::make_shared<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
 
-			int res = np1->enableDevice();
+			int res = np1->configureDevice();
 
 			if (res != 0)
 			{
@@ -157,9 +161,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 		else if (device.id == ONIX_BNO055)
 		{
-			auto bno = std::make_shared<Bno055>("BNO-" + String::charToString(probeLetters[bnoIdx]), index, context);
+			auto bno = std::make_shared<Bno055>("BNO055", index, context);
 
-			int result = bno->enableDevice();
+			int result = bno->configureDevice();
 
 			if (result != 0)
 			{
@@ -168,8 +172,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(bno);
-
-			bnoIdx++;
 		}
 		else if (device.id == ONIX_DS90UB9RAW)
 		{
@@ -185,7 +187,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
 			{
 				auto np2 = std::make_shared<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
-				int res = np2->enableDevice();
+				int res = np2->configureDevice();
 				if (res != 0)
 				{
 					if (res == -1)
@@ -204,6 +206,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	val = 1;
 	context->setOption(ONI_OPT_RESET, val);
+
+	portA->configureDevice();
+	portB->configureDevice();
 
 	//oni_size_t frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE);
 	//printf("Max. read frame size: %u bytes\n", frame_size);
@@ -283,10 +288,10 @@ void OnixSource::updateDiscoveryParameters(PortName port, DiscoveryParameters pa
 	switch (port)
 	{
 	case PortName::PortA:
-		portA.updateDiscoveryParameters(parameters);
+		portA->updateDiscoveryParameters(parameters);
 		break;
 	case PortName::PortB:
-		portB.updateDiscoveryParameters(parameters);
+		portB->updateDiscoveryParameters(parameters);
 		break;
 	default:
 		break;
@@ -295,36 +300,36 @@ void OnixSource::updateDiscoveryParameters(PortName port, DiscoveryParameters pa
 
 bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 {
-	// TODO: Update this once issue-2 is merged
-	return false;
+	if (!context->isInitialized()) return false;
 
-	//switch (port)
-	//{
-	//case PortName::PortA:
-	//	if (voltage == "") return portA.configureVoltage(ctx);
-	//	else			   return portA.configureVoltage(ctx, voltage.getFloatValue());
-	//case PortName::PortB:
-	//	if (voltage == "") return portB.configureVoltage(ctx);
-	//	else			   return portB.configureVoltage(ctx, voltage.getFloatValue());
-	//default:
-	//	return false;
-	//}
+	switch (port)
+	{
+	case PortName::PortA:
+		if (voltage == "") return portA->configureVoltage();
+		else			   return portA->configureVoltage(voltage.getFloatValue());
+	case PortName::PortB:
+		if (voltage == "") return portB->configureVoltage();
+		else			   return portB->configureVoltage(voltage.getFloatValue());
+	default:
+		return false;
+	}
 }
 
-bool OnixSource::setPortVoltage(PortName port, float voltage) const
+void OnixSource::setPortVoltage(PortName port, float voltage) const
 {
-	// TODO: Update this once issue-2 is merged
-	return false;
+	if (!context->isInitialized()) return;
 
-	//switch (port)
-	//{
-	//case PortName::PortA:
-	//	return portA.setVoltage(ctx, voltage);
-	//case PortName::PortB:
-	//	return portB.setVoltage(ctx, voltage);
-	//default:
-	//	return false;
-	//}
+	switch (port)
+	{
+	case PortName::PortA:
+		portA->setVoltageOverride(voltage);
+		return;
+	case PortName::PortB:
+		portB->setVoltageOverride(voltage);
+		return;
+	default:
+		return;
+	}
 }
 
 void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
@@ -446,9 +451,8 @@ bool OnixSource::isReady()
 		return false;
 	}
 
-	// TODO: update with issue-2
-	//if (editor->isHeadstageSelected(PortName::PortA) && !portA.checkLinkState(context.get())) return false;
-	//if (editor->isHeadstageSelected(PortName::PortB) && !portB.checkLinkState(context.get())) return false;
+	if (editor->isHeadstageSelected(PortName::PortA) && !portA->checkLinkState()) return false;
+	if (editor->isHeadstageSelected(PortName::PortB) && !portB->checkLinkState()) return false;
 
 	for (const auto& source : sources)
 	{
@@ -467,19 +471,29 @@ bool OnixSource::isReady()
 
 bool OnixSource::startAcquisition()
 {
-	startThread();
-
 	frameReader.reset();
 
-	frameReader = std::make_unique<FrameReader>(sources, context);
-	frameReader->startThread();
+  OnixDeviceVector devices;
 
 	for (const auto& source : sources)
+	{
+		devices.push_back(source);
+	}
+
+	devices.push_back(portA);
+	devices.push_back(portB);
+
+	for (auto source : devices)
 	{
 		if (!source->isEnabled()) continue;
 
 		source->startAcquisition();
 	}
+
+	frameReader = std::make_unique<FrameReader>(devices, context.get());
+	frameReader->startThread();
+
+	startThread();
 
 	return true;
 }
@@ -492,7 +506,8 @@ bool OnixSource::stopAcquisition()
 	if (frameReader->isThreadRunning())
 		frameReader->signalThreadShouldExit();
 
-	waitForThreadToExit(2000);
+	if (!portA->getErrorFlag() && !portB->getErrorFlag())
+		waitForThreadToExit(2000);
 
 	if (devicesFound)
 	{
@@ -511,8 +526,32 @@ bool OnixSource::stopAcquisition()
 		source->stopAcquisition();
 	}
 
+	portA->stopAcquisition();
+	portB->stopAcquisition();
+
 	for (auto buffers : sourceBuffers)
 		buffers->clear();
+
+	if (portA->getErrorFlag() || portB->getErrorFlag())
+	{
+		if (portA->getErrorFlag())
+		{
+			LOGE("Port A lost communication lock. Reconnect hardware to continue.");
+			CoreServices::sendStatusMessage("Port A lost communication lock");
+		}
+
+		if (portB->getErrorFlag())
+		{
+			LOGE("Port B lost communication lock. Reconnect hardware to continue.");
+			CoreServices::sendStatusMessage("Port B lost communication lock");
+		}
+
+		devicesFound = false;
+
+		MessageManager::callAsync([] { AlertWindow::showMessageBoxAsync(MessageBoxIconType::WarningIcon, "Port Communication Lock Lost",
+			"The port communication lock was lost during acquisition, inspect hardware connections and port switch." + 
+			String("\n\nTo continue, press disconnect in the GUI, then press connect."), "Okay"); });
+	}
 
 	return true;
 }
@@ -526,5 +565,8 @@ bool OnixSource::updateBuffer()
 		source->processFrames();
 	}
 
-	return true;
+	portA->processFrames();
+	portB->processFrames();
+
+	return !portA->getErrorFlag() && !portB->getErrorFlag();
 }

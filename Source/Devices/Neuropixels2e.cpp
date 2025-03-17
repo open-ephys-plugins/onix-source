@@ -28,7 +28,7 @@ int Neuropixels2e::getNumProbes() const
 	return m_numProbes;
 }
 
-int Neuropixels2e::enableDevice()
+int Neuropixels2e::configureDevice()
 {
 	configureSerDes();
 	setProbeSupply(true);
