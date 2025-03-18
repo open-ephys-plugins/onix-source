@@ -123,6 +123,14 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 
 			portTabIndex.add(portTabNumber++);
 		}
+		else if (source->type == OnixDeviceType::HARPSYNCINPUT)
+		{
+			auto harpSyncInputInterface = new HarpSyncInputInterface(std::static_pointer_cast<HarpSyncInput>(source), editor, this);
+			settingsInterfaces.add(harpSyncInputInterface);
+			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(harpSyncInputInterface), true);
+
+			portTabIndex.add(portTabNumber++);
+		}
 	}
 }
 

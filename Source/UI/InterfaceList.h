@@ -4,3 +4,4 @@
 #include "MemoryMonitorInterface.h"
 #include "OutputClockInterface.h"
 #include "HeartbeatInterface.h"
+#include "HarpSyncInputInterface.h"

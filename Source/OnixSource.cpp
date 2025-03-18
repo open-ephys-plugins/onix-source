@@ -260,6 +260,20 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			sources.push_back(heartbeat);
 		}
+		else if (devices[dev_idx].id == ONIX_HARPSYNCINPUT)
+		{
+			auto harpSyncInput = std::make_shared<HarpSyncInput>("Harp Sync Input", devices[dev_idx].idx, ctx);
+
+			int result = harpSyncInput->configureDevice();
+
+			if (result != 0)
+			{
+				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				continue;
+			}
+
+			sources.push_back(harpSyncInput);
+		}
 	}
 
 	val = 1;

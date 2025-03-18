@@ -6,3 +6,4 @@
 #include "MemoryMonitor.h"
 #include "OutputClock.h"
 #include "Heartbeat.h"
+#include "HarpSyncInput.h"
