@@ -56,7 +56,7 @@ public:
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
 
-	void addFrame(oni_frame_t*) override { LOGD("Heartbeat"); };
+	void addFrame(oni_frame_t* frame) override { oni_destroy_frame(frame); }
 
 	void processFrames() override {};
 
