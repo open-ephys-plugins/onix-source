@@ -35,10 +35,6 @@
 #include "NeuropixComponents.h"
 #include "Onix1.h"
 
-#define ONI_OK(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));}}
-#define ONI_OK_RETURN_BOOL(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return false;}}
-#define ONI_OK_RETURN_INT(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return res;}}
-
 using namespace std::chrono;
 
 enum class PortName

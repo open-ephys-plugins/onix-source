@@ -95,7 +95,7 @@ int Bno055::configureDevice()
 {
 	deviceContext->writeRegister(deviceIdx, (uint32_t)Bno055Registers::ENABLE, isEnabled() ? 1 : 0);
 
-	return 0;
+	return deviceContext->getLastResult();
 }
 
 bool Bno055::updateSettings()
@@ -105,6 +105,8 @@ bool Bno055::updateSettings()
 
 void Bno055::startAcquisition()
 {
+	currentFrame = 0;
+	sampleNumber = 0;
 }
 
 void Bno055::stopAcquisition()
@@ -197,7 +199,6 @@ void Bno055::processFrames()
 		{
 			shouldAddToBuffer = true;
 			currentFrame = 0;
-			sampleNumber = 0;
 		}
 
 		if (shouldAddToBuffer)

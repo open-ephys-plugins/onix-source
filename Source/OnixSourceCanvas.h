@@ -147,7 +147,7 @@ public:
 
 	std::vector<std::shared_ptr<SettingsInterface>> settingsInterfaces;
 
-	int resetContext();
+	void resetContext();
 
 private:
 

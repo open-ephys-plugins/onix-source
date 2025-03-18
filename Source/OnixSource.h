@@ -47,7 +47,7 @@ public:
 	/** Destructor */
 	~OnixSource()
 	{
-		if (context != nullptr)
+		if (context != nullptr && context->isInitialized())
 		{
 			portA->setVoltageOverride(0.0f, false);
 			portB->setVoltageOverride(0.0f, false);
@@ -86,7 +86,7 @@ public:
 	/** Sets the port voltage */
 	void setPortVoltage(PortName port, float voltage) const;
 
-	int resetContext() { return context.issueReset(); }
+	void resetContext() { context->issueReset(); }
 
 	void initializeDevices(bool updateStreamInfo = false);
 

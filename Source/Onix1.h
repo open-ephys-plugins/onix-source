@@ -88,6 +88,8 @@ public:
 
 	int getLastResult() const { return result; }
 
+	void issueReset() { int val = 1; setOption(ONI_OPT_RESET, val); }
+
 private:
 
 	/** The ONI ctx object */

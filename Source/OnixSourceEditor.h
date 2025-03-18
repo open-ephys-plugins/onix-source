@@ -58,6 +58,8 @@ public:
 
     void comboBoxChanged(ComboBox* cb) override;
 
+    void updateComboBox(ComboBox* cb);
+
     /** Called when settings are changed */
     void updateSettings() override;
 
@@ -82,6 +84,8 @@ public:
     void refreshComboBoxSelection();
 
     std::map<int, OnixDeviceType> createTabMapFromCanvas();
+
+    void setConnectedStatus(bool);
 
 private:
 

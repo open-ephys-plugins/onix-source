@@ -156,32 +156,28 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 	if (connected)
 	{
 		// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
-		if (isHeadstageSelected(PortName::PortA))
+		if (isHeadstageSelected(PortName::PortA) || !portVoltageValueA->getText().isEmpty())
 		{
-			if (!thread->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
+			if (!source->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
 			{
 				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port A.");
-				connectButton->setToggleState(false, dontSendNotification);
-				return;
 			}
 		}
 		else
 		{
-			thread->setPortVoltage(PortName::PortA, 0);
+			source->setPortVoltage(PortName::PortA, 0);
 		}
 
-		if (isHeadstageSelected(PortName::PortB))
+		if (isHeadstageSelected(PortName::PortB) || !portVoltageValueB->getText().isEmpty())
 		{
-			if (!thread->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
+			if (!source->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
 			{
 				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port B.");
-				connectButton->setToggleState(false, dontSendNotification);
-				return;
 			}
 		}
 		else
 		{
-			thread->setPortVoltage(PortName::PortB, 0);
+			source->setPortVoltage(PortName::PortB, 0);
 		}
 
 		source->initializeDevices(false);
@@ -200,13 +196,24 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		source->setPortVoltage(PortName::PortA, 0);
 		source->setPortVoltage(PortName::PortB, 0);
 
-			source->disconnectDevices(true);
-			connectButton->setLabel("CONNECT");
-		}
+		source->disconnectDevices(true);
+		connectButton->setLabel("CONNECT");
 	}
 }
 
 void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
+{
+	if (cb == headstageComboBoxA.get())
+	{
+		updateComboBox(cb);
+	}
+	else if (cb == headstageComboBoxB.get())
+	{
+		updateComboBox(cb);
+	}
+}
+
+void OnixSourceEditor::updateComboBox(ComboBox* cb)
 {
 	auto deviceMap = source->createDeviceMap(source->getDataSources());
 	auto tabMap = canvas->createSelectedMap(canvas->settingsInterfaces);
@@ -219,68 +226,45 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 	auto devicePorts = PortController::getUniquePortsFromIndices(deviceIndices);
 	auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
 
-	if (cb == headstageComboBoxA.get())
+	bool isPortA = cb == headstageComboBoxA.get();
+
+	PortName currentPort = isPortA ? PortName::PortA : PortName::PortB;
+
+	if (tabPorts.contains(currentPort) && devicePorts.contains(currentPort) && source->foundInputSource())
 	{
-		if (tabPorts.contains(PortName::PortA) && devicePorts.contains(PortName::PortA) && source->foundInputSource())
-		{
-			AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Devices Connected", "Cannot replace settings tabs while devices are conncted. Disconnect from hardware before changing the selected headstage.");
+		AlertWindow::showMessageBox(
+			MessageBoxIconType::WarningIcon,
+			"Devices Connected",
+			"Cannot select a different headstage on " + PortController::getPortName(currentPort) + " when connected. \n\nPress disconnect before changing the selected headstage.");
 
-			refreshComboBoxSelection();
-			return;
-		}
-
-		if (headstageComboBoxB->getSelectedId() > 1)
-			canvas->removeTabs(PortName::PortA);
-		else
-			canvas->removeAllTabs();
-
-		if (headstageComboBoxA->getSelectedId() > 1)
-		{
-			String headstage = headstageComboBoxA->getText();
-
-			source->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstage));
-			canvas->addHeadstage(headstage, PortName::PortA);
-		}
-
-		if (headstage == "Neuropixels 1.0f")
-		{
-			thread->getParameter("passthroughA")->setNextValue(false);
-		}
-		else
-		{
-			thread->getParameter("passthroughA")->setNextValue(true);
-		}
+		refreshComboBoxSelection();
+		return;
 	}
-	else if (cb == headstageComboBoxB.get())
+
+	bool otherHeadstageSelected = isPortA ? headstageComboBoxB->getSelectedId() > 1 : headstageComboBoxA->getSelectedId() > 1;
+	bool currentHeadstageSelected = isPortA ? headstageComboBoxA->getSelectedId() > 1 : headstageComboBoxB->getSelectedId() > 1;
+
+	if (otherHeadstageSelected)
+		canvas->removeTabs(currentPort);
+	else
+		canvas->removeAllTabs();
+
+	if (currentHeadstageSelected)
 	{
-		if (tabPorts.contains(PortName::PortB) && devicePorts.contains(PortName::PortB) && source->foundInputSource())
+		String headstage = isPortA ? headstageComboBoxA->getText() : headstageComboBoxB->getText();
+
+		source->updateDiscoveryParameters(currentPort, PortController::getHeadstageDiscoveryParameters(headstage));
+		canvas->addHeadstage(headstage, currentPort);
+
+		String passthroughName = isPortA ? "passthroughA" : "passthroughB";
+
+		if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME || headstage == "TEST HEADSTAGE")
 		{
-			AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Devices Connected", "Cannot replace settings tabs while devices are conncted. Disconnect from hardware before changing the selected headstage.");
-
-			refreshComboBoxSelection();
-			return;
-		}
-
-		if (headstageComboBoxA->getSelectedId() > 1)
-			canvas->removeTabs(PortName::PortB);
-		else
-			canvas->removeAllTabs();
-
-		if (headstageComboBoxB->getSelectedId() > 1)
-		{
-			String headstage = headstageComboBoxB->getText();
-
-			source->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstage));
-			canvas->addHeadstage(headstage, PortName::PortB);
-		}
-
-		if (headstage == "Neuropixels 1.0f")
-		{
-			thread->getParameter("passthroughB")->setNextValue(false);
+			source->getParameter(passthroughName)->setNextValue(false);
 		}
 		else
 		{
-			thread->getParameter("passthroughB")->setNextValue(true);
+			source->getParameter(passthroughName)->setNextValue(true);
 		}
 	}
 }

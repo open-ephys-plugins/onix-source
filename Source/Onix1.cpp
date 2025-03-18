@@ -48,6 +48,8 @@ void Onix1::updateDeviceTable()
 
 	auto numDevices = getOption<oni_size_t>(ONI_OPT_NUMDEVICES);
 
+	if (numDevices == 0) return;
+
 	size_t devicesSize = sizeof(oni_device_t) * numDevices;
 	deviceTable.reserve(devicesSize);
 
@@ -64,7 +66,7 @@ void Onix1::updateDeviceTable()
 
 void Onix1::get_opt_(int option, void* value, size_t* size)
 {
-	result = oni_get_opt(ctx_, option, &value, size);
+	result = oni_get_opt(ctx_, option, value, size);
 	if (result != ONI_ESUCCESS) LOGE(oni_error_str(result));
 }
 
@@ -86,7 +88,7 @@ oni_frame_t* Onix1::readFrame()
 {
 	oni_frame_t* frame;
 	result = oni_read_frame(ctx_, &frame);
-	if (result != ONI_ESUCCESS) LOGE(oni_error_str(result));
+	if (result < ONI_ESUCCESS) LOGE(oni_error_str(result));
 
 	return frame;
 }

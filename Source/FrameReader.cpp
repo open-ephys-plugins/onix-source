@@ -24,9 +24,9 @@
 #include "FrameReader.h"
 
 FrameReader::FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1> ctx_)
-	: Thread("FrameReader"),
-	sources(sources_)
+	: Thread("FrameReader")
 {
+	sources = sources_;
 	context = ctx_;
 }
 
@@ -40,7 +40,12 @@ void FrameReader::run()
 	{
 		oni_frame_t* frame = context->readFrame();
 
-		if (context->getLastResult() != ONI_ESUCCESS) return;
+		if (context->getLastResult() < ONI_ESUCCESS)
+		{
+			CoreServices::sendStatusMessage("Unable to read data frames. Stopping acquisition...");
+			CoreServices::setAcquisitionStatus(false);
+			return;
+		}
 
 		bool destroyFrame = true;
 

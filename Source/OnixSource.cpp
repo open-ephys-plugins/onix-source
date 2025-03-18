@@ -49,8 +49,8 @@ OnixSource::OnixSource(SourceNode* sn) :
 
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
 
-	portA = std::make_unique<PortController>(PortName::PortA, context.get());
-	portB = std::make_unique<PortController>(PortName::PortB, context.get());
+	portA = std::make_shared<PortController>(PortName::PortA, context);
+	portB = std::make_shared<PortController>(PortName::PortB, context);
 
 	if (!context->isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
@@ -82,7 +82,7 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 
 void OnixSource::initializeDevices(bool updateStreamInfo)
 {
-	if (context == nullptr)
+	if (context == nullptr || !context->isInitialized())
 	{
 		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
 		return;
@@ -93,27 +93,29 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		disconnectDevices(false);
 	}
 
-	uint32_t val = 0;
-
 	// TODO: How to set passthrough for Port A vs. Port B?
 	if (getParameter("passthroughA")->getValue() || getParameter("passthroughB")->getValue())
 	{
 		LOGD("Passthrough mode enabled");
-		val = 1;
+		int val = 1;
+		context->setOption(ONIX_OPT_PASSTHROUGH, val);
+	}
+	else
+	{
+		int val = 0;
+		context->setOption(ONIX_OPT_PASSTHROUGH, val);
 	}
 
-	context->setOption(ONIX_OPT_PASSTHROUGH, val);
-
-	val = 1;
-	context->setOption(ONI_OPT_RESET, val);
-
+	context->issueReset();
 	context->updateDeviceTable();
+
 	if (context->getLastResult() != ONI_ESUCCESS) return;
+
 	device_map_t deviceMap = context->getDeviceTable();
 
-	if (deviceMap.size() == 0) 
-	{ 
-		LOGE("No devices found."); 
+	if (deviceMap.size() == 0)
+	{
+		LOGE("No devices found.");
 		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 		return;
 	}
@@ -180,7 +182,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, index, context);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
-			
+
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(index, context);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
@@ -204,17 +206,16 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 	}
 
-	val = 1;
-	context->setOption(ONI_OPT_RESET, val);
+	if (portA->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port A.");
+	if (portB->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port B.");
 
-	portA->configureDevice();
-	portB->configureDevice();
+	context->issueReset();
 
-	//oni_size_t frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE);
-	//printf("Max. read frame size: %u bytes\n", frame_size);
-
-	//frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE);
-	//printf("Max. write frame size: %u bytes\n", frame_size);
+	oni_size_t frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE);
+	printf("Max. read frame size: %u bytes\n", frameSize);
+	 
+	frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE);
+	printf("Max. write frame size: %u bytes\n", frameSize);
 
 	context->setOption(ONI_OPT_BLOCKREADSIZE, block_read_size);
 
@@ -386,7 +387,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
 					"Neuropixels 2.0 Probe",
-					"neuropixels1.probe",
+					"neuropixels2.probe",
 					"0000000",
 					"imec"
 				};
@@ -473,7 +474,7 @@ bool OnixSource::startAcquisition()
 {
 	frameReader.reset();
 
-  OnixDeviceVector devices;
+	OnixDeviceVector devices;
 
 	for (const auto& source : sources)
 	{
@@ -483,14 +484,14 @@ bool OnixSource::startAcquisition()
 	devices.push_back(portA);
 	devices.push_back(portB);
 
-	for (auto source : devices)
+	for (const auto& source : devices)
 	{
 		if (!source->isEnabled()) continue;
 
 		source->startAcquisition();
 	}
 
-	frameReader = std::make_unique<FrameReader>(devices, context.get());
+	frameReader = std::make_unique<FrameReader>(devices, context);
 	frameReader->startThread();
 
 	startThread();
@@ -549,7 +550,7 @@ bool OnixSource::stopAcquisition()
 		devicesFound = false;
 
 		MessageManager::callAsync([] { AlertWindow::showMessageBoxAsync(MessageBoxIconType::WarningIcon, "Port Communication Lock Lost",
-			"The port communication lock was lost during acquisition, inspect hardware connections and port switch." + 
+			"The port communication lock was lost during acquisition, inspect hardware connections and port switch." +
 			String("\n\nTo continue, press disconnect in the GUI, then press connect."), "Okay"); });
 	}
 

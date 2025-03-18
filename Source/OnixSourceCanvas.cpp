@@ -274,10 +274,10 @@ void OnixSourceCanvas::askKeepRemove(PortName port)
 
 	switch (result)
 	{
-	case 1: // Keep Current
-		break;
-	case 2: // Remove
+	case 0: // Remove
 		removeTabs(port);
+		break;
+	case 1: // Keep Current
 		break;
 	default:
 		break;
@@ -305,15 +305,15 @@ void OnixSourceCanvas::askKeepUpdate(PortName port, String foundHeadstage, OnixD
 
 	switch (result)
 	{
-	case 1: // Keep Current
-		break;
-	case 2: // Update
+	case 0: // Update
 		removeTabs(port);
 
 		{
 			CustomTabComponent* tab = addTopLevelTab(getTopLevelTabName(0, port, foundHeadstage), (int)port);
 			populateSourceTabs(tab, devices);
 		}
+		break;
+	case 1: // Keep Current
 		break;
 	default:
 		break;
@@ -335,7 +335,18 @@ void OnixSourceCanvas::refreshTabs()
 		auto selectedPorts = PortController::getUniquePortsFromIndices(selectedIndices);
 		auto foundPorts = PortController::getUniquePortsFromIndices(foundIndices);
 
-		if (foundIndices.size() == 0) {} // NB: No devices found, do nothing
+		if (foundIndices.size() == 0) // NB: No devices found, inform the user if they were expecting to find something
+		{
+			if (selectedMap.size() != 0)
+			{
+				AlertWindow::showMessageBox(
+					MessageBoxIconType::WarningIcon,
+					"No Headstages Found",
+					"No headstages were found when connecting. Double check that the correct headstage is selected. If this is unexpected, try pressing disconnect / connect again.\n\n"
+					+ String("If the port voltage is manually set, try clearing the value and letting the automated voltage discovery algorithm run.")
+				);
+			}
+		}
 		else if (selectedIndices.size() == 0) // NB: No headstages selected, add all found headstages
 		{
 			for (auto& [port, headstageName] : source->getHeadstageMap())
@@ -438,9 +449,9 @@ void OnixSourceCanvas::resized()
 	topLevelTabComponent->setBounds(0, -3, getWidth(), getHeight() + 3);
 }
 
-int OnixSourceCanvas::resetContext()
+void OnixSourceCanvas::resetContext()
 {
-	return onixSource->resetContext();
+	source->resetContext();
 }
 
 void OnixSourceCanvas::startAcquisition()
