@@ -61,9 +61,6 @@ public:
         setBounds (0, 0, width, height);
     }
 
-    /** Destructor */
-    ~SettingsInterface() {}
-
     /** Called when acquisition begins */
     virtual void startAcquisition() = 0;
 

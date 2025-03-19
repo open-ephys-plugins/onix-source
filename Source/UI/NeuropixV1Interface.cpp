@@ -313,7 +313,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 		enableViewComponent = std::make_unique<Component>("enableViewComponent");
 		enableViewComponent->setBounds(450, 430, 120, 200);
-		
+
 		enableViewLabels.push_back(std::make_unique<Label>("enableViewLabel", "ENABLED?"));
 		enableViewLabels[0]->setJustificationType(Justification::centredLeft);
 		enableViewLabels[0]->setFont(FontOptions(fontSize));
@@ -703,8 +703,12 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 	if (button == probeEnableButton.get())
 	{
 		device->setEnabled(probeEnableButton->getToggleState());
-		device->configureDevice();
-		canvas->resetContext();
+
+		if (canvas->foundInputSource())
+		{
+			device->configureDevice();
+			canvas->resetContext();
+		}
 
 		if (npx->isEnabled())
 		{

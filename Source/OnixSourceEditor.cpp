@@ -45,13 +45,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	headstageComboBoxA->setSelectedId(1, dontSendNotification);
 	addAndMakeVisible(headstageComboBoxA.get());
 
-	portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage");
-	portVoltageOverrideLabelA->setBounds(headstageComboBoxA->getX(), headstageComboBoxA->getBottom() + 4, 50, headstageComboBoxA->getHeight());
+	portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage:");
+	portVoltageOverrideLabelA->setBounds(portLabelA->getX() + 15, headstageComboBoxA->getBottom() + 4, 62, headstageComboBoxA->getHeight());
 	portVoltageOverrideLabelA->setFont(fontOptionSmall);
 	addAndMakeVisible(portVoltageOverrideLabelA.get());
 
-	portVoltageValueA = std::make_unique<Label>("voltageValueA", "");
-	portVoltageValueA->setBounds(portVoltageOverrideLabelA->getRight() + 3, portVoltageOverrideLabelA->getY(), 25, portVoltageOverrideLabelA->getHeight());
+	portVoltageValueA = std::make_unique<Label>("voltageValueA", "Auto");
+	portVoltageValueA->setBounds(portVoltageOverrideLabelA->getRight() + 3, portVoltageOverrideLabelA->getY(), 40, portVoltageOverrideLabelA->getHeight());
 	portVoltageValueA->setFont(fontOptionSmall);
 	portVoltageValueA->setEditable(true);
 	portVoltageValueA->setColour(Label::textColourId, Colours::black);
@@ -74,12 +74,12 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	headstageComboBoxB->setSelectedId(1, dontSendNotification);
 	addAndMakeVisible(headstageComboBoxB.get());
 
-	portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage");
-	portVoltageOverrideLabelB->setBounds(headstageComboBoxB->getX(), headstageComboBoxB->getBottom() + 4, portVoltageOverrideLabelA->getWidth(), portVoltageOverrideLabelA->getHeight());
+	portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage:");
+	portVoltageOverrideLabelB->setBounds(portVoltageOverrideLabelA->getX(), headstageComboBoxB->getBottom() + 4, portVoltageOverrideLabelA->getWidth(), portVoltageOverrideLabelA->getHeight());
 	portVoltageOverrideLabelB->setFont(fontOptionSmall);
 	addAndMakeVisible(portVoltageOverrideLabelB.get());
 
-	portVoltageValueB = std::make_unique<Label>("voltageValueB", "");
+	portVoltageValueB = std::make_unique<Label>("voltageValueB", "Auto");
 	portVoltageValueB->setBounds(portVoltageValueA->getX(), portVoltageOverrideLabelB->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
 	portVoltageValueB->setFont(fontOptionSmall);
 	portVoltageValueB->setEditable(true);
@@ -105,7 +105,6 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 	comboBox->addItem("Select headstage...", 1);
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
-	comboBox->addItem("TEST HEADSTAGE", 99);
 	// TODO: Add list of available devices here
 	// TODO: Create const char* for the headstage names so they are shared across the plugin
 }
@@ -115,6 +114,12 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 	// TODO: Add headstage specific parameters to limit voltage within safe levels
 	if (l == portVoltageValueA.get())
 	{
+		if (l->getText() == "")
+		{
+			l->setText("Auto", dontSendNotification);
+			return;
+		}
+
 		float input = l->getText().getFloatValue();
 
 		if (input < 0.0f)
@@ -128,6 +133,12 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 	}
 	else if (l == portVoltageValueB.get())
 	{
+		if (l->getText() == "")
+		{
+			l->setText("Auto", dontSendNotification);
+			return;
+		}
+
 		float input = l->getText().getFloatValue();
 
 		if (input < 0.0f)
@@ -156,7 +167,7 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 	if (connected)
 	{
 		// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
-		if (isHeadstageSelected(PortName::PortA) || !portVoltageValueA->getText().isEmpty())
+		if (isHeadstageSelected(PortName::PortA) || portVoltageValueA->getText() != "Auto")
 		{
 			if (!source->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
 			{
@@ -168,7 +179,7 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 			source->setPortVoltage(PortName::PortA, 0);
 		}
 
-		if (isHeadstageSelected(PortName::PortB) || !portVoltageValueB->getText().isEmpty())
+		if (isHeadstageSelected(PortName::PortB) || portVoltageValueB->getText() != "Auto")
 		{
 			if (!source->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
 			{
@@ -185,6 +196,9 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		connectButton->setLabel("DISCONNECT");
 
+		headstageComboBoxA->setEnabled(false);
+		headstageComboBoxB->setEnabled(false);
+
 		if (!source->foundInputSource())
 		{
 			CoreServices::sendStatusMessage("No Onix hardware found.");
@@ -198,6 +212,9 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		source->disconnectDevices(true);
 		connectButton->setLabel("CONNECT");
+
+		headstageComboBoxA->setEnabled(true);
+		headstageComboBoxB->setEnabled(true);
 	}
 }
 
@@ -258,7 +275,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 
 		String passthroughName = isPortA ? "passthroughA" : "passthroughB";
 
-		if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME || headstage == "TEST HEADSTAGE")
+		if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
 		{
 			source->getParameter(passthroughName)->setNextValue(false);
 		}

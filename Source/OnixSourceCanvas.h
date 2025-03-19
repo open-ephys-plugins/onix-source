@@ -149,6 +149,8 @@ public:
 
 	void resetContext();
 
+	bool foundInputSource();
+
 private:
 
 	OnixSourceEditor* editor;
@@ -164,7 +166,7 @@ private:
 
 	void updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice>);
 
-	String getTopLevelTabName(int hub, PortName port, String headstage);
+	String getTopLevelTabName(PortName port, String headstage);
 
 	String getDeviceTabName(std::shared_ptr<OnixDevice> device);
 

@@ -282,6 +282,8 @@ NeuropixelsReference Neuropixels_1::getReference(int index)
 
 int Neuropixels_1::configureDevice()
 {
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;
+
 	// Get Probe SN
 	uint32_t eepromOffset = 0;
 	uint32_t i2cAddr = 0x50;

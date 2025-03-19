@@ -213,7 +213,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	oni_size_t frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE);
 	printf("Max. read frame size: %u bytes\n", frameSize);
-	 
+
 	frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE);
 	printf("Max. write frame size: %u bytes\n", frameSize);
 
@@ -306,11 +306,15 @@ bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 	switch (port)
 	{
 	case PortName::PortA:
-		if (voltage == "") return portA->configureVoltage();
-		else			   return portA->configureVoltage(voltage.getFloatValue());
+		if (voltage == "" || voltage == "Auto")
+			return portA->configureVoltage();
+		else
+			return portA->configureVoltage(voltage.getFloatValue());
 	case PortName::PortB:
-		if (voltage == "") return portB->configureVoltage();
-		else			   return portB->configureVoltage(voltage.getFloatValue());
+		if (voltage == "" || voltage == "Auto")
+			return portB->configureVoltage();
+		else
+			return portB->configureVoltage(voltage.getFloatValue());
 	default:
 		return false;
 	}

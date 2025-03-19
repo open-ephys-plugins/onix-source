@@ -86,7 +86,7 @@ public:
 	/** Sets the port voltage */
 	void setPortVoltage(PortName port, float voltage) const;
 
-	void resetContext() { context->issueReset(); }
+	void resetContext() { if (context != nullptr && context->isInitialized()) context->issueReset(); }
 
 	void initializeDevices(bool updateStreamInfo = false);
 

@@ -82,20 +82,11 @@ void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
 
 	if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
-		tab = addTopLevelTab(getTopLevelTabName(0, port, headstage), (int)port - 1);
+		tab = addTopLevelTab(getTopLevelTabName(port, headstage), (int)port - 1);
 
 		devices.push_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
 		devices.push_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
 		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
-	}
-	else if (headstage == "TEST HEADSTAGE")
-	{
-		// NOTE: This is only a temporary testing headstage used to confirm that the port logic works correctly. Remove before merging
-		tab = addTopLevelTab(getTopLevelTabName(0, port, headstage), (int)port - 1);
-
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-TEST", offset, nullptr));
-		devices.push_back(std::make_shared<Bno055>("BNO055-TEST", offset + 1, nullptr));
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-TEST2", offset + 2, nullptr));
 	}
 
 	if (tab != nullptr && devices.size() > 0)
@@ -158,9 +149,9 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	settingsInterfaces[ind]->device = device;
 }
 
-String OnixSourceCanvas::getTopLevelTabName(int hub, PortName port, String headstage)
+String OnixSourceCanvas::getTopLevelTabName(PortName port, String headstage)
 {
-	return "Hub " + String(hub) + ": " + PortController::getPortName(port) + ": " + headstage;
+	return PortController::getPortName(port) + ": " + headstage;
 }
 
 String OnixSourceCanvas::getDeviceTabName(std::shared_ptr<OnixDevice> device)
@@ -260,8 +251,8 @@ void OnixSourceCanvas::askKeepRemove(PortName port)
 
 	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(port) + ", but was not discovered there.\n\n";
 	msg += "Select one of the options below to continue:\n";
-	msg += " - [Keep Current] to keep " + selectedHeadstage + " selected.\n";
-	msg += " - [Remove] to remove " + selectedHeadstage + ". Note: this will delete any settings that were modified.";
+	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
+	msg += " [Remove] to remove " + selectedHeadstage + ".\n - Note: this will delete any settings that were modified.";
 
 	int result = AlertWindow::show(
 		MessageBoxOptions()
@@ -291,8 +282,8 @@ void OnixSourceCanvas::askKeepUpdate(PortName port, String foundHeadstage, OnixD
 	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(port) + ". ";
 	msg += "However, headstage " + foundHeadstage + " was found on " + PortController::getPortName(port) + ". \n\n";
 	msg += "Select one of the options below to continue:\n";
-	msg += " - [Keep Current] to keep " + selectedHeadstage + " selected.\n";
-	msg += " - [Update] to change the selected headstage to " + foundHeadstage + ". Note: this will delete any settings that were modified.";
+	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
+	msg += " [Update] to change the selected headstage to " + foundHeadstage + ".\n - Note: this will delete any settings that were modified.";
 
 	int result = AlertWindow::show(
 		MessageBoxOptions()
@@ -309,7 +300,7 @@ void OnixSourceCanvas::askKeepUpdate(PortName port, String foundHeadstage, OnixD
 		removeTabs(port);
 
 		{
-			CustomTabComponent* tab = addTopLevelTab(getTopLevelTabName(0, port, foundHeadstage), (int)port);
+			CustomTabComponent* tab = addTopLevelTab(getTopLevelTabName(port, foundHeadstage), (int)port);
 			populateSourceTabs(tab, devices);
 		}
 		break;
@@ -342,8 +333,9 @@ void OnixSourceCanvas::refreshTabs()
 				AlertWindow::showMessageBox(
 					MessageBoxIconType::WarningIcon,
 					"No Headstages Found",
-					"No headstages were found when connecting. Double check that the correct headstage is selected. If this is unexpected, try pressing disconnect / connect again.\n\n"
-					+ String("If the port voltage is manually set, try clearing the value and letting the automated voltage discovery algorithm run.")
+					"No headstages were found when connecting. Double check that the correct headstage is selected. " + 
+						String("If the correct headstage is selected, try pressing disconnect / connect again.\n\n") + 
+						String("If the port voltage is manually set, try clearing the value and letting the automated voltage discovery algorithm run.")
 				);
 			}
 		}
@@ -452,6 +444,11 @@ void OnixSourceCanvas::resized()
 void OnixSourceCanvas::resetContext()
 {
 	source->resetContext();
+}
+
+bool OnixSourceCanvas::foundInputSource()
+{
+	return source->foundInputSource();
 }
 
 void OnixSourceCanvas::startAcquisition()

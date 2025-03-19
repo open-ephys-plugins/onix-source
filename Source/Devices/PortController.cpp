@@ -114,7 +114,7 @@ bool PortController::configureVoltage(float voltage)
 			}
 		}
 	}
-	else
+	else if (voltage >= 0.0f && voltage <= 7.0f)
 	{
 		setVoltageOverride(0.0f, true);
 		setVoltageOverride(voltage, true);
@@ -128,6 +128,8 @@ bool PortController::configureVoltage(float voltage)
 
 void PortController::setVoltageOverride(float voltage, bool waitToSettle)
 {
+	if (voltage < 0.0f && voltage > 7.0f) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
+
 	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
 	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
 	if (waitToSettle) sleep_for(std::chrono::milliseconds(500));
@@ -135,6 +137,8 @@ void PortController::setVoltageOverride(float voltage, bool waitToSettle)
 
 void PortController::setVoltage(float voltage)
 {
+	if (voltage < 0.0f && voltage > 7.0f) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
+
 	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, 0);
 	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
 	sleep_for(std::chrono::milliseconds(300));
