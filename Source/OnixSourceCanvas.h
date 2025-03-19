@@ -101,15 +101,18 @@ public:
 	/** Called when the Visualizer's tab becomes visible after being hidden */
 	void refreshState() override;
 
-	/** Called when tabs need to be removed */
-	void removeTabs();
+	/** Removes tabs from the canvas at the specified port */
+	void removeTabs(PortName port);
 
-	/** Called when the number of tabs might have changed, so they are refreshed */
+	/** Removes all tabs from the canvas */
+	void removeAllTabs();
+
+	/** Called when the hardware is connected, to ensure the right tabs are present */
 	void refreshTabs();
 
 	/** Called when the Visualizer is first created, and optionally when
 		the parameters of the underlying processor are changed */
-	void update();
+	void update() const;
 
 	/** Starts animation of sub-interfaces */
 	void startAcquisition();
@@ -117,8 +120,11 @@ public:
 	/** Stops animation of sub-interfaces */
 	void stopAcquisition();
 
+	/** Add the headstage and all of its devices to the canvas */
+	void addHeadstage(String headstage, PortName port);
+
 	/** Called when the basestation is created or refreshed */
-	void populateSourceTabs(CustomTabComponent* basestationTab);
+	void populateSourceTabs(CustomTabComponent*, OnixDeviceVector);
 
 	/** Saves custom UI settings */
 	void saveCustomParametersToXml(XmlElement* xml) override;
@@ -135,22 +141,48 @@ public:
 	/** Creates a custom viewport for the given interface */
 	CustomViewport* createCustomViewport(SettingsInterface* settingsInterface);
 
-	OwnedArray<SettingsInterface> settingsInterfaces;
+	Array<CustomTabComponent*> getHeadstageTabs();
 
-	int resetContext();
+	std::map<int, OnixDeviceType> createSelectedMap(std::vector<std::shared_ptr<SettingsInterface>>);
+
+	std::vector<std::shared_ptr<SettingsInterface>> settingsInterfaces;
+
+	void resetContext();
+
+	bool foundInputSource();
 
 private:
 
-	Array<OnixDevice*> dataSources;
-
 	OnixSourceEditor* editor;
 
-	OnixSource* onixSource;
+	OnixSource* source;
 
 	std::unique_ptr<CustomTabComponent> topLevelTabComponent;
-	OwnedArray<CustomTabComponent> portTabs;
+	OwnedArray<CustomTabComponent> headstageTabs;
 
-	Array<int> portTabIndex;
+	CustomTabComponent* addTopLevelTab(String tabName, int index = -1);
+
+	void addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_);
+
+	void updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice>);
+
+	String getTopLevelTabName(PortName port, String headstage);
+
+	String getDeviceTabName(std::shared_ptr<OnixDevice> device);
+
+	/**
+		Create an alert window that asks whether to keep the selected headstage on the given port,
+		or to remove it since the hardware was not found
+	*/
+	void askKeepRemove(PortName port);
+
+	/**
+		Create an alert window that asks whether to keep the selected headstage on the given port,
+		or to update to the headstage that was found
+	*/
+	void askKeepUpdate(PortName port, String foundHeadstage, OnixDeviceVector devices);
+
+	JUCE_LEAK_DETECTOR(OnixSourceCanvas);
 };
 
 # endif // __ONIXSOURCECANVAS_H__

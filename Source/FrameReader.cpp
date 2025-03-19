@@ -23,11 +23,11 @@
 
 #include "FrameReader.h"
 
-FrameReader::FrameReader(Array<OnixDevice*> sources_, oni_ctx ctx_)
-	: Thread("FrameReader"),
-	sources(sources_),
-	ctx(ctx_)
+FrameReader::FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1> ctx_)
+	: Thread("FrameReader")
 {
+	sources = sources_;
+	context = ctx_;
 }
 
 FrameReader::~FrameReader()
@@ -36,27 +36,20 @@ FrameReader::~FrameReader()
 
 void FrameReader::run()
 {
-	if (ctx == NULL)
-	{
-		LOGE("Context is not initialized, no data will be read from the hardware.");
-		return;
-	}
-
 	while (!threadShouldExit())
 	{
-		oni_frame_t* frame;
+		oni_frame_t* frame = context->readFrame();
 
-		int res = oni_read_frame(ctx, &frame);
-
-		if (res < ONI_ESUCCESS)
+		if (context->getLastResult() < ONI_ESUCCESS)
 		{
-			LOGE("Error reading ONI frame: ", oni_error_str(res), " code ", res);
+			CoreServices::sendStatusMessage("Unable to read data frames. Stopping acquisition...");
+			CoreServices::setAcquisitionStatus(false);
 			return;
 		}
 
 		bool destroyFrame = true;
 
-		for (auto source : sources)
+		for (const auto& source : sources)
 		{
 			if (frame->dev_idx == source->getDeviceIdx())
 			{

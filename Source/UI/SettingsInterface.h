@@ -49,9 +49,9 @@ public:
     };
 
     /** Constructor */
-    SettingsInterface (OnixDevice* dataSource_, OnixSourceEditor* editor_, OnixSourceCanvas* canvas_)
+    SettingsInterface (std::shared_ptr<OnixDevice> device_, OnixSourceEditor* editor_, OnixSourceCanvas* canvas_)
     {
-        dataSource = dataSource_;
+        device = device_;
         editor = editor_;
         canvas = canvas_;
 
@@ -60,9 +60,6 @@ public:
 
         setBounds (0, 0, width, height);
     }
-
-    /** Destructor */
-    ~SettingsInterface() {}
 
     /** Called when acquisition begins */
     virtual void startAcquisition() = 0;
@@ -83,7 +80,7 @@ public:
     Type type = Type::UNKNOWN_SETTINGS_INTERFACE;
 
     /** Pointer to the data source*/
-    OnixDevice* dataSource;
+    std::shared_ptr<OnixDevice> device;
 
 protected:
     OnixSourceEditor* editor;

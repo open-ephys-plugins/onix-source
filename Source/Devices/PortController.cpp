@@ -23,8 +23,8 @@
 
 #include "PortController.h"
 
-PortController::PortController(PortName port_, oni_ctx ctx_) :
-	OnixDevice(getPortNameString(port_), OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
+PortController::PortController(PortName port_, std::shared_ptr<Onix1> ctx_) :
+	OnixDevice(getPortName(port_), OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
 	port(port_)
 {
 }
@@ -35,9 +35,9 @@ PortController::~PortController()
 
 int PortController::configureDevice()
 {
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)PortControllerRegister::ENABLE, (uint32_t)1))
+	deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1);
 
-	return 0;
+	return deviceContext->getLastResult();
 }
 
 void PortController::startAcquisition()
@@ -89,7 +89,7 @@ void PortController::updateDiscoveryParameters(DiscoveryParameters parameters)
 
 DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String headstage)
 {
-	if (headstage == "Neuropixels 1.0f")
+	if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
 		return DiscoveryParameters(5.0f, 7.0f, 1.0f, 0.2f);
 	}
@@ -99,8 +99,6 @@ DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String heads
 
 bool PortController::configureVoltage(float voltage)
 {
-	if (ctx == NULL) return false;
-
 	if (voltage == defaultVoltage)
 	{
 		if (discoveryParameters == DiscoveryParameters()) return false;
@@ -116,9 +114,11 @@ bool PortController::configureVoltage(float voltage)
 			}
 		}
 	}
-	else
+	else if (voltage >= 0.0f && voltage <= 7.0f)
 	{
-		setVoltage(voltage);
+		setVoltageOverride(0.0f, true);
+		setVoltageOverride(voltage, true);
+		sleep_for(std::chrono::milliseconds(600));
 
 		return checkLinkState();
 	}
@@ -128,44 +128,48 @@ bool PortController::configureVoltage(float voltage)
 
 void PortController::setVoltageOverride(float voltage, bool waitToSettle)
 {
-	if (ctx == NULL) return;
+	if (voltage < 0.0f && voltage > 7.0f) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
 
-	ONI_OK(oni_write_reg(ctx, (oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, (oni_reg_val_t)(voltage * 10)));
+	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
+	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
 	if (waitToSettle) sleep_for(std::chrono::milliseconds(500));
 }
 
 void PortController::setVoltage(float voltage)
 {
-	if (ctx == NULL) return;
+	if (voltage < 0.0f && voltage > 7.0f) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
 
-	ONI_OK(oni_write_reg(ctx, (oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, 0));
+	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, 0);
+	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
 	sleep_for(std::chrono::milliseconds(300));
 	
-	ONI_OK(oni_write_reg(ctx, (oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, (oni_reg_val_t)(voltage * 10)));
+	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
+	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
 	sleep_for(std::chrono::milliseconds(500));
 }
 
 bool PortController::checkLinkState() const
 {
-	if (ctx == NULL) return false;
+	oni_reg_val_t linkState = deviceContext->readRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::LINKSTATE);
 
-	oni_reg_val_t linkState;
-	int result = oni_read_reg(ctx, (oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::LINKSTATE, &linkState);
-
-	if (result != 0) { LOGE(oni_error_str(result)); return false; }
+	if (deviceContext->getLastResult() != ONI_ESUCCESS) { return false; }
 	else if ((linkState & LINKSTATE_SL) == 0) { LOGE("Unable to acquire communication lock."); return false; }
 	else return true;
 }
 
-String PortController::getPortNameString(PortName portName)
+PortName PortController::getPortFromIndex(oni_dev_idx_t index)
 {
-	switch (portName)
+	return index & (1 << 8) ? PortName::PortA : PortName::PortB;
+}
+
+Array<PortName> PortController::getUniquePortsFromIndices(std::vector<int> indices)
+{
+	Array<PortName> ports;
+
+	for (auto index : indices)
 	{
-	case PortName::PortA:
-		return "Port A";
-	case PortName::PortB:
-		return "Port B";
-	default:
-		break;
+		ports.addIfNotAlreadyThere(PortController::getPortFromIndex(index));
 	}
+
+	return ports;
 }

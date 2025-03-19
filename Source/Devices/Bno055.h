@@ -36,7 +36,7 @@ class Bno055 : public OnixDevice
 public:
 
 	/** Constructor */
-	Bno055(String name, const oni_dev_idx_t, const oni_ctx);
+	Bno055(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
 
 	/** Destructor */
 	~Bno055();
@@ -44,7 +44,7 @@ public:
 	int configureDevice() override;
 
 	/** Update the settings of the device */
-	int updateSettings() override;
+	bool updateSettings() override;
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;
@@ -58,13 +58,13 @@ public:
 
 	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
-	DataBuffer* eulerBuffer = deviceBuffer;
+private:
+
+	DataBuffer* eulerBuffer;
 	DataBuffer* quaternionBuffer;
 	DataBuffer* accelerationBuffer;
 	DataBuffer* gravityBuffer;
 	DataBuffer* temperatureBuffer;
-
-private:
 
 	static const int numFrames = 2;
 
@@ -84,6 +84,8 @@ private:
 
 	unsigned short currentFrame = 0;
 	int sampleNumber = 0;
+
+	JUCE_LEAK_DETECTOR(Bno055);
 };
 
 #endif

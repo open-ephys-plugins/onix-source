@@ -36,7 +36,7 @@ class Bno055Interface : public SettingsInterface,
 {
 public:
 	/** Constructor */
-	Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override;
@@ -58,9 +58,11 @@ public:
 
 private:
 
-	Bno055* device;
+	std::shared_ptr<Bno055> device;
 
 	std::unique_ptr<UtilityButton> deviceEnableButton;
+
+	JUCE_LEAK_DETECTOR(Bno055Interface);
 };
 
 #endif // !__BNO055INTERFACE_H__

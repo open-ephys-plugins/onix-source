@@ -9,7 +9,7 @@ class HeadStageEEPROM :
 	public I2CRegisterContext
 {
 public:
-	HeadStageEEPROM(const oni_dev_idx_t, const oni_ctx);
+	HeadStageEEPROM(const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 	uint32_t GetHeadStageID();
 
@@ -17,5 +17,6 @@ private:
 	static const uint32_t EEPROM_ADDRESS = 0x51;
 	static const uint32_t DEVID_START_ADDR = 18;
 
+	JUCE_LEAK_DETECTOR(HeadStageEEPROM);
 };
 

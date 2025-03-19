@@ -82,13 +82,13 @@ public:
 class PortController : public OnixDevice
 {
 public:
-	PortController(PortName port_, const oni_ctx ctx_);
+	PortController(PortName port_, std::shared_ptr<Onix1> ctx_);
 
 	~PortController();
 
 	int configureDevice() override;
 
-	int updateSettings() override { return 0; }
+	bool updateSettings() override { return true; }
 
 	void startAcquisition() override;
 
@@ -112,9 +112,15 @@ public:
 
 	bool checkLinkState() const;
 
-	String getPortNameString(PortName portName);
-
 	static DiscoveryParameters getHeadstageDiscoveryParameters(String headstage);
+
+	static int getPortOffset(PortName port) { return (uint32_t)port << 8; }
+
+	static String getPortName(PortName port) { return port == PortName::PortA ? "Port A" : "Port B"; }
+
+	static PortName getPortFromIndex(oni_dev_idx_t index);
+
+	static Array<PortName> getUniquePortsFromIndices(std::vector<int>);
 
 	/** Check if the port status changed and there is an error reported */
 	bool getErrorFlag() { return errorFlag; }
@@ -132,6 +138,8 @@ private:
 	DiscoveryParameters discoveryParameters;
 
 	std::atomic<bool> errorFlag = false;
+
+	JUCE_LEAK_DETECTOR(PortController);
 };
 
 #endif // !__PORTCONTROLLER_H__

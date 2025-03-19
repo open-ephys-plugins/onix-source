@@ -27,18 +27,32 @@
 OnixSource::OnixSource(SourceNode* sn) :
 	DataThread(sn),
 	devicesFound(false),
-	editor(NULL),
-	context()
+	editor(NULL)
 {
+	try
+	{
+		context = std::make_shared<Onix1>();
+	}
+	catch (const std::system_error& e)
+	{
+		LOGE("Failed to create context.");
+		return;
+	}
+	catch (const error_t& e)
+	{
+		LOGE("Failed to initialize context. ", e.what());
+		return;
+	}
+
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
 
-	portA = std::make_unique<PortController>(PortName::PortA, context.get());
-	portB = std::make_unique<PortController>(PortName::PortB, context.get());
+	portA = std::make_shared<PortController>(PortName::PortA, context);
+	portB = std::make_shared<PortController>(PortName::PortB, context);
 
-	if (!context.isInitialized()) { LOGE("Failed to initialize context."); return; }
+	if (!context->isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
 DataThread* OnixSource::createDataThread(SourceNode* sn)
@@ -57,7 +71,10 @@ std::unique_ptr<GenericEditor> OnixSource::createEditor(SourceNode* sn)
 void OnixSource::disconnectDevices(bool updateStreamInfo)
 {
 	sourceBuffers.clear(true);
-	sources.clear(true);
+
+	sources.clear();
+	headstages.clear();
+
 	devicesFound = false;
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
@@ -65,7 +82,7 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 
 void OnixSource::initializeDevices(bool updateStreamInfo)
 {
-	if (!context.isInitialized())
+	if (context == nullptr || !context->isInitialized())
 	{
 		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
 		return;
@@ -76,76 +93,44 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		disconnectDevices(false);
 	}
 
-	oni_ctx ctx = context.get();
-
-	oni_size_t num_devs = 0;
-	oni_device_t* devices = NULL;
-
-	uint32_t val = 0;
-
+	// TODO: How to set passthrough for Port A vs. Port B?
 	if (getParameter("passthroughA")->getValue() || getParameter("passthroughB")->getValue())
 	{
 		LOGD("Passthrough mode enabled");
-		val = 1;
+		int val = 1;
+		context->setOption(ONIX_OPT_PASSTHROUGH, val);
 	}
-	oni_set_opt(ctx, ONIX_OPT_PASSTHROUGH, &val, sizeof(val));
+	else
+	{
+		int val = 0;
+		context->setOption(ONIX_OPT_PASSTHROUGH, val);
+	}
 
-	context.issueReset();
+	context->issueReset();
+	context->updateDeviceTable();
 
-	// Examine device table
-	size_t num_devs_sz = sizeof(num_devs);
-	oni_get_opt(ctx, ONI_OPT_NUMDEVICES, &num_devs, &num_devs_sz);
+	if (context->getLastResult() != ONI_ESUCCESS) return;
 
-	size_t devices_sz = sizeof(oni_device_t) * num_devs;
-	devices = (oni_device_t*)realloc(devices, devices_sz);
+	device_map_t deviceMap = context->getDeviceTable();
 
-	if (devices == NULL)
+	if (deviceMap.size() == 0)
 	{
 		LOGE("No devices found.");
 		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 		return;
 	}
 
-	oni_get_opt(ctx, ONI_OPT_DEVICETABLE, devices, &devices_sz);
-
 	devicesFound = true;
-
-#ifdef DEBUG
-
-	// print device info
-	printf("   +--------------------+-------+-------+-------+-------+---------------------\n");
-	printf("   |        \t\t|  \t|Firm.\t|Read\t|Wrt. \t|     \n");
-	printf("   |Dev. idx\t\t|ID\t|ver. \t|size\t|size \t|Desc.\n");
-	printf("   +--------------------+-------+-------+-------+-------+---------------------\n");
-
-	for (size_t dev_idx = 0; dev_idx < num_devs; dev_idx++) {
-		if (devices[dev_idx].id != ONIX_NULL) {
-
-			const char* dev_str = onix_device_str(devices[dev_idx].id);
-
-			printf("%02zd |%05zd: 0x%02x.0x%02x\t|%d\t|%d\t|%u\t|%u\t|%s\n",
-				dev_idx,
-				devices[dev_idx].idx,
-				(uint8_t)(devices[dev_idx].idx >> 8),
-				(uint8_t)devices[dev_idx].idx,
-				devices[dev_idx].id,
-				devices[dev_idx].version,
-				devices[dev_idx].read_size,
-				devices[dev_idx].write_size,
-				dev_str);
-		}
-	}
-#endif
 
 	static const String probeLetters = "ABCDEFGHI";
 	const int bufferSizeInSeconds = 10;
 	int npxProbeIdx = 0;
 
-	for (size_t dev_idx = 0; dev_idx < num_devs; dev_idx++)
+	for (const auto& [index, device] : deviceMap)
 	{
-		if (devices[dev_idx].id == ONIX_NEUROPIX1R0)
+		if (device.id == ONIX_NEUROPIX1R0)
 		{
-			auto np1 = std::make_unique<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), this, devices[dev_idx].idx, ctx);
+			auto np1 = std::make_shared<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
 
 			int res = np1->configureDevice();
 
@@ -153,116 +138,144 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			{
 				if (res == -1)
 				{
-					LOGE("Device Idx: ", devices[dev_idx].idx, " Unable to read probe serial number. Device not found.");
+					LOGE("Device Idx: ", index, " Unable to read probe serial number. Device not found.");
 
 					continue;
 				}
 				else if (res == -2)
 				{
-					LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+					LOGE("Device Idx: ", index, " Error enabling device stream.");
 
 					continue;
 				}
-				else if (res == -3 || res == -4)
+				else if (res == -3)
 				{
-					LOGE("Missing or invalid calibration file(s). Ensure that all calibration files exist and the file paths are correct.");
+					LOGE("Error enabling device ", index);
+
+					continue;
 				}
 			}
 
-			np1->addSourceBuffers(sourceBuffers);
-
-			sources.add(np1.release());
+			sources.push_back(np1);
+			headstages.insert({ PortController::getPortFromIndex(index), NEUROPIXELSV1F_HEADSTAGE_NAME });
 
 			npxProbeIdx++;
 		}
-		else if (devices[dev_idx].id == ONIX_BNO055)
+		else if (device.id == ONIX_BNO055)
 		{
-			auto bno = std::make_unique<Bno055>("BNO055", devices[dev_idx].idx, ctx);
+			auto bno = std::make_shared<Bno055>("BNO055", index, context);
 
 			int result = bno->configureDevice();
 
 			if (result != 0)
 			{
-				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				LOGE("Device Idx: ", index, " Error enabling device stream.");
 				continue;
 			}
 
-			bno->addSourceBuffers(sourceBuffers);
-
-			sources.add(bno.release());
+			sources.push_back(bno);
 		}
-		else if (devices[dev_idx].id == ONIX_DS90UB9RAW)
+		else if (device.id == ONIX_DS90UB9RAW)
 		{
 			LOGD("Passthrough device detected");
 			//initialize main i2c parameter
-			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, devices[dev_idx].idx, ctx);
+			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, index, context);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
 
-			auto EEPROM = std::make_unique<HeadStageEEPROM>(devices[dev_idx].idx, ctx);
+			auto EEPROM = std::make_unique<HeadStageEEPROM>(index, context);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
 			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
 			{
-				auto np2 = std::make_unique<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), devices[dev_idx].idx, ctx);
+				auto np2 = std::make_shared<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
 				int res = np2->configureDevice();
 				if (res != 0)
 				{
 					if (res == -1)
 					{
-						LOGE("Device Idx: ", devices[dev_idx].idx, " Unable to read probe serial number. Device not found.");
+						LOGE("Device Idx: ", index, " Unable to read probe serial number. Device not found.");
 					}
 					//TODO add other errors if needed
 					continue;
 				}
 				npxProbeIdx += np2->getNumProbes();
 
-				np2->addSourceBuffers(sourceBuffers);
-
-				sources.add(np2.release());
+				sources.push_back(np2);
 			}
 		}
 	}
 
-	portA->configureDevice();
-	portB->configureDevice();
+	if (portA->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port A.");
+	if (portB->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port B.");
 
-	context.issueReset();
+	context->issueReset();
 
-	oni_size_t frame_size = 0;
-	size_t frame_size_sz = sizeof(frame_size);
-	oni_get_opt(ctx, ONI_OPT_MAXREADFRAMESIZE, &frame_size, &frame_size_sz);
-	printf("Max. read frame size: %u bytes\n", frame_size);
+	oni_size_t frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE);
+	printf("Max. read frame size: %u bytes\n", frameSize);
 
-	oni_get_opt(ctx, ONI_OPT_MAXWRITEFRAMESIZE, &frame_size, &frame_size_sz);
-	printf("Max. write frame size: %u bytes\n", frame_size);
+	frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE);
+	printf("Max. write frame size: %u bytes\n", frameSize);
 
-	// set block read size
-	size_t block_size_sz = sizeof(block_read_size);
-	oni_set_opt(ctx, ONI_OPT_BLOCKREADSIZE, &block_read_size, block_size_sz);
+	context->setOption(ONI_OPT_BLOCKREADSIZE, block_read_size);
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 
 	LOGD("All devices initialized.");
 }
 
-Array<OnixDevice*> OnixSource::getDataSources()
+OnixDeviceVector OnixSource::getDataSources() const
 {
-	Array<OnixDevice*> devices;
+	OnixDeviceVector devices{};
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
-		devices.add(source);
+		devices.push_back(source);
 	}
 
 	return devices;
+}
+
+OnixDeviceVector OnixSource::getDataSourcesFromPort(PortName port) const
+{
+	OnixDeviceVector devices{};
+
+	for (const auto& source : sources)
+	{
+		if (PortController::getPortFromIndex(source->getDeviceIdx()) == port)
+			devices.push_back(source);
+	}
+
+	return devices;
+}
+
+std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devices)
+{
+	std::map<int, OnixDeviceType> deviceMap;
+
+	for (const auto& device : devices)
+	{
+		deviceMap.insert({ device->getDeviceIdx(), device->type });
+	}
+
+	return deviceMap;
+}
+
+std::map<int, OnixDeviceType> OnixSource::createDeviceMap()
+{
+	return createDeviceMap(getDataSources());
+}
+
+std::map<PortName, String> OnixSource::getHeadstageMap()
+{
+	return headstages;
 }
 
 void OnixSource::updateSourceBuffers()
 {
 	sourceBuffers.clear(true);
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
 		if (source->isEnabled())
 		{
@@ -288,18 +301,20 @@ void OnixSource::updateDiscoveryParameters(PortName port, DiscoveryParameters pa
 
 bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 {
-	if (!context.isInitialized()) return false;
-
-	oni_ctx ctx = context.get();
+	if (!context->isInitialized()) return false;
 
 	switch (port)
 	{
 	case PortName::PortA:
-		if (voltage == "") return portA->configureVoltage();
-		else			   return portA->configureVoltage(voltage.getFloatValue());
+		if (voltage == "" || voltage == "Auto")
+			return portA->configureVoltage();
+		else
+			return portA->configureVoltage(voltage.getFloatValue());
 	case PortName::PortB:
-		if (voltage == "") return portB->configureVoltage();
-		else			   return portB->configureVoltage(voltage.getFloatValue());
+		if (voltage == "" || voltage == "Auto")
+			return portB->configureVoltage();
+		else
+			return portB->configureVoltage(voltage.getFloatValue());
 	default:
 		return false;
 	}
@@ -307,7 +322,7 @@ bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 
 void OnixSource::setPortVoltage(PortName port, float voltage) const
 {
-	if (!context.isInitialized()) return;
+	if (!context->isInitialized()) return;
 
 	switch (port)
 	{
@@ -342,7 +357,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 	if (devicesFound)
 	{
-		for (auto source : sources)
+		for (const auto& source : sources)
 		{
 			if (!source->isEnabled()) continue;
 
@@ -376,7 +391,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
 					"Neuropixels 2.0 Probe",
-					"neuropixels1.probe",
+					"neuropixels2.probe",
 					"0000000",
 					"imec"
 				};
@@ -417,37 +432,44 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 	}
 }
 
+bool OnixSource::isDevicesReady()
+{
+	auto tabMap = editor->createTabMapFromCanvas();
+	auto sourceMap = createDeviceMap(sources);
+
+	return tabMap == sourceMap;
+}
+
 bool OnixSource::foundInputSource()
 {
-	return devicesFound; // TODO: Check here if the settings tabs match the hardware; only return true if the hardware and tabs match
+	return devicesFound;
 }
 
 bool OnixSource::isReady()
 {
-	if (!context.isInitialized() || !devicesFound)
+	if (context == nullptr || !devicesFound)
 		return false;
+
+	if (!isDevicesReady())
+	{
+		CoreServices::sendStatusMessage("Selected headstages do not match hardware found.");
+		return false;
+	}
 
 	if (editor->isHeadstageSelected(PortName::PortA) && !portA->checkLinkState()) return false;
 	if (editor->isHeadstageSelected(PortName::PortB) && !portB->checkLinkState()) return false;
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 
-		int result = source->updateSettings();
-
-		if (result != 0)
+		if (!source->updateSettings())
 			return false;
 	}
 
-	oni_reg_val_t reg = 2;
-	int res = oni_set_opt(context.get(), ONI_OPT_RESETACQCOUNTER, &reg, sizeof(oni_size_t));
-	if (res < ONI_ESUCCESS)
-	{
-		LOGE("Error starting acquisition: ", oni_error_str(res), " code ", res);
-
-		return false;
-	}
+	uint32_t val = 2;
+	context->setOption(ONI_OPT_RESETACQCOUNTER, val);
+	if (context->getLastResult() != ONI_ESUCCESS) return false;
 
 	return true;
 }
@@ -456,24 +478,24 @@ bool OnixSource::startAcquisition()
 {
 	frameReader.reset();
 
-	Array<OnixDevice*> devices;
+	OnixDeviceVector devices;
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
-		devices.add(source);
+		devices.push_back(source);
 	}
 
-	devices.add(portA.get());
-	devices.add(portB.get());
+	devices.push_back(portA);
+	devices.push_back(portB);
 
-	for (auto source : devices)
+	for (const auto& source : devices)
 	{
 		if (!source->isEnabled()) continue;
 
 		source->startAcquisition();
 	}
 
-	frameReader = std::make_unique<FrameReader>(devices, context.get());
+	frameReader = std::make_unique<FrameReader>(devices, context);
 	frameReader->startThread();
 
 	startThread();
@@ -495,17 +517,14 @@ bool OnixSource::stopAcquisition()
 	if (devicesFound)
 	{
 		oni_size_t reg = 0;
-		int res = oni_set_opt(context.get(), ONI_OPT_RUNNING, &reg, sizeof(reg));
-		if (res < ONI_ESUCCESS)
-		{
-			LOGE("Error stopping acquisition: ", oni_error_str(res), " code ", res);
-			return false;
-		}
+		context->setOption(ONI_OPT_RUNNING, reg);
+		if (context->getLastResult() != ONI_ESUCCESS) return false;
 
-		context.issueReset();
+		uint32_t val = 1;
+		context->setOption(ONI_OPT_RESET, val);
 	}
 
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 
@@ -535,7 +554,7 @@ bool OnixSource::stopAcquisition()
 		devicesFound = false;
 
 		MessageManager::callAsync([] { AlertWindow::showMessageBoxAsync(MessageBoxIconType::WarningIcon, "Port Communication Lock Lost",
-			"The port communication lock was lost during acquisition, inspect hardware connections and port switch." + 
+			"The port communication lock was lost during acquisition, inspect hardware connections and port switch." +
 			String("\n\nTo continue, press disconnect in the GUI, then press connect."), "Okay"); });
 	}
 
@@ -544,7 +563,7 @@ bool OnixSource::stopAcquisition()
 
 bool OnixSource::updateBuffer()
 {
-	for (auto source : sources)
+	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
 

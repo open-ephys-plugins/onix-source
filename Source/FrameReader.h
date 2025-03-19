@@ -32,7 +32,7 @@
 class FrameReader : public Thread
 {
 public:
-	FrameReader(Array<OnixDevice*> sources_, oni_ctx ctx_);
+	FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1>);
 
 	~FrameReader();
 
@@ -40,8 +40,10 @@ public:
 
 private:
 
-	Array<OnixDevice*> sources;
-	oni_ctx ctx;
+	OnixDeviceVector sources;
+	std::shared_ptr<Onix1> context;
+
+	JUCE_LEAK_DETECTOR(FrameReader);
 };
 
 #endif // __FRAMEREADER_H__

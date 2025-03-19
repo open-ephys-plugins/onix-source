@@ -24,62 +24,19 @@
 #ifndef __OnixSource_H__
 #define __OnixSource_H__
 
-#include <oni.h>
-#include <onix.h>
-
 #include <DataThreadHeaders.h>
 
+#include "Onix1.h"
 #include "OnixDevice.h"
 #include "OnixSourceEditor.h"
 #include "Devices/DeviceList.h"
 #include "FrameReader.h"
-
-class Onix1
-{
-public:
-	Onix1()
-	{
-		LOGD("ONIX Source creating ONI context.");
-		ctx = oni_create_ctx("riffa");
-		if (ctx == NULL) { LOGE("Failed to create context."); return; }
-
-		int errorCode = oni_init_ctx(ctx, 0);
-
-		if (errorCode) 
-		{ 
-			LOGE(oni_error_str(errorCode));
-			ctx = NULL;
-			return; 
-		}
-	};
-
-	~Onix1()
-	{ 
-		oni_destroy_ctx(ctx);
-	};
-
-	bool isInitialized() const { return ctx != NULL; }
-
-	oni_ctx get() const { return ctx; }
-
-	int issueReset() const
-	{
-		int val = 1;
-		return oni_set_opt(ctx, ONI_OPT_RESET, &val, sizeof(val));
-	}
-
-private:
-
-	/** The ONI context object */
-	oni_ctx ctx;
-};
 
 /**
 
 	@see DataThread, SourceNode
 
 */
-
 class OnixSource : public DataThread
 {
 public:
@@ -90,7 +47,7 @@ public:
 	/** Destructor */
 	~OnixSource()
 	{
-		if (context.isInitialized())
+		if (context != nullptr && context->isInitialized())
 		{
 			portA->setVoltageOverride(0.0f, false);
 			portB->setVoltageOverride(0.0f, false);
@@ -110,13 +67,16 @@ public:
 	bool isReady() override;
 
 	/** Returns true if the hardware is connected, false otherwise.*/
-	bool foundInputSource();
+	bool foundInputSource() override;
+
+	/** Returns true if the deviceMap matches the settings tabs that are open */
+	bool isDevicesReady();
 
 	/** Initializes data transfer.*/
-	bool startAcquisition();
+	bool startAcquisition() override;
 
 	/** Stops data transfer.*/
-	bool stopAcquisition();
+	bool stopAcquisition() override;
 
 	void updateDiscoveryParameters(PortName port, DiscoveryParameters parameters);
 
@@ -126,13 +86,21 @@ public:
 	/** Sets the port voltage */
 	void setPortVoltage(PortName port, float voltage) const;
 
-	int resetContext() { return context.issueReset(); }
+	void resetContext() { if (context != nullptr && context->isInitialized()) context->issueReset(); }
 
 	void initializeDevices(bool updateStreamInfo = false);
 
 	void disconnectDevices(bool updateStreamInfo = false);
 
-	Array<OnixDevice*> getDataSources();
+	OnixDeviceVector getDataSources() const;
+
+	OnixDeviceVector getDataSourcesFromPort(PortName port) const;
+
+	std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector);
+
+	std::map<int, OnixDeviceType> createDeviceMap();
+
+	std::map<PortName, String> getHeadstageMap();
 
 	void updateSourceBuffers();
 
@@ -147,7 +115,10 @@ public:
 private:
 
 	/** Available data sources */
-	OwnedArray<OnixDevice> sources;
+	OnixDeviceVector sources;
+
+	/** Available headstages */
+	std::map<PortName, String> headstages;
 
 	/** Pointer to the editor */
 	OnixSourceEditor* editor;
@@ -155,10 +126,10 @@ private:
 	/** Thread that reads frames */
 	std::unique_ptr<FrameReader> frameReader;
 
-	Onix1 context;
+	std::shared_ptr<Onix1> context = nullptr;
 
-	std::unique_ptr<PortController> portA;
-	std::unique_ptr<PortController> portB;
+	std::shared_ptr<PortController> portA;
+	std::shared_ptr<PortController> portB;
 
 	const oni_size_t block_read_size = 2048;
 

@@ -23,10 +23,11 @@
 
 #include "Bno055Interface.h"
 
-Bno055Interface::Bno055Interface(OnixDevice* d, OnixSourceEditor* e, OnixSourceCanvas* c) :
-	SettingsInterface(d, e, c),
-	device((Bno055*)d)
+Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
+	SettingsInterface(d, e, c)
 {
+	device = d;
+
 	if (device != nullptr)
 	{
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
@@ -49,7 +50,7 @@ void Bno055Interface::buttonClicked(Button* button)
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
 		device->configureDevice();
-		canvas->resetContext();
+		if (canvas->foundInputSource()) canvas->resetContext();
 
 		if (device->isEnabled())
 		{
