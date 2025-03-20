@@ -221,8 +221,23 @@ private:
 	static const int numUltraFrames = 12;
 	static const int dataOffset = 1;
 
+	static const uint32_t numLfpSamples = 384 * numUltraFrames;
+	static const uint32_t numApSamples = 384 * numUltraFrames * superFramesPerUltraFrame;
+
 	const float lfpSampleRate = 2500.0f;
 	const float apSampleRate = 30000.0f;
+
+	bool lfpOffsetCalculated = false;
+	bool apOffsetCalculated = false;
+
+	std::array<float, numberOfChannels> apOffsets;
+	std::array<float, numberOfChannels> lfpOffsets;
+
+	std::vector<std::vector<float>> apOffsetValues;
+	std::vector<std::vector<float>> lfpOffsetValues;
+
+	void updateLfpOffsets(std::array<float, numLfpSamples>&, int64 timestamp);
+	void updateApOffsets(std::array<float, numApSamples>&, int64 timestamp);
 
 	static const int ProbeI2CAddress = 0x70;
 
@@ -234,8 +249,8 @@ private:
 
 	int64 probeNumber = 0;
 
-	float lfpSamples[384 * numUltraFrames];
-	float apSamples[384 * numUltraFrames * superFramesPerUltraFrame];
+	std::array<float, numLfpSamples> lfpSamples;
+	std::array<float, numApSamples> apSamples;
 
 	int64 apSampleNumbers[numUltraFrames * superFramesPerUltraFrame];
 	double apTimestamps[numUltraFrames * superFramesPerUltraFrame];
