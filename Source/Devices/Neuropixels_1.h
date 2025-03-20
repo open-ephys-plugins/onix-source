@@ -236,8 +236,8 @@ private:
 	std::vector<std::vector<float>> apOffsetValues;
 	std::vector<std::vector<float>> lfpOffsetValues;
 
-	void updateLfpOffsets(std::array<float, numLfpSamples>&, int64 timestamp);
-	void updateApOffsets(std::array<float, numApSamples>&, int64 timestamp);
+	void updateLfpOffsets(std::array<float, numLfpSamples>&, int64);
+	void updateApOffsets(std::array<float, numApSamples>&, int64);
 
 	static const int ProbeI2CAddress = 0x70;
 

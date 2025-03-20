@@ -397,15 +397,19 @@ void Neuropixels_1::startAcquisition()
 		lfpOffsets[i] = 0;
 
 		apOffsetValues.push_back(std::vector<float>{});
-		apOffsetValues.end()->reserve(100);
 		lfpOffsetValues.push_back(std::vector<float>{});
-		lfpOffsetValues.end()->reserve(100);
 	}
 
 	lfpOffsetCalculated = false;
 	apOffsetCalculated = false;
 
 	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::ACTIVE);
+
+	superFrameCount = 0;
+	ultraFrameCount = 0;
+	shouldAddToBuffer = false;
+	apSampleNumber = 0;
+	lfpSampleNumber = 0;
 }
 
 void Neuropixels_1::stopAcquisition()
@@ -417,12 +421,6 @@ void Neuropixels_1::stopAcquisition()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
-
-	superFrameCount = 0;
-	ultraFrameCount = 0;
-	shouldAddToBuffer = false;
-	apSampleNumber = 0;
-	lfpSampleNumber = 0;
 }
 
 void Neuropixels_1::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
@@ -449,8 +447,6 @@ void Neuropixels_1::processFrames()
 	float apConversion = 1171.875 / apGain;
 	float lfpConversion = 1171.875 / lfpGain;
 
-	int64 lfpTimestamp, apTimestamp;
-
 	while (!frameArray.isEmpty())
 	{
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
@@ -464,9 +460,8 @@ void Neuropixels_1::processFrames()
 			((uint64_t)(*(uint16_t*)(dataclock + 2)) << 32) |
 			((uint64_t)(*(uint16_t*)(dataclock + 4)) << 16) |
 			((uint64_t)(*(uint16_t*)(dataclock + 6)) << 0);
-		int64_t clockCounter = hubClock;
-		apTimestamp = clockCounter;
-		apTimestamps[superFrameCount] = apTimestamp;
+
+		apTimestamps[superFrameCount] = hubClock;
 		apSampleNumbers[superFrameCount] = apSampleNumber++;
 
 		for (int i = 0; i < framesPerSuperFrame; i++)
@@ -476,8 +471,7 @@ void Neuropixels_1::processFrames()
 				int superCountOffset = superFrameCount % superFramesPerUltraFrame;
 				if (superCountOffset == 0)
 				{
-					lfpTimestamp = apTimestamps[superFrameCount];
-					lfpTimestamps[ultraFrameCount] = lfpTimestamp;
+					lfpTimestamps[ultraFrameCount] = apTimestamps[superFrameCount];
 					lfpSampleNumbers[ultraFrameCount] = lfpSampleNumber++;
 				}
 
@@ -522,19 +516,19 @@ void Neuropixels_1::processFrames()
 			lfpBuffer->addToBuffer(lfpSamples.data(), lfpSampleNumbers, lfpTimestamps, lfpEventCodes, numUltraFrames);
 			apBuffer->addToBuffer(apSamples.data(), apSampleNumbers, apTimestamps, apEventCodes, numUltraFrames * superFramesPerUltraFrame);
 
-			if (!lfpOffsetCalculated) updateLfpOffsets(lfpSamples, lfpTimestamp);
-			if (!apOffsetCalculated) updateApOffsets(apSamples, apTimestamp);
+			if (!lfpOffsetCalculated) updateLfpOffsets(lfpSamples, lfpSampleNumbers[0]);
+			if (!apOffsetCalculated) updateApOffsets(apSamples, apSampleNumbers[0]);
 		}
 	}
 }
 
-void Neuropixels_1::updateApOffsets(std::array<float, numApSamples>& samples, int64 timestamp)
+void Neuropixels_1::updateApOffsets(std::array<float, numApSamples>& samples, int64 sampleNumber)
 {
-	if (timestamp > apSampleRate * 5)
+	if (sampleNumber > apSampleRate * 5)
 	{
 		uint32_t counter = 0;
 
-		while (apOffsetValues.end()->size() <= 100)
+		while (apOffsetValues[0].size() <= 99)
 		{
 			if (counter >= superFramesPerUltraFrame * numUltraFrames) break;
 
@@ -546,7 +540,7 @@ void Neuropixels_1::updateApOffsets(std::array<float, numApSamples>& samples, in
 			counter += 1;
 		}
 
-		if (apOffsetValues.end()->size() >= 100)
+		if (apOffsetValues[0].size() >= 100)
 		{
 			for (int i = 0; i < numberOfChannels; i += 1)
 			{
@@ -559,13 +553,13 @@ void Neuropixels_1::updateApOffsets(std::array<float, numApSamples>& samples, in
 	}
 }
 
-void Neuropixels_1::updateLfpOffsets(std::array<float, numLfpSamples>& samples, int64 timestamp)
+void Neuropixels_1::updateLfpOffsets(std::array<float, numLfpSamples>& samples, int64 sampleNumber)
 {
-	if (timestamp > lfpSampleRate * 5)
+	if (sampleNumber > lfpSampleRate * 5)
 	{
 		uint32_t counter = 0;
 
-		while (lfpOffsetValues.end()->size() <= 100)
+		while (lfpOffsetValues[0].size() <= 99)
 		{
 			if (counter >= numUltraFrames) break;
 
@@ -577,7 +571,7 @@ void Neuropixels_1::updateLfpOffsets(std::array<float, numLfpSamples>& samples, 
 			counter += 1;
 		}
 
-		if (lfpOffsetValues.end()->size() >= 100)
+		if (lfpOffsetValues[0].size() >= 100)
 		{
 			for (int i = 0; i < numberOfChannels; i += 1)
 			{
