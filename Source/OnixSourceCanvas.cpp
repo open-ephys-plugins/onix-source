@@ -139,8 +139,11 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	if (device->type == OnixDeviceType::NEUROPIXELS_1)
 	{
 		// NB: Neuropixels-specific settings need to be updated
-		auto npx1 = std::static_pointer_cast<Neuropixels_1>(device);
-		npx1->setSettings(std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device)->settings.get());
+		auto npx1Found = std::static_pointer_cast<Neuropixels_1>(device);
+		auto npx1Selected = std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device);
+		npx1Found->setSettings(npx1Selected->settings.get());
+		npx1Found->adcCalibrationFilePath = npx1Selected->adcCalibrationFilePath;
+		npx1Found->gainCalibrationFilePath = npx1Selected->gainCalibrationFilePath;
 	}
 	// TODO: Add more devices, since they will have device-specific settings to be updated
 
