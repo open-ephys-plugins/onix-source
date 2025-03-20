@@ -35,12 +35,24 @@ OnixSource::OnixSource(SourceNode* sn) :
 	}
 	catch (const std::system_error& e)
 	{
-		LOGE("Failed to create context.");
+		LOGE("Failed to create context. ", e.what());
+		CoreServices::sendStatusMessage("Failed to create context." + String(e.what()));
+		AlertWindow::showMessageBox(
+			MessageBoxIconType::WarningIcon,
+			"Failed to Create Context",
+			"There was an error creating the context. Check the error logs for more details."
+		);
 		return;
 	}
 	catch (const error_t& e)
 	{
 		LOGE("Failed to initialize context. ", e.what());
+		CoreServices::sendStatusMessage("Failed to create context. " + String(e.what()));
+		AlertWindow::showMessageBox(
+			MessageBoxIconType::WarningIcon,
+			"Failed to Initialize Context",
+			"There was an error initializing the context. Check the error logs for more details."
+		);
 		return;
 	}
 
