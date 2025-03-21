@@ -22,7 +22,6 @@
 */
 
 #include "Neuropixels_1.h"
-#include "../OnixSource.h"
 
 BackgroundUpdaterWithProgressWindow::BackgroundUpdaterWithProgressWindow(Neuropixels_1* d)
 	: ThreadWithProgressWindow("Writing calibration files to Neuropixels Probe: " + d->getName(), true, false)
@@ -313,7 +312,7 @@ int Neuropixels_1::configureDevice()
 	WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD);
 	if (i2cContext->getLastResult() != ONI_ESUCCESS) return -3;
 
-	return 0;
+	return deviceContext->getLastResult();
 }
 
 bool Neuropixels_1::updateSettings()

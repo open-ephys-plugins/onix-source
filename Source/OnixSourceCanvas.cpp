@@ -124,7 +124,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 		else if (device->type == OnixDeviceType::HEARTBEAT)
 		{
 			auto heartbeatInterface = std::make_shared<HeartbeatInterface>(std::static_pointer_cast<Heartbeat>(device), editor, this);
-      addInterfaceToTab(getDeviceTabName(device), tab, heartbeatInterface);
+			addInterfaceToTab(getDeviceTabName(device), tab, heartbeatInterface);
 		}
 		else if (device->type == OnixDeviceType::HARPSYNCINPUT)
 		{
@@ -201,14 +201,6 @@ CustomViewport* OnixSourceCanvas::createCustomViewport(SettingsInterface* settin
 	Rectangle bounds = settingsInterface->getBounds();
 
 	return new CustomViewport(settingsInterface, bounds.getWidth(), bounds.getHeight());
-}
-
-OnixSourceCanvas::~OnixSourceCanvas()
-{
-}
-
-void OnixSourceCanvas::paint(Graphics& g)
-{
 }
 
 void OnixSourceCanvas::refresh()
@@ -358,9 +350,9 @@ void OnixSourceCanvas::refreshTabs()
 				AlertWindow::showMessageBox(
 					MessageBoxIconType::WarningIcon,
 					"No Headstages Found",
-					"No headstages were found when connecting. Double check that the correct headstage is selected. " + 
-						String("If the correct headstage is selected, try pressing disconnect / connect again.\n\n") + 
-						String("If the port voltage is manually set, try clearing the value and letting the automated voltage discovery algorithm run.")
+					"No headstages were found when connecting. Double check that the correct headstage is selected. " +
+					String("If the correct headstage is selected, try pressing disconnect / connect again.\n\n") +
+					String("If the port voltage is manually set, try clearing the value and letting the automated voltage discovery algorithm run.")
 				);
 			}
 		}

@@ -23,8 +23,8 @@
 
 #include "HarpSyncInput.h"
 
-HarpSyncInput::HarpSyncInput(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: OnixDevice(name, OnixDeviceType::HARPSYNCINPUT, deviceIdx_, ctx_)
+HarpSyncInput::HarpSyncInput(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name, OnixDeviceType::HARPSYNCINPUT, deviceIdx_, oni_ctx)
 {
 	setEnabled(false);
 
@@ -45,14 +45,16 @@ HarpSyncInput::HarpSyncInput(String name, const oni_dev_idx_t deviceIdx_, const 
 
 int HarpSyncInput::configureDevice()
 {
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)HarpSyncInputRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0)));
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	return 0;
+	deviceContext->writeRegister(deviceIdx, (uint32_t)HarpSyncInputRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+
+	return deviceContext->getLastResult();
 }
 
-int HarpSyncInput::updateSettings()
+bool HarpSyncInput::updateSettings()
 {
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)HarpSyncInputRegisters::SOURCE, (oni_reg_val_t)HarpSyncSource::Breakout));
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HarpSyncInputRegisters::SOURCE, (oni_reg_val_t)HarpSyncSource::Breakout);
 
 	return 0;
 }
@@ -70,9 +72,6 @@ void HarpSyncInput::stopAcquisition()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
-
-	currentFrame = 0;
-	sampleNumber = 0;
 }
 
 void HarpSyncInput::addFrame(oni_frame_t* frame)

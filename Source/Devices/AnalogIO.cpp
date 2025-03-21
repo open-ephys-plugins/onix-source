@@ -23,8 +23,8 @@
 
 #include "AnalogIO.h"
 
-AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: OnixDevice(name, OnixDeviceType::ANALOGIO, deviceIdx_, ctx_)
+AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name, OnixDeviceType::ANALOGIO, deviceIdx_, oni_ctx)
 {
 	StreamInfo analogInputStream;
 	analogInputStream.name = name + "-AnalogInput";
@@ -51,25 +51,20 @@ AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ct
 
 int AnalogIO::configureDevice()
 {
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)AnalogIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0)));
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	return 0;
+	deviceContext->writeRegister(deviceIdx, (uint32_t)AnalogIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+
+	return deviceContext->getLastResult();
 }
 
-int AnalogIO::updateSettings()
+bool AnalogIO::updateSettings()
 {
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE, (oni_reg_val_t)channelVoltageRange[0]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH01_IN_RANGE, (oni_reg_val_t)channelVoltageRange[1]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH02_IN_RANGE, (oni_reg_val_t)channelVoltageRange[2]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH03_IN_RANGE, (oni_reg_val_t)channelVoltageRange[3]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH04_IN_RANGE, (oni_reg_val_t)channelVoltageRange[4]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH05_IN_RANGE, (oni_reg_val_t)channelVoltageRange[5]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH06_IN_RANGE, (oni_reg_val_t)channelVoltageRange[6]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH07_IN_RANGE, (oni_reg_val_t)channelVoltageRange[7]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH08_IN_RANGE, (oni_reg_val_t)channelVoltageRange[8]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH09_IN_RANGE, (oni_reg_val_t)channelVoltageRange[9]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH10_IN_RANGE, (oni_reg_val_t)channelVoltageRange[10]));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH11_IN_RANGE, (oni_reg_val_t)channelVoltageRange[11]));
+	for (int i = 0; i < numChannels; i += 1)
+	{
+		deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE + i, (oni_reg_val_t)channelVoltageRange[i]); 
+		if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+	}
 
 	uint32_t ioReg = 0;
 
@@ -78,14 +73,15 @@ int AnalogIO::updateSettings()
 		ioReg = (ioReg & ~((uint32_t)1 << i)) | ((uint32_t)(channelDirection[i]) << i);
 	}
 
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CHDIR, ioReg));
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CHDIR, ioReg);
+	if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
 
 	for (int i = 0; i < numChannels; i += 1)
 	{
 		voltsPerDivision[i] = getVoltsPerDivision(channelVoltageRange[i]);
 	}
 
-	return 0;
+	return true;
 }
 
 float AnalogIO::getVoltsPerDivision(AnalogIOVoltageRange voltageRange)

@@ -31,6 +31,8 @@
 #include "OnixSourceEditor.h"
 #include "OnixSource.h"
 
+class OnixSource;
+
 /**
 
 	TabBarButton with custom appearance
@@ -83,12 +85,6 @@ public:
 	/** Constructor */
 	OnixSourceCanvas(GenericProcessor*, OnixSourceEditor*, OnixSource*);
 
-	/** Destructor */
-	~OnixSourceCanvas();
-
-	/** Fills background */
-	void paint(Graphics& g);
-
 	/** Renders the Visualizer on each animation callback cycle */
 	void refresh() override;
 
@@ -122,6 +118,9 @@ public:
 
 	/** Add the headstage and all of its devices to the canvas */
 	void addHeadstage(String headstage, PortName port);
+
+	/** Adds the Breakout Board as a tab, and adds all of its devices as sub-tabs */
+	void addBreakoutBoardTab();
 
 	/** Called when the basestation is created or refreshed */
 	void populateSourceTabs(CustomTabComponent*, OnixDeviceVector);

@@ -35,6 +35,8 @@ PortController::~PortController()
 
 int PortController::configureDevice()
 {
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;
+
 	deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1);
 
 	return deviceContext->getLastResult();

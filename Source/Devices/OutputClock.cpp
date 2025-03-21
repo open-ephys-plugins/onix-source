@@ -23,31 +23,30 @@
 
 #include "OutputClock.h"
 
-OutputClock::OutputClock(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: OnixDevice(name, OnixDeviceType::OUTPUTCLOCK, deviceIdx_, ctx_)
+OutputClock::OutputClock(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name, OnixDeviceType::OUTPUTCLOCK, deviceIdx_, oni_ctx)
 {
 }
 
 OutputClock::~OutputClock()
 {
-	setClockGate(false, true);
+	if (deviceContext != nullptr && deviceContext->isInitialized()) setClockGate(false, true);
 }
 
-int OutputClock::updateSettings()
+bool OutputClock::updateSettings()
 {
-	oni_reg_val_t baseFreqHz;
-	ONI_OK_RETURN_INT(oni_read_reg(ctx, deviceIdx, (oni_reg_addr_t)OutputClockRegisters::BASE_FREQ_HZ, &baseFreqHz));
+	oni_reg_val_t baseFreqHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::BASE_FREQ_HZ);
 
 	auto periodCycles = (uint32_t)(baseFreqHz / frequencyHz);
 	auto h = (uint32_t)(periodCycles * (dutyCycle / 100));
 	auto l = periodCycles - h;
 	auto delayCycles = (uint32_t)(delay * baseFreqHz);
 
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)OutputClockRegisters::HIGH_CYCLES, h));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)OutputClockRegisters::LOW_CYCLES, l));
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)OutputClockRegisters::DELAY_CYCLES, delayCycles));
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::HIGH_CYCLES, h); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::LOW_CYCLES, l); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::DELAY_CYCLES, delayCycles); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
 
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, 1));
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, 1); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
 }
 
 void OutputClock::startAcquisition()

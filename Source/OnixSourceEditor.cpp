@@ -302,7 +302,7 @@ void OnixSourceEditor::startAcquisition()
 	// TODO: Disable all UI elements that should not be changed during acquisition...
 	connectButton->setEnabled(false);
 
-	for (const auto& source : thread->getDataSources())
+	for (const auto& source : source->getDataSources())
 	{
 		if (source->type == OnixDeviceType::MEMORYMONITOR)
 		{
@@ -318,7 +318,7 @@ void OnixSourceEditor::stopAcquisition()
   // TODO: Re-enable all of the UI elements 
 	connectButton->setEnabled(true);
 
-	for (const auto& source : thread->getDataSources())
+	for (const auto& source : source->getDataSources())
 	{
 		if (source->type == OnixDeviceType::MEMORYMONITOR)
 		{

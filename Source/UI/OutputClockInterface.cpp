@@ -39,9 +39,10 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 		deviceEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, Output Clock will not be active during acquisition");
+		deviceEnableButton->setToggleState(true, dontSendNotification);
 		deviceEnableButton->addListener(this);
 		addAndMakeVisible(deviceEnableButton.get());
-		deviceEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
+		deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
 
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));
@@ -111,7 +112,7 @@ void OutputClockInterface::buttonClicked(Button* b)
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
 		device->configureDevice();
-		//canvas->resetContext(); // TODO: Once issue-23 is merged, uncomment this line
+		if (canvas->foundInputSource()) canvas->resetContext();
 
 		if (device->isEnabled())
 		{

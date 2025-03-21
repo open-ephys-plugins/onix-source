@@ -43,7 +43,7 @@ enum class OutputClockRegisters : uint32_t
 class OutputClock : public OnixDevice
 {
 public:
-	OutputClock(String name, const oni_dev_idx_t, const oni_ctx);
+	OutputClock(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 	~OutputClock();
 
@@ -51,7 +51,7 @@ public:
 	int configureDevice() override { return 0; };
 
 	/** Update the settings of the device */
-	int updateSettings() override;
+	bool updateSettings() override;
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;
@@ -94,7 +94,7 @@ private:
 
 	bool clockGate = false;
 
-	void writeClockGateRegister() { ONI_OK(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)OutputClockRegisters::CLOCK_GATE, clockGate ? 1 : 0)); }
+	void writeClockGateRegister() { deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::CLOCK_GATE, clockGate ? 1 : 0); }
 
 	JUCE_LEAK_DETECTOR(OutputClock);
 };

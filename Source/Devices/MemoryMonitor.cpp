@@ -55,8 +55,8 @@ void MemoryMonitorUsage::stopAcquisition()
 	repaint();
 }
 
-MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: OnixDevice(name, OnixDeviceType::MEMORYMONITOR, deviceIdx_, ctx_)
+MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name, OnixDeviceType::MEMORYMONITOR, deviceIdx_, oni_ctx)
 {
 	StreamInfo percentUsedStream;
 	percentUsedStream.name = name + "-PercentUsed";
@@ -86,22 +86,23 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, const 
 
 int MemoryMonitor::configureDevice()
 {
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0)));
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	return 0;
+	deviceContext->writeRegister(deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+	if (deviceContext->getLastResult() != ONI_ESUCCESS) return deviceContext->getLastResult();
+
+	totalMemory = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::TOTAL_MEM);
+
+	return deviceContext->getLastResult();
 }
 
-int MemoryMonitor::updateSettings()
+bool MemoryMonitor::updateSettings()
 {
-	oni_reg_val_t clkHz;
+	oni_reg_val_t clkHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_HZ);
 
-	ONI_OK_RETURN_INT(oni_read_reg(ctx, deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_HZ, &clkHz));
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_DIV, clkHz / samplesPerSecond);
 
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_DIV, clkHz / samplesPerSecond));
-
-	ONI_OK_RETURN_INT(oni_read_reg(ctx, deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::TOTAL_MEM, &totalMemory));
-
-	return 0;
+	return deviceContext->getLastResult() == ONI_ESUCCESS;
 }
 
 void MemoryMonitor::startAcquisition()

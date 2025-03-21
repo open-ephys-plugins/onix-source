@@ -49,9 +49,6 @@ public:
     /** Constructor */
     OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_);
 
-    /** Destructor */
-    virtual ~OnixSourceEditor() { }
-
     /** Listener methods */
     void labelTextChanged(Label* l) override;
 

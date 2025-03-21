@@ -23,22 +23,24 @@
 
 #include "Heartbeat.h"
 
-Heartbeat::Heartbeat(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: OnixDevice(name, OnixDeviceType::HEARTBEAT, deviceIdx_, ctx_)
+Heartbeat::Heartbeat(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name, OnixDeviceType::HEARTBEAT, deviceIdx_, oni_ctx)
 {
 }
 
 int Heartbeat::configureDevice()
 {
-	ONI_OK_RETURN_INT(oni_write_reg(ctx, deviceIdx, (uint32_t)HeartbeatRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0)));
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	return 0;
+	deviceContext->writeRegister(deviceIdx, (uint32_t)HeartbeatRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+
+	return deviceContext->getLastResult();
 }
 
-int Heartbeat::updateSettings()
+bool Heartbeat::updateSettings()
 {
 	writeBeatsPerSecondRegister();
-	return 0;
+	return deviceContext->getLastResult() == ONI_ESUCCESS;
 }
 
 void Heartbeat::setBeatsPerSecond(uint32_t beats, bool writeToRegister)
@@ -49,8 +51,6 @@ void Heartbeat::setBeatsPerSecond(uint32_t beats, bool writeToRegister)
 
 void Heartbeat::writeBeatsPerSecondRegister()
 {
-	oni_reg_val_t clkHz;
-
-	ONI_OK(oni_read_reg(ctx, deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_HZ, &clkHz));
-	ONI_OK(oni_write_reg(ctx, deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_DIV, clkHz / beatsPerSecond));
+	oni_reg_val_t clkHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_HZ);
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_DIV, clkHz / beatsPerSecond);
 }

@@ -205,71 +205,71 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				sources.push_back(np2);
 			}
 		}
-		else if (devices[dev_idx].id == ONIX_MEMUSAGE)
+		else if (device.id == ONIX_MEMUSAGE)
 		{
-			auto memoryMonitor = std::make_shared<MemoryMonitor>("Memory Monitor", devices[dev_idx].idx, ctx);
+			auto memoryMonitor = std::make_shared<MemoryMonitor>("Memory Monitor", index, context);
 
 			int result = memoryMonitor->configureDevice();
 
 			if (result != 0)
 			{
-				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				LOGE("Device Idx: ", index, " Error enabling device stream.");
 				continue;
 			}
 
 			sources.push_back(memoryMonitor);
 		}
-		else if (devices[dev_idx].id == ONIX_FMCCLKOUT1R3)
+		else if (device.id == ONIX_FMCCLKOUT1R3)
 		{
-			auto outputClock = std::make_shared<OutputClock>("Output Clock", devices[dev_idx].idx, ctx);
+			auto outputClock = std::make_shared<OutputClock>("Output Clock", index, context);
 
 			int result = outputClock->configureDevice();
 
 			if (result != 0)
 			{
-				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				LOGE("Device Idx: ", index, " Error enabling device stream.");
 				continue;
 			}
 
 			sources.push_back(outputClock);
 		}
-		else if (devices[dev_idx].id == ONIX_HEARTBEAT)
+		else if (device.id == ONIX_HEARTBEAT)
 		{
-			auto heartbeat = std::make_shared<Heartbeat>("Heartbeat", devices[dev_idx].idx, ctx);
+			auto heartbeat = std::make_shared<Heartbeat>("Heartbeat", index, context);
 
 			int result = heartbeat->configureDevice();
 
 			if (result != 0)
 			{
-				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				LOGE("Device Idx: ", index, " Error enabling device stream.");
 				continue;
 			}
 
 			sources.push_back(heartbeat);
 		}
-		else if (devices[dev_idx].id == ONIX_HARPSYNCINPUT)
+		else if (device.id == ONIX_HARPSYNCINPUT)
 		{
-			auto harpSyncInput = std::make_shared<HarpSyncInput>("Harp Sync Input", devices[dev_idx].idx, ctx);
+			auto harpSyncInput = std::make_shared<HarpSyncInput>("Harp Sync Input", index, context);
 
 			int result = harpSyncInput->configureDevice();
 
 			if (result != 0)
 			{
-				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				LOGE("Device Idx: ", index, " Error enabling device stream.");
 				continue;
 			}
 
 			sources.push_back(harpSyncInput);
 		}
-		else if (devices[dev_idx].id == ONIX_FMCANALOG1R3)
+		else if (device.id == ONIX_FMCANALOG1R3)
 		{
-			auto analogIO = std::make_shared<AnalogIO>("Analog IO", devices[dev_idx].idx, ctx);
+			auto analogIO = std::make_shared<AnalogIO>("Analog IO", index, context);
 
 			int result = analogIO->configureDevice();
 
 			if (result != 0)
 			{
-				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				LOGE("Device Idx: ", index, " Error enabling device stream.");
 				continue;
 			}
 

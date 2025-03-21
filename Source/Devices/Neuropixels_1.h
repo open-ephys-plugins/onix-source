@@ -27,8 +27,6 @@
 #include "../OnixDevice.h"
 #include "../NeuropixComponents.h"
 
-class OnixSource;
-
 #include <ctime>
 #include <chrono>
 #include <bitset>

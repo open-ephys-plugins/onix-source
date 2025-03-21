@@ -26,6 +26,8 @@ int Neuropixels2e::getNumProbes() const
 
 int Neuropixels2e::configureDevice()
 {
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
+
 	configureSerDes();
 	setProbeSupply(true);
 	probeSNA = getProbeSN(ProbeASelected);
@@ -37,7 +39,7 @@ int Neuropixels2e::configureDevice()
 	if (probeSNA == -1 && probeSNB == -1)
 	{
 		m_numProbes = 0;
-		return -1;
+		return -2;
 	}
 	else if (probeSNA != -1 && probeSNB != -1)
 	{

@@ -40,13 +40,13 @@ enum class MemoryMonitorRegisters : uint32_t
 class MemoryMonitor : public OnixDevice
 {
 public:
-	MemoryMonitor(String name, const oni_dev_idx_t, const oni_ctx);
+	MemoryMonitor(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 	/** Configures the device so that it is ready to stream with default settings */
 	int configureDevice() override;
 
 	/** Update the settings of the device */
-	int updateSettings() override;
+	bool updateSettings() override;
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;

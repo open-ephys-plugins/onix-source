@@ -39,9 +39,10 @@ HarpSyncInputInterface::HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d,
 		deviceEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, Memory Monitor will not stream data during acquisition");
+		deviceEnableButton->setToggleState(true, dontSendNotification);
 		deviceEnableButton->addListener(this);
 		addAndMakeVisible(deviceEnableButton.get());
-		deviceEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
+		deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
 
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));
@@ -61,7 +62,7 @@ void HarpSyncInputInterface::buttonClicked(Button* button)
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
 		device->configureDevice();
-		//canvas->resetContext(); // TODO: Once issue-23 is merged, uncomment this line
+		if (canvas->foundInputSource()) canvas->resetContext();
 
 		if (device->isEnabled())
 		{
