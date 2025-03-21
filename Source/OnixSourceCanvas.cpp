@@ -131,6 +131,14 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* portTab)
 
 			portTabIndex.add(portTabNumber++);
 		}
+		else if (source->type == OnixDeviceType::ANALOGIO)
+		{
+			auto analogIOInterface = new AnalogIOInterface(std::static_pointer_cast<AnalogIO>(source), editor, this);
+			settingsInterfaces.add(analogIOInterface);
+			portTab->addTab(source->getName(), Colours::darkgrey, createCustomViewport(analogIOInterface), true);
+
+			portTabIndex.add(portTabNumber++);
+		}
 	}
 }
 

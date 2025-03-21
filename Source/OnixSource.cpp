@@ -34,7 +34,7 @@ OnixSource::OnixSource(SourceNode* sn) :
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 
-	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true); 
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
 
 	if (!context.isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
@@ -65,7 +65,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 {
 	if (!context.isInitialized())
 	{
-		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again."); 
+		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
 		return;
 	}
 
@@ -98,9 +98,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	size_t devices_sz = sizeof(oni_device_t) * num_devs;
 	devices = (oni_device_t*)realloc(devices, devices_sz);
 
-	if (devices == NULL) 
-	{ 
-		LOGE("No devices found."); 
+	if (devices == NULL)
+	{
+		LOGE("No devices found.");
 		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 		return;
 	}
@@ -196,7 +196,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, devices[dev_idx].idx, ctx);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
-			
+
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(devices[dev_idx].idx, ctx);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
@@ -273,6 +273,20 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(harpSyncInput);
+		}
+		else if (devices[dev_idx].id == ONIX_FMCANALOG1R3)
+		{
+			auto analogIO = std::make_shared<AnalogIO>("Analog IO", devices[dev_idx].idx, ctx);
+
+			int result = analogIO->configureDevice();
+
+			if (result != 0)
+			{
+				LOGE("Device Idx: ", devices[dev_idx].idx, " Error enabling device stream.");
+				continue;
+			}
+
+			sources.push_back(analogIO);
 		}
 	}
 
@@ -439,6 +453,18 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 					source->getName(),
 					"Memory Monitor",
 					"memorymonitor",
+					"0000000",
+					""
+				};
+
+				deviceInfos->add(new DeviceInfo(deviceSettings));
+			}
+			else if (source->type == OnixDeviceType::ANALOGIO)
+			{
+				DeviceInfo::Settings deviceSettings{
+					source->getName(),
+					"Analog IO",
+					"analogio",
 					"0000000",
 					""
 				};

@@ -5,3 +5,4 @@
 #include "OutputClockInterface.h"
 #include "HeartbeatInterface.h"
 #include "HarpSyncInputInterface.h"
+#include "AnalogIOInterface.h"

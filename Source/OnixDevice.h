@@ -59,6 +59,7 @@ enum class OnixDeviceType {
 	OUTPUTCLOCK,
 	HEARTBEAT,
 	HARPSYNCINPUT,
+	ANALOGIO,
 };
 
 struct StreamInfo {

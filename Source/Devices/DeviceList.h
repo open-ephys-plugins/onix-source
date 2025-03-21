@@ -7,3 +7,4 @@
 #include "OutputClock.h"
 #include "Heartbeat.h"
 #include "HarpSyncInput.h"
+#include "AnalogIO.h"
