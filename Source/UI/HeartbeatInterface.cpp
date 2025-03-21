@@ -38,10 +38,10 @@ HeartbeatInterface::HeartbeatInterface(std::shared_ptr<Heartbeat> d, OnixSourceE
 		deviceEnableButton->setRadius(3.0f);
 		deviceEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
-		deviceEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
 		deviceEnableButton->setTooltip("If disabled, Heartbeat will not stream data during acquisition");
 		deviceEnableButton->addListener(this);
 		addAndMakeVisible(deviceEnableButton.get());
+		deviceEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
 
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));

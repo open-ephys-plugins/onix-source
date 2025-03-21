@@ -52,10 +52,10 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		probeEnableButton->setRadius(3.0f);
 		probeEnableButton->setBounds(630, currentHeight + 25, 100, 22);
 		probeEnableButton->setClickingTogglesState(true);
-		probeEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
 		probeEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
 		probeEnableButton->addListener(this);
 		addAndMakeVisible(probeEnableButton.get());
+		probeEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
 
 		electrodesLabel = std::make_unique<Label>("ELECTRODES", "ELECTRODES");
 		electrodesLabel->setFont(FontOptions("Inter", "Regular", 13.0f));
