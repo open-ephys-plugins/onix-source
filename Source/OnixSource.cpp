@@ -218,6 +218,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(memoryMonitor);
+			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_FMCCLKOUT1R3)
 		{
@@ -232,6 +233,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(outputClock);
+			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_HEARTBEAT)
 		{
@@ -246,6 +248,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(heartbeat);
+			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_HARPSYNCINPUT)
 		{
@@ -260,7 +263,8 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(harpSyncInput);
-		}
+			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
+			}
 		else if (device.id == ONIX_FMCANALOG1R3)
 		{
 			auto analogIO = std::make_shared<AnalogIO>("Analog IO", index, context);
@@ -274,6 +278,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(analogIO);
+			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 	}
 

@@ -55,6 +55,8 @@ OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEdito
 {
 	topLevelTabComponent = std::make_unique<CustomTabComponent>(editor, true);
 	addAndMakeVisible(topLevelTabComponent.get());
+
+	addHub(BREAKOUT_BOARD_NAME, 0);
 }
 
 CustomTabComponent* OnixSourceCanvas::addTopLevelTab(String tabName, int index)
@@ -74,19 +76,30 @@ Parameter* OnixSourceCanvas::getSourceParameter(String name)
 	return source->getParameter(name);
 }
 
-void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
+void OnixSourceCanvas::addHub(String hubName, int offset)
 {
-	int offset = PortController::getPortOffset(port);
 	CustomTabComponent* tab = nullptr;
 	OnixDeviceVector devices;
+	PortName port = PortController::getPortFromIndex(offset);
 
-	if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
+	if (hubName == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
-		tab = addTopLevelTab(getTopLevelTabName(port, headstage), (int)port - 1);
+		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
 		devices.push_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
 		devices.push_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
 		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
+	}
+	else if (hubName == BREAKOUT_BOARD_NAME)
+	{
+		tab = addTopLevelTab(hubName, 0);
+
+		devices.push_back(std::make_shared<Heartbeat>("Heartbeat", 0, nullptr));
+		devices.push_back(std::make_shared<OutputClock>("Output Clock", 5, nullptr));
+		devices.push_back(std::make_shared<AnalogIO>("Analog IO", 6, nullptr));
+		//devices.push_back(std::make_shared<DigitalIO>("Digital IO", 7, nullptr));
+		devices.push_back(std::make_shared<MemoryMonitor>("Memory Monitor", 10, nullptr));
+		devices.push_back(std::make_shared<HarpSyncInput>("Harp Sync Input", 12, nullptr));
 	}
 
 	if (tab != nullptr && devices.size() > 0)
@@ -239,7 +252,12 @@ void OnixSourceCanvas::removeTabs(PortName port)
 	}
 
 	if (tabExists)
-		topLevelTabComponent->removeTab((int)port - 1);
+	{
+		if (port == PortName::PortB && headstageTabs.size() == 1 && headstageTabs[0]->getName().contains(BREAKOUT_BOARD_NAME))
+			topLevelTabComponent->removeTab((int)port - 1); // NB: If only one headstage is selected in the editor, the index needs to be corrected here.
+		else
+			topLevelTabComponent->removeTab((int)port);
+	}
 }
 
 void OnixSourceCanvas::removeAllTabs()
@@ -360,7 +378,7 @@ void OnixSourceCanvas::refreshTabs()
 		{
 			for (auto& [port, headstageName] : source->getHeadstageMap())
 			{
-				addHeadstage(headstageName, port);
+				addHub(headstageName, PortController::getPortOffset(port));
 			}
 		}
 		else if (selectedPorts.size() == foundPorts.size()) // NB: Same number of ports selected and found
@@ -383,7 +401,7 @@ void OnixSourceCanvas::refreshTabs()
 				{
 					askKeepRemove(selectedPorts[0]);
 
-					addHeadstage(headstages[foundPorts[0]], foundPorts[0]);
+					addHub(headstages[foundPorts[0]], PortController::getPortOffset(foundPorts[0]));
 				}
 			}
 			else // NB: Two headstages are selected on different ports, and at least one of those headstages does not match the found headstages
@@ -431,7 +449,7 @@ void OnixSourceCanvas::refreshTabs()
 					}
 					else
 					{
-						addHeadstage(headstages[port], port);
+						addHub(headstages[port], PortController::getPortOffset(port));
 					}
 				}
 			}

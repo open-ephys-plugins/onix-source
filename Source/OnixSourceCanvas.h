@@ -116,11 +116,8 @@ public:
 	/** Stops animation of sub-interfaces */
 	void stopAcquisition();
 
-	/** Add the headstage and all of its devices to the canvas */
-	void addHeadstage(String headstage, PortName port);
-
-	/** Adds the Breakout Board as a tab, and adds all of its devices as sub-tabs */
-	void addBreakoutBoardTab();
+	/** Add the hub and all of its devices to the canvas */
+	void addHub(String, int);
 
 	/** Called when the basestation is created or refreshed */
 	void populateSourceTabs(CustomTabComponent*, OnixDeviceVector);

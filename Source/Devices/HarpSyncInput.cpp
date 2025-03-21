@@ -56,7 +56,7 @@ bool HarpSyncInput::updateSettings()
 {
 	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HarpSyncInputRegisters::SOURCE, (oni_reg_val_t)HarpSyncSource::Breakout);
 
-	return 0;
+	return deviceContext->getLastResult() == ONI_ESUCCESS;
 }
 
 void HarpSyncInput::startAcquisition()

@@ -266,17 +266,14 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 	bool otherHeadstageSelected = isPortA ? headstageComboBoxB->getSelectedId() > 1 : headstageComboBoxA->getSelectedId() > 1;
 	bool currentHeadstageSelected = isPortA ? headstageComboBoxA->getSelectedId() > 1 : headstageComboBoxB->getSelectedId() > 1;
 
-	if (otherHeadstageSelected)
-		canvas->removeTabs(currentPort);
-	else
-		canvas->removeAllTabs();
+	canvas->removeTabs(currentPort);
 
 	if (currentHeadstageSelected)
 	{
 		String headstage = isPortA ? headstageComboBoxA->getText() : headstageComboBoxB->getText();
 
 		source->updateDiscoveryParameters(currentPort, PortController::getHeadstageDiscoveryParameters(headstage));
-		canvas->addHeadstage(headstage, currentPort);
+		canvas->addHub(headstage, PortController::getPortOffset(currentPort));
 
 		String passthroughName = isPortA ? "passthroughA" : "passthroughB";
 
@@ -315,7 +312,7 @@ void OnixSourceEditor::startAcquisition()
 
 void OnixSourceEditor::stopAcquisition()
 {
-  // TODO: Re-enable all of the UI elements 
+	// TODO: Re-enable all of the UI elements 
 	connectButton->setEnabled(true);
 
 	for (const auto& source : source->getDataSources())

@@ -47,6 +47,8 @@ bool OutputClock::updateSettings()
 	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::DELAY_CYCLES, delayCycles); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
 
 	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, 1); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+
+	return true;
 }
 
 void OutputClock::startAcquisition()
