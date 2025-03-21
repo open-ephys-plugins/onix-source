@@ -1,7 +1,7 @@
 #include "Neuropixels2e.h"
 #include "DS90UB9x.h"
 
-Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
+Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_)
 	: OnixDevice(name, OnixDeviceType::NEUROPIXELS_2, deviceIdx_, ctx_)
 {}
 
@@ -54,12 +54,11 @@ int Neuropixels2e::configureDevice()
 	//TODO: Gain correction loading would be here
 
 	return 0;
-
 }
 
-int Neuropixels2e::updateSettings()
+bool Neuropixels2e::updateSettings()
 {
-	return 0;
+	return true;
 }
 
 void Neuropixels2e::configureProbeStreaming()
@@ -84,31 +83,29 @@ void Neuropixels2e::configureProbeStreaming()
 	// Set global ADC settings
 	// TODO: Undocumented
 	probeControl->WriteByte(ADC_CONFIG, 0b00001000);
-
 }
 
 void Neuropixels2e::configureSerDes()
 {
-
-	ONI_OK(oni_write_reg(ctx, deviceIdx, DS90UB9x::ENABLE, 1));
+	deviceContext->writeRegister(deviceIdx, DS90UB9x::ENABLE, 1);
 
 	// configure deserializer trigger mode
-	ONI_OK(oni_write_reg(ctx, deviceIdx,DS90UB9x::TRIGGEROFF, 0));
-	ONI_OK(oni_write_reg(ctx, deviceIdx,DS90UB9x::TRIGGER, (uint32_t)(DS90UB9x::DS90UB9xTriggerMode::Continuous)));
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::SYNCBITS, 0);
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::DATAGATE, (uint32_t)(DS90UB9x::DS90UB9xDataGate::Disabled));
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::MARK, (uint32_t)(DS90UB9x::DS90UB9xMarkMode::Disabled));
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::TRIGGEROFF, 0);
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::TRIGGER, (uint32_t)(DS90UB9x::DS90UB9xTriggerMode::Continuous));
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::SYNCBITS, 0);
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::DATAGATE, (uint32_t)(DS90UB9x::DS90UB9xDataGate::Disabled));
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::MARK, (uint32_t)(DS90UB9x::DS90UB9xMarkMode::Disabled));
 
 	// configure two 4-bit magic word-triggered streams, one for each probe
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::READSZ, 0x00100009); // 16 frames/superframe, 8x 12-bit words + magic bits
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::MAGIC_MASK, 0xC000003F); // Enable inverse, wait for non-inverse, 14-bit magic word
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::MAGIC, 0b0000000000101110); // Super-frame sync word
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::MAGIC_WAIT, 0);
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::DATAMODE, 0b00100000000000000000001010110101);
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::DATALINES0, 0xFFFFF8A6); // NP A
-	oni_write_reg(ctx, deviceIdx,DS90UB9x::DATALINES1, 0xFFFFF97B); // NP B
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::READSZ, 0x00100009); // 16 frames/superframe, 8x 12-bit words + magic bits
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::MAGIC_MASK, 0xC000003F); // Enable inverse, wait for non-inverse, 14-bit magic word
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::MAGIC, 0b0000000000101110); // Super-frame sync word
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::MAGIC_WAIT, 0);
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::DATAMODE, 0b00100000000000000000001010110101);
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::DATALINES0, 0xFFFFF8A6); // NP A
+	deviceContext->writeRegister(deviceIdx,DS90UB9x::DATALINES1, 0xFFFFF97B); // NP B
 
-	deserializer = std::make_unique<I2CRegisterContext>(DS90UB9x::DES_ADDR, deviceIdx, ctx);
+	deserializer = std::make_unique<I2CRegisterContext>(DS90UB9x::DES_ADDR, deviceIdx, deviceContext);
 	int coaxMode = 0x4 + (uint32_t)(DS90UB9x::DS90UB9xMode::Raw12BitHighFrequency); // 0x4 maintains coax mode
 	deserializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::PortMode), coaxMode);
 
@@ -120,9 +117,9 @@ void Neuropixels2e::configureSerDes()
 	deserializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID2), alias);
 	deserializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias2), alias);
 
-	serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, deviceIdx, ctx);
-	flex = std::make_unique<I2CRegisterContext>(FlexAddress, deviceIdx, ctx);
-	probeControl = std::make_unique<I2CRegisterContext>(ProbeI2CAddress, deviceIdx, ctx); //TODO: this probably be a derived class that includes all the connfiguration methods
+	serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, deviceIdx, deviceContext);
+	flex = std::make_unique<I2CRegisterContext>(FlexAddress, deviceIdx, deviceContext);
+	probeControl = std::make_unique<I2CRegisterContext>(ProbeI2CAddress, deviceIdx, deviceContext); //TODO: this probably be a derived class that includes all the connfiguration methods
 }
 
 void Neuropixels2e::setProbeSupply(bool en)
@@ -159,9 +156,9 @@ uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 		oni_reg_addr_t reg_addr = OFFSET_PROBE_SN + i;
 		oni_reg_val_t val;
 
-		errorCode = flex->ReadByte(reg_addr, &val);
+		flex->ReadByte(reg_addr, &val);
 
-		if (errorCode) { LOGE(oni_error_str(errorCode)); return -1; }
+		if (flex->getLastResult() != ONI_ESUCCESS) return -1;
 
 		if (val <= 0xFF)
 		{
@@ -169,7 +166,6 @@ uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 		}
 	}
 	return probeSN;
-
 }
 
 void Neuropixels2e::startAcquisition()
@@ -240,8 +236,6 @@ void Neuropixels2e::processFrames()
 		{
 			//Fill buffer[probeindex]
 		}
-
-
 
 		oni_destroy_frame(frame);
 	}

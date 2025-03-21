@@ -23,7 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ProbeBrowser.h"
 
-ProbeBrowser::ProbeBrowser(NeuropixV1Interface* parent_) : parent(parent_)
+#include "../Devices/Neuropixels_1.h"
+#include "NeuropixV1Interface.h"
+
+ProbeBrowser::ProbeBrowser(SettingsInterface* parent_) : parent(parent_)
 {
 	cursorType = MouseCursor::NormalCursor;
 
@@ -31,7 +34,7 @@ ProbeBrowser::ProbeBrowser(NeuropixV1Interface* parent_) : parent(parent_)
 
 	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
-	if (device->settings.probeType == ProbeType::NPX_V2E || device->settings.probeType == ProbeType::NPX_V2E_BETA)
+	if (device->settings->probeType == ProbeType::NPX_V2E || device->settings->probeType == ProbeType::NPX_V2E_BETA)
 	{
 		maxPeakToPeakAmplitude = 1000.0f;
 	}
@@ -53,7 +56,7 @@ ProbeBrowser::ProbeBrowser(NeuropixV1Interface* parent_) : parent(parent_)
 	zoomOffset = 50;
 	int defaultZoomHeight = 100;
 
-	ProbeMetadata probeMetadata = device->settings.probeMetadata;
+	ProbeMetadata probeMetadata = device->settings->probeMetadata;
 
 	if (probeMetadata.columns_per_shank == 8)
 	{
@@ -126,6 +129,10 @@ ProbeBrowser::ProbeBrowser(NeuropixV1Interface* parent_) : parent(parent_)
 
 void ProbeBrowser::mouseMove(const MouseEvent& event)
 {
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
+
+	if (!device->settings) return;
+
 	float y = event.y;
 	float x = event.x;
 
@@ -222,7 +229,9 @@ int ProbeBrowser::getNearestElectrode(int x, int y) const
 {
 	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
-	ProbeMetadata probeMetadata = device->settings.probeMetadata;
+	if (!device->settings) return -1;
+
+	ProbeMetadata probeMetadata = device->settings->probeMetadata;
 
 	int row = (lowerBound - y) / electrodeHeight + zoomAreaMinRow + 1;
 
@@ -244,7 +253,7 @@ int ProbeBrowser::getNearestElectrode(int x, int y) const
 		}
 	}
 
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings.electrodeMetadata;
+	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
 
 	for (int i = 0; i < electrodeMetadata.size(); i++)
 	{
@@ -261,9 +270,13 @@ int ProbeBrowser::getNearestElectrode(int x, int y) const
 
 Array<int> ProbeBrowser::getElectrodesWithinBounds(int x, int y, int w, int h) const
 {
+	Array<int> inds;
+
 	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
-	ProbeMetadata probeMetadata = device->settings.probeMetadata;
+	if (!device->settings) return inds;
+
+	ProbeMetadata probeMetadata = device->settings->probeMetadata;
 
 	int startrow = (lowerBound - y - h) / electrodeHeight + zoomAreaMinRow + 1;
 	int endrow = (lowerBound - y) / electrodeHeight + zoomAreaMinRow + 1;
@@ -285,8 +298,7 @@ Array<int> ProbeBrowser::getElectrodesWithinBounds(int x, int y, int w, int h) c
 			selectedColumns.add(i);
 	}
 
-	Array<int> inds;
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings.electrodeMetadata;
+	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
 
 	for (int i = 0; i < electrodeMetadata.size(); i++)
 	{
@@ -309,7 +321,9 @@ String ProbeBrowser::getElectrodeInfoString(int index)
 {
 	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings.electrodeMetadata;
+	if (!device->settings) return "";
+
+	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
 
 	String a;
 	a += "Electrode ";
@@ -386,22 +400,24 @@ String ProbeBrowser::getElectrodeInfoString(int index)
 			a += "NO";
 	}
 
-	if (parent->apGainComboBox != nullptr)
+	NeuropixV1Interface* neuropixInterface = (NeuropixV1Interface*)parent;
+
+	if (neuropixInterface->apGainComboBox != nullptr)
 	{
 		a += "\nAP Gain: ";
-		a += String(parent->apGainComboBox->getText());
+		a += String(neuropixInterface->apGainComboBox->getText());
 	}
 
-	if (parent->lfpGainComboBox != nullptr)
+	if (neuropixInterface->lfpGainComboBox != nullptr)
 	{
 		a += "\nLFP Gain: ";
-		a += String(parent->lfpGainComboBox->getText());
+		a += String(neuropixInterface->lfpGainComboBox->getText());
 	}
 
-	if (parent->referenceComboBox != nullptr)
+	if (neuropixInterface->referenceComboBox != nullptr)
 	{
 		a += "\nReference: ";
-		a += String(parent->referenceComboBox->getText());
+		a += String(neuropixInterface->referenceComboBox->getText());
 	}
 
 	return a;
@@ -420,81 +436,37 @@ void ProbeBrowser::mouseDown(const MouseEvent& event)
 {
 	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
+	if (!device->settings) return;
+
 	initialOffset = zoomOffset;
 	initialHeight = zoomHeight;
 	
-	if (!event.mods.isRightButtonDown())
+	if (event.x > 150 && event.x < 400)
 	{
-		if (event.x > 150 && event.x < 400)
+		if (!event.mods.isShiftDown())
 		{
-			if (!event.mods.isShiftDown())
-			{
-				for (int i = 0; i < device->settings.electrodeMetadata.size(); i++)
-					device->settings.electrodeMetadata.getReference(i).isSelected = false;
-			}
-
-			if (event.x > leftEdge && event.x < rightEdge)
-			{
-				int chan = getNearestElectrode(event.x, event.y);
-
-				if (chan >= 0 && chan < device->settings.electrodeMetadata.size())
-				{
-					device->settings.electrodeMetadata.getReference(chan).isSelected = !device->settings.electrodeMetadata.getReference(chan).isSelected;
-				}
-			}
-			repaint();
+			for (int i = 0; i < device->settings->electrodeMetadata.size(); i++)
+				device->settings->electrodeMetadata.getReference(i).isSelected = false;
 		}
-	}
-	else
-	{
-		if (event.x > 225 + 10 && event.x < 225 + 150)
+
+		if (event.x > leftEdge && event.x < rightEdge)
 		{
-			int currentAnnotationNum = 0;
+			int chan = getNearestElectrode(event.x, event.y);
 
-			for (int i = 0; i < parent->annotations.size(); i++)
-			{
-				Annotation& a = parent->annotations.getReference(i);
-				float yLoc = a.currentYLoc;
-
-				if (float(event.y) < yLoc && float(event.y) > yLoc - 12)
-				{
-					currentAnnotationNum = i;
-					break;
-				}
-				else
-				{
-					currentAnnotationNum = -1;
-				}
-			}
-
-			if (currentAnnotationNum > -1)
-			{
-				PopupMenu annotationMenu;
-
-				annotationMenu.addItem(1, "Delete annotation", true);
-
-				const int result = annotationMenu.show();
-
-				switch (result)
-				{
-				case 0:
-					break;
-				case 1:
-					parent->annotations.removeRange(currentAnnotationNum, 1);
-					repaint();
-					break;
-				default:
-
-					break;
-				}
-			}
-		}
+      if (chan >= 0 && chan < device->settings->electrodeMetadata.size())
+      {
+        device->settings->electrodeMetadata.getReference(chan).isSelected = !device->settings->electrodeMetadata.getReference(chan).isSelected;
+      }
+    }
+    repaint();
 	}
 }
 
 void ProbeBrowser::mouseDrag(const MouseEvent& event)
 {
 	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
+
+	if (!device->settings) return;
 
 	if (isOverZoomRegion)
 	{
@@ -553,16 +525,16 @@ void ProbeBrowser::mouseDrag(const MouseEvent& event)
 
 		if (x < rightEdge)
 		{
-			for (int i = 0; i < device->settings.electrodeMetadata.size(); i++)
+			for (int i = 0; i < device->settings->electrodeMetadata.size(); i++)
 			{
 				if (inBounds.indexOf(i) > -1)
 				{
-					device->settings.electrodeMetadata.getReference(i).isSelected = true;
+					device->settings->electrodeMetadata.getReference(i).isSelected = true;
 				}
 				else
 				{
 					if (!event.mods.isShiftDown())
-						device->settings.electrodeMetadata.getReference(i).isSelected = false;
+						device->settings->electrodeMetadata.getReference(i).isSelected = false;
 				}
 			}
 		}
@@ -610,6 +582,10 @@ MouseCursor ProbeBrowser::getMouseCursor()
 
 void ProbeBrowser::paint(Graphics& g)
 {
+	if (parent->device == NULL) return;
+
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
+
 	int LEFT_BORDER = 30;
 	int TOP_BORDER = 33;
 	int SHANK_HEIGHT = 480;
@@ -620,10 +596,8 @@ void ProbeBrowser::paint(Graphics& g)
 	int channelSpan = SHANK_HEIGHT;
 	int pixelGap = 2;
 
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
-
-	ProbeMetadata probeMetadata = device->settings.probeMetadata;
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings.electrodeMetadata;
+	ProbeMetadata probeMetadata = device->settings->probeMetadata;
+	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
 
 	if (probeMetadata.columns_per_shank > 8)
 	{
@@ -773,71 +747,14 @@ void ProbeBrowser::paint(Graphics& g)
 	}
 }
 
-void ProbeBrowser::drawAnnotations(Graphics& g)
-{
-	for (int i = 0; i < parent->annotations.size(); i++)
-	{
-		bool shouldAppear = false;
-
-		Annotation& a = parent->annotations.getReference(i);
-
-		for (int j = 0; j < a.electrodes.size(); j++)
-		{
-			if (j > lowestElectrode || j < highestElectrode)
-			{
-				shouldAppear = true;
-				break;
-			}
-		}
-
-		if (shouldAppear)
-		{
-			float xLoc = 225 + 30;
-			int ch = a.electrodes[0];
-
-			float midpoint = lowerBound / 2.0f + 8;
-
-			float yLoc = lowerBound - ((ch - lowestElectrode - (ch % 2)) / 2.0f * electrodeHeight) + 10;
-
-			yLoc = (midpoint + 3 * yLoc) / 4;
-			a.currentYLoc = yLoc;
-
-			float alpha;
-
-			if (yLoc > lowerBound - 250)
-				alpha = (lowerBound - yLoc) / (250.f);
-			else if (yLoc < 250)
-				alpha = 1.0f - (250.f - yLoc) / 200.f;
-			else
-				alpha = 1.0f;
-
-			if (alpha < 0)
-				alpha = -alpha;
-
-			if (alpha < 0)
-				alpha = 0;
-
-			if (alpha > 1.0f)
-				alpha = 1.0f;
-
-			g.setColour(a.colour.withAlpha(alpha));
-
-			g.drawMultiLineText(a.text, xLoc + 2, yLoc, 150);
-
-			float xLoc2 = 225 - electrodeHeight * (1 - (ch % 2)) + electrodeHeight / 2;
-			float yLoc2 = lowerBound - ((ch - lowestElectrode - (ch % 2)) / 2.0f * electrodeHeight) + electrodeHeight / 2;
-
-			g.drawLine(xLoc - 5, yLoc - 3, xLoc2, yLoc2);
-			g.drawLine(xLoc - 5, yLoc - 3, xLoc, yLoc - 3);
-		}
-	}
-}
-
 Colour ProbeBrowser::getElectrodeColour(int i)
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);		
+	NeuropixV1Interface* neuropixInterface = (NeuropixV1Interface*)parent;
 
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings.electrodeMetadata;
+	if (!device->settings) return Colours::grey;
+
+	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
 
 	if (electrodeMetadata[i].status == ElectrodeStatus::DISCONNECTED) // not available
 	{
@@ -847,23 +764,23 @@ Colour ProbeBrowser::getElectrodeColour(int i)
 		return Colours::black;
 	else
 	{
-		if (parent->mode == VisualizationMode::ENABLE_VIEW) // ENABLED STATE
+		if (neuropixInterface->mode == VisualizationMode::ENABLE_VIEW) // ENABLED STATE
 		{
 			return Colours::yellow;
 		}
-		else if (parent->mode == VisualizationMode::AP_GAIN_VIEW) // AP GAIN
+		else if (neuropixInterface->mode == VisualizationMode::AP_GAIN_VIEW) // AP GAIN
 		{
-		    return Colour (25 * device->settings.apGainIndex, 25 * device->settings.apGainIndex, 50);
+		    return Colour (25 * device->settings->apGainIndex, 25 * device->settings->apGainIndex, 50);
 		}
-		else if (parent->mode == VisualizationMode::LFP_GAIN_VIEW) // LFP GAIN
+		else if (neuropixInterface->mode == VisualizationMode::LFP_GAIN_VIEW) // LFP GAIN
 		{
-		    return Colour (66, 25 * device->settings.lfpGainIndex, 35 * device->settings.lfpGainIndex);
+		    return Colour (66, 25 * device->settings->lfpGainIndex, 35 * device->settings->lfpGainIndex);
 		}
-		else if (parent->mode == VisualizationMode::REFERENCE_VIEW)
+		else if (neuropixInterface->mode == VisualizationMode::REFERENCE_VIEW)
 		{
-			if (parent->referenceComboBox != nullptr)
+			if (neuropixInterface->referenceComboBox != nullptr)
 			{
-				String referenceDescription = parent->referenceComboBox->getText();
+				String referenceDescription = neuropixInterface->referenceComboBox->getText();
 
 				if (referenceDescription.contains("Ext"))
 					return Colours::darksalmon;
@@ -877,7 +794,7 @@ Colour ProbeBrowser::getElectrodeColour(int i)
 				return Colours::black;
 			}
 		}
-		else if (parent->mode == VisualizationMode::ACTIVITY_VIEW)
+		else if (neuropixInterface->mode == VisualizationMode::ACTIVITY_VIEW)
 		{
 			if (electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
 			{

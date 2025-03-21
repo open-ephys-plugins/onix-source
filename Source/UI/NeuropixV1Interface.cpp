@@ -44,18 +44,86 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 		int currentHeight = 55;
 
-		// TODO: Standardize the font options. Make temp variables for the different variations and use those
+		FontOptions fontName = FontOptions("Fira Code", "Medium", 30.0f);
+		FontOptions fontRegularButton = FontOptions("Fira Code", "Regular", 12.0f);
+		FontOptions fontRegularLabel = FontOptions("Fira Code", "Regular", 13.0f);
+
+		nameLabel = std::make_unique<Label>("MAIN", "NAME");
+		nameLabel->setFont(fontName);
+		nameLabel->setBounds(625, 40, 370, 45);
+		addAndMakeVisible(nameLabel.get());
 
 		probeEnableButton = std::make_unique<UtilityButton>("ENABLED");
-		probeEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f)); // TODO: 1) Have all of these use a patterned variable so they can all be moved easily. 
-		//		 2) Move everything to the left so it is closer to the probe
+		probeEnableButton->setFont(fontRegularButton);
 		probeEnableButton->setRadius(3.0f);
-		probeEnableButton->setBounds(630, currentHeight + 25, 100, 22);
+		probeEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
 		probeEnableButton->setClickingTogglesState(true);
 		probeEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
 		probeEnableButton->addListener(this);
 		addAndMakeVisible(probeEnableButton.get());
 		probeEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
+
+		infoLabel = std::make_unique<Label>("INFO", "INFO");
+		infoLabel->setFont(FontOptions(15.0f));
+		infoLabel->setBounds(probeEnableButton->getX(), probeEnableButton->getBottom() + 10, nameLabel->getWidth(), 50);
+		infoLabel->setJustificationType(Justification::topLeft);
+		addAndMakeVisible(infoLabel.get());
+
+		adcCalibrationFileLabel = std::make_unique<Label>("adcCalibrationFileLabel", "ADC Calibration File");
+		adcCalibrationFileLabel->setBounds(infoLabel->getX() + 2, infoLabel->getBottom() + 5, 240, 16);
+		adcCalibrationFileLabel->setColour(Label::textColourId, Colours::black);
+		addAndMakeVisible(adcCalibrationFileLabel.get());
+
+		adcCalibrationFile = std::make_unique<TextEditor>("ADC CAL FILE");
+		adcCalibrationFile->setEnabled(false);
+		adcCalibrationFile->setBounds(adcCalibrationFileLabel->getX(), adcCalibrationFileLabel->getBottom() + 2, adcCalibrationFileLabel->getWidth(), 20);
+		adcCalibrationFile->setColour(Label::textColourId, Colours::black);
+		adcCalibrationFile->addListener(this);
+		addAndMakeVisible(adcCalibrationFile.get());
+
+		adcCalibrationFileButton = std::make_unique<UtilityButton>("...");
+		adcCalibrationFileButton->setBounds(adcCalibrationFile->getRight() + 3, adcCalibrationFile->getY(), 26, adcCalibrationFile->getHeight() + 2);
+		adcCalibrationFileButton->setRadius(1.0f);
+		adcCalibrationFileButton->addListener(this);
+		adcCalibrationFileButton->setTooltip("Open a file dialog to choose the ADC calibration file for this probe.");
+		addAndMakeVisible(adcCalibrationFileButton.get());
+
+		adcCalibrationFileChooser = std::make_unique<FileChooser>("Select ADC Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_ADCCalibration.csv");
+
+		gainCalibrationFileLabel = std::make_unique<Label>("gainCalibrationFileLabel", "Gain Calibration File");
+		gainCalibrationFileLabel->setBounds(adcCalibrationFile->getX(), adcCalibrationFile->getBottom() + 3, adcCalibrationFile->getWidth(), adcCalibrationFile->getHeight());
+		gainCalibrationFileLabel->setColour(Label::textColourId, Colours::black);
+		addAndMakeVisible(gainCalibrationFileLabel.get());
+
+		gainCalibrationFile = std::make_unique<TextEditor>("GAIN CAL FILE");
+		gainCalibrationFile->setEnabled(false);
+		gainCalibrationFile->setBounds(gainCalibrationFileLabel->getX(), gainCalibrationFileLabel->getBottom() + 2, gainCalibrationFileLabel->getWidth(), gainCalibrationFileLabel->getHeight());
+		gainCalibrationFile->setColour(Label::textColourId, Colours::black);
+		gainCalibrationFile->addListener(this);
+		addAndMakeVisible(gainCalibrationFile.get());
+
+		gainCalibrationFileButton = std::make_unique<UtilityButton>("...");
+		gainCalibrationFileButton->setBounds(adcCalibrationFileButton->getX(), gainCalibrationFile->getY(), adcCalibrationFileButton->getWidth(), adcCalibrationFileButton->getHeight());
+		gainCalibrationFileButton->setRadius(3.0f);
+		gainCalibrationFileButton->addListener(this);
+		gainCalibrationFileButton->setTooltip("Open a file dialog to choose the Gain calibration file for this probe.");
+		addAndMakeVisible(gainCalibrationFileButton.get());
+
+		gainCalibrationFileChooser = std::make_unique<FileChooser>("Select Gain Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_gainCalValues.csv");
+
+		saveJsonButton = std::make_unique<UtilityButton>("SAVE TO JSON");
+		saveJsonButton->setRadius(3.0f);
+		saveJsonButton->setBounds(gainCalibrationFile->getX(), gainCalibrationFile->getBottom() + 4, 120, 22);
+		saveJsonButton->addListener(this);
+		saveJsonButton->setTooltip("Save channel map to probeinterface .json file");
+		addAndMakeVisible(saveJsonButton.get());
+
+		loadJsonButton = std::make_unique<UtilityButton>("LOAD FROM JSON");
+		loadJsonButton->setRadius(3.0f);
+		loadJsonButton->setBounds(saveJsonButton->getRight() + 5, saveJsonButton->getY(), 120, 22);
+		loadJsonButton->addListener(this);
+		loadJsonButton->setTooltip("Load channel map from probeinterface .json file");
+		addAndMakeVisible(loadJsonButton.get());
 
 		electrodesLabel = std::make_unique<Label>("ELECTRODES", "ELECTRODES");
 		electrodesLabel->setFont(FontOptions("Inter", "Regular", 13.0f));
@@ -63,7 +131,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		addAndMakeVisible(electrodesLabel.get());
 
 		enableViewButton = std::make_unique<UtilityButton>("VIEW");
-		enableViewButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
+		enableViewButton->setFont(fontRegularButton);
 		enableViewButton->setRadius(3.0f);
 		enableViewButton->setBounds(530, currentHeight + 2, 45, 18);
 		enableViewButton->addListener(this);
@@ -71,7 +139,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		addAndMakeVisible(enableViewButton.get());
 
 		enableButton = std::make_unique<UtilityButton>("ENABLE");
-		enableButton->setFont(FontOptions("Fira Code", "Regular", 13.0f));
+		enableButton->setFont(fontRegularButton);
 		enableButton->setRadius(3.0f);
 		enableButton->setBounds(450, currentHeight, 65, 22);
 		enableButton->addListener(this);
@@ -81,7 +149,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		currentHeight += 58;
 
 		electrodePresetLabel = std::make_unique<Label>("ELECTRODE PRESET", "ELECTRODE PRESET");
-		electrodePresetLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
+		electrodePresetLabel->setFont(fontRegularLabel);
 		electrodePresetLabel->setBounds(446, currentHeight - 20, 150, 20);
 		addAndMakeVisible(electrodePresetLabel.get());
 
@@ -95,31 +163,31 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 		auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
-		for (int i = 0; i < npx->settings.availableElectrodeConfigurations.size(); i++)
+		for (int i = 0; i < npx->settings->availableElectrodeConfigurations.size(); i++)
 		{
-			electrodeConfigurationComboBox->addItem(npx->settings.availableElectrodeConfigurations[i], i + 2);
+			electrodeConfigurationComboBox->addItem(npx->settings->availableElectrodeConfigurations[i], i + 2);
 		}
 
-		electrodeConfigurationComboBox->setSelectedId(1, dontSendNotification);
+		checkForExistingChannelPreset();
 
 		addAndMakeVisible(electrodeConfigurationComboBox.get());
 
 		currentHeight += 55;
 
-		if (npx->settings.availableApGains.size() > 0)
+		if (npx->settings->availableApGains.size() > 0)
 		{
 			apGainComboBox = std::make_unique<ComboBox>("apGainComboBox");
 			apGainComboBox->setBounds(450, currentHeight, 65, 22);
 			apGainComboBox->addListener(this);
 
-			for (int i = 0; i < npx->settings.availableApGains.size(); i++)
-				apGainComboBox->addItem(String(npx->settings.availableApGains[i]) + "x", i + 1);
+			for (int i = 0; i < npx->settings->availableApGains.size(); i++)
+				apGainComboBox->addItem(String(npx->settings->availableApGains[i]) + "x", i + 1);
 
-			apGainComboBox->setSelectedId(npx->settings.apGainIndex + 1, dontSendNotification);
+			apGainComboBox->setSelectedId(npx->settings->apGainIndex + 1, dontSendNotification);
 			addAndMakeVisible(apGainComboBox.get());
 
 			apGainViewButton = std::make_unique<UtilityButton>("VIEW");
-			apGainViewButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
+			apGainViewButton->setFont(fontRegularButton);
 			apGainViewButton->setRadius(3.0f);
 			apGainViewButton->setBounds(530, currentHeight + 2, 45, 18);
 			apGainViewButton->addListener(this);
@@ -127,27 +195,27 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 			addAndMakeVisible(apGainViewButton.get());
 
 			apGainLabel = std::make_unique<Label>("AP GAIN", "AP GAIN");
-			apGainLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
+			apGainLabel->setFont(fontRegularLabel);
 			apGainLabel->setBounds(446, currentHeight - 20, 100, 20);
 			addAndMakeVisible(apGainLabel.get());
 
 			currentHeight += 55;
 		}
 
-		if (npx->settings.availableLfpGains.size() > 0)
+		if (npx->settings->availableLfpGains.size() > 0)
 		{
 			lfpGainComboBox = std::make_unique<ComboBox>("lfpGainComboBox");
 			lfpGainComboBox->setBounds(450, currentHeight, 65, 22);
 			lfpGainComboBox->addListener(this);
 
-			for (int i = 0; i < npx->settings.availableLfpGains.size(); i++)
-				lfpGainComboBox->addItem(String(npx->settings.availableLfpGains[i]) + "x", i + 1);
+			for (int i = 0; i < npx->settings->availableLfpGains.size(); i++)
+				lfpGainComboBox->addItem(String(npx->settings->availableLfpGains[i]) + "x", i + 1);
 
-			lfpGainComboBox->setSelectedId(npx->settings.lfpGainIndex + 1, dontSendNotification);
+			lfpGainComboBox->setSelectedId(npx->settings->lfpGainIndex + 1, dontSendNotification);
 			addAndMakeVisible(lfpGainComboBox.get());
 
 			lfpGainViewButton = std::make_unique<UtilityButton>("VIEW");
-			lfpGainViewButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
+			lfpGainViewButton->setFont(fontRegularButton);
 			lfpGainViewButton->setRadius(3.0f);
 			lfpGainViewButton->setBounds(530, currentHeight + 2, 45, 18);
 			lfpGainViewButton->addListener(this);
@@ -155,29 +223,29 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 			addAndMakeVisible(lfpGainViewButton.get());
 
 			lfpGainLabel = std::make_unique<Label>("LFP GAIN", "LFP GAIN");
-			lfpGainLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
+			lfpGainLabel->setFont(fontRegularLabel);
 			lfpGainLabel->setBounds(446, currentHeight - 20, 100, 20);
 			addAndMakeVisible(lfpGainLabel.get());
 
 			currentHeight += 55;
 		}
 
-		if (npx->settings.availableReferences.size() > 0)
+		if (npx->settings->availableReferences.size() > 0)
 		{
 			referenceComboBox = std::make_unique<ComboBox>("ReferenceComboBox");
 			referenceComboBox->setBounds(450, currentHeight, 65, 22);
 			referenceComboBox->addListener(this);
 
-			for (int i = 0; i < npx->settings.availableReferences.size(); i++)
+			for (int i = 0; i < npx->settings->availableReferences.size(); i++)
 			{
-				referenceComboBox->addItem(npx->settings.availableReferences[i], i + 1);
+				referenceComboBox->addItem(npx->settings->availableReferences[i], i + 1);
 			}
 
-			referenceComboBox->setSelectedId(npx->settings.referenceIndex + 1, dontSendNotification);
+			referenceComboBox->setSelectedId(npx->settings->referenceIndex + 1, dontSendNotification);
 			addAndMakeVisible(referenceComboBox.get());
 
 			referenceViewButton = std::make_unique<UtilityButton>("VIEW");
-			referenceViewButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
+			referenceViewButton->setFont(fontRegularButton);
 			referenceViewButton->setRadius(3.0f);
 			referenceViewButton->setBounds(530, currentHeight + 2, 45, 18);
 			referenceViewButton->addListener(this);
@@ -185,7 +253,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 			addAndMakeVisible(referenceViewButton.get());
 
 			referenceLabel = std::make_unique<Label>("REFERENCE", "REFERENCE");
-			referenceLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
+			referenceLabel->setFont(fontRegularLabel);
 			referenceLabel->setBounds(446, currentHeight - 20, 100, 20);
 			addAndMakeVisible(referenceLabel.get());
 
@@ -201,14 +269,14 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		addAndMakeVisible(filterComboBox.get());
 
 		filterLabel = std::make_unique<Label>("FILTER", "AP FILTER CUT");
-		filterLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
+		filterLabel->setFont(fontRegularLabel);
 		filterLabel->setBounds(446, currentHeight - 20, 200, 20);
 		addAndMakeVisible(filterLabel.get());
 
 		currentHeight += 55;
 
 		activityViewButton = std::make_unique<UtilityButton>("VIEW");
-		activityViewButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
+		activityViewButton->setFont(fontRegularButton);
 		activityViewButton->setRadius(3.0f);
 
 		activityViewButton->addListener(this);
@@ -217,7 +285,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 		activityViewComboBox = std::make_unique<ComboBox>("ActivityView Combo Box");
 
-		if (npx->settings.availableLfpGains.size() > 0)
+		if (npx->settings->availableLfpGains.size() > 0)
 		{
 			activityViewComboBox->setBounds(450, currentHeight, 65, 22);
 			activityViewComboBox->addListener(this);
@@ -233,59 +301,213 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		}
 
 		activityViewLabel = std::make_unique<Label>("PROBE SIGNAL", "PROBE SIGNAL");
-		activityViewLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
+		activityViewLabel->setFont(fontRegularLabel);
 		activityViewLabel->setBounds(446, currentHeight - 20, 180, 20);
 		addAndMakeVisible(activityViewLabel.get());
 
-		currentHeight += 55;
+		/// Draw Legends
 
-		probeSettingsLabel = std::make_unique<Label>("Settings", "Probe Settings:");
-		probeSettingsLabel->setFont(FontOptions("Fira Code", "Regular", 13.0f));
-		probeSettingsLabel->setBounds(630, 110, 150, 15);
-		addAndMakeVisible(probeSettingsLabel.get());
+		// ENABLE View
+		Colour colour = Colour(55, 55, 55);
+		float fontSize = 16.0f;
 
-		adcCalibrationFileEditor = std::make_unique<PathParameterEditor>(canvas->getSourceParameter(npx->getAdcPathParameterName()));
-		adcCalibrationFileEditor->setLayout(ParameterEditor::nameOnTop);
-		adcCalibrationFileEditor->setBounds(635, 126, 240, 45);
-		addAndMakeVisible(adcCalibrationFileEditor.get());
+		enableViewComponent = std::make_unique<Component>("enableViewComponent");
+		enableViewComponent->setBounds(450, 430, 120, 200);
 
-		gainCalibrationFileEditor = std::make_unique<PathParameterEditor>(canvas->getSourceParameter(npx->getGainPathParameterName()));
-		gainCalibrationFileEditor->setLayout(ParameterEditor::nameOnTop);
-		gainCalibrationFileEditor->setBounds(635, 175, 240, 45);
-		addAndMakeVisible(gainCalibrationFileEditor.get());
+		enableViewLabels.push_back(std::make_unique<Label>("enableViewLabel", "ENABLED?"));
+		enableViewLabels[0]->setJustificationType(Justification::centredLeft);
+		enableViewLabels[0]->setFont(FontOptions(fontSize));
+		enableViewLabels[0]->setColour(Label::ColourIds::textColourId, colour);
+		enableViewLabels[0]->setBounds(0, 0, 110, 15);
+		enableViewComponent->addAndMakeVisible(enableViewLabels[0].get());
 
-		saveJsonButton = std::make_unique<UtilityButton>("SAVE TO JSON");
-		saveJsonButton->setRadius(3.0f);
-		saveJsonButton->setBounds(630, 225, 120, 22);
-		saveJsonButton->addListener(this);
-		saveJsonButton->setTooltip("Save channel map to probeinterface .json file");
-		addAndMakeVisible(saveJsonButton.get());
+		std::vector<Colour> colors = { Colours::yellow, Colours::darkgrey, Colours::black };
+		StringArray legendLabels = { "YES", "NO", "REFERENCE" };
 
-		loadJsonButton = std::make_unique<UtilityButton>("LOAD FROM JSON");
-		loadJsonButton->setRadius(3.0f);
-		loadJsonButton->setBounds(755, 225, 120, 22);
-		loadJsonButton->addListener(this);
-		loadJsonButton->setTooltip("Load channel map from probeinterface .json file");
-		addAndMakeVisible(loadJsonButton.get());
+		for (int i = 0; i < colors.size(); i += 1)
+		{
+			enableViewRectangles.push_back(std::make_unique<DrawableRectangle>());
+			enableViewRectangles[i]->setFill(colors[i]);
+			enableViewRectangles[i]->setRectangle(Rectangle<float>(enableViewLabels[0]->getX() + 6, enableViewLabels[i]->getBottom() + 1, 12, 12));
+			enableViewComponent->addAndMakeVisible(enableViewRectangles[i].get());
+
+			enableViewLabels.push_back(std::make_unique<Label>("enableViewLabel", legendLabels[i]));
+			int labelInd = i + 1;
+			enableViewLabels[labelInd]->setJustificationType(Justification::centredLeft);
+			enableViewLabels[labelInd]->setFont(FontOptions(fontSize));
+			enableViewLabels[labelInd]->setColour(Label::ColourIds::textColourId, colour);
+			enableViewLabels[labelInd]->setBounds(enableViewRectangles[i]->getRight() + 2, enableViewRectangles[i]->getY(), 100, 17);
+			enableViewComponent->addAndMakeVisible(enableViewLabels[labelInd].get());
+		}
+
+		addAndMakeVisible(enableViewComponent.get());
+
+		// AP GAIN View
+		apGainViewComponent = std::make_unique<Component>("apGainViewComponent");
+		apGainViewComponent->setBounds(enableViewComponent->getX(), enableViewComponent->getY(), 120, 300);
+
+		apGainViewLabels.push_back(std::make_unique<Label>("apGainViewLabel", "AP GAIN"));
+		apGainViewLabels[0]->setJustificationType(Justification::centredLeft);
+		apGainViewLabels[0]->setFont(FontOptions(fontSize));
+		apGainViewLabels[0]->setColour(Label::ColourIds::textColourId, colour);
+		apGainViewLabels[0]->setBounds(0, 0, 110, 15);
+		apGainViewComponent->addAndMakeVisible(apGainViewLabels[0].get());
+
+		colors.clear();
+		legendLabels.clear();
+
+		for (int i = 0; i < apGainComboBox->getNumItems(); i += 1)
+		{
+			colors.push_back(Colour(25 * i, 25 * i, 50));
+			legendLabels.add(apGainComboBox->getItemText(i));
+		}
+
+		for (int i = 0; i < colors.size(); i += 1)
+		{
+			apGainViewRectangles.push_back(std::make_unique<DrawableRectangle>());
+			apGainViewRectangles[i]->setFill(colors[i]);
+			apGainViewRectangles[i]->setRectangle(Rectangle<float>(apGainViewLabels[0]->getX() + 6, apGainViewLabels[i]->getBottom() + 1, 12, 12));
+			apGainViewComponent->addAndMakeVisible(apGainViewRectangles[i].get());
+
+			apGainViewLabels.push_back(std::make_unique<Label>("apGainViewLabel", legendLabels[i]));
+			int labelInd = i + 1;
+			apGainViewLabels[labelInd]->setJustificationType(Justification::centredLeft);
+			apGainViewLabels[labelInd]->setFont(FontOptions(fontSize));
+			apGainViewLabels[labelInd]->setColour(Label::ColourIds::textColourId, colour);
+			apGainViewLabels[labelInd]->setBounds(apGainViewRectangles[i]->getRight() + 2, apGainViewRectangles[i]->getY(), 100, 17);
+			apGainViewComponent->addAndMakeVisible(apGainViewLabels[labelInd].get());
+		}
+
+		addAndMakeVisible(apGainViewComponent.get());
+
+		// LFP GAIN View
+		lfpGainViewComponent = std::make_unique<Component>("lfpGainViewComponent");
+		lfpGainViewComponent->setBounds(enableViewComponent->getX(), enableViewComponent->getY(), 120, 300);
+
+		lfpGainViewLabels.push_back(std::make_unique<Label>("lfpGainViewLabel", "LFP GAIN"));
+		lfpGainViewLabels[0]->setJustificationType(Justification::centredLeft);
+		lfpGainViewLabels[0]->setFont(FontOptions(fontSize));
+		lfpGainViewLabels[0]->setColour(Label::ColourIds::textColourId, colour);
+		lfpGainViewLabels[0]->setBounds(0, 0, 110, 15);
+		lfpGainViewComponent->addAndMakeVisible(lfpGainViewLabels[0].get());
+
+		colors.clear();
+		legendLabels.clear();
+
+		for (int i = 0; i < lfpGainComboBox->getNumItems(); i += 1)
+		{
+			colors.push_back(Colour(66, 25 * i, 35 * i));
+			legendLabels.add(lfpGainComboBox->getItemText(i));
+		}
+
+		for (int i = 0; i < colors.size(); i += 1)
+		{
+			lfpGainViewRectangles.push_back(std::make_unique<DrawableRectangle>());
+			lfpGainViewRectangles[i]->setFill(colors[i]);
+			lfpGainViewRectangles[i]->setRectangle(Rectangle<float>(lfpGainViewLabels[0]->getX() + 6, lfpGainViewLabels[i]->getBottom() + 1, 12, 12));
+			lfpGainViewComponent->addAndMakeVisible(lfpGainViewRectangles[i].get());
+
+			lfpGainViewLabels.push_back(std::make_unique<Label>("lfpGainViewLabel", legendLabels[i]));
+			int labelInd = i + 1;
+			lfpGainViewLabels[labelInd]->setJustificationType(Justification::centredLeft);
+			lfpGainViewLabels[labelInd]->setFont(FontOptions(fontSize));
+			lfpGainViewLabels[labelInd]->setColour(Label::ColourIds::textColourId, colour);
+			lfpGainViewLabels[labelInd]->setBounds(lfpGainViewRectangles[i]->getRight() + 2, lfpGainViewRectangles[i]->getY(), 100, 17);
+			lfpGainViewComponent->addAndMakeVisible(lfpGainViewLabels[labelInd].get());
+		}
+
+		addAndMakeVisible(lfpGainViewComponent.get());
+
+		// REFERENCE View
+		referenceViewComponent = std::make_unique<Component>("referenceViewComponent");
+		referenceViewComponent->setBounds(enableViewComponent->getX(), enableViewComponent->getY(), 120, 300);
+
+		referenceViewLabels.push_back(std::make_unique<Label>("referenceViewLabel", "REFERENCE"));
+		referenceViewLabels[0]->setJustificationType(Justification::centredLeft);
+		referenceViewLabels[0]->setFont(FontOptions(fontSize));
+		referenceViewLabels[0]->setColour(Label::ColourIds::textColourId, colour);
+		referenceViewLabels[0]->setBounds(0, 0, 110, 15);
+		referenceViewComponent->addAndMakeVisible(referenceViewLabels[0].get());
+
+		colors.clear();
+		legendLabels.clear();
+
+		for (int i = 0; i < referenceComboBox->getNumItems(); i += 1)
+		{
+			String ref = referenceComboBox->getItemText(i);
+
+			if (ref.contains("Ext"))
+				colors.push_back(Colours::pink);
+			else if (ref.contains("Tip"))
+				colors.push_back(Colours::orange);
+			else
+				colors.push_back(Colours::purple);
+
+			legendLabels.add(referenceComboBox->getItemText(i));
+		}
+
+		for (int i = 0; i < colors.size(); i += 1)
+		{
+			referenceViewRectangles.push_back(std::make_unique<DrawableRectangle>());
+			referenceViewRectangles[i]->setFill(colors[i]);
+			referenceViewRectangles[i]->setRectangle(Rectangle<float>(referenceViewLabels[0]->getX() + 6, referenceViewLabels[i]->getBottom() + 1, 12, 12));
+			referenceViewComponent->addAndMakeVisible(referenceViewRectangles[i].get());
+
+			referenceViewLabels.push_back(std::make_unique<Label>("lfpGainViewLabel", legendLabels[i]));
+			int labelInd = i + 1;
+			referenceViewLabels[labelInd]->setJustificationType(Justification::centredLeft);
+			referenceViewLabels[labelInd]->setFont(FontOptions(fontSize));
+			referenceViewLabels[labelInd]->setColour(Label::ColourIds::textColourId, colour);
+			referenceViewLabels[labelInd]->setBounds(referenceViewRectangles[i]->getRight() + 2, referenceViewRectangles[i]->getY(), 100, 17);
+			referenceViewComponent->addAndMakeVisible(referenceViewLabels[labelInd].get());
+		}
+
+		addAndMakeVisible(referenceViewComponent.get());
+
+		// ACTIVITY View
+		activityViewComponent = std::make_unique<Component>("activityViewComponent");
+		activityViewComponent->setBounds(enableViewComponent->getX(), enableViewComponent->getY(), 120, 300);
+
+		activityViewLabels.push_back(std::make_unique<Label>("activityViewLabel", "AMPLITUDE"));
+		activityViewLabels[0]->setJustificationType(Justification::centredLeft);
+		activityViewLabels[0]->setFont(FontOptions(fontSize));
+		activityViewLabels[0]->setColour(Label::ColourIds::textColourId, colour);
+		activityViewLabels[0]->setBounds(0, 0, 110, 15);
+		activityViewComponent->addAndMakeVisible(activityViewLabels[0].get());
+
+		colors.clear();
+		legendLabels.clear();
+
+		for (int i = 0; i < 6; i += 1)
+		{
+			colors.push_back(ColourScheme::getColourForNormalizedValue(float(i) / 5.0f));
+			legendLabels.add(String(float(probeBrowser->maxPeakToPeakAmplitude) / 5.0f * float(i)) + " uV");
+		}
+
+		for (int i = 0; i < colors.size(); i += 1)
+		{
+			activityViewRectangles.push_back(std::make_unique<DrawableRectangle>());
+			activityViewRectangles[i]->setFill(colors[i]);
+			activityViewRectangles[i]->setRectangle(Rectangle<float>(activityViewLabels[0]->getX() + 6, activityViewLabels[i]->getBottom() + 1, 12, 12));
+			activityViewComponent->addAndMakeVisible(activityViewRectangles[i].get());
+
+			activityViewLabels.push_back(std::make_unique<Label>("activityViewLabel", legendLabels[i]));
+			int labelInd = i + 1;
+			activityViewLabels[labelInd]->setJustificationType(Justification::centredLeft);
+			activityViewLabels[labelInd]->setFont(FontOptions(fontSize));
+			activityViewLabels[labelInd]->setColour(Label::ColourIds::textColourId, colour);
+			activityViewLabels[labelInd]->setBounds(activityViewRectangles[i]->getRight() + 2, activityViewRectangles[i]->getY(), 100, 17);
+			activityViewComponent->addAndMakeVisible(activityViewLabels[labelInd].get());
+		}
+
+		addAndMakeVisible(activityViewComponent.get());
 	}
 	else
 	{
 		type = SettingsInterface::Type::UNKNOWN_SETTINGS_INTERFACE;
 	}
 
-	// PROBE INFO
-	// TODO: see if I can create a rounded rectangle with a dark background here, instead of in the paint() method
-
-	nameLabel = std::make_unique<Label>("MAIN", "NAME");
-	nameLabel->setFont(FontOptions("Fira Code", "Medium", 30.0f));
-	nameLabel->setBounds(625, 40, 370, 45);
-	addAndMakeVisible(nameLabel.get());
-
-	infoLabel = std::make_unique<Label>("INFO", "INFO");
-	infoLabel->setFont(FontOptions(15.0f));
-	infoLabel->setBounds(625, 250, 300, 350);
-	infoLabel->setJustificationType(Justification::topLeft);
-	addAndMakeVisible(infoLabel.get());
+	drawLegend();
 
 	updateInfoString();
 }
@@ -300,9 +522,9 @@ void NeuropixV1Interface::updateInfoString()
 
 	if (device != nullptr)
 	{
-		nameString += "NeuropixelsV1e";
+		nameString += "NeuropixelsV1f";
 
-		infoString = "Device: Neuropixels V1e Probe";
+		infoString = "Device: Neuropixels V1 Probe";
 		infoString += "\n";
 		infoString += "\n";
 
@@ -322,6 +544,8 @@ void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
 
 	if (!editor->acquisitionIsActive)
 	{
+		auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+
 		if (comboBox == electrodeConfigurationComboBox.get())
 		{
 			String preset = electrodeConfigurationComboBox->getText();
@@ -332,19 +556,19 @@ void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
 		}
 		else if ((comboBox == apGainComboBox.get()))
 		{
-			npx->settings.apGainIndex = apGainComboBox->getSelectedItemIndex();
+			npx->settings->apGainIndex = apGainComboBox->getSelectedItemIndex();
 		}
 		else if (comboBox == lfpGainComboBox.get())
 		{
-			npx->settings.lfpGainIndex = lfpGainComboBox->getSelectedItemIndex();
+			npx->settings->lfpGainIndex = lfpGainComboBox->getSelectedItemIndex();
 		}
 		else if (comboBox == referenceComboBox.get())
 		{
-			npx->settings.referenceIndex = referenceComboBox->getSelectedItemIndex();
+			npx->settings->referenceIndex = referenceComboBox->getSelectedItemIndex();
 		}
 		else if (comboBox == filterComboBox.get())
 		{
-			npx->settings.apFilterState = filterComboBox->getSelectedId() == 1;
+			npx->settings->apFilterState = filterComboBox->getSelectedId() == 1;
 		}
 		else if (comboBox == activityViewComboBox.get())
 		{
@@ -390,10 +614,84 @@ void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
 	}
 }
 
-void NeuropixV1Interface::setAnnotationLabel(String s, Colour c)
+void NeuropixV1Interface::checkForExistingChannelPreset()
 {
-	annotationLabel->setText(s, NotificationType::dontSendNotification);
-	annotationLabel->setColour(Label::textColourId, c);
+	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+
+	std::set<Bank> uniqueBanks;
+	std::vector<ElectrodeMetadata> electrodes;
+
+	for (int i = 0; i < npx->settings->electrodeMetadata.size(); i += 1)
+	{
+		if (npx->settings->electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
+		{
+			uniqueBanks.insert(npx->settings->electrodeMetadata[i].bank);
+			electrodes.push_back(npx->settings->electrodeMetadata[i]);
+		}
+	}
+
+	if (uniqueBanks.size() == 1)
+	{
+		if (*uniqueBanks.begin() == Bank::A)
+		{
+			npx->settings->electrodeConfigurationIndex = 0;
+		}
+		else if (*uniqueBanks.begin() == Bank::B)
+		{
+			npx->settings->electrodeConfigurationIndex = 1;
+		}
+	}
+	else if (uniqueBanks.size() == 2)
+	{
+		bool isBankC = true, isSingleColumn = true, isTetrode = true;
+
+		for (int i = 0; i < electrodes.size(); i += 1)
+		{
+			if (electrodes[i].global_index < 576 || electrodes[i].global_index >= 960)
+			{
+				isBankC = false;
+			}
+
+			if ((electrodes[i].global_index % 2 != 0 && electrodes[i].bank == Bank::A) ||
+				(electrodes[i].global_index % 2 != 1 && electrodes[i].bank == Bank::B) ||
+				electrodes[i].bank == Bank::C)
+			{
+				isSingleColumn = false;
+			}
+
+			if ((electrodes[i].global_index % 8 >= 4 && electrodes[i].bank == Bank::A) ||
+				(electrodes[i].global_index % 8 <= 3 && electrodes[i].bank == Bank::B) ||
+				electrodes[i].bank == Bank::C)
+			{
+				isTetrode = false;
+			}
+
+			if (!isBankC && !isSingleColumn && !isTetrode) break;
+		}
+
+		if (isBankC)
+		{
+			npx->settings->electrodeConfigurationIndex = 2;
+		}
+		else if (isSingleColumn)
+		{
+			npx->settings->electrodeConfigurationIndex = 3;
+		}
+		else if (isTetrode)
+		{
+			npx->settings->electrodeConfigurationIndex = 4;
+		}
+		else
+		{
+			npx->settings->electrodeConfigurationIndex = -1;
+		}
+	}
+	else
+	{
+		npx->settings->electrodeConfigurationIndex = -1;
+	}
+
+	electrodeConfigurationComboBox->setSelectedId(npx->settings->electrodeConfigurationIndex + 2, dontSendNotification);
 }
 
 void NeuropixV1Interface::buttonClicked(Button* button)
@@ -403,6 +701,12 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 	if (button == probeEnableButton.get())
 	{
 		npx->setEnabled(probeEnableButton->getToggleState());
+
+		if (canvas->foundInputSource())
+		{
+			device->configureDevice();
+			canvas->resetContext();
+		}
 
 		if (npx->isEnabled())
 		{
@@ -419,24 +723,28 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 	{
 		mode = VisualizationMode::ENABLE_VIEW;
 		probeBrowser->stopTimer();
+		drawLegend();
 		repaint();
 	}
 	else if (button == apGainViewButton.get())
 	{
 		mode = VisualizationMode::AP_GAIN_VIEW;
 		probeBrowser->stopTimer();
+		drawLegend();
 		repaint();
 	}
 	else if (button == lfpGainViewButton.get())
 	{
 		mode = VisualizationMode::LFP_GAIN_VIEW;
 		probeBrowser->stopTimer();
+		drawLegend();
 		repaint();
 	}
 	else if (button == referenceViewButton.get())
 	{
 		mode = VisualizationMode::REFERENCE_VIEW;
 		probeBrowser->stopTimer();
+		drawLegend();
 		repaint();
 	}
 	else if (button == activityViewButton.get())
@@ -446,6 +754,7 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 		if (acquisitionIsActive)
 			probeBrowser->startTimer(100);
 
+		drawLegend();
 		repaint();
 	}
 	else if (button == enableButton.get())
@@ -454,9 +763,10 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (selection.size() > 0)
 		{
-			electrodeConfigurationComboBox->setSelectedId(1);
 			selectElectrodes(selection);
 		}
+
+		checkForExistingChannelPreset();
 	}
 	else if (button == loadJsonButton.get())
 	{
@@ -464,13 +774,13 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (fileChooser.browseForFileToOpen())
 		{
-			ProbeSettings settings = getProbeSettings();
+			auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
-			bool success = ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), settings);
+			bool success = ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings.get());
 
 			if (success)
 			{
-				applyProbeSettings(settings);
+				applyProbeSettings(npx->settings.get());
 			}
 		}
 	}
@@ -480,13 +790,41 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (fileChooser.browseForFileToSave(true))
 		{
-			bool success = ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), getProbeSettings());
+			auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+
+			bool success = ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings.get());
 
 			if (!success)
 				CoreServices::sendStatusMessage("Failed to write probe channel map.");
 			else
 				CoreServices::sendStatusMessage("Successfully wrote probe channel map.");
 		}
+	}
+	else if (button == adcCalibrationFileButton.get())
+	{
+		if (adcCalibrationFileChooser->browseForFileToOpen())
+		{
+			adcCalibrationFile->setText(adcCalibrationFileChooser->getResult().getFullPathName());
+		}
+		else
+		{
+			adcCalibrationFile->setText("");
+		}
+
+		npx->adcCalibrationFilePath = adcCalibrationFile->getText();
+	}
+	else if (button == gainCalibrationFileButton.get())
+	{
+		if (gainCalibrationFileChooser->browseForFileToOpen())
+		{
+			gainCalibrationFile->setText(gainCalibrationFileChooser->getResult().getFullPathName());
+		}
+		else
+		{
+			gainCalibrationFile->setText("");
+		}
+
+		npx->gainCalibrationFilePath = gainCalibrationFile->getText();
 	}
 }
 
@@ -496,9 +834,9 @@ Array<int> NeuropixV1Interface::getSelectedElectrodes() const
 
 	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
-	for (int i = 0; i < npx->settings.electrodeMetadata.size(); i++)
+	for (int i = 0; i < npx->settings->electrodeMetadata.size(); i++)
 	{
-		if (npx->settings.electrodeMetadata[i].isSelected)
+		if (npx->settings->electrodeMetadata[i].isSelected)
 		{
 			electrodeIndices.add(i);
 		}
@@ -531,34 +869,39 @@ void NeuropixV1Interface::selectElectrodes(Array<int> electrodes)
 {
 	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
+	npx->settings->clearElectrodeSelection();
+
 	// update selection state
 	for (int i = 0; i < electrodes.size(); i++)
 	{
-		Bank bank = npx->settings.electrodeMetadata[electrodes[i]].bank;
-		int channel = npx->settings.electrodeMetadata[electrodes[i]].channel;
-		int shank = npx->settings.electrodeMetadata[electrodes[i]].shank;
-		int global_index = npx->settings.electrodeMetadata[electrodes[i]].global_index;
+		Bank bank = npx->settings->electrodeMetadata[electrodes[i]].bank;
+		int channel = npx->settings->electrodeMetadata[electrodes[i]].channel;
+		int shank = npx->settings->electrodeMetadata[electrodes[i]].shank;
+		int global_index = npx->settings->electrodeMetadata[electrodes[i]].global_index;
 
-		for (int j = 0; j < npx->settings.electrodeMetadata.size(); j++)
+		for (int j = 0; j < npx->settings->electrodeMetadata.size(); j++)
 		{
-			if (npx->settings.electrodeMetadata[j].channel == channel)
+			if (npx->settings->electrodeMetadata[j].channel == channel)
 			{
-				if (npx->settings.electrodeMetadata[j].bank == bank && npx->settings.electrodeMetadata[j].shank == shank)
+				if (npx->settings->electrodeMetadata[j].bank == bank && npx->settings->electrodeMetadata[j].shank == shank)
 				{
-					npx->settings.electrodeMetadata.getReference(j).status = ElectrodeStatus::CONNECTED;
+					npx->settings->electrodeMetadata.getReference(j).status = ElectrodeStatus::CONNECTED;
 				}
 
 				else
 				{
-					npx->settings.electrodeMetadata.getReference(j).status = ElectrodeStatus::DISCONNECTED;
+					npx->settings->electrodeMetadata.getReference(j).status = ElectrodeStatus::DISCONNECTED;
 				}
 			}
 		}
+
+		npx->settings->selectedBank.add(bank);
+		npx->settings->selectedChannel.add(channel);
+		npx->settings->selectedShank.add(shank);
+		npx->settings->selectedElectrode.add(global_index);
 	}
 
 	repaint();
-
-	CoreServices::updateSignalChain(editor);
 }
 
 void NeuropixV1Interface::setInterfaceEnabledState(bool enabledState)
@@ -605,158 +948,81 @@ void NeuropixV1Interface::stopAcquisition()
 	setInterfaceEnabledState(true);
 }
 
-void NeuropixV1Interface::paint(Graphics& g)
+void NeuropixV1Interface::drawLegend()
 {
-	drawLegend(g);
-}
-
-void NeuropixV1Interface::drawLegend(Graphics& g)
-{
-	// TODO: Modify this so it is called whenever one of the View buttons is pressed. Should not rely on graphics or the paint() method
-	g.setColour(Colour(55, 55, 55));
-	g.setFont(15);
-
-	int xOffset = 450;
-	int yOffset = 440;
+	enableViewComponent->setVisible(false);
+	apGainViewComponent->setVisible(false);
+	lfpGainViewComponent->setVisible(false);
+	referenceViewComponent->setVisible(false);
+	activityViewComponent->setVisible(false);
 
 	switch (mode)
 	{
 	case VisualizationMode::ENABLE_VIEW:
-		g.drawMultiLineText("ENABLED?", xOffset, yOffset, 200);
-		g.drawMultiLineText("YES", xOffset + 30, yOffset + 22, 200);
-		g.drawMultiLineText("NO", xOffset + 30, yOffset + 42, 200);
-
-		g.drawMultiLineText("REFERENCE", xOffset + 30, yOffset + 62, 200);
-
-		g.setColour(Colours::yellow);
-		g.fillRect(xOffset + 10, yOffset + 10, 15, 15);
-
-		g.setColour(Colours::darkgrey);
-		g.fillRect(xOffset + 10, yOffset + 30, 15, 15);
-
-		g.setColour(Colours::black);
-
-		g.fillRect(xOffset + 10, yOffset + 50, 15, 15);
-
+		enableViewComponent->setVisible(true);
 		break;
-
 	case VisualizationMode::AP_GAIN_VIEW:
-		g.drawMultiLineText("AP GAIN", xOffset, yOffset, 200);
-
-		for (int i = 0; i < 8; i++)
-		{
-			g.drawMultiLineText(apGainComboBox->getItemText(i), xOffset + 30, yOffset + 22 + 20 * i, 200);
-		}
-
-		for (int i = 0; i < 8; i++)
-		{
-			g.setColour(Colour(25 * i, 25 * i, 50));
-			g.fillRect(xOffset + 10, yOffset + 10 + 20 * i, 15, 15);
-		}
-
+		apGainViewComponent->setVisible(true);
 		break;
-
 	case VisualizationMode::LFP_GAIN_VIEW:
-		g.drawMultiLineText("LFP GAIN", xOffset, yOffset, 200);
-
-		for (int i = 0; i < 8; i++)
-		{
-			g.drawMultiLineText(lfpGainComboBox->getItemText(i), xOffset + 30, yOffset + 22 + 20 * i, 200);
-		}
-
-		for (int i = 0; i < 8; i++)
-		{
-			g.setColour(Colour(66, 25 * i, 35 * i));
-			g.fillRect(xOffset + 10, yOffset + 10 + 20 * i, 15, 15);
-		}
-
+		lfpGainViewComponent->setVisible(true);
 		break;
-
 	case VisualizationMode::REFERENCE_VIEW:
-		g.drawMultiLineText("REFERENCE", xOffset, yOffset, 200);
-
-		for (int i = 0; i < referenceComboBox->getNumItems(); i++)
-		{
-			g.drawMultiLineText(referenceComboBox->getItemText(i), xOffset + 30, yOffset + 22 + 20 * i, 200);
-		}
-
-		for (int i = 0; i < referenceComboBox->getNumItems(); i++)
-		{
-			String referenceDescription = referenceComboBox->getItemText(i);
-
-			if (referenceDescription.contains("Ext"))
-				g.setColour(Colours::pink);
-			else if (referenceDescription.contains("Tip"))
-				g.setColour(Colours::orange);
-			else
-				g.setColour(Colours::purple);
-
-			g.fillRect(xOffset + 10, yOffset + 10 + 20 * i, 15, 15);
-		}
-
+		referenceViewComponent->setVisible(true);
 		break;
-
 	case VisualizationMode::ACTIVITY_VIEW:
-		g.drawMultiLineText("AMPLITUDE", xOffset, yOffset, 200);
-
-		for (int i = 0; i < 6; i++)
-		{
-			g.drawMultiLineText(String(float(probeBrowser->maxPeakToPeakAmplitude) / 5.0f * float(i)) + " uV", xOffset + 30, yOffset + 22 + 20 * i, 200);
-		}
-
-		for (int i = 0; i < 6; i++)
-		{
-			g.setColour(ColourScheme::getColourForNormalizedValue(float(i) / 5.0f));
-			g.fillRect(xOffset + 10, yOffset + 10 + 20 * i, 15, 15);
-		}
-
+		activityViewComponent->setVisible(true);
+		break;
+	default:
 		break;
 	}
 }
 
-bool NeuropixV1Interface::applyProbeSettings(ProbeSettings p, bool shouldUpdateProbe)
+bool NeuropixV1Interface::applyProbeSettings(ProbeSettings* p, bool shouldUpdateProbe)
 {
 	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
 	if (electrodeConfigurationComboBox != 0)
-		electrodeConfigurationComboBox->setSelectedId(p.electrodeConfigurationIndex + 2, dontSendNotification);
+		electrodeConfigurationComboBox->setSelectedId(p->electrodeConfigurationIndex + 2, dontSendNotification);
 
 	// update display
 	if (apGainComboBox != 0)
-		apGainComboBox->setSelectedId(p.apGainIndex + 1, dontSendNotification);
+		apGainComboBox->setSelectedId(p->apGainIndex + 1, dontSendNotification);
 
 	if (lfpGainComboBox != 0)
-		lfpGainComboBox->setSelectedId(p.lfpGainIndex + 1, dontSendNotification);
+		lfpGainComboBox->setSelectedId(p->lfpGainIndex + 1, dontSendNotification);
 
 	if (filterComboBox != 0)
 	{
-		if (p.apFilterState)
+		if (p->apFilterState)
 			filterComboBox->setSelectedId(1, dontSendNotification);
 		else
 			filterComboBox->setSelectedId(2, dontSendNotification);
 	}
 
 	if (referenceComboBox != 0)
-		referenceComboBox->setSelectedId(p.referenceIndex + 1, dontSendNotification);
+		referenceComboBox->setSelectedId(p->referenceIndex + 1, dontSendNotification);
 
-	for (int i = 0; i < npx->settings.electrodeMetadata.size(); i++)
+	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+
+	for (int i = 0; i < npx->settings->electrodeMetadata.size(); i++)
 	{
-		if (npx->settings.electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
-			npx->settings.electrodeMetadata.getReference(i).status = ElectrodeStatus::DISCONNECTED;
+		if (npx->settings->electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
+			npx->settings->electrodeMetadata.getReference(i).status = ElectrodeStatus::DISCONNECTED;
 	}
 
 	// update selection state
-	for (int i = 0; i < p.selectedChannel.size(); i++)
+	for (int i = 0; i < p->selectedChannel.size(); i++)
 	{
-		Bank bank = p.selectedBank[i];
-		int channel = p.selectedChannel[i];
-		int shank = p.selectedShank[i];
+		Bank bank = p->selectedBank[i];
+		int channel = p->selectedChannel[i];
+		int shank = p->selectedShank[i];
 
-		for (int j = 0; j < npx->settings.electrodeMetadata.size(); j++)
+		for (int j = 0; j < npx->settings->electrodeMetadata.size(); j++)
 		{
-			if (npx->settings.electrodeMetadata[j].channel == channel && npx->settings.electrodeMetadata[j].bank == bank && npx->settings.electrodeMetadata[j].shank == shank)
+			if (npx->settings->electrodeMetadata[j].channel == channel && npx->settings->electrodeMetadata[j].bank == bank && npx->settings->electrodeMetadata[j].shank == shank)
 			{
-				npx->settings.electrodeMetadata.getReference(j).status = ElectrodeStatus::CONNECTED;
+				npx->settings->electrodeMetadata.getReference(j).status = ElectrodeStatus::CONNECTED;
 			}
 		}
 	}
@@ -766,16 +1032,10 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings p, bool shouldUpdateP
 		CoreServices::saveRecoveryConfig();
 	}
 
+	drawLegend();
 	repaint();
 
 	return true;
-}
-
-ProbeSettings NeuropixV1Interface::getProbeSettings() const
-{
-	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
-
-	return npx->settings;
 }
 
 void NeuropixV1Interface::saveParameters(XmlElement* xml)
@@ -790,7 +1050,7 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 
 		xmlNode->setAttribute("probe_serial_number", String(npx->getProbeNumber()));
 		xmlNode->setAttribute("probe_name", npx->getName());
-		xmlNode->setAttribute("num_adcs", npx->settings.probeMetadata.num_adcs);
+		xmlNode->setAttribute("num_adcs", npx->settings->probeMetadata.num_adcs);
 
 		xmlNode->setAttribute("ZoomHeight", probeBrowser->getZoomHeight());
 		xmlNode->setAttribute("ZoomOffset", probeBrowser->getZoomOffset());
@@ -843,38 +1103,26 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 		XmlElement* xposNode = xmlNode->createNewChildElement("ELECTRODE_XPOS");
 		XmlElement* yposNode = xmlNode->createNewChildElement("ELECTRODE_YPOS");
 
-		for (int i = 0; i < npx->settings.selectedChannel.size(); i++)
+		for (int i = 0; i < npx->settings->selectedChannel.size(); i++)
 		{
-			int bank = int(npx->settings.selectedBank[i]);
-			int shank = npx->settings.selectedShank[i];
-			int channel = npx->settings.selectedChannel[i];
-			int elec = npx->settings.selectedElectrode[i];
+			int bank = int(npx->settings->selectedBank[i]);
+			int shank = npx->settings->selectedShank[i];
+			int channel = npx->settings->selectedChannel[i];
+			int elec = npx->settings->selectedElectrode[i];
 
 			String chString = String(bank);
 
 			String chId = "CH" + String(channel);
 
 			channelNode->setAttribute(chId, chString);
-			xposNode->setAttribute(chId, String(npx->settings.electrodeMetadata[elec].xpos + 250 * shank));
-			yposNode->setAttribute(chId, String(npx->settings.electrodeMetadata[elec].ypos));
+			xposNode->setAttribute(chId, String(npx->settings->electrodeMetadata[elec].xpos + 250 * shank));
+			yposNode->setAttribute(chId, String(npx->settings->electrodeMetadata[elec].ypos));
 		}
 
 		xmlNode->setAttribute("visualizationMode", (double)mode);
 		xmlNode->setAttribute("activityToView", (double)probeBrowser->activityToView);
 
-		// annotations
-		for (int i = 0; i < annotations.size(); i++)
-		{
-			Annotation& a = annotations.getReference(i);
-			XmlElement* annotationNode = xmlNode->createNewChildElement("ANNOTATIONS");
-			annotationNode->setAttribute("text", a.text);
-			annotationNode->setAttribute("channel", a.electrodes[0]);
-			annotationNode->setAttribute("R", a.colour.getRed());
-			annotationNode->setAttribute("G", a.colour.getGreen());
-			annotationNode->setAttribute("B", a.colour.getBlue());
-		}
-
-		xmlNode->setAttribute("isEnabled", bool(npx->isEnabled()));
+		xmlNode->setAttribute("isEnabled", bool(device->isEnabled()));
 	}
 }
 
@@ -884,24 +1132,9 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 
 	if (npx != nullptr)
 	{
-		// TODO: load parameters, put them into npx->settings, and then update the interface
-		applyProbeSettings(npx->settings, false);
+		//auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+
+		// TODO: load parameters, put them into device->settings, and then update the interface
+		//applyProbeSettings(device->settings.get(), false);
 	}
-}
-
-Annotation::Annotation(String t, Array<int> e, Colour c)
-{
-	text = t;
-	electrodes = e;
-
-	currentYLoc = -100.f;
-
-	isMouseOver = false;
-	isSelected = false;
-
-	colour = c;
-}
-
-Annotation::~Annotation()
-{
 }

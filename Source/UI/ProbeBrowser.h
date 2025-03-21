@@ -26,13 +26,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <VisualizerEditorHeaders.h>
 
-#include "NeuropixV1Interface.h"
+#include "SettingsInterface.h"
+#include "../NeuropixComponents.h"
 
 class ProbeBrowser : public Component,
                      public Timer
 {
 public:
-    ProbeBrowser (NeuropixV1Interface*);
+    ProbeBrowser (SettingsInterface*);
 
     void mouseMove (const MouseEvent& event);
     void mouseDown (const MouseEvent& event);
@@ -45,8 +46,6 @@ public:
     void timerCallback();
 
     void paint (Graphics& g);
-
-    void drawAnnotations (Graphics& g);
 
     int getZoomHeight() const;
     int getZoomOffset() const;
@@ -98,7 +97,9 @@ private:
     Array<int> getElectrodesWithinBounds (int x, int y, int w, int h) const;
     String getElectrodeInfoString (int index);
 
-    NeuropixV1Interface* parent;
+    SettingsInterface* parent;
+
+    JUCE_LEAK_DETECTOR(ProbeBrowser);
 };
 
 #endif  // __PROBEBROWSER_H__

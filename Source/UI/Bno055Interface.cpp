@@ -23,17 +23,60 @@
 
 #include "Bno055Interface.h"
 
-Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) : 
-	SettingsInterface(d, e,c)
+Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
+	SettingsInterface(d, e, c)
 {
+	device = d;
+
 	if (device != nullptr)
 	{
-		// TODO: Show something in the canvas that indicates the device is connected
+		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
+		deviceEnableButton->setRadius(3.0f);
+		deviceEnableButton->setBounds(35, 35, 100, 22);
+		deviceEnableButton->setClickingTogglesState(true);
+		deviceEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
+		deviceEnableButton->setTooltip("If disabled, BNO055 device will not stream data during acquisition");
+		deviceEnableButton->addListener(this);
+		addAndMakeVisible(deviceEnableButton.get());
 	}
 
 	type = SettingsInterface::Type::BNO055_SETTINGS_INTERFACE;
 }
 
-void Bno055Interface::updateInfoString()
+void Bno055Interface::buttonClicked(Button* button)
+{
+	if (button == deviceEnableButton.get())
+	{
+		device->setEnabled(deviceEnableButton->getToggleState());
+		device->configureDevice();
+		if (canvas->foundInputSource()) canvas->resetContext();
+
+		if (device->isEnabled())
+		{
+			deviceEnableButton->setLabel("ENABLED");
+		}
+		else
+		{
+			deviceEnableButton->setLabel("DISABLED");
+		}
+
+		CoreServices::updateSignalChain(editor);
+	}
+}
+
+void Bno055Interface::startAcquisition()
+{
+}
+
+void Bno055Interface::stopAcquisition()
+{
+}
+
+void Bno055Interface::saveParameters(XmlElement* xml)
+{
+}
+
+void Bno055Interface::loadParameters(XmlElement* xml)
 {
 }

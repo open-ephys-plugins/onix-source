@@ -31,15 +31,9 @@
 #include <chrono>
 #include <thread>
 
-#include <oni.h>
-#include <onix.h>
-
 #include "I2CRegisterContext.h"
 #include "NeuropixComponents.h"
-
-#define ONI_OK(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));}}
-#define ONI_OK_RETURN_BOOL(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return false;}}
-#define ONI_OK_RETURN_INT(exp) {int res = exp; if (res != ONI_ESUCCESS){LOGD(oni_error_str(res));return res;}}
+#include "Onix1.h"
 
 using namespace std::chrono;
 
@@ -55,6 +49,7 @@ enum class OnixDeviceType {
 	NEUROPIXELS_1,
 	NEUROPIXELS_2,
 	ADC,
+	PORT_CONTROL,
 	MEMORYMONITOR,
 	OUTPUTCLOCK,
 	HEARTBEAT,
@@ -83,14 +78,14 @@ class OnixDevice
 public:
 
 	/** Constructor */
-	OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t, const oni_ctx);
+	OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 	/** Destructor */
 	~OnixDevice() { }
 
-	virtual void addFrame(oni_frame_t*) = 0;
+	virtual void addFrame(oni_frame_t*) {};
 
-	virtual void processFrames() = 0;
+	virtual void processFrames() {};
 
 	const String getName() { return name; }
 
@@ -98,16 +93,16 @@ public:
 
 	void setEnabled(bool newState) { enabled = newState; }
 
-	virtual int configureDevice() = 0;
+	virtual int configureDevice() { return -1; };
 
-	virtual int updateSettings() = 0;
+	virtual bool updateSettings() { return false; };
 
-	virtual void startAcquisition() = 0;
+	virtual void startAcquisition() {};
 
-	virtual void stopAcquisition() = 0;
+	virtual void stopAcquisition() {};
 
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
-	virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) = 0;
+	virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
 
 	const oni_dev_idx_t getDeviceIdx() const { return deviceIdx; }
 
@@ -120,13 +115,17 @@ public:
 protected:
 
 	const oni_dev_idx_t deviceIdx;
-	const oni_ctx ctx;
+	std::shared_ptr<Onix1> deviceContext;
 
 private:
 
 	String name;
 
 	bool enabled = true;
+
+	JUCE_LEAK_DETECTOR(OnixDevice);
 };
+
+using OnixDeviceVector = std::vector<std::shared_ptr<OnixDevice>>;
 
 #endif

@@ -23,8 +23,8 @@
 
 #include "Bno055.h"
 
-Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
-	: OnixDevice(name, OnixDeviceType::BNO, deviceIdx_, ctx_)
+Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
+	: OnixDevice(name, OnixDeviceType::BNO, deviceIdx_, ctx)
 {
 	const float bitVolts = 1.0;
 
@@ -89,14 +89,16 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, const oni_ctx ctx_)
 
 int Bno055::configureDevice()
 {
-	oni_write_reg(ctx, deviceIdx, (uint32_t)Bno055Registers::ENABLE, (uint32_t)1);
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	return 0;
+	deviceContext->writeRegister(deviceIdx, (uint32_t)Bno055Registers::ENABLE, isEnabled() ? 1 : 0);
+
+	return deviceContext->getLastResult();
 }
 
-int Bno055::updateSettings()
+bool Bno055::updateSettings()
 {
-	return 0;
+	return true;
 }
 
 void Bno055::startAcquisition()

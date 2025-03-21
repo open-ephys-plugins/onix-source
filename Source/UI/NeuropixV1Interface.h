@@ -29,11 +29,10 @@
 #include "../Devices/Neuropixels_1.h"
 #include "ColourScheme.h"
 #include "SettingsInterface.h"
+#include "ProbeBrowser.h"
 
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
-
-class ProbeBrowser;
 
 enum class VisualizationMode
 {
@@ -42,23 +41,6 @@ enum class VisualizationMode
 	LFP_GAIN_VIEW,
 	REFERENCE_VIEW,
 	ACTIVITY_VIEW
-};
-
-class Annotation
-{
-public:
-	Annotation(String text, Array<int> channels, Colour c);
-	~Annotation();
-
-	Array<int> electrodes;
-	String text;
-
-	float currentYLoc;
-
-	bool isMouseOver;
-	bool isSelected;
-
-	Colour colour;
 };
 
 /**
@@ -77,9 +59,6 @@ public:
 	/** Constructor */
 	NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	/** Draws the legend */
-	void paint(Graphics& g) override;
-
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
 	void comboBoxChanged(ComboBox*) override;
@@ -91,17 +70,13 @@ public:
 	void stopAcquisition() override;
 
 	/** Settings-related functions*/
-	bool applyProbeSettings(ProbeSettings p, bool shouldUpdateProbe = true);
-	ProbeSettings getProbeSettings() const;
+	bool applyProbeSettings(ProbeSettings* p, bool shouldUpdateProbe = true);
 
 	/** Save parameters to XML */
 	void saveParameters(XmlElement* xml) override;
 
 	/** Load parameters from XML */
 	void loadParameters(XmlElement* xml) override;
-
-	/** Updates the annotation label */
-	void setAnnotationLabel(String, Colour);
 
 	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override;
@@ -126,9 +101,6 @@ private:
 	std::unique_ptr<ComboBox> filterComboBox;
 	std::unique_ptr<ComboBox> activityViewComboBox;
 
-	std::unique_ptr<PathParameterEditor> adcCalibrationFileEditor;
-	std::unique_ptr<PathParameterEditor> gainCalibrationFileEditor;
-
 	// LABELS
 	std::unique_ptr<Label> nameLabel;
 	std::unique_ptr<Label> infoLabel;
@@ -140,10 +112,8 @@ private:
 	std::unique_ptr<Label> filterLabel;
 	std::unique_ptr<Label> activityViewLabel;
 
-	std::unique_ptr<Label> probeSettingsLabel;
-
-	std::unique_ptr<Label> annotationLabelLabel;
-	std::unique_ptr<Label> annotationLabel;
+	std::unique_ptr<Label> adcCalibrationFileLabel;
+	std::unique_ptr<Label> gainCalibrationFileLabel;
 
 	// BUTTONS
 	std::unique_ptr<UtilityButton> probeEnableButton;
@@ -159,17 +129,47 @@ private:
 	std::unique_ptr<UtilityButton> loadJsonButton;
 	std::unique_ptr<UtilityButton> saveJsonButton;
 
+	std::unique_ptr<UtilityButton> adcCalibrationFileButton;
+	std::unique_ptr<UtilityButton> gainCalibrationFileButton;
+
+	std::unique_ptr<TextEditor> adcCalibrationFile;
+	std::unique_ptr<TextEditor> gainCalibrationFile;
+
+	std::unique_ptr<FileChooser> adcCalibrationFileChooser;
+	std::unique_ptr<FileChooser> gainCalibrationFileChooser;
+
 	std::unique_ptr<ProbeBrowser> probeBrowser;
+
+	std::unique_ptr<Component> enableViewComponent;
+	std::unique_ptr<Component> apGainViewComponent;
+	std::unique_ptr<Component> lfpGainViewComponent;
+	std::unique_ptr<Component> referenceViewComponent;
+	std::unique_ptr<Component> activityViewComponent;
+
+	std::vector<std::unique_ptr<Label>> enableViewLabels;
+	std::vector<std::unique_ptr<Label>> apGainViewLabels;
+	std::vector<std::unique_ptr<Label>> lfpGainViewLabels;
+	std::vector<std::unique_ptr<Label>> referenceViewLabels;
+	std::vector<std::unique_ptr<Label>> activityViewLabels;
+
+	std::vector<std::unique_ptr<DrawableRectangle>> enableViewRectangles;
+	std::vector<std::unique_ptr<DrawableRectangle>> apGainViewRectangles;
+	std::vector<std::unique_ptr<DrawableRectangle>> lfpGainViewRectangles;
+	std::vector<std::unique_ptr<DrawableRectangle>> referenceViewRectangles;
+	std::vector<std::unique_ptr<DrawableRectangle>> activityViewRectangles;
 
 	VisualizationMode mode;
 
-	void drawLegend(Graphics& g);
-
-	Array<Annotation> annotations;
+	void drawLegend();
 
 	Array<int> getSelectedElectrodes() const;
 
 	void setInterfaceEnabledState(bool enabledState);
+
+	/** Checks if the current channel map matches an existing channel preset, and updates the combo box if it does */
+	void checkForExistingChannelPreset();
+
+	JUCE_LEAK_DETECTOR(NeuropixV1Interface);
 };
 
 #endif //__NEUROPIXINTERFACE_H__

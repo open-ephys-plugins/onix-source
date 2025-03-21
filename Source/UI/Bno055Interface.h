@@ -31,7 +31,8 @@
 
 #include "../Devices/Bno055.h"
 
-class Bno055Interface : public SettingsInterface
+class Bno055Interface : public SettingsInterface,
+	public Button::Listener
 {
 public:
 	/** Constructor */
@@ -50,10 +51,18 @@ public:
 	void loadParameters(XmlElement* xml) override {};
 
 	/** Updates the info string on the right-hand side of the component */
-	void updateInfoString() override;
+	void updateInfoString() override {};
+
+	/** Listener methods*/
+	void buttonClicked(Button*) override;
 
 private:
 
+	std::shared_ptr<Bno055> device;
+
+	std::unique_ptr<UtilityButton> deviceEnableButton;
+
+	JUCE_LEAK_DETECTOR(Bno055Interface);
 };
 
 #endif // !__BNO055INTERFACE_H__

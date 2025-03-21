@@ -5,16 +5,15 @@
 /*
 	Configures and streams data from a Neuropixels 2.0e device
 */
-class Neuropixels2e :
-	public OnixDevice
+class Neuropixels2e : public OnixDevice
 {
 public:
-	Neuropixels2e(String name, const oni_dev_idx_t, const oni_ctx);
+	Neuropixels2e(String name, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 	int configureDevice() override;
 
 	/** Update the settings of the device */
-	int updateSettings() override;
+	bool updateSettings() override;
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;
@@ -29,9 +28,9 @@ public:
 	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
 	int getNumProbes() const;
-	DataBuffer* apBuffer[2];
 
 private:
+	DataBuffer* apBuffer[2];
 
 	void createDataStream(int n);
 
@@ -42,8 +41,6 @@ private:
 
 	void selectProbe(uint8_t probeSelect);
 	void configureProbeStreaming();
-
-
 
 	int m_numProbes = 0;
 
@@ -115,4 +112,5 @@ private:
 
 	Array<oni_frame_t*, CriticalSection, 2 * FramesPerSuperFrame> frameArray;
 
+	JUCE_LEAK_DETECTOR(Neuropixels2e);
 };

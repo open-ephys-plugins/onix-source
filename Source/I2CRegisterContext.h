@@ -26,7 +26,7 @@
 
 #include "ProcessorHeaders.h"
 
-#include <oni.h>
+#include "Onix1.h"
 
 #include <cstddef>
 
@@ -34,18 +34,24 @@ class I2CRegisterContext
 {
 public:
 
-	I2CRegisterContext(uint32_t address, const oni_dev_idx_t, const oni_ctx);
+	I2CRegisterContext(uint32_t address, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
-	int WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
+	void WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
 
-	int ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
+	void ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
+
+	int getLastResult() { return i2cContext->getLastResult(); }
+
+protected:
+	std::shared_ptr<Onix1> i2cContext;
 
 private:
 
-	const oni_ctx context;
 	const oni_dev_idx_t deviceIndex;
 
 	const uint32_t i2caddress;
+
+	JUCE_LEAK_DETECTOR(I2CRegisterContext);
 };
 
 #endif // !__I2CRegisterContext_H__
