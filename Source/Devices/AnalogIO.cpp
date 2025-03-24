@@ -35,7 +35,7 @@ AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<
 	analogInputStream.channelPrefix = "AnalogInput";
 	analogInputStream.bitVolts = 1.0f;
 	analogInputStream.channelType = ContinuousChannel::Type::ADC;
-	streams.add(analogInputStream);
+	streamInfos.add(analogInputStream);
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
@@ -125,7 +125,7 @@ void AnalogIO::addFrame(oni_frame_t* frame)
 
 void AnalogIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	for (StreamInfo streamInfo : streams)
+	for (StreamInfo streamInfo : streamInfos)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
 

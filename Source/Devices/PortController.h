@@ -84,8 +84,6 @@ class PortController : public OnixDevice
 public:
 	PortController(PortName port_, std::shared_ptr<Onix1> ctx_);
 
-	~PortController();
-
 	int configureDevice() override;
 
 	bool updateSettings() override { return true; }

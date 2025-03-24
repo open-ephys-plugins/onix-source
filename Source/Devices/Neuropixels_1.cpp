@@ -182,7 +182,7 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 	apStream.channelPrefix = "AP";
 	apStream.bitVolts = 0.195f;
 	apStream.channelType = ContinuousChannel::Type::ELECTRODE;
-	streams.add(apStream);
+	streamInfos.add(apStream);
 
 	StreamInfo lfpStream;
 	lfpStream.name = name + "-LFP";
@@ -193,7 +193,7 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 	lfpStream.channelPrefix = "LFP";
 	lfpStream.bitVolts = 0.195f;
 	lfpStream.channelType = ContinuousChannel::Type::ELECTRODE;
-	streams.add(lfpStream);
+	streamInfos.add(lfpStream);
 
 	settings = std::make_unique<ProbeSettings>();
 	defineMetadata(settings.get());
@@ -399,7 +399,7 @@ void Neuropixels_1::stopAcquisition()
 
 void Neuropixels_1::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	for (StreamInfo streamInfo : streams)
+	for (StreamInfo streamInfo : streamInfos)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
 

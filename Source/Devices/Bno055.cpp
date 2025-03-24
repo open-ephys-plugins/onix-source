@@ -37,7 +37,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	eulerAngleStream.channelPrefix = "Euler";
 	eulerAngleStream.bitVolts = bitVolts;
 	eulerAngleStream.channelType = ContinuousChannel::Type::AUX;
-	streams.add(eulerAngleStream);
+	streamInfos.add(eulerAngleStream);
 
 	StreamInfo quaternionStream;
 	quaternionStream.name = name + "-Quaternion";
@@ -48,7 +48,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	quaternionStream.channelPrefix = "Quaternion";
 	quaternionStream.bitVolts = bitVolts;
 	quaternionStream.channelType = ContinuousChannel::Type::AUX;
-	streams.add(quaternionStream);
+	streamInfos.add(quaternionStream);
 
 	StreamInfo accelerationStream;
 	accelerationStream.name = name + "-Acceleration";
@@ -59,7 +59,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	accelerationStream.channelPrefix = "Acceleration";
 	accelerationStream.bitVolts = bitVolts;
 	accelerationStream.channelType = ContinuousChannel::Type::AUX;
-	streams.add(accelerationStream);
+	streamInfos.add(accelerationStream);
 
 	StreamInfo gravityStream;
 	gravityStream.name = name + "-Gravity";
@@ -70,7 +70,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	gravityStream.channelPrefix = "Gravity";
 	gravityStream.bitVolts = bitVolts;
 	gravityStream.channelType = ContinuousChannel::Type::AUX;
-	streams.add(gravityStream);
+	streamInfos.add(gravityStream);
 
 	StreamInfo temperatureStream;
 	temperatureStream.name = name + "-Temperature";
@@ -81,7 +81,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	temperatureStream.channelPrefix = "Temperature";
 	temperatureStream.bitVolts = bitVolts;
 	temperatureStream.channelType = ContinuousChannel::Type::AUX;
-	streams.add(temperatureStream);
+	streamInfos.add(temperatureStream);
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
@@ -127,7 +127,7 @@ void Bno055::addFrame(oni_frame_t* frame)
 
 void Bno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	for (StreamInfo streamInfo : streams)
+	for (StreamInfo streamInfo : streamInfos)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
 

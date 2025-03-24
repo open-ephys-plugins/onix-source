@@ -108,7 +108,7 @@ public:
 
 	OnixDeviceType type;
 
-	Array<StreamInfo> streams;
+	Array<StreamInfo> streamInfos;
 
 	const int bufferSizeInSeconds = 10;
 

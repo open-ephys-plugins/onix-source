@@ -29,10 +29,6 @@ PortController::PortController(PortName port_, std::shared_ptr<Onix1> ctx_) :
 {
 }
 
-PortController::~PortController()
-{
-}
-
 int PortController::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;

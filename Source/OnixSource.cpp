@@ -500,7 +500,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 			}
 
 			// add data streams and channels
-			for (const auto& streamInfo : source->streams)
+			for (const auto& streamInfo : source->streamInfos)
 			{
 				DataStream::Settings streamSettings
 				{

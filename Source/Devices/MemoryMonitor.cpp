@@ -67,7 +67,7 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::s
 	percentUsedStream.channelPrefix = "Percent";
 	percentUsedStream.bitVolts = 1.0f;
 	percentUsedStream.channelType = ContinuousChannel::Type::AUX;
-	streams.add(percentUsedStream);
+	streamInfos.add(percentUsedStream);
 
 	StreamInfo bytesUsedStream;
 	bytesUsedStream.name = name + "-BytesUsed";
@@ -78,7 +78,7 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::s
 	bytesUsedStream.channelPrefix = "Bytes";
 	bytesUsedStream.bitVolts = 1.0f;
 	bytesUsedStream.channelType = ContinuousChannel::Type::AUX;
-	streams.add(bytesUsedStream);
+	streamInfos.add(bytesUsedStream);
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
@@ -132,7 +132,7 @@ void MemoryMonitor::addFrame(oni_frame_t* frame)
 
 void MemoryMonitor::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	for (StreamInfo streamInfo : streams)
+	for (StreamInfo streamInfo : streamInfos)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
 
@@ -147,9 +147,9 @@ void MemoryMonitor::setSamplesPerSecond(uint32_t samplesPerSecond_)
 {
 	samplesPerSecond = samplesPerSecond_;
 
-	for (const auto& stream : streams)
+	for (const auto& stream : streamInfos)
 	{
-		streams.getReference(0).sampleRate = samplesPerSecond;
+		streamInfos.getReference(0).sampleRate = samplesPerSecond;
 	}
 }
 

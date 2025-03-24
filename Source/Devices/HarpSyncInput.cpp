@@ -37,7 +37,7 @@ HarpSyncInput::HarpSyncInput(String name, const oni_dev_idx_t deviceIdx_, std::s
 	harpTimeStream.channelPrefix = "HarpTime";
 	harpTimeStream.bitVolts = 1.0f;
 	harpTimeStream.channelType = ContinuousChannel::Type::AUX;
-	streams.add(harpTimeStream);
+	streamInfos.add(harpTimeStream);
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
@@ -82,7 +82,7 @@ void HarpSyncInput::addFrame(oni_frame_t* frame)
 
 void HarpSyncInput::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	for (StreamInfo streamInfo : streams)
+	for (StreamInfo streamInfo : streamInfos)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
 

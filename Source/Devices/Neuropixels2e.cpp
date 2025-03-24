@@ -16,7 +16,7 @@ void Neuropixels2e::createDataStream(int n)
 	apStream.channelPrefix = "CH";
 	apStream.bitVolts = 0.195f;
 	apStream.channelType = ContinuousChannel::Type::ELECTRODE;
-	streams.add(apStream);
+	streamInfos.add(apStream);
 }
 
 int Neuropixels2e::getNumProbes() const
@@ -211,7 +211,7 @@ void Neuropixels2e::addFrame(oni_frame_t* frame)
 void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	int bufferIdx = 0;
-	for (StreamInfo streamInfo : streams)
+	for (StreamInfo streamInfo : streamInfos)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
 		apBuffer[bufferIdx++] = sourceBuffers.getLast();
