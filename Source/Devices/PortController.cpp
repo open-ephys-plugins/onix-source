@@ -160,6 +160,18 @@ PortName PortController::getPortFromIndex(oni_dev_idx_t index)
 	return index & (1 << 8) ? PortName::PortA : PortName::PortB;
 }
 
+Array<int> PortController::getUniqueOffsetsFromIndices(std::vector<int> indices)
+{
+	Array<int> offsets;
+
+	for (auto index : indices)
+	{
+		offsets.addIfNotAlreadyThere(index & 0b1100000000);
+	}
+
+	return offsets;
+}
+
 Array<PortName> PortController::getUniquePortsFromIndices(std::vector<int> indices)
 {
 	Array<PortName> ports;

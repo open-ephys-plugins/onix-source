@@ -264,7 +264,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			sources.push_back(harpSyncInput);
 			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
-			}
+		}
 		else if (device.id == ONIX_FMCANALOG1R3)
 		{
 			auto analogIO = std::make_shared<AnalogIO>("Analog IO", index, context);
@@ -278,6 +278,21 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(analogIO);
+			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
+		}
+		else if (device.id == ONIX_BREAKDIG1R3)
+		{
+			auto digitalIO = std::make_shared<DigitalIO>("Digital IO", index, context);
+
+			int result = digitalIO->configureDevice();
+
+			if (result != 0)
+			{
+				LOGE("Device Idx: ", index, " Error enabling device stream.");
+				continue;
+			}
+
+			sources.push_back(digitalIO);
 			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 	}

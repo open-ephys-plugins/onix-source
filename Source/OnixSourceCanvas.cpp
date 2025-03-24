@@ -97,7 +97,7 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 		devices.push_back(std::make_shared<Heartbeat>("Heartbeat", 0, nullptr));
 		devices.push_back(std::make_shared<OutputClock>("Output Clock", 5, nullptr));
 		devices.push_back(std::make_shared<AnalogIO>("Analog IO", 6, nullptr));
-		//devices.push_back(std::make_shared<DigitalIO>("Digital IO", 7, nullptr));
+		devices.push_back(std::make_shared<DigitalIO>("Digital IO", 7, nullptr));
 		devices.push_back(std::make_shared<MemoryMonitor>("Memory Monitor", 10, nullptr));
 		devices.push_back(std::make_shared<HarpSyncInput>("Harp Sync Input", 12, nullptr));
 	}
@@ -148,6 +148,11 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 		{
 			auto analogIOInterface = std::make_shared<AnalogIOInterface>(std::static_pointer_cast<AnalogIO>(device), editor, this);
 			addInterfaceToTab(getDeviceTabName(device), tab, analogIOInterface);
+		}
+		else if (device->type == OnixDeviceType::DIGITALIO)
+		{
+			auto digitalIOInterface = std::make_shared<DigitalIOInterface>(std::static_pointer_cast<DigitalIO>(device), editor, this);
+			addInterfaceToTab(getDeviceTabName(device), tab, digitalIOInterface);
 		}
 	}
 }

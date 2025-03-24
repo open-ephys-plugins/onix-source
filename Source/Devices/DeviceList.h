@@ -8,4 +8,5 @@
 #include "Heartbeat.h"
 #include "HarpSyncInput.h"
 #include "AnalogIO.h"
+#include "DigitalIO.h"
 #include "PortController.h"

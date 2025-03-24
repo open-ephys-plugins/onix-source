@@ -118,6 +118,8 @@ public:
 
 	static PortName getPortFromIndex(oni_dev_idx_t index);
 
+	static Array<int> getUniqueOffsetsFromIndices(std::vector<int> indices);
+
 	static Array<PortName> getUniquePortsFromIndices(std::vector<int>);
 
 	/** Check if the port status changed and there is an error reported */
