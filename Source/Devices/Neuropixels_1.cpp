@@ -428,13 +428,7 @@ void Neuropixels_1::processFrames()
 
 		uint16_t* dataPtr = (uint16_t*)frame->data;
 
-		auto dataclock = (unsigned char*)frame->data + 936;
-		uint64 hubClock = ((uint64_t)(*(uint16_t*)dataclock) << 48) |
-			((uint64_t)(*(uint16_t*)(dataclock + 2)) << 32) |
-			((uint64_t)(*(uint16_t*)(dataclock + 4)) << 16) |
-			((uint64_t)(*(uint16_t*)(dataclock + 6)) << 0);
-		int64_t clockCounter = hubClock;
-		apTimestamps[superFrameCount] = clockCounter;
+		apTimestamps[superFrameCount] = frame->time;
 		apSampleNumbers[superFrameCount] = apSampleNumber++;
 
 		for (int i = 0; i < framesPerSuperFrame; i++)

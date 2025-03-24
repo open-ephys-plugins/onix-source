@@ -166,7 +166,7 @@ void AnalogIO::processFrames()
 
 			currentFrame++;
 
-			timestamps[currentFrame] = *(uint64_t*)frame->data;
+			timestamps[currentFrame] = frame->time;
 			sampleNumbers[currentFrame] = sampleNumber++;
 		}
 

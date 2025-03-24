@@ -69,6 +69,7 @@ void DigitalIO::processFrames()
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		int16_t* dataPtr = (int16_t*)frame->data;
+		uint64_t timestamp = frame->time;
 
 		int dataOffset = 4;
 

@@ -166,8 +166,9 @@ void MemoryMonitor::processFrames()
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint32_t* dataPtr = (uint32_t*)frame->data;
+		uint64_t timestamp = frame->time;
 
-		timestamps[currentFrame] = *(uint64_t*)frame->data;
+		timestamps[currentFrame] = *(uint64_t*)frame->time;
 
 		percentUsedSamples[currentFrame] = 100.0f * float(*(dataPtr + 2)) / totalMemory;
 

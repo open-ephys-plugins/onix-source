@@ -100,7 +100,7 @@ void HarpSyncInput::processFrames()
 
 		uint32_t* dataPtr = (uint32_t*)frame->data;
 
-		timestamps[currentFrame] = *(uint64_t*)frame->data;
+		timestamps[currentFrame] = frame->time;
 
 		harpTimeSamples[currentFrame] = *(dataPtr + 2) + 1;
 

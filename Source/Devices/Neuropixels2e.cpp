@@ -229,6 +229,7 @@ void Neuropixels2e::processFrames()
 		dataPtr = (uint16_t*)frame->data;
 		uint16_t probeIndex = *(dataPtr + 4);
 		uint16_t* amplifierData = dataPtr + 6;
+		uint64_t timestamp = frame->time;
 
 		if (m_numProbes == 1)
 		{

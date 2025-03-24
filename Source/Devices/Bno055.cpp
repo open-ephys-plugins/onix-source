@@ -153,7 +153,7 @@ void Bno055::processFrames()
 
 		int16_t* dataPtr = (int16_t*)frame->data;
 
-		bnoTimestamps[currentFrame] = *(uint64_t*)frame->data;
+		bnoTimestamps[currentFrame] = frame->time;
 
 		int dataOffset = 4;
 
