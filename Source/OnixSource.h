@@ -96,11 +96,13 @@ public:
 
 	OnixDeviceVector getDataSourcesFromPort(PortName port) const;
 
-	std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector);
+	OnixDeviceVector getDataSourcesFromOffset(int offset) const;
 
-	std::map<int, OnixDeviceType> createDeviceMap();
+	static std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector, bool filterDevices = false);
 
-	std::map<PortName, String> getHeadstageMap();
+	std::map<int, OnixDeviceType> createDeviceMap(bool filterDevices = false) const;
+
+	std::map<int, String> getHeadstageMap();
 
 	void updateSourceBuffers();
 
@@ -117,8 +119,8 @@ private:
 	/** Available data sources */
 	OnixDeviceVector sources;
 
-	/** Available headstages */
-	std::map<PortName, String> headstages;
+	/** Available headstages, indexed by their offset value */
+	std::map<int, String> headstages;
 
 	/** Pointer to the editor */
 	OnixSourceEditor* editor;

@@ -94,11 +94,9 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 	{
 		tab = addTopLevelTab(hubName, 0);
 
-		devices.push_back(std::make_shared<Heartbeat>("Heartbeat", 0, nullptr));
 		devices.push_back(std::make_shared<OutputClock>("Output Clock", 5, nullptr));
 		devices.push_back(std::make_shared<AnalogIO>("Analog IO", 6, nullptr));
 		devices.push_back(std::make_shared<DigitalIO>("Digital IO", 7, nullptr));
-		devices.push_back(std::make_shared<MemoryMonitor>("Memory Monitor", 10, nullptr));
 		devices.push_back(std::make_shared<HarpSyncInput>("Harp Sync Input", 12, nullptr));
 	}
 
@@ -124,20 +122,10 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 			auto bno055Interface = std::make_shared<Bno055Interface>(std::static_pointer_cast<Bno055>(device), editor, this);
 			addInterfaceToTab(getDeviceTabName(device), tab, bno055Interface);
 		}
-		else if (device->type == OnixDeviceType::MEMORYMONITOR)
-		{
-			auto memoryMonitorInterface = std::make_shared<MemoryMonitorInterface>(std::static_pointer_cast<MemoryMonitor>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, memoryMonitorInterface);
-		}
 		else if (device->type == OnixDeviceType::OUTPUTCLOCK)
 		{
 			auto outputClockInterface = std::make_shared<OutputClockInterface>(std::static_pointer_cast<OutputClock>(device), editor, this);
 			addInterfaceToTab(getDeviceTabName(device), tab, outputClockInterface);
-		}
-		else if (device->type == OnixDeviceType::HEARTBEAT)
-		{
-			auto heartbeatInterface = std::make_shared<HeartbeatInterface>(std::static_pointer_cast<Heartbeat>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, heartbeatInterface);
 		}
 		else if (device->type == OnixDeviceType::HARPSYNCINPUT)
 		{
@@ -285,11 +273,11 @@ std::map<int, OnixDeviceType> OnixSourceCanvas::createSelectedMap(std::vector<st
 	return tabMap;
 }
 
-void OnixSourceCanvas::askKeepRemove(PortName port)
+void OnixSourceCanvas::askKeepRemove(int offset)
 {
-	String selectedHeadstage = editor->getHeadstageSelected(port);
+	String selectedHeadstage = editor->getHeadstageSelected(offset);
 
-	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(port) + ", but was not discovered there.\n\n";
+	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(offset) + ", but was not discovered there.\n\n";
 	msg += "Select one of the options below to continue:\n";
 	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
 	msg += " [Remove] to remove " + selectedHeadstage + ".\n - Note: this will delete any settings that were modified.";
@@ -306,7 +294,7 @@ void OnixSourceCanvas::askKeepRemove(PortName port)
 	switch (result)
 	{
 	case 0: // Remove
-		removeTabs(port);
+		removeTabs(PortController::getPortFromIndex(offset));
 		break;
 	case 1: // Keep Current
 		break;
@@ -315,12 +303,12 @@ void OnixSourceCanvas::askKeepRemove(PortName port)
 	}
 }
 
-void OnixSourceCanvas::askKeepUpdate(PortName port, String foundHeadstage, OnixDeviceVector devices)
+void OnixSourceCanvas::askKeepUpdate(int offset, String foundHeadstage, OnixDeviceVector devices)
 {
-	String selectedHeadstage = editor->getHeadstageSelected(port);
+	String selectedHeadstage = editor->getHeadstageSelected(offset);
 
-	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(port) + ". ";
-	msg += "However, headstage " + foundHeadstage + " was found on " + PortController::getPortName(port) + ". \n\n";
+	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(offset) + ". ";
+	msg += "However, headstage " + foundHeadstage + " was found on " + PortController::getPortName(offset) + ". \n\n";
 	msg += "Select one of the options below to continue:\n";
 	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
 	msg += " [Update] to change the selected headstage to " + foundHeadstage + ".\n - Note: this will delete any settings that were modified.";
@@ -337,13 +325,14 @@ void OnixSourceCanvas::askKeepUpdate(PortName port, String foundHeadstage, OnixD
 	switch (result)
 	{
 	case 0: // Update
+	{
+		PortName port = PortController::getPortFromIndex(offset);
 		removeTabs(port);
 
-		{
-			CustomTabComponent* tab = addTopLevelTab(getTopLevelTabName(port, foundHeadstage), (int)port);
-			populateSourceTabs(tab, devices);
-		}
-		break;
+		CustomTabComponent* tab = addTopLevelTab(getTopLevelTabName(port, foundHeadstage), (int)port);
+		populateSourceTabs(tab, devices);
+	}
+	break;
 	case 1: // Keep Current
 		break;
 	default:
@@ -354,7 +343,7 @@ void OnixSourceCanvas::askKeepUpdate(PortName port, String foundHeadstage, OnixD
 void OnixSourceCanvas::refreshTabs()
 {
 	auto selectedMap = createSelectedMap(settingsInterfaces);
-	auto foundMap = source->createDeviceMap();
+	auto foundMap = source->createDeviceMap(true);
 
 	if (selectedMap != foundMap)
 	{
@@ -363,8 +352,8 @@ void OnixSourceCanvas::refreshTabs()
 		for (const auto& [key, _] : selectedMap) { selectedIndices.push_back(key); }
 		for (const auto& [key, _] : foundMap) { foundIndices.push_back(key); }
 
-		auto selectedPorts = PortController::getUniquePortsFromIndices(selectedIndices);
-		auto foundPorts = PortController::getUniquePortsFromIndices(foundIndices);
+		auto selectedOffsets = PortController::getUniqueOffsetsFromIndices(selectedIndices);
+		auto foundOffsets = PortController::getUniqueOffsetsFromIndices(foundIndices);
 
 		if (foundIndices.size() == 0) // NB: No devices found, inform the user if they were expecting to find something
 		{
@@ -381,16 +370,16 @@ void OnixSourceCanvas::refreshTabs()
 		}
 		else if (selectedIndices.size() == 0) // NB: No headstages selected, add all found headstages
 		{
-			for (auto& [port, headstageName] : source->getHeadstageMap())
+			for (auto& [offset, headstageName] : source->getHeadstageMap())
 			{
-				addHub(headstageName, PortController::getPortOffset(port));
+				addHub(headstageName, offset);
 			}
 		}
-		else if (selectedPorts.size() == foundPorts.size()) // NB: Same number of ports selected and found
+		else if (selectedOffsets.size() == foundOffsets.size()) // NB: Same number of ports selected and found
 		{
 			auto headstages = source->getHeadstageMap();
 
-			if (selectedPorts.size() == 1)
+			if (selectedOffsets.size() == 1)
 			{
 				if (headstages.size() != 1)
 				{
@@ -398,24 +387,24 @@ void OnixSourceCanvas::refreshTabs()
 					return;
 				}
 
-				if (selectedPorts[0] == foundPorts[0]) // NB: Selected headstage is different from the found headstage on the same port
+				if (selectedOffsets[0] == foundOffsets[0]) // NB: Selected headstage is different from the found headstage on the same port
 				{
-					askKeepUpdate(selectedPorts[0], headstages[foundPorts[0]], source->getDataSources());
+					askKeepUpdate(selectedOffsets[0], headstages[foundOffsets[0]], source->getDataSources());
 				}
 				else // NB: Selected headstage on one port is not found, and the found headstage is not selected on the other port
 				{
-					askKeepRemove(selectedPorts[0]);
+					askKeepRemove(selectedOffsets[0]);
 
-					addHub(headstages[foundPorts[0]], PortController::getPortOffset(foundPorts[0]));
+					addHub(headstages[foundOffsets[0]], foundOffsets[0]);
 				}
 			}
 			else // NB: Two headstages are selected on different ports, and at least one of those headstages does not match the found headstages
 			{
-				for (auto port : foundPorts)
+				for (auto offset : foundOffsets)
 				{
-					if (headstages[port] != editor->getHeadstageSelected(port))
+					if (headstages[offset] != editor->getHeadstageSelected(offset))
 					{
-						askKeepUpdate(port, headstages[port], source->getDataSourcesFromPort(port));
+						askKeepUpdate(offset, headstages[offset], source->getDataSourcesFromOffset(offset));
 					}
 				}
 			}
@@ -424,37 +413,37 @@ void OnixSourceCanvas::refreshTabs()
 		{
 			auto headstages = source->getHeadstageMap();
 
-			if (selectedPorts.size() > foundPorts.size()) // NB: More headstages selected than found
+			if (selectedOffsets.size() > foundOffsets.size()) // NB: More headstages selected than found
 			{
-				for (auto port : selectedPorts)
+				for (auto offset : selectedOffsets)
 				{
-					if (port == foundPorts[0])
+					if (offset == foundOffsets[0])
 					{
-						if (headstages[port] != editor->getHeadstageSelected(port))
+						if (headstages[offset] != editor->getHeadstageSelected(offset))
 						{
-							askKeepUpdate(port, headstages[port], source->getDataSourcesFromPort(port));
+							askKeepUpdate(offset, headstages[offset], source->getDataSourcesFromOffset(offset));
 						}
 					}
 					else
 					{
-						askKeepRemove(port);
+						askKeepRemove(offset);
 					}
 				}
 			}
 			else // NB: More headstages found than selected
 			{
-				for (auto port : foundPorts)
+				for (auto offset : foundOffsets)
 				{
-					if (port == selectedPorts[0])
+					if (offset == selectedOffsets[0])
 					{
-						if (headstages[port] != editor->getHeadstageSelected(port))
+						if (headstages[offset] != editor->getHeadstageSelected(offset))
 						{
-							askKeepUpdate(port, headstages[port], source->getDataSourcesFromPort(port));
+							askKeepUpdate(offset, headstages[offset], source->getDataSourcesFromOffset(offset));
 						}
 					}
 					else
 					{
-						addHub(headstages[port], PortController::getPortOffset(port));
+						addHub(headstages[offset], offset);
 					}
 				}
 			}

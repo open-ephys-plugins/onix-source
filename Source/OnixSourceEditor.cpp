@@ -237,7 +237,7 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 
 void OnixSourceEditor::updateComboBox(ComboBox* cb)
 {
-	auto deviceMap = source->createDeviceMap(source->getDataSources());
+	auto deviceMap = source->createDeviceMap();
 	auto tabMap = canvas->createSelectedMap(canvas->settingsInterfaces);
 	std::vector<int> deviceIndices;
 	std::vector<int> tabIndices;
@@ -372,14 +372,29 @@ bool OnixSourceEditor::isHeadstageSelected(PortName port)
 	}
 }
 
+String OnixSourceEditor::getHeadstageSelected(int offset)
+{
+	switch (offset)
+	{
+	case 0:
+		return "Breakout Board";
+	case 256: // NB: Port A
+		return headstageComboBoxA->getText();
+	case 512: // NB: Port B
+		return headstageComboBoxB->getText();
+	default:
+		return "";
+	}
+}
+
 String OnixSourceEditor::getHeadstageSelected(PortName port)
 {
 	switch (port)
 	{
 	case PortName::PortA:
-		return headstageComboBoxA->getText();
+		return getHeadstageSelected(PortController::getPortOffset(port));
 	case PortName::PortB:
-		return headstageComboBoxB->getText();
+		return getHeadstageSelected(PortController::getPortOffset(port));
 	default:
 		return "";
 	}

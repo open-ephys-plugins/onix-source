@@ -60,15 +60,9 @@ public:
 
 	void processFrames() override {};
 
-	uint32_t getBeatsPerSecond() const { return beatsPerSecond; }
-
-	void setBeatsPerSecond(uint32_t beats, bool writeToRegister = false);
-
 private:
 
-	uint32_t beatsPerSecond = 100;
-
-	void writeBeatsPerSecondRegister();
+	const uint32_t beatsPerSecond = 100;
 
 	JUCE_LEAK_DETECTOR(Heartbeat);
 };

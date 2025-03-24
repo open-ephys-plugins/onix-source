@@ -114,9 +114,13 @@ public:
 
 	static int getPortOffset(PortName port) { return (uint32_t)port << 8; }
 
+	static String getPortName(int offset);
+
 	static String getPortName(PortName port) { return port == PortName::PortA ? "Port A" : "Port B"; }
 
 	static PortName getPortFromIndex(oni_dev_idx_t index);
+
+	static int getOffsetFromIndex(oni_dev_idx_t index);
 
 	static Array<int> getUniqueOffsetsFromIndices(std::vector<int> indices);
 

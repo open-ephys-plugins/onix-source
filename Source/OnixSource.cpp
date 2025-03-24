@@ -158,7 +158,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(np1);
-			headstages.insert({ PortController::getPortFromIndex(index), NEUROPIXELSV1F_HEADSTAGE_NAME });
+			headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV1F_HEADSTAGE_NAME });
 
 			npxProbeIdx++;
 		}
@@ -218,7 +218,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(memoryMonitor);
-			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
+			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_FMCCLKOUT1R3)
 		{
@@ -233,7 +233,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(outputClock);
-			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
+			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_HEARTBEAT)
 		{
@@ -248,7 +248,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(heartbeat);
-			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
+			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_HARPSYNCINPUT)
 		{
@@ -263,7 +263,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(harpSyncInput);
-			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
+			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_FMCANALOG1R3)
 		{
@@ -278,7 +278,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(analogIO);
-			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
+			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_BREAKDIG1R3)
 		{
@@ -293,7 +293,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 
 			sources.push_back(digitalIO);
-			headstages.insert({ PortController::getPortFromIndex(index), BREAKOUT_BOARD_NAME });
+			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 	}
 
@@ -340,24 +340,40 @@ OnixDeviceVector OnixSource::getDataSourcesFromPort(PortName port) const
 	return devices;
 }
 
-std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devices)
+OnixDeviceVector OnixSource::getDataSourcesFromOffset(int offset) const
+{
+	OnixDeviceVector devices{};
+	offset = PortController::getOffsetFromIndex(offset);
+
+	for (const auto& source : sources)
+	{
+		if (PortController::getOffsetFromIndex(source->getDeviceIdx()) == offset)
+			devices.push_back(source);
+	}
+
+	return devices;
+}
+
+std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devices, bool filterDevices)
 {
 	std::map<int, OnixDeviceType> deviceMap;
 
 	for (const auto& device : devices)
 	{
+		if (filterDevices && (device->type == OnixDeviceType::HEARTBEAT || device->type == OnixDeviceType::MEMORYMONITOR)) continue;
+
 		deviceMap.insert({ device->getDeviceIdx(), device->type });
 	}
 
 	return deviceMap;
 }
 
-std::map<int, OnixDeviceType> OnixSource::createDeviceMap()
+std::map<int, OnixDeviceType> OnixSource::createDeviceMap(bool filterDevices) const
 {
-	return createDeviceMap(getDataSources());
+	return createDeviceMap(getDataSources(), filterDevices);
 }
 
-std::map<PortName, String> OnixSource::getHeadstageMap()
+std::map<int, String> OnixSource::getHeadstageMap()
 {
 	return headstages;
 }
@@ -550,7 +566,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 bool OnixSource::isDevicesReady()
 {
 	auto tabMap = editor->createTabMapFromCanvas();
-	auto sourceMap = createDeviceMap(sources);
+	auto sourceMap = createDeviceMap(true);
 
 	return tabMap == sourceMap;
 }

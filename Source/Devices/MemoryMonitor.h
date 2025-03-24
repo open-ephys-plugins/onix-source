@@ -55,44 +55,23 @@ public:
 	void stopAcquisition() override;
 
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
-	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
 
 	void addFrame(oni_frame_t*) override;
 
 	void processFrames() override;
 
-	uint32_t getSamplesPerSecond() const { return samplesPerSecond; }
-
-	void setSamplesPerSecond(uint32_t samplesPerSecond_);
-
 	float getLastPercentUsedValue();
 
 private:
 
-	DataBuffer* percentUsedBuffer;
-	DataBuffer* bytesUsedBuffer;
+	Array<oni_frame_t*, CriticalSection, 10> frameArray;
 
-	static const int numFrames = 2;
-
-	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
-
-	unsigned short currentFrame = 0;
-	int sampleNumber = 0;
-	
 	/** The frequency at which memory use is recorded in Hz. */
-	uint32_t samplesPerSecond = 10;
+	const uint32_t samplesPerSecond = 10;
 
 	/** The total amount of memory, in 32-bit words, on the hardware that is available for data buffering*/
 	uint32_t totalMemory;
-
-	bool shouldAddToBuffer = false;
-
-	float percentUsedSamples[numFrames];
-	float bytesUsedSamples[numFrames];
-
-	double timestamps[numFrames];
-	int64 sampleNumbers[numFrames];
-	uint64 eventCodes[numFrames];
 
 	std::atomic<float> lastPercentUsedValue = 0.0f;
 

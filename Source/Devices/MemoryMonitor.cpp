@@ -58,37 +58,15 @@ void MemoryMonitorUsage::stopAcquisition()
 MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
 	: OnixDevice(name, OnixDeviceType::MEMORYMONITOR, deviceIdx_, oni_ctx)
 {
-	StreamInfo percentUsedStream;
-	percentUsedStream.name = name + "-PercentUsed";
-	percentUsedStream.description = "Percent of available memory that is currently used";
-	percentUsedStream.identifier = "onix-memorymonitor.data.percentused";
-	percentUsedStream.numChannels = 1;
-	percentUsedStream.sampleRate = samplesPerSecond;
-	percentUsedStream.channelPrefix = "Percent";
-	percentUsedStream.bitVolts = 1.0f;
-	percentUsedStream.channelType = ContinuousChannel::Type::AUX;
-	streamInfos.add(percentUsedStream);
-
-	StreamInfo bytesUsedStream;
-	bytesUsedStream.name = name + "-BytesUsed";
-	bytesUsedStream.description = "Number of bytes that are currently used";
-	bytesUsedStream.identifier = "onix-memorymonitor.data.bytesused";
-	bytesUsedStream.numChannels = 1;
-	bytesUsedStream.sampleRate = samplesPerSecond;
-	bytesUsedStream.channelPrefix = "Bytes";
-	bytesUsedStream.bitVolts = 1.0f;
-	bytesUsedStream.channelType = ContinuousChannel::Type::AUX;
-	streamInfos.add(bytesUsedStream);
-
-	for (int i = 0; i < numFrames; i++)
-		eventCodes[i] = 0;
 }
 
 int MemoryMonitor::configureDevice()
 {
+	setEnabled(true);
+
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+	deviceContext->writeRegister(deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, 1);
 	if (deviceContext->getLastResult() != ONI_ESUCCESS) return deviceContext->getLastResult();
 
 	totalMemory = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::TOTAL_MEM);
@@ -107,8 +85,6 @@ bool MemoryMonitor::updateSettings()
 
 void MemoryMonitor::startAcquisition()
 {
-	currentFrame = 0;
-	sampleNumber = 0;
 	lastPercentUsedValue = 0.0f;
 }
 
@@ -119,38 +95,12 @@ void MemoryMonitor::stopAcquisition()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
-
-	currentFrame = 0;
-	sampleNumber = 0;
 }
 
 void MemoryMonitor::addFrame(oni_frame_t* frame)
 {
 	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
-}
-
-void MemoryMonitor::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
-{
-	for (StreamInfo streamInfo : streamInfos)
-	{
-		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
-
-		if (streamInfo.channelPrefix.equalsIgnoreCase("Percent"))
-			percentUsedBuffer = sourceBuffers.getLast();
-		else if (streamInfo.channelPrefix.equalsIgnoreCase("Bytes"))
-			bytesUsedBuffer = sourceBuffers.getLast();
-	}
-}
-
-void MemoryMonitor::setSamplesPerSecond(uint32_t samplesPerSecond_) 
-{
-	samplesPerSecond = samplesPerSecond_;
-
-	for (const auto& stream : streamInfos)
-	{
-		streamInfos.getReference(0).sampleRate = samplesPerSecond;
-	}
 }
 
 float MemoryMonitor::getLastPercentUsedValue()
@@ -168,31 +118,8 @@ void MemoryMonitor::processFrames()
 		uint32_t* dataPtr = (uint32_t*)frame->data;
 		uint64_t timestamp = frame->time;
 
-		timestamps[currentFrame] = *(uint64_t*)frame->time;
-
-		percentUsedSamples[currentFrame] = 100.0f * float(*(dataPtr + 2)) / totalMemory;
-
-		lastPercentUsedValue = percentUsedSamples[currentFrame];
-
-		bytesUsedSamples[currentFrame] = float(*(dataPtr + 2)) * 4.0f;
+		lastPercentUsedValue = 100.0f * float(*(dataPtr + 2)) / totalMemory;
 
 		oni_destroy_frame(frame);
-
-		sampleNumbers[currentFrame] = sampleNumber++;
-
-		currentFrame++;
-
-		if (currentFrame >= numFrames)
-		{
-			shouldAddToBuffer = true;
-			currentFrame = 0;
-		}
-
-		if (shouldAddToBuffer)
-		{
-			shouldAddToBuffer = false;
-			percentUsedBuffer->addToBuffer(percentUsedSamples, sampleNumbers, timestamps, eventCodes, numFrames);
-			bytesUsedBuffer->addToBuffer(bytesUsedSamples, sampleNumbers, timestamps, eventCodes, numFrames);
-		}
 	}
 }

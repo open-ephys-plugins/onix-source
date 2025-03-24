@@ -30,27 +30,21 @@ Heartbeat::Heartbeat(String name, const oni_dev_idx_t deviceIdx_, std::shared_pt
 
 int Heartbeat::configureDevice()
 {
+	setEnabled(true);
+
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)HeartbeatRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+	deviceContext->writeRegister(deviceIdx, (uint32_t)HeartbeatRegisters::ENABLE, 1);
 
 	return deviceContext->getLastResult();
 }
 
 bool Heartbeat::updateSettings()
 {
-	writeBeatsPerSecondRegister();
-	return deviceContext->getLastResult() == ONI_ESUCCESS;
-}
-
-void Heartbeat::setBeatsPerSecond(uint32_t beats, bool writeToRegister)
-{
-	beatsPerSecond = beats;
-	if (writeToRegister) writeBeatsPerSecondRegister();
-}
-
-void Heartbeat::writeBeatsPerSecondRegister()
-{
 	oni_reg_val_t clkHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_HZ);
 	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_DIV, clkHz / beatsPerSecond);
+
+	if (deviceContext->getLastResult() == ONI_EREADONLY) return true; // NB: Ignore read-only errors
+
+	return deviceContext->getLastResult() == ONI_ESUCCESS;
 }
