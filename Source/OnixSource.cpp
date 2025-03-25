@@ -373,6 +373,8 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				};
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));
+
+				addIndividualStreams(source->streams, dataStreams, deviceInfos, continuousChannels);
 			}
 			else if (source->type == OnixDeviceType::BNO)
 			{
@@ -385,6 +387,15 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				};
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));
+
+				DataStream::Settings dataStreamSettings{
+					"Bno055",
+					"Continuous data from a Bno055 9-axis IMU",
+					"onix-bno055.data",
+					source->streams[0].getSampleRate()
+				};
+
+				addCombinedStreams(dataStreamSettings, source->streams, dataStreams, deviceInfos, continuousChannels);
 			}
 			else if (source->type == OnixDeviceType::NEUROPIXELS_2)
 			{
@@ -397,37 +408,73 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				};
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));
+
+				addIndividualStreams(source->streams, dataStreams, deviceInfos, continuousChannels);
 			}
+		}
+	}
+}
 
-			// add data streams and channels
-			for (StreamInfo streamInfo : source->streams)
-			{
-				DataStream::Settings streamSettings
-				{
-					streamInfo.name,
-					streamInfo.description,
-					streamInfo.identifier,
-					streamInfo.sampleRate
-				};
+void OnixSource::addCombinedStreams(DataStream::Settings dataStreamSettings,
+	Array<StreamInfo> streamInfos,
+	OwnedArray<DataStream>* dataStreams,
+	OwnedArray<DeviceInfo>* deviceInfos,
+	OwnedArray<ContinuousChannel>* continuousChannels)
+{
+	DataStream* stream = new DataStream(dataStreamSettings);
+	dataStreams->add(stream);
+	stream->device = deviceInfos->getLast();
 
-				DataStream* stream = new DataStream(streamSettings);
-				dataStreams->add(stream);
-				stream->device = deviceInfos->getLast();
+	for (const auto& streamInfo : streamInfos)
+	{
+		for (int chan = 0; chan < streamInfo.getNumChannels(); chan++)
+		{
+			ContinuousChannel::Settings channelSettings{
+				streamInfo.getChannelType(),
+				streamInfo.getChannelPrefix() + streamInfo.getSuffixes()[chan],
+				streamInfo.getDescription(),
+				streamInfo.getIdentifer(),
+				streamInfo.getBitVolts(),
+				stream
+			};
+			continuousChannels->add(new ContinuousChannel(channelSettings));
+			continuousChannels->getLast()->setUnits(streamInfo.getUnits());
+		}
+	}
+}
 
-				// Add continuous channels
-				for (int chan = 0; chan < streamInfo.numChannels; chan++)
-				{
-					ContinuousChannel::Settings channelSettings{
-						streamInfo.channelType,
-						streamInfo.channelPrefix + String(chan + 1),
-						streamInfo.description,
-						streamInfo.identifier,
-						streamInfo.bitVolts,
-						stream
-					};
-					continuousChannels->add(new ContinuousChannel(channelSettings));
-				}
-			}
+void OnixSource::addIndividualStreams(Array<StreamInfo> streamInfos, 
+	OwnedArray<DataStream>* dataStreams, 
+	OwnedArray<DeviceInfo>* deviceInfos, 
+	OwnedArray<ContinuousChannel>* continuousChannels)
+{
+	for (StreamInfo streamInfo : streamInfos)
+	{
+		DataStream::Settings streamSettings
+		{
+			streamInfo.getName(),
+			streamInfo.getDescription(),
+			streamInfo.getIdentifer(),
+			streamInfo.getSampleRate()
+		};
+
+		DataStream* stream = new DataStream(streamSettings);
+		dataStreams->add(stream);
+		stream->device = deviceInfos->getLast();
+
+		// Add continuous channels
+		for (int chan = 0; chan < streamInfo.getNumChannels(); chan++)
+		{
+			ContinuousChannel::Settings channelSettings{
+				streamInfo.getChannelType(),
+				streamInfo.getChannelPrefix() + streamInfo.getSuffixes()[chan],
+				streamInfo.getDescription(),
+				streamInfo.getIdentifer(),
+				streamInfo.getBitVolts(),
+				stream
+			};
+			continuousChannels->add(new ContinuousChannel(channelSettings));
+			continuousChannels->getLast()->setUnits(streamInfo.getUnits());
 		}
 	}
 }

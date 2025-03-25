@@ -53,14 +53,70 @@ enum class OnixDeviceType {
 };
 
 struct StreamInfo {
-	String name;
-	String description;
-	String identifier;
-	int numChannels;
-	float sampleRate;
-	String channelPrefix;
-	ContinuousChannel::Type channelType;
-	float bitVolts;
+public:
+	StreamInfo()
+	{
+		name_ = "name";
+		description_ = "description";
+		identifier_ = "identifier";
+		numChannels_ = 0;
+		sampleRate_ = 0;
+		channelPrefix_ = "channelPrefix";
+		channelType_ = ContinuousChannel::Type::INVALID;
+		bitVolts_ = 1.0f;
+		units_ = "units";
+		suffixes_ = { "suffixes" };
+	}
+
+	StreamInfo(String name, String description, String identifier, int numChannels, float sampleRate, String channelPrefix, ContinuousChannel::Type channelType,
+		float bitVolts, String units, StringArray suffixes)
+	{
+		name_ = name;
+		description_ = description;
+		identifier_ = identifier;
+		numChannels_ = numChannels;
+		sampleRate_ = sampleRate;
+		channelPrefix_ = channelPrefix;
+		channelType_ = channelType;
+		bitVolts_ = bitVolts;
+		units_ = units;
+		suffixes_ = suffixes;
+
+		if (numChannels_ != suffixes_.size())
+		{
+			LOGE("Difference between number of channels and suffixes. Generating default suffixes instead.");
+			suffixes_.clear();
+			suffixes_.ensureStorageAllocated(numChannels);
+			
+			for (int i = 0; i < numChannels_; i += 1)
+			{
+				suffixes_.add(String(i + 1));
+			}
+		}
+	};
+
+	String getName() const { return name_; }
+	String getDescription() const { return description_; }
+	String getIdentifer() const { return identifier_; }
+	int getNumChannels() const { return numChannels_; }
+	float getSampleRate() const { return sampleRate_; }
+	String getChannelPrefix() const { return channelPrefix_; }
+	ContinuousChannel::Type getChannelType() const { return channelType_; }
+	float getBitVolts() const { return bitVolts_; }
+	String getUnits() const { return units_; }
+	StringArray getSuffixes() const { return suffixes_; }
+
+private:
+	String name_;
+	String description_;
+	String identifier_;
+	int numChannels_;
+	float sampleRate_;
+	String channelPrefix_;
+	ContinuousChannel::Type channelType_;
+	float bitVolts_;
+	String units_;
+	StringArray suffixes_;
 };
 
 /**
