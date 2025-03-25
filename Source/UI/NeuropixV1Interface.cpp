@@ -34,6 +34,8 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 	if (device != nullptr)
 	{
+		auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+
 		type = SettingsInterface::Type::PROBE_SETTINGS_INTERFACE;
 
 		mode = VisualizationMode::ENABLE_VIEW;
@@ -65,12 +67,20 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(probeEnableButton->getX(), probeEnableButton->getBottom() + 10, nameLabel->getWidth(), 50);
+		infoLabel->setBounds(probeEnableButton->getX(), probeEnableButton->getBottom() + 10, nameLabel->getWidth(), 65);
 		infoLabel->setJustificationType(Justification::topLeft);
 		addAndMakeVisible(infoLabel.get());
 
+		offsetCorrectionCheckbox = std::make_unique<ToggleButton>("Apply software offset correction");
+		offsetCorrectionCheckbox->setBounds(infoLabel->getX() + 2, infoLabel->getBottom() + 5, 240, 22);
+		offsetCorrectionCheckbox->setClickingTogglesState(true);
+		offsetCorrectionCheckbox->setToggleState(npx->getShouldCorrectOffset(), dontSendNotification);
+		offsetCorrectionCheckbox->setTooltip("If enabled, the plugin will wait 5 seconds and then calculate a mean value to correct a constant offset present in most channels.");
+		offsetCorrectionCheckbox->addListener(this);
+		addAndMakeVisible(offsetCorrectionCheckbox.get());
+
 		adcCalibrationFileLabel = std::make_unique<Label>("adcCalibrationFileLabel", "ADC Calibration File");
-		adcCalibrationFileLabel->setBounds(infoLabel->getX() + 2, infoLabel->getBottom() + 5, 240, 16);
+		adcCalibrationFileLabel->setBounds(offsetCorrectionCheckbox->getX(), offsetCorrectionCheckbox->getBottom() + 15, 240, 16);
 		adcCalibrationFileLabel->setColour(Label::textColourId, Colours::black);
 		addAndMakeVisible(adcCalibrationFileLabel.get());
 
@@ -111,9 +121,20 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 		gainCalibrationFileChooser = std::make_unique<FileChooser>("Select Gain Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_gainCalValues.csv");
 
+		probeInterfaceRectangle = std::make_unique<DrawableRectangle>();
+		probeInterfaceRectangle->setFill(Colours::darkgrey);
+		probeInterfaceRectangle->setRectangle(Rectangle<float>(gainCalibrationFile->getX(), gainCalibrationFile->getBottom() + 15, 250, 50));
+		addAndMakeVisible(probeInterfaceRectangle.get());
+
+		probeInterfaceLabel = std::make_unique<Label>("probeInterfaceLabel", "Probe Interface");
+		probeInterfaceLabel->setFont(fontRegularLabel);
+		probeInterfaceLabel->setBounds(probeInterfaceRectangle->getX(), probeInterfaceRectangle->getY(), 90, 18);
+		probeInterfaceLabel->setColour(Label::textColourId, Colours::black);
+		addAndMakeVisible(probeInterfaceLabel.get());
+
 		saveJsonButton = std::make_unique<UtilityButton>("SAVE TO JSON");
 		saveJsonButton->setRadius(3.0f);
-		saveJsonButton->setBounds(gainCalibrationFile->getX(), gainCalibrationFile->getBottom() + 4, 120, 22);
+		saveJsonButton->setBounds(probeInterfaceRectangle->getX() + 3, probeInterfaceRectangle->getY() + 20, 120, 22);
 		saveJsonButton->addListener(this);
 		saveJsonButton->setTooltip("Save channel map to probeinterface .json file");
 		addAndMakeVisible(saveJsonButton.get());
@@ -138,13 +159,13 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		enableViewButton->setTooltip("View electrode enabled state");
 		addAndMakeVisible(enableViewButton.get());
 
-		enableButton = std::make_unique<UtilityButton>("ENABLE");
-		enableButton->setFont(fontRegularButton);
-		enableButton->setRadius(3.0f);
-		enableButton->setBounds(450, currentHeight, 65, 22);
-		enableButton->addListener(this);
-		enableButton->setTooltip("Enable selected electrodes");
-		addAndMakeVisible(enableButton.get());
+		selectElctrodeButton = std::make_unique<UtilityButton>("SELECT");
+		selectElctrodeButton->setFont(fontRegularButton);
+		selectElctrodeButton->setRadius(3.0f);
+		selectElctrodeButton->setBounds(450, currentHeight, 65, 22);
+		selectElctrodeButton->addListener(this);
+		selectElctrodeButton->setTooltip("Enable selected electrodes");
+		addAndMakeVisible(selectElctrodeButton.get());
 
 		currentHeight += 58;
 
@@ -160,8 +181,6 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		electrodeConfigurationComboBox->addItem("Select a preset...", 1);
 		electrodeConfigurationComboBox->setItemEnabled(1, false);
 		electrodeConfigurationComboBox->addSeparator();
-
-		auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
 		for (int i = 0; i < npx->settings->availableElectrodeConfigurations.size(); i++)
 		{
@@ -275,37 +294,37 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 		currentHeight += 55;
 
-		activityViewButton = std::make_unique<UtilityButton>("VIEW");
-		activityViewButton->setFont(fontRegularButton);
-		activityViewButton->setRadius(3.0f);
+		//activityViewButton = std::make_unique<UtilityButton>("VIEW");
+		//activityViewButton->setFont(fontRegularButton);
+		//activityViewButton->setRadius(3.0f);
 
-		activityViewButton->addListener(this);
-		activityViewButton->setTooltip("View peak-to-peak amplitudes for each channel");
-		addAndMakeVisible(activityViewButton.get());
+		//activityViewButton->addListener(this);
+		//activityViewButton->setTooltip("View peak-to-peak amplitudes for each channel");
+		//addAndMakeVisible(activityViewButton.get());
 
-		activityViewComboBox = std::make_unique<ComboBox>("ActivityView Combo Box");
+		//activityViewComboBox = std::make_unique<ComboBox>("ActivityView Combo Box");
 
-		if (npx->settings->availableLfpGains.size() > 0)
-		{
-			activityViewComboBox->setBounds(450, currentHeight, 65, 22);
-			activityViewComboBox->addListener(this);
-			activityViewComboBox->addItem("AP", 1);
-			activityViewComboBox->addItem("LFP", 2);
-			activityViewComboBox->setSelectedId(1, dontSendNotification);
-			addAndMakeVisible(activityViewComboBox.get());
-			activityViewButton->setBounds(530, currentHeight + 2, 45, 18);
-		}
-		else
-		{
-			activityViewButton->setBounds(450, currentHeight + 2, 45, 18);
-		}
+		//if (npx->settings->availableLfpGains.size() > 0)
+		//{
+		//	activityViewComboBox->setBounds(450, currentHeight, 65, 22);
+		//	activityViewComboBox->addListener(this);
+		//	activityViewComboBox->addItem("AP", 1);
+		//	activityViewComboBox->addItem("LFP", 2);
+		//	activityViewComboBox->setSelectedId(1, dontSendNotification);
+		//	addAndMakeVisible(activityViewComboBox.get());
+		//	activityViewButton->setBounds(530, currentHeight + 2, 45, 18);
+		//}
+		//else
+		//{
+		//	activityViewButton->setBounds(450, currentHeight + 2, 45, 18);
+		//}
 
-		activityViewLabel = std::make_unique<Label>("PROBE SIGNAL", "PROBE SIGNAL");
-		activityViewLabel->setFont(fontRegularLabel);
-		activityViewLabel->setBounds(446, currentHeight - 20, 180, 20);
-		addAndMakeVisible(activityViewLabel.get());
+		//activityViewLabel = std::make_unique<Label>("PROBE SIGNAL", "PROBE SIGNAL");
+		//activityViewLabel->setFont(fontRegularLabel);
+		//activityViewLabel->setBounds(446, currentHeight - 20, 180, 20);
+		//addAndMakeVisible(activityViewLabel.get());
 
-		/// Draw Legends
+#pragma region Draw Legends
 
 		// ENABLE View
 		Colour colour = Colour(55, 55, 55);
@@ -499,6 +518,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 			activityViewLabels[labelInd]->setBounds(activityViewRectangles[i]->getRight() + 2, activityViewRectangles[i]->getY(), 100, 17);
 			activityViewComponent->addAndMakeVisible(activityViewLabels[labelInd].get());
 		}
+#pragma endregion
 
 		addAndMakeVisible(activityViewComponent.get());
 	}
@@ -759,7 +779,7 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 		drawLegend();
 		repaint();
 	}
-	else if (button == enableButton.get())
+	else if (button == selectElctrodeButton.get())
 	{
 		Array<int> selection = getSelectedElectrodes();
 
@@ -827,6 +847,10 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 		}
 
 		npx->gainCalibrationFilePath = gainCalibrationFile->getText();
+	}
+	else if (button == offsetCorrectionCheckbox.get())
+	{
+		npx->setShouldCorrectOffset(offsetCorrectionCheckbox->getToggleState());
 	}
 }
 
@@ -911,8 +935,8 @@ void NeuropixV1Interface::setInterfaceEnabledState(bool enabledState)
 	if (probeEnableButton != nullptr)
 		probeEnableButton->setEnabled(enabledState);
 
-	if (enableButton != nullptr)
-		enableButton->setEnabled(enabledState);
+	if (selectElctrodeButton != nullptr)
+		selectElctrodeButton->setEnabled(enabledState);
 
 	if (electrodeConfigurationComboBox != nullptr)
 		electrodeConfigurationComboBox->setEnabled(enabledState);

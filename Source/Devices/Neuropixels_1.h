@@ -210,6 +210,10 @@ public:
 	String adcCalibrationFilePath;
 	String gainCalibrationFilePath;
 
+	bool getShouldCorrectOffset() const { return shouldCorrectOffset; }
+
+	void setShouldCorrectOffset(bool value) { shouldCorrectOffset = value; }
+
 private:
 
 	DataBuffer* apBuffer;
@@ -269,6 +273,8 @@ private:
 
 	int apGain = 1000;
 	int lfpGain = 50;
+
+	bool shouldCorrectOffset = true;
 
 	JUCE_LEAK_DETECTOR(Neuropixels_1);
 };
