@@ -178,26 +178,30 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 	OnixDevice("Neuropixels 1.0 " + name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_)
 {
-	StreamInfo apStream;
-	apStream.name = name + "-AP";
-	apStream.description = "Neuropixels 1.0 AP band data stream";
-	apStream.identifier = "onix-neuropixels1.data.ap";
-	apStream.numChannels = 384;
-	apStream.sampleRate = 30000.0f;
-	apStream.channelPrefix = "AP";
-	apStream.bitVolts = 0.195f;
-	apStream.channelType = ContinuousChannel::Type::ELECTRODE;
+	StreamInfo apStream = StreamInfo(
+		name + "-AP",
+		"Neuropixels 1.0 AP band data stream",
+		"onix-neuropixels1.data.ap",
+		384,
+		30000.0f,
+		"AP",
+		ContinuousChannel::Type::ELECTRODE,
+		0.195f,
+		CharPointer_UTF8("\xc2\xb5V"),
+		{});
 	streams.add(apStream);
 
-	StreamInfo lfpStream;
-	lfpStream.name = name + "-LFP";
-	lfpStream.description = "Neuropixels 1.0 LFP band data stream";
-	lfpStream.identifier = "onix-neuropixels1.data.lfp";
-	lfpStream.numChannels = 384;
-	lfpStream.sampleRate = 2500.0f;
-	lfpStream.channelPrefix = "LFP";
-	lfpStream.bitVolts = 0.195f;
-	lfpStream.channelType = ContinuousChannel::Type::ELECTRODE;
+	StreamInfo lfpStream = StreamInfo(
+		name + "-LFP",
+		"Neuropixels 1.0 LFP band data stream",
+		"onix-neuropixels1.data.lfp",
+		384,
+		2500.0f,
+		"LFP",
+		ContinuousChannel::Type::ELECTRODE,
+		0.195f,
+		CharPointer_UTF8("\xc2\xb5V"),
+		{});
 	streams.add(lfpStream);
 
 	settings = std::make_unique<ProbeSettings>();
@@ -410,11 +414,11 @@ void Neuropixels_1::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	for (StreamInfo streamInfo : streams)
 	{
-		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
-		if (streamInfo.channelPrefix.equalsIgnoreCase("AP"))
+		if (streamInfo.getChannelPrefix().equalsIgnoreCase("AP"))
 			apBuffer = sourceBuffers.getLast();
-		else if (streamInfo.channelPrefix.equalsIgnoreCase("LFP"))
+		else if (streamInfo.getChannelPrefix().equalsIgnoreCase("LFP"))
 			lfpBuffer = sourceBuffers.getLast();
 	}
 }

@@ -7,15 +7,17 @@ Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, std::s
 
 void Neuropixels2e::createDataStream(int n)
 {
-	StreamInfo apStream;
-	apStream.name = getName()+"-"+String(n);
-	apStream.description = "Neuropixels 2.0 data stream";
-	apStream.identifier = "onix-neuropixels2.data";
-	apStream.numChannels = 384;
-	apStream.sampleRate = 30000.0f;
-	apStream.channelPrefix = "CH";
-	apStream.bitVolts = 0.195f;
-	apStream.channelType = ContinuousChannel::Type::ELECTRODE;
+	StreamInfo apStream = StreamInfo(
+		getName() + "-" + String(n),
+		"Neuropixels 2.0 data stream",
+		"onix-neuropixels2.data",
+		384,
+		30000.0f,
+		"CH",
+		ContinuousChannel::Type::ELECTRODE,
+		0.195f,
+		CharPointer_UTF8("\xc2\xb5V"),
+		{});
 	streams.add(apStream);
 }
 
@@ -213,9 +215,9 @@ void Neuropixels2e::addFrame(oni_frame_t* frame)
 void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	int bufferIdx = 0;
-	for (StreamInfo streamInfo : streams)
+	for (const auto& streamInfo : streams)
 	{
-		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 		apBuffer[bufferIdx++] = sourceBuffers.getLast();
 	}
 }
