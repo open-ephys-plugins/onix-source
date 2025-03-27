@@ -168,7 +168,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				}
 			}
 
-			sources.push_back(np1);
+			sources.emplace_back(np1);
 			headstages.insert({ PortController::getPortFromIndex(index), NEUROPIXELSV1F_HEADSTAGE_NAME });
 
 			npxProbeIdx++;
@@ -185,7 +185,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				continue;
 			}
 
-			sources.push_back(bno);
+			sources.emplace_back(bno);
 		}
 		else if (device.id == ONIX_DS90UB9RAW)
 		{
@@ -213,7 +213,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				}
 				npxProbeIdx += np2->getNumProbes();
 
-				sources.push_back(np2);
+				sources.emplace_back(np2);
 			}
 		}
 	}
@@ -242,7 +242,7 @@ OnixDeviceVector OnixSource::getDataSources() const
 
 	for (const auto& source : sources)
 	{
-		devices.push_back(source);
+		devices.emplace_back(source);
 	}
 
 	return devices;
@@ -255,7 +255,7 @@ OnixDeviceVector OnixSource::getDataSourcesFromPort(PortName port) const
 	for (const auto& source : sources)
 	{
 		if (PortController::getPortFromIndex(source->getDeviceIdx()) == port)
-			devices.push_back(source);
+			devices.emplace_back(source);
 	}
 
 	return devices;
@@ -494,11 +494,11 @@ bool OnixSource::startAcquisition()
 
 	for (const auto& source : sources)
 	{
-		devices.push_back(source);
+		devices.emplace_back(source);
 	}
 
-	devices.push_back(portA);
-	devices.push_back(portB);
+	devices.emplace_back(portA);
+	devices.emplace_back(portB);
 
 	for (const auto& source : devices)
 	{

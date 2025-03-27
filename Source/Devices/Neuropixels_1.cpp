@@ -391,13 +391,13 @@ void Neuropixels_1::startAcquisition()
 	lfpOffsetValues.clear();
 	lfpOffsetValues.reserve(numberOfChannels);
 
-	for (int i = 0; i < numberOfChannels; i += 1)
+	for (int i = 0; i < numberOfChannels; i++)
 	{
 		apOffsets[i] = 0;
 		lfpOffsets[i] = 0;
 
-		apOffsetValues.push_back(std::vector<float>{});
-		lfpOffsetValues.push_back(std::vector<float>{});
+		apOffsetValues.emplace_back(std::vector<float>{});
+		lfpOffsetValues.emplace_back(std::vector<float>{});
 	}
 
 	lfpOffsetCalculated = false;
@@ -526,25 +526,25 @@ void Neuropixels_1::processFrames()
 
 void Neuropixels_1::updateApOffsets(std::array<float, numApSamples>& samples, int64 sampleNumber)
 {
-	if (sampleNumber > apSampleRate * 5)
+	if (sampleNumber > apSampleRate * secondsToSettle)
 	{
 		uint32_t counter = 0;
 
-		while (apOffsetValues[0].size() <= 99)
+		while (apOffsetValues[0].size() < samplesToAverage)
 		{
 			if (counter >= superFramesPerUltraFrame * numUltraFrames) break;
 
-			for (int i = 0; i < numberOfChannels; i += 1)
+			for (int i = 0; i < numberOfChannels; i++)
 			{
-				apOffsetValues[i].push_back(samples[i * superFramesPerUltraFrame * numUltraFrames + counter]);
+				apOffsetValues[i].emplace_back(samples[i * superFramesPerUltraFrame * numUltraFrames + counter]);
 			}
 
-			counter += 1;
+			counter++;
 		}
 
-		if (apOffsetValues[0].size() >= 100)
+		if (apOffsetValues[0].size() >= samplesToAverage)
 		{
-			for (int i = 0; i < numberOfChannels; i += 1)
+			for (int i = 0; i < numberOfChannels; i++)
 			{
 				apOffsets[i] = std::reduce(apOffsetValues.at(i).begin(), apOffsetValues.at(i).end()) / apOffsetValues.at(i).size();
 			}
@@ -557,25 +557,25 @@ void Neuropixels_1::updateApOffsets(std::array<float, numApSamples>& samples, in
 
 void Neuropixels_1::updateLfpOffsets(std::array<float, numLfpSamples>& samples, int64 sampleNumber)
 {
-	if (sampleNumber > lfpSampleRate * 5)
+	if (sampleNumber > lfpSampleRate * secondsToSettle)
 	{
 		uint32_t counter = 0;
 
-		while (lfpOffsetValues[0].size() <= 99)
+		while (lfpOffsetValues[0].size() < samplesToAverage)
 		{
 			if (counter >= numUltraFrames) break;
 
-			for (int i = 0; i < numberOfChannels; i += 1)
+			for (int i = 0; i < numberOfChannels; i++)
 			{
-				lfpOffsetValues[i].push_back(samples[i * numUltraFrames + counter]);
+				lfpOffsetValues[i].emplace_back(samples[i * numUltraFrames + counter]);
 			}
 
-			counter += 1;
+			counter++;
 		}
 
-		if (lfpOffsetValues[0].size() >= 100)
+		if (lfpOffsetValues[0].size() >= samplesToAverage)
 		{
-			for (int i = 0; i < numberOfChannels; i += 1)
+			for (int i = 0; i < numberOfChannels; i++)
 			{
 				lfpOffsets[i] = std::reduce(lfpOffsetValues.at(i).begin(), lfpOffsetValues.at(i).end()) / lfpOffsetValues.at(i).size();
 			}

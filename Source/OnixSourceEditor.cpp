@@ -240,8 +240,8 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 	std::vector<int> deviceIndices;
 	std::vector<int> tabIndices;
 
-	for (auto& [key, _] : deviceMap) { deviceIndices.push_back(key); }
-	for (auto& [key, _] : tabMap) { tabIndices.push_back(key); }
+	for (auto& [key, _] : deviceMap) { deviceIndices.emplace_back(key); }
+	for (auto& [key, _] : tabMap) { tabIndices.emplace_back(key); }
 
 	auto devicePorts = PortController::getUniquePortsFromIndices(deviceIndices);
 	auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
@@ -367,7 +367,7 @@ String OnixSourceEditor::getHeadstageSelected(PortName port)
 
 void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage)
 {
-	for (int i = 0; i < comboBox->getNumItems(); i += 1)
+	for (int i = 0; i < comboBox->getNumItems(); i++)
 	{
 		if (headstage.contains(comboBox->getItemText(i)))
 		{

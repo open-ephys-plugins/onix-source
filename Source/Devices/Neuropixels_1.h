@@ -225,6 +225,9 @@ private:
 	static const int numUltraFrames = 12;
 	static const int dataOffset = 1;
 
+	static const int secondsToSettle = 5;
+	static const int samplesToAverage = 100;
+
 	static const uint32_t numLfpSamples = 384 * numUltraFrames;
 	static const uint32_t numApSamples = 384 * numUltraFrames * superFramesPerUltraFrame;
 

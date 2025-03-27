@@ -117,7 +117,7 @@ private:
 	std::unique_ptr<Label> gainCalibrationFileLabel;
 
 	std::unique_ptr<UtilityButton> probeEnableButton;
-	std::unique_ptr<UtilityButton> selectElctrodeButton;
+	std::unique_ptr<UtilityButton> selectElectrodeButton;
 
 	std::unique_ptr<UtilityButton> enableViewButton;
 	std::unique_ptr<UtilityButton> lfpGainViewButton;

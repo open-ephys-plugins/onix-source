@@ -84,9 +84,9 @@ void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(port, headstage), (int)port - 1);
 
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
-		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
+		devices.emplace_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
 	}
 
 	if (tab != nullptr && devices.size() > 0)
@@ -116,7 +116,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 
 void OnixSourceCanvas::addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_)
 {
-	settingsInterfaces.push_back(interface_);
+	settingsInterfaces.emplace_back(interface_);
 	tab->addTab(tabName, Colours::darkgrey, createCustomViewport(interface_.get()), true);
 }
 
@@ -124,7 +124,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 {
 	int ind = -1;
 
-	for (int j = 0; j < settingsInterfaces.size(); j += 1)
+	for (int j = 0; j < settingsInterfaces.size(); j++)
 	{
 		if (device->getDeviceIdx() == settingsInterfaces[j]->device->getDeviceIdx() &&
 			device->getName() == settingsInterfaces[j]->device->getName())
@@ -323,8 +323,8 @@ void OnixSourceCanvas::refreshTabs()
 	{
 		std::vector<int> selectedIndices, foundIndices;
 
-		for (const auto& [key, _] : selectedMap) { selectedIndices.push_back(key); }
-		for (const auto& [key, _] : foundMap) { foundIndices.push_back(key); }
+		for (const auto& [key, _] : selectedMap) { selectedIndices.emplace_back(key); }
+		for (const auto& [key, _] : foundMap) { foundIndices.emplace_back(key); }
 
 		auto selectedPorts = PortController::getUniquePortsFromIndices(selectedIndices);
 		auto foundPorts = PortController::getUniquePortsFromIndices(foundIndices);
