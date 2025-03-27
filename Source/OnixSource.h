@@ -88,6 +88,8 @@ public:
 
 	void resetContext() { if (context != nullptr && context->isInitialized()) context->issueReset(); }
 
+	bool isContextInitialized() { return context != nullptr && context->isInitialized(); }
+
 	void initializeDevices(bool updateStreamInfo = false);
 
 	void disconnectDevices(bool updateStreamInfo = false);

@@ -390,7 +390,30 @@ void Neuropixels_1::startAcquisition()
 	apGain = getGainValue(getGainEnum(settings->apGainIndex));
 	lfpGain = getGainValue(getGainEnum(settings->lfpGainIndex));
 
+	apOffsetValues.clear();
+	apOffsetValues.reserve(numberOfChannels);
+	lfpOffsetValues.clear();
+	lfpOffsetValues.reserve(numberOfChannels);
+
+	for (int i = 0; i < numberOfChannels; i++)
+	{
+		apOffsets[i] = 0;
+		lfpOffsets[i] = 0;
+
+		apOffsetValues.emplace_back(std::vector<float>{});
+		lfpOffsetValues.emplace_back(std::vector<float>{});
+	}
+
+	lfpOffsetCalculated = false;
+	apOffsetCalculated = false;
+
 	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::ACTIVE);
+
+	superFrameCount = 0;
+	ultraFrameCount = 0;
+	shouldAddToBuffer = false;
+	apSampleNumber = 0;
+	lfpSampleNumber = 0;
 }
 
 void Neuropixels_1::stopAcquisition()
@@ -402,12 +425,6 @@ void Neuropixels_1::stopAcquisition()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
-
-	superFrameCount = 0;
-	ultraFrameCount = 0;
-	shouldAddToBuffer = false;
-	apSampleNumber = 0;
-	lfpSampleNumber = 0;
 }
 
 void Neuropixels_1::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
@@ -447,8 +464,8 @@ void Neuropixels_1::processFrames()
 			((uint64_t)(*(uint16_t*)(dataclock + 2)) << 32) |
 			((uint64_t)(*(uint16_t*)(dataclock + 4)) << 16) |
 			((uint64_t)(*(uint16_t*)(dataclock + 6)) << 0);
-		int64_t clockCounter = hubClock;
-		apTimestamps[superFrameCount] = clockCounter;
+
+		apTimestamps[superFrameCount] = hubClock;
 		apSampleNumbers[superFrameCount] = apSampleNumber++;
 
 		for (int i = 0; i < framesPerSuperFrame; i++)
@@ -465,8 +482,9 @@ void Neuropixels_1::processFrames()
 				for (int adc = 0; adc < 32; adc++)
 				{
 					int chanIndex = adcToChannel[adc] + superCountOffset * 2; // map the ADC to muxed channel
+					float offset = shouldCorrectOffset ? lfpOffsets.at(chanIndex) : 0.0f;
 					lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount] =
-						lfpConversion * float((*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) - 512);
+						lfpConversion * float((*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) - 512) - offset;
 				}
 			}
 			else // AP data
@@ -475,8 +493,9 @@ void Neuropixels_1::processFrames()
 				for (int adc = 0; adc < 32; adc++)
 				{
 					int chanIndex = adcToChannel[adc] + chanOffset; //  map the ADC to muxed channel.
+					float offset = shouldCorrectOffset ? apOffsets.at(chanIndex) : 0.0f;
 					apSamples[(chanIndex * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
-						apConversion * float((*(dataPtr + adcToFrameIndex[adc] + i * 36 + dataOffset) >> 5) - 512);
+						apConversion * float((*(dataPtr + adcToFrameIndex[adc] + i * 36 + dataOffset) >> 5) - 512) - offset;
 				}
 			}
 		}
@@ -500,8 +519,73 @@ void Neuropixels_1::processFrames()
 		if (shouldAddToBuffer)
 		{
 			shouldAddToBuffer = false;
-			lfpBuffer->addToBuffer(lfpSamples, lfpSampleNumbers, lfpTimestamps, lfpEventCodes, numUltraFrames);
-			apBuffer->addToBuffer(apSamples, apSampleNumbers, apTimestamps, apEventCodes, numUltraFrames * superFramesPerUltraFrame);
+			lfpBuffer->addToBuffer(lfpSamples.data(), lfpSampleNumbers, lfpTimestamps, lfpEventCodes, numUltraFrames);
+			apBuffer->addToBuffer(apSamples.data(), apSampleNumbers, apTimestamps, apEventCodes, numUltraFrames * superFramesPerUltraFrame);
+
+			if (!lfpOffsetCalculated) updateLfpOffsets(lfpSamples, lfpSampleNumbers[0]);
+			if (!apOffsetCalculated) updateApOffsets(apSamples, apSampleNumbers[0]);
+		}
+	}
+}
+
+void Neuropixels_1::updateApOffsets(std::array<float, numApSamples>& samples, int64 sampleNumber)
+{
+	if (sampleNumber > apSampleRate * secondsToSettle)
+	{
+		uint32_t counter = 0;
+
+		while (apOffsetValues[0].size() < samplesToAverage)
+		{
+			if (counter >= superFramesPerUltraFrame * numUltraFrames) break;
+
+			for (int i = 0; i < numberOfChannels; i++)
+			{
+				apOffsetValues[i].emplace_back(samples[i * superFramesPerUltraFrame * numUltraFrames + counter]);
+			}
+
+			counter++;
+		}
+
+		if (apOffsetValues[0].size() >= samplesToAverage)
+		{
+			for (int i = 0; i < numberOfChannels; i++)
+			{
+				apOffsets[i] = std::reduce(apOffsetValues.at(i).begin(), apOffsetValues.at(i).end()) / apOffsetValues.at(i).size();
+			}
+
+			apOffsetCalculated = true;
+			apOffsetValues.clear();
+		}
+	}
+}
+
+void Neuropixels_1::updateLfpOffsets(std::array<float, numLfpSamples>& samples, int64 sampleNumber)
+{
+	if (sampleNumber > lfpSampleRate * secondsToSettle)
+	{
+		uint32_t counter = 0;
+
+		while (lfpOffsetValues[0].size() < samplesToAverage)
+		{
+			if (counter >= numUltraFrames) break;
+
+			for (int i = 0; i < numberOfChannels; i++)
+			{
+				lfpOffsetValues[i].emplace_back(samples[i * numUltraFrames + counter]);
+			}
+
+			counter++;
+		}
+
+		if (lfpOffsetValues[0].size() >= samplesToAverage)
+		{
+			for (int i = 0; i < numberOfChannels; i++)
+			{
+				lfpOffsets[i] = std::reduce(lfpOffsetValues.at(i).begin(), lfpOffsetValues.at(i).end()) / lfpOffsetValues.at(i).size();
+			}
+
+			lfpOffsetCalculated = true;
+			lfpOffsetValues.clear();
 		}
 	}
 }
@@ -648,7 +732,7 @@ void Neuropixels_1::writeShiftRegisters(std::bitset<shankConfigurationBitCount> 
 
 	WriteByte((uint32_t)ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
 	if (i2cContext->getLastResult() != ONI_ESUCCESS) return;
-	
+
 	WriteByte((uint32_t)ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
 	if (i2cContext->getLastResult() != ONI_ESUCCESS) return;
 
