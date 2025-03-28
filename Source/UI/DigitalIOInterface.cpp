@@ -26,8 +26,6 @@
 DigitalIOInterface::DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {
-	device = d;
-
 	if (device != nullptr)
 	{
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");

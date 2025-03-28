@@ -58,8 +58,6 @@ public:
 
 private:
 
-	std::shared_ptr<Bno055> device;
-
 	std::unique_ptr<UtilityButton> deviceEnableButton;
 
 	JUCE_LEAK_DETECTOR(Bno055Interface);
