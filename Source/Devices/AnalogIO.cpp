@@ -26,15 +26,17 @@
 AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
 	: OnixDevice(name, OnixDeviceType::ANALOGIO, deviceIdx_, oni_ctx)
 {
-	StreamInfo analogInputStream;
-	analogInputStream.name = name + "-AnalogInput";
-	analogInputStream.description = "Analog Input data";
-	analogInputStream.identifier = "onix-analogio.data.input";
-	analogInputStream.numChannels = 12;
-	analogInputStream.sampleRate = std::floor(100000 / framesToAverage);
-	analogInputStream.channelPrefix = "AnalogInput";
-	analogInputStream.bitVolts = 1.0f;
-	analogInputStream.channelType = ContinuousChannel::Type::ADC;
+	StreamInfo analogInputStream = StreamInfo(
+		name + "-AnalogInput",
+		"Analog Input data",
+		"onix-analogio.data.input",
+		12,
+		std::floor(100000 / framesToAverage),
+		"AnalogInput",
+		ContinuousChannel::Type::ADC,
+		1.0f,
+		"V",
+		{});
 	streamInfos.add(analogInputStream);
 
 	for (int i = 0; i < numFrames; i++)
@@ -127,9 +129,9 @@ void AnalogIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	for (StreamInfo streamInfo : streamInfos)
 	{
-		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
-		if (streamInfo.channelPrefix.equalsIgnoreCase("AnalogInput"))
+		if (streamInfo.getChannelPrefix().equalsIgnoreCase("AnalogInput"))
 			analogInputBuffer = sourceBuffers.getLast();
 	}
 }

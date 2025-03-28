@@ -59,15 +59,17 @@ void MemoryMonitorUsage::stopAcquisition()
 MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
 	: OnixDevice(name, OnixDeviceType::MEMORYMONITOR, deviceIdx_, oni_ctx)
 {
-	StreamInfo percentUsedStream;
-	percentUsedStream.name = name + "-PercentUsed";
-	percentUsedStream.description = "Percent of available memory that is currently used";
-	percentUsedStream.identifier = "onix-memorymonitor.data.percentused";
-	percentUsedStream.numChannels = 1;
-	percentUsedStream.sampleRate = samplesPerSecond;
-	percentUsedStream.channelPrefix = "Percent";
-	percentUsedStream.bitVolts = 1.0f;
-	percentUsedStream.channelType = ContinuousChannel::Type::AUX;
+	StreamInfo percentUsedStream = StreamInfo(
+		name + "-PercentUsed",
+		"Percent of available memory that is currently used",
+		"onix - memorymonitor.data.percentused",
+		1,
+		samplesPerSecond,
+		"Percent",
+		ContinuousChannel::Type::AUX,
+		1.0f,
+		"%",
+		{""});
 	streamInfos.add(percentUsedStream);
 
 	for (int i = 0; i < numFrames; i++)
@@ -124,9 +126,9 @@ void MemoryMonitor::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	for (StreamInfo streamInfo : streamInfos)
 	{
-		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
-		if (streamInfo.channelPrefix.equalsIgnoreCase("Percent"))
+		if (streamInfo.getChannelPrefix().equalsIgnoreCase("Percent"))
 			percentUsedBuffer = sourceBuffers.getLast();
 	}
 }

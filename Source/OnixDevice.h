@@ -90,7 +90,9 @@ public:
 
 		if (numChannels_ != suffixes_.size())
 		{
-			LOGE("Difference between number of channels and suffixes. Generating default suffixes instead.");
+			if (suffixes_.size() != 0)
+				LOGE("Difference between number of channels and suffixes. Generating default suffixes instead.");
+
 			suffixes_.clear();
 			suffixes_.ensureStorageAllocated(numChannels);
 			
@@ -103,7 +105,7 @@ public:
 
 	String getName() const { return name_; }
 	String getDescription() const { return description_; }
-	String getIdentifer() const { return identifier_; }
+	String getIdentifier() const { return identifier_; }
 	int getNumChannels() const { return numChannels_; }
 	float getSampleRate() const { return sampleRate_; }
 	String getChannelPrefix() const { return channelPrefix_; }

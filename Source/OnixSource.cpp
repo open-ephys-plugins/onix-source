@@ -601,7 +601,7 @@ void OnixSource::addCombinedStreams(DataStream::Settings dataStreamSettings,
 				streamInfo.getChannelType(),
 				streamInfo.getChannelPrefix() + streamInfo.getSuffixes()[chan],
 				streamInfo.getDescription(),
-				streamInfo.getIdentifer(),
+				streamInfo.getIdentifier(),
 				streamInfo.getBitVolts(),
 				stream
 			};
@@ -622,7 +622,7 @@ void OnixSource::addIndividualStreams(Array<StreamInfo> streamInfos,
 		{
 			streamInfo.getName(),
 			streamInfo.getDescription(),
-			streamInfo.getIdentifer(),
+			streamInfo.getIdentifier(),
 			streamInfo.getSampleRate()
 		};
 
@@ -637,7 +637,7 @@ void OnixSource::addIndividualStreams(Array<StreamInfo> streamInfos,
 				streamInfo.getChannelType(),
 				streamInfo.getChannelPrefix() + streamInfo.getSuffixes()[chan],
 				streamInfo.getDescription(),
-				streamInfo.getIdentifer(),
+				streamInfo.getIdentifier(),
 				streamInfo.getBitVolts(),
 				stream
 			};
@@ -697,6 +697,8 @@ bool OnixSource::startAcquisition()
 
 	for (const auto& source : sources)
 	{
+		if (!source->isEnabled()) continue;
+
 		devices.emplace_back(source);
 	}
 
@@ -705,8 +707,6 @@ bool OnixSource::startAcquisition()
 
 	for (const auto& source : devices)
 	{
-		if (!source->isEnabled()) continue;
-
 		source->startAcquisition();
 	}
 
@@ -733,7 +733,6 @@ bool OnixSource::stopAcquisition()
 	{
 		oni_size_t reg = 0;
 		context->setOption(ONI_OPT_RUNNING, reg);
-		if (context->getLastResult() != ONI_ESUCCESS) return false;
 
 		uint32_t val = 1;
 		context->setOption(ONI_OPT_RESET, val);

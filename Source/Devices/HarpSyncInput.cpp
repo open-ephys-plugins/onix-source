@@ -28,15 +28,17 @@ HarpSyncInput::HarpSyncInput(String name, const oni_dev_idx_t deviceIdx_, std::s
 {
 	setEnabled(false);
 
-	StreamInfo harpTimeStream;
-	harpTimeStream.name = name + "-HarpTime";
-	harpTimeStream.description = "Harp clock time corresponding to the local acquisition ONIX clock count";
-	harpTimeStream.identifier = "onix-harpsyncinput.data.harptime";
-	harpTimeStream.numChannels = 1;
-	harpTimeStream.sampleRate = 1;
-	harpTimeStream.channelPrefix = "HarpTime";
-	harpTimeStream.bitVolts = 1.0f;
-	harpTimeStream.channelType = ContinuousChannel::Type::AUX;
+	StreamInfo harpTimeStream = StreamInfo(
+		name + "-HarpTime",
+		"Harp clock time corresponding to the local acquisition ONIX clock count",
+		"onix-harpsyncinput.data.harptime",
+		1,
+		1,
+		"HarpTime",
+		ContinuousChannel::Type::AUX,
+		1.0f,
+		"s",
+		{""});
 	streamInfos.add(harpTimeStream);
 
 	for (int i = 0; i < numFrames; i++)
@@ -84,9 +86,9 @@ void HarpSyncInput::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	for (StreamInfo streamInfo : streamInfos)
 	{
-		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
-		if (streamInfo.channelPrefix.equalsIgnoreCase("HarpTime"))
+		if (streamInfo.getChannelPrefix().equalsIgnoreCase("HarpTime"))
 			harpTimeBuffer = sourceBuffers.getLast();
 	}
 }
