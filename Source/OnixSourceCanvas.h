@@ -25,57 +25,14 @@
 #include <VisualizerEditorHeaders.h>
 
 #include "UI/InterfaceList.h"
+#include "UI/CustomTabComponent.h"
 
 #include "OnixSourceEditor.h"
-#include "OnixSource.h"
 
 class OnixSource;
 
 /**
-
-	TabBarButton with custom appearance
-
-*/
-class CustomTabButton : public TabBarButton
-{
-public:
-	/** Constructor */
-	CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_);
-
-	/** Paints the button */
-	void paintButton(Graphics& g, bool isMouseOver, bool isMouseDown) override;
-
-private:
-	bool isTopLevel;
-};
-
-/**
-
-	Adds a callback when tab is changed
-
-*/
-
-class CustomTabComponent : public TabbedComponent
-{
-public:
-	/** Constructor */
-	CustomTabComponent(OnixSourceEditor* editor_, bool isTopLevel_);
-
-	/** Create tab buttons*/
-	TabBarButton* createTabButton(const juce::String& name, int index) override
-	{
-		return new CustomTabButton(name, this, isTopLevel);
-	}
-
-private:
-	OnixSourceEditor* editor;
-	bool isTopLevel;
-};
-
-/**
-
 	Holds the visualizer for additional probe settings
-
 */
 class OnixSourceCanvas : public Visualizer
 {
@@ -131,9 +88,6 @@ public:
 
 	/** Get the given parameter from the source node */
 	Parameter* getSourceParameter(String name);
-
-	/** Creates a custom viewport for the given interface */
-	CustomViewport* createCustomViewport(SettingsInterface* settingsInterface);
 
 	Array<CustomTabComponent*> getHeadstageTabs();
 

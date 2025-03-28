@@ -27,4 +27,20 @@ OnixDevice::OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t d
 {
 	deviceContext = ctx;
 	name = name_;
+
+	if (type == OnixDeviceType::NEUROPIXELSV2E)
+		isPassthrough = true;
+}
+
+oni_dev_idx_t OnixDevice::getDeviceIdx(bool getPassthroughIndex) const
+{
+	if (isPassthrough && !getPassthroughIndex)
+		return getDeviceIndexFromPassthroughIndex(deviceIdx);
+	else
+		return deviceIdx;
+}
+
+oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex)
+{
+	return (passthroughIndex - 7) << 8;
 }

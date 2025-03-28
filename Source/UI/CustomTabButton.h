@@ -20,45 +20,30 @@
 
 */
 
-#include "FrameReader.h"
+#pragma once
 
-FrameReader::FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1> ctx_)
-	: Thread("FrameReader")
-{
-	sources = sources_;
-	context = ctx_;
-}
+#include <VisualizerEditorHeaders.h>
 
-void FrameReader::run()
+/**
+	TabBarButton with custom appearance
+*/
+class CustomTabButton : public TabBarButton
 {
-	while (!threadShouldExit())
+public:
+	/** Constructor */
+	CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_) :
+		TabBarButton(name, parent->getTabbedButtonBar()),
+		isTopLevel(isTopLevel_)
 	{
-		oni_frame_t* frame = context->readFrame();
-
-		if (context->getLastResult() < ONI_ESUCCESS)
-		{
-			if (threadShouldExit()) return;
-
-			CoreServices::sendStatusMessage("Unable to read data frames. Stopping acquisition...");
-			CoreServices::setAcquisitionStatus(false);
-			return;
-		}
-
-		bool destroyFrame = true;
-
-		for (const auto& source : sources)
-		{
-			if (frame->dev_idx == source->getDeviceIdx(true))
-			{
-				source->addFrame(frame);
-				destroyFrame = false;
-				break;
-			}
-		}
-
-		if (destroyFrame)
-		{
-			oni_destroy_frame(frame);
-		}
 	}
-}
+
+	/** Paints the button */
+	void paintButton(Graphics& g, bool isMouseOver, bool isMouseDown) override
+	{
+		getTabbedButtonBar().setTabBackgroundColour(getIndex(), Colours::grey);
+		getLookAndFeel().drawTabButton(*this, g, isMouseOver, isMouseDown);
+	}
+
+private:
+	bool isTopLevel;
+};

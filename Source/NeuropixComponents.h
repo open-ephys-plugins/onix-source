@@ -25,14 +25,18 @@
 #include <DataThreadHeaders.h>
 #include <stdio.h>
 #include <string.h>
+#include <bitset>
 
 #include "UI/ActivityView.h"
 
-# define SAMPLECOUNT 64
-# define MAX_HEADSTAGE_CLK_SAMPLE 3221225475
-# define MAX_ALLOWABLE_TIMESTAMP_JUMP 4
-
-# define MAXPACKETS 64
+enum class VisualizationMode
+{
+	ENABLE_VIEW,
+	AP_GAIN_VIEW,
+	LFP_GAIN_VIEW,
+	REFERENCE_VIEW,
+	ACTIVITY_VIEW
+};
 
 enum class ProbeType
 {
@@ -103,6 +107,24 @@ struct ProbeMetadata
 	bool switchable;
 };
 
+struct NeuropixelsV1fValues
+{
+	static const int numberOfChannels = 384;
+	static const int numberOfElectrodes = 960;
+	static const int numberOfShanks = 1;
+	static const int numberOfSettings = 1;
+};
+
+struct NeuropixelsV2eValues
+{
+	static const int numberOfChannels = 384;
+	static const int electrodesPerShank = 1280;
+	static const int numberOfShanks = 4;
+	static const int numberOfElectrodes = numberOfShanks * electrodesPerShank;
+	static const int numberOfSettings = 2;
+};
+
+template<int numChannels, int numElectrodes>
 struct ProbeSettings
 {
 	void updateProbeSettings(ProbeSettings* newSettings)
@@ -121,7 +143,6 @@ struct ProbeSettings
 
 		selectedBank = newSettings->selectedBank;
 		selectedShank = newSettings->selectedShank;
-		selectedChannel = newSettings->selectedChannel;
 		selectedElectrode = newSettings->selectedElectrode;
 		electrodeMetadata = newSettings->electrodeMetadata;
 
@@ -134,8 +155,43 @@ struct ProbeSettings
 	{
 		selectedBank.clear();
 		selectedShank.clear();
-		selectedChannel.clear();
 		selectedElectrode.clear();
+	}
+
+	void selectElectrodes(std::vector<int> electrodes)
+	{
+		for (int i = 0; i < electrodes.size(); i++)
+		{
+			selectElectrode(electrodes[i]);
+		}
+	}
+
+	void selectElectrode(int electrode)
+	{
+		Bank bank = electrodeMetadata[electrode].bank;
+		int channel = electrodeMetadata[electrode].channel;
+		int shank = electrodeMetadata[electrode].shank;
+		int global_index = electrodeMetadata[electrode].global_index;
+
+		for (int j = 0; j < electrodeMetadata.size(); j++)
+		{
+			if (electrodeMetadata[j].channel == channel)
+			{
+				if (electrodeMetadata[j].bank == bank && electrodeMetadata[j].shank == shank)
+				{
+					electrodeMetadata[j].status = ElectrodeStatus::CONNECTED;
+				}
+
+				else
+				{
+					electrodeMetadata[j].status = ElectrodeStatus::DISCONNECTED;
+				}
+			}
+		}
+
+		selectedBank[channel] = bank;
+		selectedShank[channel] = shank;
+		selectedElectrode[channel] = global_index;
 	}
 
 	Array<String> availableElectrodeConfigurations;
@@ -150,13 +206,62 @@ struct ProbeSettings
 	int referenceIndex;
 	bool apFilterState;
 
-	Array<Bank> selectedBank;
-	Array<int> selectedShank;
-	Array<int> selectedChannel;
-	Array<int> selectedElectrode;
-	Array<ElectrodeMetadata> electrodeMetadata;
+	std::array<Bank, numChannels> selectedBank;
+	std::array<int, numChannels> selectedShank;
+	std::array<int, numChannels> selectedElectrode;
+	std::array<ElectrodeMetadata, numElectrodes> electrodeMetadata;
 
 	ProbeType probeType;
 
 	ProbeMetadata probeMetadata;
+
+	bool isValid = false;
+};
+
+template<int N>
+std::vector<unsigned char> toBitReversedBytes(std::bitset<N> bits)
+{
+	std::vector<unsigned char> bytes((bits.size() - 1) / 8 + 1);
+
+	for (int i = 0; i < bytes.size(); i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			bytes[i] |= bits[i * 8 + j] << (8 - j - 1);
+		}
+
+		// NB: Reverse bytes (http://graphics.stanford.edu/~seander/bithacks.html)
+		bytes[i] = (unsigned char)((bytes[i] * 0x0202020202ul & 0x010884422010ul) % 1023);
+	}
+
+	return bytes;
+}
+
+template<int ch, int e>
+class INeuropixel
+{
+public:
+	INeuropixel(int numSettings, int numShanks) : numberOfShanks(numShanks)
+	{
+		if (numSettings > 2) return;
+
+		for (int i = 0; i < numSettings; i++)
+		{
+			settings.emplace_back(std::make_unique<ProbeSettings<ch, e>>());
+		}
+	}
+
+	static const int numberOfChannels = ch;
+	static const int numberOfElectrodes = e;
+	const int numberOfShanks;
+
+	std::vector<std::unique_ptr<ProbeSettings<numberOfChannels, numberOfElectrodes>>> settings;
+
+	virtual void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index) { return; }
+
+	virtual void defineMetadata(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings) { return; }
+
+	virtual uint64_t getProbeSerialNumber(int index) { return 0; }
+
+	virtual std::vector<int> selectElectrodeConfiguration(String config) { return {}; }
 };

@@ -20,45 +20,31 @@
 
 */
 
-#include "FrameReader.h"
+#pragma once
 
-FrameReader::FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1> ctx_)
-	: Thread("FrameReader")
-{
-	sources = sources_;
-	context = ctx_;
-}
+#include <VisualizerEditorHeaders.h>
+#include "CustomTabButton.h"
 
-void FrameReader::run()
+/**
+	Adds a callback when tab is changed
+*/
+class CustomTabComponent : public TabbedComponent
 {
-	while (!threadShouldExit())
+public:
+	CustomTabComponent(bool isTopLevel_) :
+		TabbedComponent(TabbedButtonBar::TabsAtTop),
+		isTopLevel(isTopLevel_)
 	{
-		oni_frame_t* frame = context->readFrame();
-
-		if (context->getLastResult() < ONI_ESUCCESS)
-		{
-			if (threadShouldExit()) return;
-
-			CoreServices::sendStatusMessage("Unable to read data frames. Stopping acquisition...");
-			CoreServices::setAcquisitionStatus(false);
-			return;
-		}
-
-		bool destroyFrame = true;
-
-		for (const auto& source : sources)
-		{
-			if (frame->dev_idx == source->getDeviceIdx(true))
-			{
-				source->addFrame(frame);
-				destroyFrame = false;
-				break;
-			}
-		}
-
-		if (destroyFrame)
-		{
-			oni_destroy_frame(frame);
-		}
+		setTabBarDepth(26);
+		setOutline(0);
+		setIndent(0);
 	}
-}
+
+	TabBarButton* createTabButton(const juce::String& name, int index) override
+	{
+		return new CustomTabButton(name, this, isTopLevel);
+	}
+
+private:
+	bool isTopLevel;
+};

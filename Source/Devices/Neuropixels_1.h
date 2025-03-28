@@ -25,13 +25,6 @@
 #include "../OnixDevice.h"
 #include "../NeuropixComponents.h"
 
-#include <ctime>
-#include <chrono>
-#include <bitset>
-#include <vector>
-#include <string>
-#include <map>
-
 enum class NeuropixelsRegisters : uint32_t
 {
 	OP_MODE = 0x00,
@@ -78,7 +71,7 @@ enum class RecMod : uint32_t
 	ACTIVE = DIG_NRESET | CH_NRESET
 };
 
-enum class NeuropixelsReference : unsigned char
+enum class NeuropixelsV1Reference : unsigned char
 {
 	External = 0b001,
 	Tip = 0b010
@@ -148,7 +141,8 @@ public:
 	Configures and streams data from a Neuropixels 1.0f device
 
 */
-class Neuropixels_1 : public OnixDevice,
+class Neuropixels_1 : public INeuropixel<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>,
+	public OnixDevice,
 	public I2CRegisterContext
 {
 public:
@@ -160,8 +154,6 @@ public:
 
 	/** Update the settings of the device by writing to hardware */
 	bool updateSettings() override;
-
-	void setSettings(ProbeSettings* settings_) const;
 
 	/** Starts probe data streaming */
 	void startAcquisition() override;
@@ -176,29 +168,17 @@ public:
 
 	void processFrames() override;
 
-	int64 getProbeNumber() const { return probeNumber; }
-
 	NeuropixelsGain getGainEnum(int index);
 
 	int getGainValue(NeuropixelsGain);
 
-	NeuropixelsReference getReference(int index);
-
-	/** Select a preset electrode configuration */
-	Array<int> selectElectrodeConfiguration(String config);
+	NeuropixelsV1Reference getReference(int index);
 
 	static const int shankConfigurationBitCount = 968;
 	static const int BaseConfigurationBitCount = 2448;
 
-	std::bitset<shankConfigurationBitCount> static makeShankBits(NeuropixelsReference reference, Array<int> channelMap);
-
-	std::vector<std::bitset<BaseConfigurationBitCount>> static makeConfigBits(NeuropixelsReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
-
-	void writeShiftRegisters(std::bitset<shankConfigurationBitCount> shankBits, std::vector<std::bitset<BaseConfigurationBitCount>> configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
-
-	std::unique_ptr<ProbeSettings> settings;
-
-	static const int numberOfChannels = 384;
+	using ShankBitset = std::bitset<shankConfigurationBitCount>;
+	using CongigBitsArray = std::array<std::bitset<BaseConfigurationBitCount>, 2>;
 
 	String adcCalibrationFilePath;
 	String gainCalibrationFilePath;
@@ -206,6 +186,22 @@ public:
 	bool getShouldCorrectOffset() const { return shouldCorrectOffset; }
 
 	void setShouldCorrectOffset(bool value) { shouldCorrectOffset = value; }
+
+	ShankBitset static makeShankBits(NeuropixelsV1Reference reference, std::array<int, numberOfChannels> channelMap);
+
+	CongigBitsArray static makeConfigBits(NeuropixelsV1Reference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
+
+	void writeShiftRegisters(ShankBitset shankBits, CongigBitsArray configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
+
+	// INeuropixels methods
+	void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index = 0) override;
+
+	void defineMetadata(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings) override;
+
+	uint64_t getProbeSerialNumber(int index = 0) override { return probeNumber; }
+
+	/** Select a preset electrode configuration */
+	std::vector<int> selectElectrodeConfiguration(String config) override;
 
 private:
 
@@ -241,13 +237,9 @@ private:
 
 	static const int ProbeI2CAddress = 0x70;
 
-	template<int N> std::vector<unsigned char> static toBitReversedBytes(std::bitset<N> shankBits);
-
-	void defineMetadata(ProbeSettings* settings);
-
 	Array<oni_frame_t*, CriticalSection, numUltraFrames> frameArray;
 
-	int64 probeNumber = 0;
+	uint64_t probeNumber = 0;
 
 	std::array<float, numLfpSamples> lfpSamples;
 	std::array<float, numApSamples> apSamples;

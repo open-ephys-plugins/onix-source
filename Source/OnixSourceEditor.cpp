@@ -83,7 +83,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		headstageComboBoxB->addListener(this);
 		headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
 		addHeadstageComboBoxOptions(headstageComboBoxB.get());
-
 		headstageComboBoxB->setSelectedId(1, dontSendNotification);
 		addAndMakeVisible(headstageComboBoxB.get());
 
@@ -126,6 +125,7 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 	comboBox->addItem("Select headstage...", 1);
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
+	comboBox->addItem(NEUROPIXELSV2E_HEADSTAGE_NAME, 3);
 	// TODO: Add list of available devices here
 	// TODO: Create const char* for the headstage names so they are shared across the plugin
 }
@@ -293,8 +293,14 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 	bool otherHeadstageSelected = isPortA ? headstageComboBoxB->getSelectedId() > 1 : headstageComboBoxA->getSelectedId() > 1;
 	bool currentHeadstageSelected = isPortA ? headstageComboBoxA->getSelectedId() > 1 : headstageComboBoxB->getSelectedId() > 1;
 
-	canvas->removeTabs(currentPort);
+	if (otherHeadstageSelected)
+		canvas->removeTabs(currentPort);
+	else
+		canvas->removeAllTabs();
 
+  String passthroughName = isPortA ? "passthroughA" : "passthroughB";
+  bool passthroughValue = false;
+  
 	if (currentHeadstageSelected)
 	{
 		String headstage = isPortA ? headstageComboBoxA->getText() : headstageComboBoxB->getText();
@@ -302,17 +308,13 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		source->updateDiscoveryParameters(currentPort, PortController::getHeadstageDiscoveryParameters(headstage));
 		canvas->addHub(headstage, PortController::getPortOffset(currentPort));
 
-		String passthroughName = isPortA ? "passthroughA" : "passthroughB";
-
-		if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
+		if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME)
 		{
-			source->getParameter(passthroughName)->setNextValue(false);
-		}
-		else
-		{
-			source->getParameter(passthroughName)->setNextValue(true);
+			passthroughValue = true;
 		}
 	}
+
+	source->getParameter(passthroughName)->setNextValue(passthroughValue);
 }
 
 void OnixSourceEditor::updateSettings()

@@ -80,13 +80,19 @@ public:
     /** Updates the string with info about the underlying data source*/
     virtual void updateInfoString() = 0;
 
+    virtual String getReferenceText() { return ""; }
+
     /** Default type */
     Type type = Type::UNKNOWN_SETTINGS_INTERFACE;
 
     /** Pointer to the data source*/
     std::shared_ptr<OnixDevice> device = nullptr;
 
+    VisualizationMode getMode() const { return mode; }
+
 protected:
     OnixSourceEditor* editor;
     OnixSourceCanvas* canvas;
+
+    VisualizationMode mode = VisualizationMode::ENABLE_VIEW;
 };

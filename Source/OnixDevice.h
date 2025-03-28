@@ -45,7 +45,7 @@ enum class OnixDeviceType {
 	HS64,
 	BNO,
 	NEUROPIXELS_1,
-	NEUROPIXELS_2,
+	NEUROPIXELSV2E,
 	ADC,
 	PORT_CONTROL,
 	MEMORYMONITOR,
@@ -161,15 +161,17 @@ public:
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 	virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
 
-	const oni_dev_idx_t getDeviceIdx() const { return deviceIdx; }
+	oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false) const;
 
-	OnixDeviceType type;
+	const OnixDeviceType type;
 
 	Array<StreamInfo> streamInfos;
 
 	const int bufferSizeInSeconds = 10;
 
 protected:
+
+	static oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t hubIndex);
 
 	const oni_dev_idx_t deviceIdx;
 	std::shared_ptr<Onix1> deviceContext;
@@ -179,6 +181,7 @@ private:
 	String name;
 
 	bool enabled = true;
+	bool isPassthrough = false;
 
 	JUCE_LEAK_DETECTOR(OnixDevice);
 };

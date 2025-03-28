@@ -22,6 +22,7 @@
 
 #include "CustomViewport.h"
 #include "NeuropixV1Interface.h"
+#include "NeuropixelsV2eInterface.h"
 #include "Bno055Interface.h"
 #include "OutputClockInterface.h"
 #include "HarpSyncInputInterface.h"
