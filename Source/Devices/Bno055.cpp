@@ -50,7 +50,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 		"Quaternion",
 		ContinuousChannel::Type::AUX,
 		bitVolts,
-		"",
+		"u",
 		{ "W", "X", "Y", "Z" });
 	streamInfos.add(quaternionStream);
 

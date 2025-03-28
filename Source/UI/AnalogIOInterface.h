@@ -52,7 +52,7 @@ public:
 	void loadParameters(XmlElement* xml) override {};
 
 	/** Updates the info string on the right-hand side of the component */
-	void updateInfoString() override;
+	void updateInfoString() override {};
 
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
@@ -61,9 +61,6 @@ public:
 private:
 
 	static const int numChannels = 12;
-
-	std::unique_ptr<Label> nameLabel;
-	std::unique_ptr<Label> infoLabel;
 
 	std::unique_ptr<Label> dataTypeLabel;
 	std::unique_ptr<ComboBox> dataTypeComboBox;

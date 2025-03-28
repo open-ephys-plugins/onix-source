@@ -229,7 +229,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				continue;
 			}
 
-			sources.push_back(memoryMonitor);
+			sources.emplace_back(memoryMonitor);
 			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_FMCCLKOUT1R3)
@@ -244,7 +244,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				continue;
 			}
 
-			sources.push_back(outputClock);
+			sources.emplace_back(outputClock);
 			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_HEARTBEAT)
@@ -259,7 +259,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				continue;
 			}
 
-			sources.push_back(heartbeat);
+			sources.emplace_back(heartbeat);
 			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_HARPSYNCINPUT)
@@ -274,7 +274,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				continue;
 			}
 
-			sources.push_back(harpSyncInput);
+			sources.emplace_back(harpSyncInput);
 			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_FMCANALOG1R3)
@@ -289,7 +289,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				continue;
 			}
 
-			sources.push_back(analogIO);
+			sources.emplace_back(analogIO);
 			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 		else if (device.id == ONIX_BREAKDIG1R3)
@@ -304,7 +304,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				continue;
 			}
 
-			sources.push_back(digitalIO);
+			sources.emplace_back(digitalIO);
 			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 	}
@@ -360,7 +360,7 @@ OnixDeviceVector OnixSource::getDataSourcesFromOffset(int offset)
 	for (const auto& source : sources)
 	{
 		if (PortController::getOffsetFromIndex(source->getDeviceIdx()) == offset)
-			devices.push_back(source);
+			devices.emplace_back(source);
 	}
 
 	return devices;
@@ -553,17 +553,17 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				};
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));
-        
-				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
-        
-        if (digitalIO != nullptr && digitalIO->isEnabled())
-        {
-          auto ttlChannelSettings = digitalIO->getEventChannelSettings();
-          ttlChannelSettings.stream = dataStreams->getLast();
-          eventChannels->add(new EventChannel(ttlChannelSettings));
 
-          std::static_pointer_cast<MemoryMonitor>(source)->setDigitalIO(digitalIO);
-        }
+				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
+
+				if (digitalIO != nullptr && digitalIO->isEnabled())
+				{
+					auto ttlChannelSettings = digitalIO->getEventChannelSettings();
+					ttlChannelSettings.stream = dataStreams->getLast();
+					eventChannels->add(new EventChannel(ttlChannelSettings));
+
+					std::static_pointer_cast<MemoryMonitor>(source)->setDigitalIO(digitalIO);
+				}
 			}
 			else if (source->type == OnixDeviceType::ANALOGIO)
 			{
@@ -576,7 +576,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				};
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));
-        
+
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
 		}
@@ -611,9 +611,9 @@ void OnixSource::addCombinedStreams(DataStream::Settings dataStreamSettings,
 	}
 }
 
-void OnixSource::addIndividualStreams(Array<StreamInfo> streamInfos, 
-	OwnedArray<DataStream>* dataStreams, 
-	OwnedArray<DeviceInfo>* deviceInfos, 
+void OnixSource::addIndividualStreams(Array<StreamInfo> streamInfos,
+	OwnedArray<DataStream>* dataStreams,
+	OwnedArray<DeviceInfo>* deviceInfos,
 	OwnedArray<ContinuousChannel>* continuousChannels)
 {
 	for (StreamInfo streamInfo : streamInfos)
@@ -643,7 +643,7 @@ void OnixSource::addIndividualStreams(Array<StreamInfo> streamInfos,
 			};
 			continuousChannels->add(new ContinuousChannel(channelSettings));
 			continuousChannels->getLast()->setUnits(streamInfo.getUnits());
-    }
+		}
 	}
 }
 

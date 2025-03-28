@@ -94,10 +94,10 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 	{
 		tab = addTopLevelTab(hubName, 0);
 
-		devices.push_back(std::make_shared<OutputClock>("Output Clock", 5, nullptr));
-		devices.push_back(std::make_shared<AnalogIO>("Analog IO", 6, nullptr));
-		devices.push_back(std::make_shared<DigitalIO>("Digital IO", 7, nullptr));
-		devices.push_back(std::make_shared<HarpSyncInput>("Harp Sync Input", 12, nullptr));
+		devices.emplace_back(std::make_shared<OutputClock>("Output Clock", 5, nullptr));
+		devices.emplace_back(std::make_shared<AnalogIO>("Analog IO", 6, nullptr));
+		devices.emplace_back(std::make_shared<DigitalIO>("Digital IO", 7, nullptr));
+		devices.emplace_back(std::make_shared<HarpSyncInput>("Harp Sync Input", 12, nullptr));
 	}
 
 	if (tab != nullptr && devices.size() > 0)

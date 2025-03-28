@@ -48,7 +48,7 @@ public:
 	~OutputClock();
 
 	/** Device is always enabled */
-	int configureDevice() override { return 0; };
+	int configureDevice() override { setEnabled(true); return 0; };
 
 	/** Update the settings of the device */
 	bool updateSettings() override;
@@ -78,12 +78,12 @@ public:
 
 	void setDelay(uint32_t delay_) { delay = delay_; }
 
-	bool getClockGate() const { return clockGate; }
+	bool getGateRun() const { return gateRun; }
 
-	void setClockGate(bool gate, bool writeToRegister = false)
+	void setGateRun(bool gate, bool writeToRegister = false)
 	{ 
-		clockGate = gate;
-		if (writeToRegister) writeClockGateRegister();
+		gateRun = gate;
+		if (writeToRegister) writeGateRunRegister();
 	}
 
 private:
@@ -92,9 +92,9 @@ private:
 	uint32_t dutyCycle = 50;
 	uint32_t delay = 0;
 
-	bool clockGate = false;
+	bool gateRun = true;
 
-	void writeClockGateRegister() { deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::CLOCK_GATE, clockGate ? 1 : 0); }
+	void writeGateRunRegister() { deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, gateRun ? 1 : 0); }
 
 	JUCE_LEAK_DETECTOR(OutputClock);
 };

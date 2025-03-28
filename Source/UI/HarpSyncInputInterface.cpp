@@ -28,29 +28,16 @@ HarpSyncInputInterface::HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d,
 {
 	if (device != nullptr)
 	{
-		nameLabel = std::make_unique<Label>("MAIN", "NAME");
-		nameLabel->setFont(FontOptions("Fira Code", "Medium", 30.0f));
-		nameLabel->setBounds(50, 40, 370, 45);
-		addAndMakeVisible(nameLabel.get());
-
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
 		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
 		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
+		deviceEnableButton->setBounds(50, 40, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, Memory Monitor will not stream data during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);
 		deviceEnableButton->addListener(this);
 		addAndMakeVisible(deviceEnableButton.get());
 		deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
-
-		infoLabel = std::make_unique<Label>("INFO", "INFO");
-		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, 300, 20);
-		infoLabel->setJustificationType(Justification::topLeft);
-		addAndMakeVisible(infoLabel.get());
-
-		updateInfoString();
 	}
 
 	type = SettingsInterface::Type::HARPSYNCINPUT_SETTINGS_INTERFACE;
@@ -75,21 +62,4 @@ void HarpSyncInputInterface::buttonClicked(Button* button)
 
 		CoreServices::updateSignalChain(editor);
 	}
-}
-
-void HarpSyncInputInterface::updateInfoString()
-{
-	String nameString, infoString;
-
-	nameString = "Breakout Board";
-
-	if (device != nullptr)
-	{
-		infoString = "Device: Harp Sync Input";
-		infoString += "\n";
-		infoString += "\n";
-	}
-
-	infoLabel->setText(infoString, dontSendNotification);
-	nameLabel->setText(nameString, dontSendNotification);
 }

@@ -30,7 +30,7 @@ OutputClock::OutputClock(String name, const oni_dev_idx_t deviceIdx_, std::share
 
 OutputClock::~OutputClock()
 {
-	if (deviceContext != nullptr && deviceContext->isInitialized()) setClockGate(false, true);
+	if (deviceContext != nullptr && deviceContext->isInitialized()) setGateRun(false, true);
 }
 
 bool OutputClock::updateSettings()
@@ -42,21 +42,23 @@ bool OutputClock::updateSettings()
 	auto l = periodCycles - h;
 	auto delayCycles = (uint32_t)(delay * baseFreqHz);
 
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::CLOCK_GATE, 1); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+
 	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::HIGH_CYCLES, h); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
 	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::LOW_CYCLES, l); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
 	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::DELAY_CYCLES, delayCycles); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
 
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, 1); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, gateRun ? 1 : 0); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
 
 	return true;
 }
 
 void OutputClock::startAcquisition()
 {
-	writeClockGateRegister();
+	writeGateRunRegister();
 }
 
 void OutputClock::stopAcquisition()
 {
-	setClockGate(false, true);
+	setGateRun(false, true);
 }

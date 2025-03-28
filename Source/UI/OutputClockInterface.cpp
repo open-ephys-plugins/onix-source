@@ -28,30 +28,8 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 {
 	if (device != nullptr)
 	{
-		nameLabel = std::make_unique<Label>("MAIN", "NAME");
-		nameLabel->setFont(FontOptions("Fira Code", "Medium", 30.0f));
-		nameLabel->setBounds(50, 40, 370, 45);
-		addAndMakeVisible(nameLabel.get());
-
-		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
-		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
-		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
-		deviceEnableButton->setClickingTogglesState(true);
-		deviceEnableButton->setTooltip("If disabled, Output Clock will not be active during acquisition");
-		deviceEnableButton->setToggleState(true, dontSendNotification);
-		deviceEnableButton->addListener(this);
-		addAndMakeVisible(deviceEnableButton.get());
-		deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
-
-		infoLabel = std::make_unique<Label>("INFO", "INFO");
-		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, 300, 20);
-		infoLabel->setJustificationType(Justification::topLeft);
-		addAndMakeVisible(infoLabel.get());
-
 		frequencyHzLabel = std::make_unique<Label>("frequencyHz", "Frequency [Hz]");
-		frequencyHzLabel->setBounds(infoLabel->getX(), infoLabel->getBottom() + 10, 130, 20);
+		frequencyHzLabel->setBounds(50, 40, 130, 20);
 		addAndMakeVisible(frequencyHzLabel.get());
 
 		frequencyHzValue = std::make_unique<Label>("frequencyHzValue", String(std::static_pointer_cast<OutputClock>(device)->getFrequencyHz()));
@@ -89,18 +67,14 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 		delayValue->addListener(this);
 		addAndMakeVisible(delayValue.get());
 
-		clockGateButton = std::make_unique<UtilityButton>("Gate Status");
-		clockGateButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
-		clockGateButton->setRadius(3.0f);
-		clockGateButton->setBounds(delayLabel->getX(), delayLabel->getBottom() + 5, 100, 22);
-		clockGateButton->setClickingTogglesState(true);
-		clockGateButton->setToggleState(std::static_pointer_cast<OutputClock>(device)->getClockGate(), dontSendNotification);
-		clockGateButton->setTooltip("Toggles the output clock gate. If enabled, the clock output will be connected to the clock output line." + 
-			String(" If disabled, the clock output line will be held low."));
-		clockGateButton->addListener(this);
-		addAndMakeVisible(clockGateButton.get());
-
-		updateInfoString();
+		gateRunButton = std::make_unique<ToggleButton>("Synchronize clock to acquisition status");
+		gateRunButton->setBounds(delayLabel->getX(), delayLabel->getBottom() + 5, 250, 22);
+		gateRunButton->setClickingTogglesState(true);
+		gateRunButton->setToggleState(std::static_pointer_cast<OutputClock>(device)->getGateRun(), dontSendNotification);
+		gateRunButton->setTooltip("Toggles the output clock gate. If checked, the clock output will follow the acquisition status." + 
+			String(" If unchecked, the clock output will run continuously."));
+		gateRunButton->addListener(this);
+		addAndMakeVisible(gateRunButton.get());
 	}
 
 	type = Type::OUTPUTCLOCK_SETTINGS_INTERFACE;
@@ -108,28 +82,11 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 
 void OutputClockInterface::buttonClicked(Button* b)
 {
-	if (b == deviceEnableButton.get())
-	{
-		device->setEnabled(deviceEnableButton->getToggleState());
-		device->configureDevice();
-		if (canvas->foundInputSource()) canvas->resetContext();
-
-		if (device->isEnabled())
-		{
-			deviceEnableButton->setLabel("ENABLED");
-		}
-		else
-		{
-			deviceEnableButton->setLabel("DISABLED");
-		}
-
-		CoreServices::updateSignalChain(editor);
-	}
-	else if (b == clockGateButton.get())
+	if (b == gateRunButton.get())
 	{
 		auto clockOutput = std::static_pointer_cast<OutputClock>(device);
 
-		clockOutput->setClockGate(clockGateButton->getToggleState(), editor->acquisitionIsActive);
+		clockOutput->setGateRun(gateRunButton->getToggleState(), editor->acquisitionIsActive);
 	}
 }
 
@@ -177,21 +134,4 @@ void OutputClockInterface::labelTextChanged(Label* l)
 
 		d->setDelay(rate);
 	}
-}
-
-void OutputClockInterface::updateInfoString()
-{
-	String nameString, infoString;
-
-	nameString = "Breakout Board";
-
-	if (device != nullptr)
-	{
-		infoString = "Device: Output Clock";
-		infoString += "\n";
-		infoString += "\n";
-	}
-
-	infoLabel->setText(infoString, dontSendNotification);
-	nameLabel->setText(nameString, dontSendNotification);
 }

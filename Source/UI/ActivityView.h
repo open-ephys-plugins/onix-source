@@ -52,9 +52,9 @@ public:
             std::vector<int> block;
             for (int i = 0; i < numChannels; i++)
             {
-                block.push_back(i);
+                block.emplace_back(i);
             }
-            blocks.push_back(block);
+            blocks.emplace_back(block);
         }
         else
         {

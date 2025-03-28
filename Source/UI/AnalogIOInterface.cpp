@@ -28,17 +28,12 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 {
 	if (device != nullptr)
 	{
-		nameLabel = std::make_unique<Label>("MAIN", "NAME");
-		nameLabel->setFont(FontOptions("Fira Code", "Medium", 30.0f));
-		nameLabel->setBounds(50, 40, 370, 45);
-		addAndMakeVisible(nameLabel.get());
-
 		FontOptions font = FontOptions("Fira Code", "Regular", 12.0f);
 
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
 		deviceEnableButton->setFont(font);
 		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
+		deviceEnableButton->setBounds(50, 40, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, AnalogIO will not stream or receive data during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);
@@ -46,15 +41,9 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 		addAndMakeVisible(deviceEnableButton.get());
 		deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
 
-		infoLabel = std::make_unique<Label>("INFO", "INFO");
-		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, 300, 20);
-		infoLabel->setJustificationType(Justification::topLeft);
-		addAndMakeVisible(infoLabel.get());
-
 		dataTypeLabel = std::make_unique<Label>("dataTypeLabel", "Data Type");
 		dataTypeLabel->setFont(font);
-		dataTypeLabel->setBounds(infoLabel->getX(), infoLabel->getBottom() + 5, 80, 20);
+		dataTypeLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 5, 80, 20);
 		addAndMakeVisible(dataTypeLabel.get());
 
 		dataTypeComboBox = std::make_unique<ComboBox>("dataTypeComboBox");
@@ -170,23 +159,6 @@ void AnalogIOInterface::comboBoxChanged(ComboBox* cb)
 			return;
 		}
 	}
-}
-
-void AnalogIOInterface::updateInfoString()
-{
-	String nameString, infoString;
-
-	nameString = "Breakout Board";
-
-	if (device != nullptr)
-	{
-		infoString = "Device: Analog IO";
-		infoString += "\n";
-		infoString += "\n";
-	}
-
-	infoLabel->setText(infoString, dontSendNotification);
-	nameLabel->setText(nameString, dontSendNotification);
 }
 
 int AnalogIOInterface::getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber)

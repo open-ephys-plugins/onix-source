@@ -52,18 +52,13 @@ public:
 	void loadParameters(XmlElement* xml) override {};
 
 	/** Updates the info string on the right-hand side of the component */
-	void updateInfoString() override;
+	void updateInfoString() override {};
 
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
 	void labelTextChanged(Label* l) override;
 
 private:
-
-	std::unique_ptr<Label> nameLabel;
-	std::unique_ptr<Label> infoLabel;
-
-	std::unique_ptr<UtilityButton> deviceEnableButton;
 
 	std::unique_ptr<Label> frequencyHzLabel;
 	std::unique_ptr<Label> frequencyHzValue;
@@ -74,7 +69,7 @@ private:
 	std::unique_ptr<Label> delayLabel;
 	std::unique_ptr<Label> delayValue;
 
-	std::unique_ptr<UtilityButton> clockGateButton;
+	std::unique_ptr<ToggleButton> gateRunButton;
 
 	JUCE_LEAK_DETECTOR(OutputClockInterface);
 };
