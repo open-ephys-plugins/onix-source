@@ -55,6 +55,21 @@ void DigitalIO::stopAcquisition()
 	}
 }
 
+EventChannel::Settings DigitalIO::getEventChannelSettings()
+{
+	// NB: The stream must be assigned before adding the channel
+	EventChannel::Settings settings{
+		EventChannel::Type::TTL,
+		"DigitalIO Event Channel",
+		"Digital inputs and breakout button states coming from a DigitalIO device",
+		"onix-digitalio.events",
+		nullptr,
+		numButtons + numDigitalInputs
+	};
+
+	return settings;
+}
+
 void DigitalIO::addFrame(oni_frame_t* frame)
 {
 	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
@@ -66,16 +81,40 @@ void DigitalIO::processFrames()
 	while (!frameArray.isEmpty())
 	{
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
+		const GenericScopedLock<CriticalSection> digitalInputsLock(eventWords.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
-		int16_t* dataPtr = (int16_t*)frame->data;
+		uint16_t* dataPtr = (uint16_t*)frame->data;
 		uint64_t timestamp = frame->time;
 
 		int dataOffset = 4;
 
-		int16_t portState = *(dataPtr + dataOffset);
-		int16_t buttonState = *(dataPtr + dataOffset + 1);
-		
+		uint64_t portState = *(dataPtr + dataOffset);
+		uint64_t buttonState = *(dataPtr + dataOffset + 1);
+
+		if (portState != 0 || buttonState != 0)
+		{
+			uint64_t ttlEventWord = (portState & 255) << 6 | (buttonState & 63);
+			eventWords.add(ttlEventWord);
+		}
+
 		oni_destroy_frame(frame);
 	}
+}
+
+uint64_t DigitalIO::getEventWord()
+{
+	const GenericScopedLock<CriticalSection> digitalInputsLock(eventWords.getLock());
+
+	if (eventWords.size() != 0)
+		return eventWords.removeAndReturn(0);
+
+	return 0;
+}
+
+bool DigitalIO::hasEventWord()
+{
+	const GenericScopedLock<CriticalSection> digitalInputsLock(eventWords.getLock());
+
+	return eventWords.size() > 0;
 }

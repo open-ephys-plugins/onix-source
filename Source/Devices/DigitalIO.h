@@ -82,13 +82,23 @@ public:
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
 
+	EventChannel::Settings getEventChannelSettings();
+
 	void addFrame(oni_frame_t*) override;
 
 	void processFrames() override;
 
+	uint64_t getEventWord();
+
+	bool hasEventWord();
+
 private:
 
+	static const int numDigitalInputs = 8;
+	static const int numButtons = 6;
+
 	Array<oni_frame_t*, CriticalSection, 10> frameArray;
+	Array<uint64_t, CriticalSection, 64> eventWords;
 
 	JUCE_LEAK_DETECTOR(DigitalIO);
 };

@@ -92,15 +92,17 @@ public:
 
 	void disconnectDevices(bool updateStreamInfo = false);
 
-	OnixDeviceVector getDataSources() const;
+	OnixDeviceVector getDataSources();
 
-	OnixDeviceVector getDataSourcesFromPort(PortName port) const;
+	OnixDeviceVector getDataSourcesFromPort(PortName port);
 
-	OnixDeviceVector getDataSourcesFromOffset(int offset) const;
+	OnixDeviceVector getDataSourcesFromOffset(int offset);
+
+	std::shared_ptr<OnixDevice> getDevice(OnixDeviceType type);
 
 	static std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector, bool filterDevices = false);
 
-	std::map<int, OnixDeviceType> createDeviceMap(bool filterDevices = false) const;
+	std::map<int, OnixDeviceType> createDeviceMap(bool filterDevices = false);
 
 	std::map<int, String> getHeadstageMap();
 

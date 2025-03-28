@@ -164,10 +164,10 @@ void AnalogIO::processFrames()
 
 			currentAverageFrame = 0;
 
-			currentFrame++;
-
 			timestamps[currentFrame] = frame->time;
 			sampleNumbers[currentFrame] = sampleNumber++;
+
+			currentFrame++;
 		}
 
 		oni_destroy_frame(frame);

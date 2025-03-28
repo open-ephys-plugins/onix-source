@@ -165,7 +165,13 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 		}
 	}
 
-	if (ind == -1) { LOGD("Unable to match " + device->getName() + " to an open tab."); return; }
+	if (ind == -1)
+	{
+		if (device->type != OnixDeviceType::MEMORYMONITOR && device->type != OnixDeviceType::HEARTBEAT)
+			LOGD("Unable to match " + device->getName() + " to an open tab."); 
+		
+		return;
+	}
 
 	if (device->type == OnixDeviceType::NEUROPIXELS_1)
 	{

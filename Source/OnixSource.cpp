@@ -315,7 +315,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	LOGD("All devices initialized.");
 }
 
-OnixDeviceVector OnixSource::getDataSources() const
+OnixDeviceVector OnixSource::getDataSources()
 {
 	OnixDeviceVector devices{};
 
@@ -327,7 +327,7 @@ OnixDeviceVector OnixSource::getDataSources() const
 	return devices;
 }
 
-OnixDeviceVector OnixSource::getDataSourcesFromPort(PortName port) const
+OnixDeviceVector OnixSource::getDataSourcesFromPort(PortName port)
 {
 	OnixDeviceVector devices{};
 
@@ -340,7 +340,7 @@ OnixDeviceVector OnixSource::getDataSourcesFromPort(PortName port) const
 	return devices;
 }
 
-OnixDeviceVector OnixSource::getDataSourcesFromOffset(int offset) const
+OnixDeviceVector OnixSource::getDataSourcesFromOffset(int offset)
 {
 	OnixDeviceVector devices{};
 	offset = PortController::getOffsetFromIndex(offset);
@@ -352,6 +352,16 @@ OnixDeviceVector OnixSource::getDataSourcesFromOffset(int offset) const
 	}
 
 	return devices;
+}
+
+std::shared_ptr<OnixDevice> OnixSource::getDevice(OnixDeviceType type)
+{
+	for (const auto& device : sources)
+	{
+		if (device->type == type) return device;
+	}
+
+	return nullptr;
 }
 
 std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devices, bool filterDevices)
@@ -368,7 +378,7 @@ std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devic
 	return deviceMap;
 }
 
-std::map<int, OnixDeviceType> OnixSource::createDeviceMap(bool filterDevices) const
+std::map<int, OnixDeviceType> OnixSource::createDeviceMap(bool filterDevices)
 {
 	return createDeviceMap(getDataSources(), filterDevices);
 }
@@ -462,6 +472,8 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 	updateSourceBuffers();
 
+	std::shared_ptr<DigitalIO> digitalIO = std::static_pointer_cast<DigitalIO>(getDevice(OnixDeviceType::DIGITALIO));
+
 	if (devicesFound)
 	{
 		for (const auto& source : sources)
@@ -529,6 +541,18 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 			}
+			else if (source->type == OnixDeviceType::DIGITALIO)
+			{
+				DeviceInfo::Settings deviceSettings{
+					source->getName(),
+					"Digital IO",
+					"digitalio",
+					"0000000",
+					""
+				};
+
+				deviceInfos->add(new DeviceInfo(deviceSettings));
+			}
 
 			// add data streams and channels
 			for (const auto& streamInfo : source->streamInfos)
@@ -557,6 +581,15 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 						stream
 					};
 					continuousChannels->add(new ContinuousChannel(channelSettings));
+				}
+
+				if (source->type == OnixDeviceType::MEMORYMONITOR && digitalIO != nullptr && digitalIO->isEnabled())
+				{
+					auto ttlChannelSettings = digitalIO->getEventChannelSettings();
+					ttlChannelSettings.stream = stream;
+					eventChannels->add(new EventChannel(ttlChannelSettings));
+
+					std::static_pointer_cast<MemoryMonitor>(source)->setDigitalIO(digitalIO);
 				}
 			}
 		}

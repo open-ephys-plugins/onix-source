@@ -22,6 +22,7 @@
 */
 
 #include "MemoryMonitor.h"
+#include "DigitalIO.h"
 
 MemoryMonitorUsage::MemoryMonitorUsage(GenericProcessor* p)
 	: LevelMonitor(p)
@@ -58,6 +59,19 @@ void MemoryMonitorUsage::stopAcquisition()
 MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
 	: OnixDevice(name, OnixDeviceType::MEMORYMONITOR, deviceIdx_, oni_ctx)
 {
+	StreamInfo percentUsedStream;
+	percentUsedStream.name = name + "-PercentUsed";
+	percentUsedStream.description = "Percent of available memory that is currently used";
+	percentUsedStream.identifier = "onix-memorymonitor.data.percentused";
+	percentUsedStream.numChannels = 1;
+	percentUsedStream.sampleRate = samplesPerSecond;
+	percentUsedStream.channelPrefix = "Percent";
+	percentUsedStream.bitVolts = 1.0f;
+	percentUsedStream.channelType = ContinuousChannel::Type::AUX;
+	streamInfos.add(percentUsedStream);
+
+	for (int i = 0; i < numFrames; i++)
+		eventCodes[i] = 0;
 }
 
 int MemoryMonitor::configureDevice()
@@ -85,6 +99,9 @@ bool MemoryMonitor::updateSettings()
 
 void MemoryMonitor::startAcquisition()
 {
+	currentFrame = 0;
+	sampleNumber = 0;
+
 	lastPercentUsedValue = 0.0f;
 }
 
@@ -103,6 +120,17 @@ void MemoryMonitor::addFrame(oni_frame_t* frame)
 	frameArray.add(frame);
 }
 
+void MemoryMonitor::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+{
+	for (StreamInfo streamInfo : streamInfos)
+	{
+		sourceBuffers.add(new DataBuffer(streamInfo.numChannels, (int)streamInfo.sampleRate * bufferSizeInSeconds));
+
+		if (streamInfo.channelPrefix.equalsIgnoreCase("Percent"))
+			percentUsedBuffer = sourceBuffers.getLast();
+	}
+}
+
 float MemoryMonitor::getLastPercentUsedValue()
 {
 	return lastPercentUsedValue;
@@ -118,8 +146,32 @@ void MemoryMonitor::processFrames()
 		uint32_t* dataPtr = (uint32_t*)frame->data;
 		uint64_t timestamp = frame->time;
 
-		lastPercentUsedValue = 100.0f * float(*(dataPtr + 2)) / totalMemory;
+		timestamps[currentFrame] = frame->time;
+
+		percentUsedSamples[currentFrame] = 100.0f * float(*(dataPtr + 2)) / totalMemory;
+
+		lastPercentUsedValue = percentUsedSamples[currentFrame];
 
 		oni_destroy_frame(frame);
+
+		sampleNumbers[currentFrame] = sampleNumber++;
+
+		prevWord = m_digitalIO != nullptr && m_digitalIO->hasEventWord() ? m_digitalIO->getEventWord() : prevWord;
+
+		eventCodes[currentFrame] = prevWord;
+
+		currentFrame++;
+
+		if (currentFrame >= numFrames)
+		{
+			shouldAddToBuffer = true;
+			currentFrame = 0;
+		}
+
+		if (shouldAddToBuffer)
+		{
+			shouldAddToBuffer = false;
+			percentUsedBuffer->addToBuffer(percentUsedSamples, sampleNumbers, timestamps, eventCodes, numFrames);
+		}
 	}
 }

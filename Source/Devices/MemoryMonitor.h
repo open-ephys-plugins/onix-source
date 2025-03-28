@@ -26,6 +26,8 @@
 
 #include "../OnixDevice.h"
 
+class DigitalIO;
+
 enum class MemoryMonitorRegisters : uint32_t
 {
 	ENABLE = 0,
@@ -55,7 +57,7 @@ public:
 	void stopAcquisition() override;
 
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
-	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
+	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
 	void addFrame(oni_frame_t*) override;
 
@@ -63,12 +65,34 @@ public:
 
 	float getLastPercentUsedValue();
 
+	void setDigitalIO(std::shared_ptr<DigitalIO> digitalIO) { m_digitalIO = digitalIO; }
+
 private:
 
-	Array<oni_frame_t*, CriticalSection, 10> frameArray;
+	DataBuffer* percentUsedBuffer;
+
+	std::shared_ptr<DigitalIO> m_digitalIO;
+
+	uint64_t prevWord = 0;
+
+	static const int numFrames = 10;
+
+	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
+
+	unsigned short currentFrame = 0;
+	int sampleNumber = 0;
 
 	/** The frequency at which memory use is recorded in Hz. */
-	const uint32_t samplesPerSecond = 10;
+	const uint32_t samplesPerSecond = 100;
+
+	bool shouldAddToBuffer = false;
+
+	float percentUsedSamples[numFrames];
+	float bytesUsedSamples[numFrames];
+
+	double timestamps[numFrames];
+	int64_t sampleNumbers[numFrames];
+	uint64_t eventCodes[numFrames];
 
 	/** The total amount of memory, in 32-bit words, on the hardware that is available for data buffering*/
 	uint32_t totalMemory;
