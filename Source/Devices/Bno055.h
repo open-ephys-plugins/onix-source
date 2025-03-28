@@ -60,11 +60,7 @@ public:
 
 private:
 
-	DataBuffer* eulerBuffer;
-	DataBuffer* quaternionBuffer;
-	DataBuffer* accelerationBuffer;
-	DataBuffer* gravityBuffer;
-	DataBuffer* temperatureBuffer;
+	DataBuffer* bnoBuffer;
 
 	static const int numFrames = 2;
 
@@ -72,11 +68,10 @@ private:
 
 	bool shouldAddToBuffer = false;
 
-	float eulerSamples[3 * numFrames];
-	float quaternionSamples[4 * numFrames];
-	float accelerationSamples[3 * numFrames];
-	float gravitySamples[3 * numFrames];
-	float temperatureSamples[numFrames];
+	static const int numberOfChannels = 3 + 3 + 4 + 3 + 1;
+	static constexpr float sampleRate = 100.0f;
+
+	float bnoSamples[numberOfChannels * numFrames];
 
 	double bnoTimestamps[numFrames];
 	int64 sampleNumbers[numFrames];

@@ -86,9 +86,9 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
-		devices.push_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
-		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
+		devices.emplace_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
 	}
 	else if (hubName == BREAKOUT_BOARD_NAME)
 	{
@@ -147,7 +147,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 
 void OnixSourceCanvas::addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_)
 {
-	settingsInterfaces.push_back(interface_);
+	settingsInterfaces.emplace_back(interface_);
 	tab->addTab(tabName, Colours::darkgrey, createCustomViewport(interface_.get()), true);
 }
 
@@ -155,7 +155,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 {
 	int ind = -1;
 
-	for (int j = 0; j < settingsInterfaces.size(); j += 1)
+	for (int j = 0; j < settingsInterfaces.size(); j++)
 	{
 		if (device->getDeviceIdx() == settingsInterfaces[j]->device->getDeviceIdx() &&
 			device->getName() == settingsInterfaces[j]->device->getName())
@@ -176,8 +176,11 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	if (device->type == OnixDeviceType::NEUROPIXELS_1)
 	{
 		// NB: Neuropixels-specific settings need to be updated
-		auto npx1 = std::static_pointer_cast<Neuropixels_1>(device);
-		npx1->setSettings(std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device)->settings.get());
+		auto npx1Found = std::static_pointer_cast<Neuropixels_1>(device);
+		auto npx1Selected = std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device);
+		npx1Found->setSettings(npx1Selected->settings.get());
+		npx1Found->adcCalibrationFilePath = npx1Selected->adcCalibrationFilePath;
+		npx1Found->gainCalibrationFilePath = npx1Selected->gainCalibrationFilePath;
 	}
 	// TODO: Add more devices, since they will have device-specific settings to be updated
 
@@ -355,8 +358,8 @@ void OnixSourceCanvas::refreshTabs()
 	{
 		std::vector<int> selectedIndices, foundIndices;
 
-		for (const auto& [key, _] : selectedMap) { selectedIndices.push_back(key); }
-		for (const auto& [key, _] : foundMap) { foundIndices.push_back(key); }
+		for (const auto& [key, _] : selectedMap) { selectedIndices.emplace_back(key); }
+		for (const auto& [key, _] : foundMap) { foundIndices.emplace_back(key); }
 
 		auto selectedOffsets = PortController::getUniqueOffsetsFromIndices(selectedIndices);
 		auto foundOffsets = PortController::getUniqueOffsetsFromIndices(foundIndices);

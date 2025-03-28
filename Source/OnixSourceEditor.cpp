@@ -37,72 +37,75 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	memoryUsage->setTooltip("Monitors the percent of the hardware memory buffer used.");
 	addAndMakeVisible(memoryUsage.get());
 
-	portLabelA = std::make_unique<Label>("portLabelA", "Port A:");
-	portLabelA->setBounds(memoryUsage->getRight() + 5, memoryUsage->getY(), 60, 16);
-	portLabelA->setFont(fontOptionTitle);
-	addAndMakeVisible(portLabelA.get());
+	if (source->isContextInitialized())
+	{
+		portLabelA = std::make_unique<Label>("portLabelA", "Port A:");
+		portLabelA->setBounds(memoryUsage->getRight() + 5, memoryUsage->getY(), 60, 16);
+		portLabelA->setFont(fontOptionTitle);
+		addAndMakeVisible(portLabelA.get());
 
-	headstageComboBoxA = std::make_unique<ComboBox>("headstageComboBoxA");
-	headstageComboBoxA->setBounds(portLabelA->getRight() + 2, portLabelA->getY(), 120, portLabelA->getHeight());
-	headstageComboBoxA->addListener(this);
-	headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
-	addHeadstageComboBoxOptions(headstageComboBoxA.get());
-	headstageComboBoxA->setSelectedId(1, dontSendNotification);
-	addAndMakeVisible(headstageComboBoxA.get());
+		headstageComboBoxA = std::make_unique<ComboBox>("headstageComboBoxA");
+		headstageComboBoxA->setBounds(portLabelA->getRight() + 2, portLabelA->getY(), 120, portLabelA->getHeight());
+		headstageComboBoxA->addListener(this);
+		headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
+		addHeadstageComboBoxOptions(headstageComboBoxA.get());
+		headstageComboBoxA->setSelectedId(1, dontSendNotification);
+		addAndMakeVisible(headstageComboBoxA.get());
 
-	portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage:");
-	portVoltageOverrideLabelA->setBounds(portLabelA->getX() + 15, headstageComboBoxA->getBottom() + 4, 62, headstageComboBoxA->getHeight());
-	portVoltageOverrideLabelA->setFont(fontOptionSmall);
-	addAndMakeVisible(portVoltageOverrideLabelA.get());
+		portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage:");
+		portVoltageOverrideLabelA->setBounds(portLabelA->getX() + 15, headstageComboBoxA->getBottom() + 4, 62, headstageComboBoxA->getHeight());
+		portVoltageOverrideLabelA->setFont(fontOptionSmall);
+		addAndMakeVisible(portVoltageOverrideLabelA.get());
 
-	portVoltageValueA = std::make_unique<Label>("voltageValueA", "Auto");
-	portVoltageValueA->setBounds(portVoltageOverrideLabelA->getRight() + 3, portVoltageOverrideLabelA->getY(), 40, portVoltageOverrideLabelA->getHeight());
-	portVoltageValueA->setFont(fontOptionSmall);
-	portVoltageValueA->setEditable(true);
-	portVoltageValueA->setColour(Label::textColourId, Colours::black);
-	portVoltageValueA->setColour(Label::backgroundColourId, Colours::lightgrey);
-	portVoltageValueA->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
-	portVoltageValueA->addListener(this);
-	addAndMakeVisible(portVoltageValueA.get());
+		portVoltageValueA = std::make_unique<Label>("voltageValueA", "Auto");
+		portVoltageValueA->setBounds(portVoltageOverrideLabelA->getRight() + 3, portVoltageOverrideLabelA->getY(), 40, portVoltageOverrideLabelA->getHeight());
+		portVoltageValueA->setFont(fontOptionSmall);
+		portVoltageValueA->setEditable(true);
+		portVoltageValueA->setColour(Label::textColourId, Colours::black);
+		portVoltageValueA->setColour(Label::backgroundColourId, Colours::lightgrey);
+		portVoltageValueA->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
+		portVoltageValueA->addListener(this);
+		addAndMakeVisible(portVoltageValueA.get());
 
-	portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
-	portLabelB->setBounds(portLabelA->getX(), portVoltageOverrideLabelA->getBottom() + 3, portLabelA->getWidth(), portLabelA->getHeight());
-	portLabelB->setFont(fontOptionTitle);
-	addAndMakeVisible(portLabelB.get());
+		portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
+		portLabelB->setBounds(portLabelA->getX(), portVoltageOverrideLabelA->getBottom() + 3, portLabelA->getWidth(), portLabelA->getHeight());
+		portLabelB->setFont(fontOptionTitle);
+		addAndMakeVisible(portLabelB.get());
 
-	headstageComboBoxB = std::make_unique<ComboBox>("headstageComboBoxB");
-	headstageComboBoxB->setBounds(portLabelB->getRight(), portLabelB->getY(), headstageComboBoxA->getWidth(), portLabelB->getHeight());
-	headstageComboBoxB->addListener(this);
-	headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
-	addHeadstageComboBoxOptions(headstageComboBoxB.get());
+		headstageComboBoxB = std::make_unique<ComboBox>("headstageComboBoxB");
+		headstageComboBoxB->setBounds(portLabelB->getRight(), portLabelB->getY(), headstageComboBoxA->getWidth(), portLabelB->getHeight());
+		headstageComboBoxB->addListener(this);
+		headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
+		addHeadstageComboBoxOptions(headstageComboBoxB.get());
 
-	headstageComboBoxB->setSelectedId(1, dontSendNotification);
-	addAndMakeVisible(headstageComboBoxB.get());
+		headstageComboBoxB->setSelectedId(1, dontSendNotification);
+		addAndMakeVisible(headstageComboBoxB.get());
 
-	portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage:");
-	portVoltageOverrideLabelB->setBounds(portVoltageOverrideLabelA->getX(), headstageComboBoxB->getBottom() + 4, portVoltageOverrideLabelA->getWidth(), portVoltageOverrideLabelA->getHeight());
-	portVoltageOverrideLabelB->setFont(fontOptionSmall);
-	addAndMakeVisible(portVoltageOverrideLabelB.get());
+		portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage:");
+		portVoltageOverrideLabelB->setBounds(portVoltageOverrideLabelA->getX(), headstageComboBoxB->getBottom() + 4, portVoltageOverrideLabelA->getWidth(), portVoltageOverrideLabelA->getHeight());
+		portVoltageOverrideLabelB->setFont(fontOptionSmall);
+		addAndMakeVisible(portVoltageOverrideLabelB.get());
 
-	portVoltageValueB = std::make_unique<Label>("voltageValueB", "Auto");
-	portVoltageValueB->setBounds(portVoltageValueA->getX(), portVoltageOverrideLabelB->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
-	portVoltageValueB->setFont(fontOptionSmall);
-	portVoltageValueB->setEditable(true);
-	portVoltageValueB->setColour(Label::textColourId, Colours::black);
-	portVoltageValueB->setColour(Label::backgroundColourId, Colours::lightgrey);
-	portVoltageValueB->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
-	portVoltageValueB->addListener(this);
-	addAndMakeVisible(portVoltageValueB.get());
+		portVoltageValueB = std::make_unique<Label>("voltageValueB", "Auto");
+		portVoltageValueB->setBounds(portVoltageValueA->getX(), portVoltageOverrideLabelB->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
+		portVoltageValueB->setFont(fontOptionSmall);
+		portVoltageValueB->setEditable(true);
+		portVoltageValueB->setColour(Label::textColourId, Colours::black);
+		portVoltageValueB->setColour(Label::backgroundColourId, Colours::lightgrey);
+		portVoltageValueB->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
+		portVoltageValueB->addListener(this);
+		addAndMakeVisible(portVoltageValueB.get());
 
-	connectButton = std::make_unique<UtilityButton>("CONNECT");
-	connectButton->setFont(fontOptionSmall);
-	connectButton->setBounds(portLabelB->getX() + 5, portVoltageOverrideLabelB->getBottom() + 3, 70, 18);
-	connectButton->setRadius(3.0f);
-	connectButton->setClickingTogglesState(true);
-	connectButton->setToggleState(false, dontSendNotification);
-	connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
-	connectButton->addListener(this);
-	addAndMakeVisible(connectButton.get());
+		connectButton = std::make_unique<UtilityButton>("CONNECT");
+		connectButton->setFont(fontOptionSmall);
+		connectButton->setBounds(portLabelB->getX() + 5, portVoltageOverrideLabelB->getBottom() + 3, 70, 18);
+		connectButton->setRadius(3.0f);
+		connectButton->setClickingTogglesState(true);
+		connectButton->setToggleState(false, dontSendNotification);
+		connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
+		connectButton->addListener(this);
+		addAndMakeVisible(connectButton.get());
+	}
 }
 
 void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
@@ -242,8 +245,8 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 	std::vector<int> deviceIndices;
 	std::vector<int> tabIndices;
 
-	for (auto& [key, _] : deviceMap) { deviceIndices.push_back(key); }
-	for (auto& [key, _] : tabMap) { tabIndices.push_back(key); }
+	for (auto& [key, _] : deviceMap) { deviceIndices.emplace_back(key); }
+	for (auto& [key, _] : tabMap) { tabIndices.emplace_back(key); }
 
 	auto devicePorts = PortController::getUniquePortsFromIndices(deviceIndices);
 	auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
@@ -402,7 +405,7 @@ String OnixSourceEditor::getHeadstageSelected(PortName port)
 
 void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage)
 {
-	for (int i = 0; i < comboBox->getNumItems(); i += 1)
+	for (int i = 0; i < comboBox->getNumItems(); i++)
 	{
 		if (headstage.contains(comboBox->getItemText(i)))
 		{

@@ -88,6 +88,8 @@ public:
 
 	void resetContext() { if (context != nullptr && context->isInitialized()) context->issueReset(); }
 
+	bool isContextInitialized() { return context != nullptr && context->isInitialized(); }
+
 	void initializeDevices(bool updateStreamInfo = false);
 
 	void disconnectDevices(bool updateStreamInfo = false);
@@ -138,6 +140,10 @@ private:
 	const oni_size_t block_read_size = 2048;
 
 	bool devicesFound = false;
+
+	void addIndividualStreams(Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
+
+	void addCombinedStreams(DataStream::Settings, Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 };
