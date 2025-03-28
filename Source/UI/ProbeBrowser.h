@@ -59,7 +59,7 @@ public:
 private:
     const int leftEdgeOffset = 220;
 
-    std::map<Bank, Colour> disconnectedColours;
+    std::map<Bank, Colour> disconnectedColors;
 
     // display variables
     int zoomHeight;

@@ -70,7 +70,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	headstageComboBoxB->addListener(this);
 	headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
 	addHeadstageComboBoxOptions(headstageComboBoxB.get());
-
 	headstageComboBoxB->setSelectedId(1, dontSendNotification);
 	addAndMakeVisible(headstageComboBoxB.get());
 
@@ -105,6 +104,7 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 	comboBox->addItem("Select headstage...", 1);
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
+	comboBox->addItem(NEUROPIXELSV2E_HEADSTAGE_NAME, 3);
 	// TODO: Add list of available devices here
 	// TODO: Create const char* for the headstage names so they are shared across the plugin
 }
@@ -279,7 +279,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		{
 			source->getParameter(passthroughName)->setNextValue(false);
 		}
-		else
+		else if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME)
 		{
 			source->getParameter(passthroughName)->setNextValue(true);
 		}
@@ -364,7 +364,7 @@ String OnixSourceEditor::getHeadstageSelected(PortName port)
 
 void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage)
 {
-	for (int i = 0; i < comboBox->getNumItems(); i += 1)
+	for (int i = 0; i < comboBox->getNumItems(); i++)
 	{
 		if (headstage.contains(comboBox->getItemText(i)))
 		{

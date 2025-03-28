@@ -93,6 +93,10 @@ DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String heads
 	{
 		return DiscoveryParameters(5.0f, 7.0f, 1.0f, 0.2f);
 	}
+	else if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME)
+	{
+		return DiscoveryParameters(3.3f, 5.5f, 1.0f, 0.2f);
+	}
 
 	return DiscoveryParameters();
 }

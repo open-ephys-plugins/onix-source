@@ -47,7 +47,7 @@ enum class OnixDeviceType {
 	HS64,
 	BNO,
 	NEUROPIXELS_1,
-	NEUROPIXELS_2,
+	NEUROPIXELSV2E,
 	ADC,
 	PORT_CONTROL
 };

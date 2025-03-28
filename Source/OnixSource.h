@@ -29,8 +29,8 @@
 #include "Onix1.h"
 #include "OnixDevice.h"
 #include "OnixSourceEditor.h"
-#include "Devices/DeviceList.h"
 #include "FrameReader.h"
+#include "Devices/PortController.h"
 
 /**
 

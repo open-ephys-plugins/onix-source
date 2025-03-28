@@ -32,6 +32,7 @@
 #include "../../plugin-GUI/Source/Utils/Utils.h"
 
 constexpr const char* NEUROPIXELSV1F_HEADSTAGE_NAME = "Neuropixels 1.0f";
+constexpr const char* NEUROPIXELSV2E_HEADSTAGE_NAME = "Neuropixels 2.0e";
 
 class error_t : public std::exception
 {

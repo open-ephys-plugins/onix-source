@@ -22,6 +22,7 @@ along with this program.If not, see < http://www.gnu.org/licenses/>.
 */
 
 #include "OnixSourceCanvas.h"
+#include "OnixSource.h"
 
 CustomTabButton::CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_) :
 	TabBarButton(name, parent->getTabbedButtonBar()),
@@ -88,6 +89,12 @@ void OnixSourceCanvas::addHeadstage(String headstage, PortName port)
 		devices.push_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
 		devices.push_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
 	}
+	else if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME)
+	{
+		tab = addTopLevelTab(getTopLevelTabName(port, headstage), (int)port - 1);
+
+		devices.push_back(std::make_shared<Neuropixels2e>("Probe-A", offset, nullptr));
+	}
 
 	if (tab != nullptr && devices.size() > 0)
 	{
@@ -111,6 +118,14 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 			auto bno055Interface = std::make_shared<Bno055Interface>(std::static_pointer_cast<Bno055>(device), editor, this);
 			addInterfaceToTab(getDeviceTabName(device), tab, bno055Interface);
 		}
+		else if (device->type == OnixDeviceType::NEUROPIXELSV2E)
+		{
+			auto npxv2eInterfaceA = std::make_shared<NeuropixelsV2Interface>(std::static_pointer_cast<Neuropixels2e>(device), 0, editor, this);
+			auto npxv2eInterfaceB = std::make_shared<NeuropixelsV2Interface>(std::static_pointer_cast<Neuropixels2e>(device), 1, editor, this);
+
+			addInterfaceToTab(getDeviceTabName(device) + "-A", tab, npxv2eInterfaceA);
+			addInterfaceToTab(getDeviceTabName(device) + "-B", tab, npxv2eInterfaceB);
+		}
 	}
 }
 
@@ -124,7 +139,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 {
 	int ind = -1;
 
-	for (int j = 0; j < settingsInterfaces.size(); j += 1)
+	for (int j = 0; j < settingsInterfaces.size(); j++)
 	{
 		if (device->getDeviceIdx() == settingsInterfaces[j]->device->getDeviceIdx() &&
 			device->getName() == settingsInterfaces[j]->device->getName())

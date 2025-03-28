@@ -29,7 +29,8 @@
 #include "UI/InterfaceList.h"
 
 #include "OnixSourceEditor.h"
-#include "OnixSource.h"
+
+class OnixSource;
 
 /**
 

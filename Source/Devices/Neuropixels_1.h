@@ -27,15 +27,6 @@
 #include "../OnixDevice.h"
 #include "../NeuropixComponents.h"
 
-class OnixSource;
-
-#include <ctime>
-#include <chrono>
-#include <bitset>
-#include <vector>
-#include <string>
-#include <map>
-
 enum class NeuropixelsRegisters : uint32_t
 {
 	OP_MODE = 0x00,
@@ -82,7 +73,7 @@ enum class RecMod : uint32_t
 	ACTIVE = DIG_NRESET | CH_NRESET
 };
 
-enum class NeuropixelsReference : unsigned char
+enum class NeuropixelsV1Reference : unsigned char
 {
 	External = 0b001,
 	Tip = 0b010
@@ -168,8 +159,6 @@ public:
 	/** Update the settings of the device by writing to hardware */
 	bool updateSettings() override;
 
-	void setSettings(ProbeSettings* settings_) const;
-
 	/** Starts probe data streaming */
 	void startAcquisition() override;
 
@@ -189,26 +178,32 @@ public:
 
 	int getGainValue(NeuropixelsGain);
 
-	NeuropixelsReference getReference(int index);
+	NeuropixelsV1Reference getReference(int index);
 
 	/** Select a preset electrode configuration */
-	Array<int> selectElectrodeConfiguration(String config);
+	std::vector<int> selectElectrodeConfiguration(String config);
 
 	static const int shankConfigurationBitCount = 968;
 	static const int BaseConfigurationBitCount = 2448;
 
-	std::bitset<shankConfigurationBitCount> static makeShankBits(NeuropixelsReference reference, Array<int> channelMap);
-
-	std::vector<std::bitset<BaseConfigurationBitCount>> static makeConfigBits(NeuropixelsReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
-
-	void writeShiftRegisters(std::bitset<shankConfigurationBitCount> shankBits, std::vector<std::bitset<BaseConfigurationBitCount>> configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
-
-	std::unique_ptr<ProbeSettings> settings;
-
-	static const int numberOfChannels = 384;
+	using ShankBitset = std::bitset<shankConfigurationBitCount>;
+	using CongigBitsArray = std::array<std::bitset<BaseConfigurationBitCount>, 2>;
 
 	String adcCalibrationFilePath;
 	String gainCalibrationFilePath;
+
+	static const int numberOfChannels = 384;
+	static const int numberOfElectrodes = 960;
+
+	ShankBitset static makeShankBits(NeuropixelsV1Reference reference, std::array<int, numberOfChannels> channelMap);
+
+	CongigBitsArray static makeConfigBits(NeuropixelsV1Reference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
+
+	void writeShiftRegisters(ShankBitset shankBits, CongigBitsArray configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
+
+	std::unique_ptr<ProbeSettings<numberOfChannels, numberOfElectrodes>> settings;
+
+	void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_) const;
 
 private:
 
@@ -226,9 +221,7 @@ private:
 
 	static const int ProbeI2CAddress = 0x70;
 
-	template<int N> std::vector<unsigned char> static toBitReversedBytes(std::bitset<N> shankBits);
-
-	void defineMetadata(ProbeSettings* settings);
+	void defineMetadata(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings);
 
 	Array<oni_frame_t*, CriticalSection, numUltraFrames> frameArray;
 
@@ -267,8 +260,6 @@ class BackgroundUpdaterWithProgressWindow : public ThreadWithProgressWindow
 {
 public:
 	BackgroundUpdaterWithProgressWindow(Neuropixels_1* d);
-
-	~BackgroundUpdaterWithProgressWindow();
 
 	void run();
 

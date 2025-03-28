@@ -27,6 +27,7 @@
 #include <DataThreadHeaders.h>
 #include <stdio.h>
 #include <string.h>
+#include <bitset>
 
 #include "UI/ActivityView.h"
 
@@ -35,6 +36,15 @@
 # define MAX_ALLOWABLE_TIMESTAMP_JUMP 4
 
 # define MAXPACKETS 64
+
+enum class VisualizationMode
+{
+	ENABLE_VIEW,
+	AP_GAIN_VIEW,
+	LFP_GAIN_VIEW,
+	REFERENCE_VIEW,
+	ACTIVITY_VIEW
+};
 
 enum class ProbeType
 {
@@ -105,6 +115,7 @@ struct ProbeMetadata
 	bool switchable;
 };
 
+template<int numChannels, int numElectrodes>
 struct ProbeSettings
 {
 	void updateProbeSettings(ProbeSettings* newSettings)
@@ -123,7 +134,6 @@ struct ProbeSettings
 
 		selectedBank = newSettings->selectedBank;
 		selectedShank = newSettings->selectedShank;
-		selectedChannel = newSettings->selectedChannel;
 		selectedElectrode = newSettings->selectedElectrode;
 		electrodeMetadata = newSettings->electrodeMetadata;
 
@@ -136,7 +146,6 @@ struct ProbeSettings
 	{
 		selectedBank.clear();
 		selectedShank.clear();
-		selectedChannel.clear();
 		selectedElectrode.clear();
 	}
 
@@ -152,15 +161,33 @@ struct ProbeSettings
 	int referenceIndex;
 	bool apFilterState;
 
-	Array<Bank> selectedBank;
-	Array<int> selectedShank;
-	Array<int> selectedChannel;
-	Array<int> selectedElectrode;
-	Array<ElectrodeMetadata> electrodeMetadata;
+	std::array<Bank, numChannels> selectedBank;
+	std::array<int, numChannels> selectedShank;
+	std::array<int, numChannels> selectedElectrode;
+	std::array<ElectrodeMetadata, numElectrodes> electrodeMetadata;
 
 	ProbeType probeType;
 
 	ProbeMetadata probeMetadata;
 };
+
+template<int N> 
+std::vector<unsigned char> toBitReversedBytes(std::bitset<N> bits)
+{
+	std::vector<unsigned char> bytes((bits.size() - 1) / 8 + 1);
+
+	for (int i = 0; i < bytes.size(); i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			bytes[i] |= bits[i * 8 + j] << (8 - j - 1);
+		}
+
+		// NB: Reverse bytes (http://graphics.stanford.edu/~seander/bithacks.html)
+		bytes[i] = (unsigned char)((bytes[i] * 0x0202020202ul & 0x010884422010ul) % 1023);
+	}
+
+	return bytes;
+}
 
 #endif  // __NEUROPIXELCOMPONENTS_H__

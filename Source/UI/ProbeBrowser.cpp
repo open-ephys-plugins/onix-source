@@ -32,6 +32,7 @@ ProbeBrowser::ProbeBrowser(SettingsInterface* parent_) : parent(parent_)
 
 	activityToView = ActivityToView::APVIEW;
 
+	// TODO: Make a common inheritance for all neuropixels devices, and cast to that here instead of Npxv1f
 	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 
 	if (device->settings->probeType == ProbeType::NPX_V2E || device->settings->probeType == ProbeType::NPX_V2E_BETA)
@@ -109,20 +110,20 @@ ProbeBrowser::ProbeBrowser(SettingsInterface* parent_) : parent(parent_)
 	zoomHeight = defaultZoomHeight; // number of rows
 	lowerBound = 530; // bottom of interface
 
-	disconnectedColours[Bank::NONE] = Colour(0, 0, 0);
-	disconnectedColours[Bank::A] = Colour(180, 180, 180);
-	disconnectedColours[Bank::B] = Colour(160, 160, 160);
-	disconnectedColours[Bank::C] = Colour(140, 140, 140);
-	disconnectedColours[Bank::D] = Colour(120, 120, 120);
-	disconnectedColours[Bank::E] = Colour(180, 180, 180);
-	disconnectedColours[Bank::F] = Colour(160, 160, 160);
-	disconnectedColours[Bank::G] = Colour(140, 140, 140);
-	disconnectedColours[Bank::H] = Colour(120, 120, 120);
-	disconnectedColours[Bank::I] = Colour(180, 180, 180);
-	disconnectedColours[Bank::J] = Colour(160, 160, 160);
-	disconnectedColours[Bank::K] = Colour(140, 140, 140);
-	disconnectedColours[Bank::L] = Colour(120, 120, 120);
-	disconnectedColours[Bank::M] = Colour(180, 180, 180);
+	disconnectedColors[Bank::NONE] = Colour(0, 0, 0);
+	disconnectedColors[Bank::A] = Colour(180, 180, 180);
+	disconnectedColors[Bank::B] = Colour(160, 160, 160);
+	disconnectedColors[Bank::C] = Colour(140, 140, 140);
+	disconnectedColors[Bank::D] = Colour(120, 120, 120);
+	disconnectedColors[Bank::E] = Colour(180, 180, 180);
+	disconnectedColors[Bank::F] = Colour(160, 160, 160);
+	disconnectedColors[Bank::G] = Colour(140, 140, 140);
+	disconnectedColors[Bank::H] = Colour(120, 120, 120);
+	disconnectedColors[Bank::I] = Colour(180, 180, 180);
+	disconnectedColors[Bank::J] = Colour(160, 160, 160);
+	disconnectedColors[Bank::K] = Colour(140, 140, 140);
+	disconnectedColors[Bank::L] = Colour(120, 120, 120);
+	disconnectedColors[Bank::M] = Colour(180, 180, 180);
 
 	dragZoneWidth = 10;
 }
@@ -257,7 +258,7 @@ int ProbeBrowser::getNearestElectrode(int x, int y) const
 		}
 	}
 
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
+	auto electrodeMetadata = device->settings->electrodeMetadata;
 
 	for (int i = 0; i < electrodeMetadata.size(); i++)
 	{
@@ -302,12 +303,11 @@ Array<int> ProbeBrowser::getElectrodesWithinBounds(int x, int y, int w, int h) c
 			selectedColumns.add(i);
 	}
 
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
+	auto electrodeMetadata = device->settings->electrodeMetadata;
 
 	for (int i = 0; i < electrodeMetadata.size(); i++)
 	{
 		if ((electrodeMetadata[i].row_index >= startrow) && (electrodeMetadata[i].row_index <= endrow))
-
 		{
 			int column_id = electrodeMetadata[i].shank * probeMetadata.columns_per_shank + electrodeMetadata[i].column_index;
 
@@ -327,7 +327,7 @@ String ProbeBrowser::getElectrodeInfoString(int index)
 
 	if (!device->settings) return "";
 
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
+	auto electrodeMetadata = device->settings->electrodeMetadata;
 
 	String a;
 	a += "Electrode ";
@@ -444,25 +444,25 @@ void ProbeBrowser::mouseDown(const MouseEvent& event)
 
 	initialOffset = zoomOffset;
 	initialHeight = zoomHeight;
-	
+
 	if (event.x > 150 && event.x < 400)
 	{
 		if (!event.mods.isShiftDown())
 		{
 			for (int i = 0; i < device->settings->electrodeMetadata.size(); i++)
-				device->settings->electrodeMetadata.getReference(i).isSelected = false;
+				device->settings->electrodeMetadata[i].isSelected = false;
 		}
 
 		if (event.x > leftEdge && event.x < rightEdge)
 		{
 			int chan = getNearestElectrode(event.x, event.y);
 
-      if (chan >= 0 && chan < device->settings->electrodeMetadata.size())
-      {
-        device->settings->electrodeMetadata.getReference(chan).isSelected = !device->settings->electrodeMetadata.getReference(chan).isSelected;
-      }
-    }
-    repaint();
+			if (chan >= 0 && chan < device->settings->electrodeMetadata.size())
+			{
+				device->settings->electrodeMetadata[chan].isSelected = !device->settings->electrodeMetadata[chan].isSelected;
+			}
+		}
+		repaint();
 	}
 }
 
@@ -533,12 +533,12 @@ void ProbeBrowser::mouseDrag(const MouseEvent& event)
 			{
 				if (inBounds.indexOf(i) > -1)
 				{
-					device->settings->electrodeMetadata.getReference(i).isSelected = true;
+					device->settings->electrodeMetadata[i].isSelected = true;
 				}
 				else
 				{
 					if (!event.mods.isShiftDown())
-						device->settings->electrodeMetadata.getReference(i).isSelected = false;
+						device->settings->electrodeMetadata[i].isSelected = false;
 				}
 			}
 		}
@@ -601,7 +601,7 @@ void ProbeBrowser::paint(Graphics& g)
 	int pixelGap = 2;
 
 	ProbeMetadata probeMetadata = device->settings->probeMetadata;
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
+	auto electrodeMetadata = device->settings->electrodeMetadata;
 
 	if (probeMetadata.columns_per_shank > 8)
 	{
@@ -753,16 +753,16 @@ void ProbeBrowser::paint(Graphics& g)
 
 Colour ProbeBrowser::getElectrodeColour(int i)
 {
-	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);		
+	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);
 	NeuropixV1Interface* neuropixInterface = (NeuropixV1Interface*)parent;
 
 	if (!device->settings) return Colours::grey;
 
-	Array<ElectrodeMetadata> electrodeMetadata = device->settings->electrodeMetadata;
+	auto electrodeMetadata = device->settings->electrodeMetadata;
 
 	if (electrodeMetadata[i].status == ElectrodeStatus::DISCONNECTED) // not available
 	{
-		return disconnectedColours[electrodeMetadata[i].bank];
+		return disconnectedColors[electrodeMetadata[i].bank];
 	}
 	else if (electrodeMetadata[i].type == ElectrodeType::REFERENCE)
 		return Colours::black;
@@ -774,11 +774,11 @@ Colour ProbeBrowser::getElectrodeColour(int i)
 		}
 		else if (neuropixInterface->mode == VisualizationMode::AP_GAIN_VIEW) // AP GAIN
 		{
-		    return Colour (25 * device->settings->apGainIndex, 25 * device->settings->apGainIndex, 50);
+			return Colour(25 * device->settings->apGainIndex, 25 * device->settings->apGainIndex, 50);
 		}
 		else if (neuropixInterface->mode == VisualizationMode::LFP_GAIN_VIEW) // LFP GAIN
 		{
-		    return Colour (66, 25 * device->settings->lfpGainIndex, 35 * device->settings->lfpGainIndex);
+			return Colour(66, 25 * device->settings->lfpGainIndex, 35 * device->settings->lfpGainIndex);
 		}
 		else if (neuropixInterface->mode == VisualizationMode::REFERENCE_VIEW)
 		{
@@ -802,7 +802,7 @@ Colour ProbeBrowser::getElectrodeColour(int i)
 		{
 			if (electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
 			{
-				return electrodeMetadata.getReference(i).colour;
+				return electrodeMetadata[i].colour;
 			}
 			else
 			{

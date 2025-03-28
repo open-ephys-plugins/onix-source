@@ -77,6 +77,9 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 
 	devicesFound = false;
 
+	if (context != nullptr && context->isInitialized())
+		context->setOption(ONIX_OPT_PASSTHROUGH, 0);
+
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 }
 
@@ -93,23 +96,29 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		disconnectDevices(false);
 	}
 
-	// TODO: How to set passthrough for Port A vs. Port B?
-	if (getParameter("passthroughA")->getValue() || getParameter("passthroughB")->getValue())
+	int val = 0;
+
+	if (getParameter("passthroughA")->getValue())
 	{
-		LOGD("Passthrough mode enabled");
-		int val = 1;
-		context->setOption(ONIX_OPT_PASSTHROUGH, val);
+		LOGD("Passthrough mode enabled for Port A");
+		val |= 1 << 0;
 	}
-	else
+
+	if (getParameter("passthroughB")->getValue())
 	{
-		int val = 0;
-		context->setOption(ONIX_OPT_PASSTHROUGH, val);
+		LOGD("Passthrough mode enabled for Port B");
+		val |= 1 << 2;
 	}
+
+	context->setOption(ONIX_OPT_PASSTHROUGH, val);
 
 	context->issueReset();
 	context->updateDeviceTable();
 
 	if (context->getLastResult() != ONI_ESUCCESS) return;
+
+	if (portA->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port A.");
+	if (portB->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port B.");
 
 	device_map_t deviceMap = context->getDeviceTable();
 
@@ -186,11 +195,11 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(index, context);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
-			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
+			if (hsid == ONIX_HUB_HSNP2E)
 			{
-				auto np2 = std::make_shared<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
+				auto np2 = std::make_shared<Neuropixels2e>("Neuropixels 2e-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
 				int res = np2->configureDevice();
-				if (res != 0)
+				if (res != ONI_ESUCCESS)
 				{
 					if (res == -1)
 					{
@@ -205,9 +214,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			}
 		}
 	}
-
-	if (portA->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port A.");
-	if (portB->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port B.");
 
 	context->issueReset();
 
@@ -386,7 +392,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 			}
-			else if (source->type == OnixDeviceType::NEUROPIXELS_2)
+			else if (source->type == OnixDeviceType::NEUROPIXELSV2E)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
