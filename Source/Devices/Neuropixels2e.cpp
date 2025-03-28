@@ -18,11 +18,7 @@ void Neuropixels2e::createDataStream(int n)
 		0.195f,
 		CharPointer_UTF8("\xc2\xb5V"),
 		{});
-	streams.add(apStream);
-}
-
-Neuropixels2e::~Neuropixels2e()
-{
+	streamInfos.add(apStream);
 }
 
 int Neuropixels2e::getNumProbes() const
@@ -32,6 +28,8 @@ int Neuropixels2e::getNumProbes() const
 
 int Neuropixels2e::configureDevice()
 {
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
+
 	configureSerDes();
 	setProbeSupply(true);
 	probeSNA = getProbeSN(ProbeASelected);
@@ -43,7 +41,7 @@ int Neuropixels2e::configureDevice()
 	if (probeSNA == -1 && probeSNB == -1)
 	{
 		m_numProbes = 0;
-		return -1;
+		return -2;
 	}
 	else if (probeSNA != -1 && probeSNB != -1)
 	{
@@ -215,7 +213,7 @@ void Neuropixels2e::addFrame(oni_frame_t* frame)
 void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	int bufferIdx = 0;
-	for (const auto& streamInfo : streams)
+	for (const auto& streamInfo : streamInfos)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 		apBuffer[bufferIdx++] = sourceBuffers.getLast();
@@ -233,6 +231,7 @@ void Neuropixels2e::processFrames()
 		dataPtr = (uint16_t*)frame->data;
 		uint16_t probeIndex = *(dataPtr + 4);
 		uint16_t* amplifierData = dataPtr + 6;
+		uint64_t timestamp = frame->time;
 
 		if (m_numProbes == 1)
 		{

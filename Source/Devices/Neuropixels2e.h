@@ -2,13 +2,13 @@
 #include "../OnixDevice.h"
 #include "../I2CRegisterContext.h"
 
+/*
+	Configures and streams data from a Neuropixels 2.0e device
+*/
 class Neuropixels2e : public OnixDevice
 {
 public:
 	Neuropixels2e(String name, const oni_dev_idx_t, std::shared_ptr<Onix1>);
-
-	/** Destructor */
-	~Neuropixels2e();
 
 	int configureDevice() override;
 

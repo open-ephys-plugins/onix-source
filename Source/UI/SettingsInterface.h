@@ -45,6 +45,12 @@ public:
     {
         PROBE_SETTINGS_INTERFACE,
         BNO055_SETTINGS_INTERFACE,
+        MEMORYMONITOR_SETTINGS_INTERFACE,
+        OUTPUTCLOCK_SETTINGS_INTERFACE,
+        HEARTBEAT_SETTINGS_INTERFACE,
+        HARPSYNCINPUT_SETTINGS_INTERFACE,
+        ANALOGIO_SETTINGS_INTERFACE,
+        DIGITALIO_SETTINGS_INTERFACE,
         UNKNOWN_SETTINGS_INTERFACE
     };
 
@@ -80,7 +86,7 @@ public:
     Type type = Type::UNKNOWN_SETTINGS_INTERFACE;
 
     /** Pointer to the data source*/
-    std::shared_ptr<OnixDevice> device;
+    std::shared_ptr<OnixDevice> device = nullptr;
 
 protected:
     OnixSourceEditor* editor;

@@ -42,6 +42,8 @@ void FrameReader::run()
 
 		if (context->getLastResult() < ONI_ESUCCESS)
 		{
+			if (threadShouldExit()) return;
+
 			CoreServices::sendStatusMessage("Unable to read data frames. Stopping acquisition...");
 			CoreServices::setAcquisitionStatus(false);
 			return;

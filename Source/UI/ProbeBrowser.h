@@ -34,7 +34,6 @@ class ProbeBrowser : public Component,
 {
 public:
     ProbeBrowser (SettingsInterface*);
-    virtual ~ProbeBrowser();
 
     void mouseMove (const MouseEvent& event);
     void mouseDown (const MouseEvent& event);

@@ -59,9 +59,6 @@ public:
 	/** Constructor */
 	NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	/** Destructor */
-	~NeuropixV1Interface();
-
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
 	void comboBoxChanged(ComboBox*) override;
@@ -116,7 +113,7 @@ private:
 	std::unique_ptr<Label> adcCalibrationFileLabel;
 	std::unique_ptr<Label> gainCalibrationFileLabel;
 
-	std::unique_ptr<UtilityButton> probeEnableButton;
+	std::unique_ptr<UtilityButton> deviceEnableButton;
 	std::unique_ptr<UtilityButton> selectElectrodeButton;
 
 	std::unique_ptr<UtilityButton> enableViewButton;

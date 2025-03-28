@@ -21,22 +21,22 @@
 
 */
 
-#ifndef __BNO055INTERFACE_H__
-#define __BNO055INTERFACE_H__
+#ifndef __DIGITALIOINTERFACE_H__
+#define __DIGITALIOINTERFACE_H__
 
 #include <VisualizerEditorHeaders.h>
 
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
 
-#include "../Devices/Bno055.h"
+#include "../Devices/DigitalIO.h"
 
-class Bno055Interface : public SettingsInterface,
+class DigitalIOInterface : public SettingsInterface,
 	public Button::Listener
 {
 public:
 	/** Constructor */
-	Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override {};
@@ -60,7 +60,7 @@ private:
 
 	std::unique_ptr<UtilityButton> deviceEnableButton;
 
-	JUCE_LEAK_DETECTOR(Bno055Interface);
+	JUCE_LEAK_DETECTOR(DigitalIOInterface);
 };
 
-#endif // !__BNO055INTERFACE_H__
+#endif

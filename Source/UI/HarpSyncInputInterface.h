@@ -21,22 +21,22 @@
 
 */
 
-#ifndef __BNO055INTERFACE_H__
-#define __BNO055INTERFACE_H__
+#ifndef __HARPSYNCINPUTINTERFACE_H__
+#define __HARPSYNCINPUTINTERFACE_H__
 
 #include <VisualizerEditorHeaders.h>
 
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
 
-#include "../Devices/Bno055.h"
+#include "../Devices/HarpSyncInput.h"
 
-class Bno055Interface : public SettingsInterface,
+class HarpSyncInputInterface : public SettingsInterface,
 	public Button::Listener
 {
 public:
-	/** Constructor */
-	Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+
+	HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override {};
@@ -50,7 +50,6 @@ public:
 	/** Load parameters from XML */
 	void loadParameters(XmlElement* xml) override {};
 
-	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override {};
 
 	/** Listener methods*/
@@ -60,7 +59,7 @@ private:
 
 	std::unique_ptr<UtilityButton> deviceEnableButton;
 
-	JUCE_LEAK_DETECTOR(Bno055Interface);
+	JUCE_LEAK_DETECTOR(HarpSyncInputInterface);
 };
 
-#endif // !__BNO055INTERFACE_H__
+#endif

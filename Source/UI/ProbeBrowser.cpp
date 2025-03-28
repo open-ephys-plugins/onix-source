@@ -127,10 +127,6 @@ ProbeBrowser::ProbeBrowser(SettingsInterface* parent_) : parent(parent_)
 	dragZoneWidth = 10;
 }
 
-ProbeBrowser::~ProbeBrowser()
-{
-}
-
 void ProbeBrowser::mouseMove(const MouseEvent& event)
 {
 	auto device = std::static_pointer_cast<Neuropixels_1>(parent->device);

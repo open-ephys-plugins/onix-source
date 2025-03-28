@@ -39,7 +39,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 		bitVolts,
 		"Degrees",
 		{ "Yaw", "Roll", "Pitch" });
-	streams.add(eulerAngleStream);
+	streamInfos.add(eulerAngleStream);
 
 	StreamInfo quaternionStream = StreamInfo(
 		name + "-Quaternion",
@@ -50,9 +50,9 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 		"Quaternion",
 		ContinuousChannel::Type::AUX,
 		bitVolts,
-		"",
+		"u",
 		{ "W", "X", "Y", "Z" });
-	streams.add(quaternionStream);
+	streamInfos.add(quaternionStream);
 
 	StreamInfo accelerationStream = StreamInfo(
 		name + "-Acceleration",
@@ -65,7 +65,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 		bitVolts,
 		"m / s ^ 2",
 		{ "X", "Y", "Z" });
-	streams.add(accelerationStream);
+	streamInfos.add(accelerationStream);
 
 	StreamInfo gravityStream = StreamInfo(
 		name + "-Gravity",
@@ -78,7 +78,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 		bitVolts,
 		"m/s^2",
 		{ "X", "Y", "Z" });
-	streams.add(gravityStream);
+	streamInfos.add(gravityStream);
 
 	StreamInfo temperatureStream = StreamInfo(
 		name + "-Temperature",
@@ -91,14 +91,10 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 		bitVolts,
 		"Celsius",
 		{ "" });
-	streams.add(temperatureStream);
+	streamInfos.add(temperatureStream);
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
-}
-
-Bno055::~Bno055()
-{
 }
 
 int Bno055::configureDevice()
@@ -155,7 +151,7 @@ void Bno055::processFrames()
 
 		int16_t* dataPtr = (int16_t*)frame->data;
 
-		bnoTimestamps[currentFrame] = *(uint64_t*)frame->data;
+		bnoTimestamps[currentFrame] = frame->time;
 
 		int dataOffset = 4;
 

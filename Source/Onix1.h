@@ -32,6 +32,7 @@
 #include "../../plugin-GUI/Source/Utils/Utils.h"
 
 constexpr const char* NEUROPIXELSV1F_HEADSTAGE_NAME = "Neuropixels 1.0f";
+constexpr const char* BREAKOUT_BOARD_NAME = "Breakout Board";
 
 class error_t : public std::exception
 {
