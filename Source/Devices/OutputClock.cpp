@@ -38,7 +38,7 @@ bool OutputClock::updateSettings()
 	oni_reg_val_t baseFreqHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::BASE_FREQ_HZ);
 
 	auto periodCycles = (uint32_t)(baseFreqHz / frequencyHz);
-	auto h = (uint32_t)(periodCycles * (dutyCycle / 100));
+	auto h = (uint32_t)(periodCycles * ((double)dutyCycle / 100.0));
 	auto l = periodCycles - h;
 	auto delayCycles = (uint32_t)(delay * baseFreqHz);
 

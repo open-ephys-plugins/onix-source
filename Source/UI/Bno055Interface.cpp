@@ -31,7 +31,7 @@ Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e,
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
 		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
 		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(35, 35, 100, 22);
+		deviceEnableButton->setBounds(50, 40, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, BNO055 device will not stream data during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);
@@ -49,7 +49,6 @@ void Bno055Interface::buttonClicked(Button* button)
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
 		device->configureDevice();
-		if (canvas->foundInputSource()) canvas->resetContext();
 
 		if (device->isEnabled())
 		{

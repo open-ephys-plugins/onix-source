@@ -492,7 +492,6 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 		{
 			if (!source->isEnabled()) continue;
 
-			// create device info object
 			if (source->type == OnixDeviceType::NEUROPIXELS_1)
 			{
 				DeviceInfo::Settings deviceSettings{
@@ -571,6 +570,20 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 					source->getName(),
 					"Analog IO",
 					"analogio",
+					"0000000",
+					""
+				};
+
+				deviceInfos->add(new DeviceInfo(deviceSettings));
+
+				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
+			}
+			else if (source->type == OnixDeviceType::HARPSYNCINPUT)
+			{
+				DeviceInfo::Settings deviceSettings{
+					source->getName(),
+					"Harp Sync Input",
+					"harpsyncinput",
 					"0000000",
 					""
 				};
@@ -733,9 +746,6 @@ bool OnixSource::stopAcquisition()
 	{
 		oni_size_t reg = 0;
 		context->setOption(ONI_OPT_RUNNING, reg);
-
-		uint32_t val = 1;
-		context->setOption(ONI_OPT_RESET, val);
 	}
 
 	for (const auto& source : sources)

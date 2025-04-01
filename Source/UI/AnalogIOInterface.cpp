@@ -41,23 +41,9 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 		addAndMakeVisible(deviceEnableButton.get());
 		deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
 
-		dataTypeLabel = std::make_unique<Label>("dataTypeLabel", "Data Type");
-		dataTypeLabel->setFont(font);
-		dataTypeLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 5, 80, 20);
-		addAndMakeVisible(dataTypeLabel.get());
-
-		dataTypeComboBox = std::make_unique<ComboBox>("dataTypeComboBox");
-		dataTypeComboBox->setBounds(dataTypeLabel->getRight() + 5, dataTypeLabel->getY(), 65, dataTypeLabel->getHeight());
-		dataTypeComboBox->addListener(this);
-		dataTypeComboBox->setTooltip("Set the data type output by this device. S16 outputs signed 16-bit data, while Volts outputs 32-bit floating point data.");
-		dataTypeComboBox->addItem("S16", 1);
-		dataTypeComboBox->addItem("Volts", 2);
-		dataTypeComboBox->setSelectedId(getDataTypeId(std::static_pointer_cast<AnalogIO>(device)), dontSendNotification);
-		addAndMakeVisible(dataTypeComboBox.get());
-
-		auto prevLabelRectangle = dataTypeLabel->getBounds().translated(0, 10);
+		auto prevLabelRectangle = deviceEnableButton->getBounds().translated(0, 20);
 		prevLabelRectangle.setWidth(140);
-		auto prevComboBoxRectangle = dataTypeComboBox->getBounds().translated(0, 10);
+		auto prevComboBoxRectangle = deviceEnableButton->getBounds().translated(100, 20);
 		prevComboBoxRectangle.setWidth(80);
 		prevComboBoxRectangle.setX(prevLabelRectangle.getRight() + 5);
 
@@ -88,19 +74,6 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 			addAndMakeVisible(channelDirectionComboBoxes[i].get());
 
 			prevComboBoxRectangle = channelDirectionComboBoxes[i]->getBounds();
-
-			voltageRangeLabels[i] = std::make_unique<Label>("voltageRangeLabel" + String(i), "Voltage Range");
-			voltageRangeLabels[i]->setBounds(prevComboBoxRectangle.getRight() + 10, prevComboBoxRectangle.getY(), 110, prevComboBoxRectangle.getHeight());
-			voltageRangeLabels[i]->setFont(font);
-			addAndMakeVisible(voltageRangeLabels[i].get());
-
-			voltageRangeComboBoxes[i] = std::make_unique<ComboBox>("voltageRangeComboBox" + String(i));
-			voltageRangeComboBoxes[i]->setBounds(voltageRangeLabels[i]->getRight() + 4, voltageRangeLabels[i]->getY(), prevComboBoxRectangle.getWidth(), prevComboBoxRectangle.getHeight());
-			voltageRangeComboBoxes[i]->addListener(this);
-			voltageRangeComboBoxes[i]->setTooltip("Sets the voltage range of channel " + String(i));
-			voltageRangeComboBoxes[i]->addItemList(voltageRangeList, 1);
-			voltageRangeComboBoxes[i]->setSelectedId(getChannelVoltageRangeId(std::static_pointer_cast<AnalogIO>(device), i), dontSendNotification);
-			addAndMakeVisible(voltageRangeComboBoxes[i].get());
 		}
 
 		updateInfoString();
@@ -115,7 +88,6 @@ void AnalogIOInterface::buttonClicked(Button* button)
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
 		device->configureDevice();
-		if (canvas->foundInputSource()) canvas->resetContext();
 
 		if (device->isEnabled())
 		{
@@ -132,30 +104,12 @@ void AnalogIOInterface::buttonClicked(Button* button)
 
 void AnalogIOInterface::comboBoxChanged(ComboBox* cb)
 {
-	if (cb == dataTypeComboBox.get())
-	{
-		AnalogIODataType newType = dataTypeComboBox->getText() == "S16" ? AnalogIODataType::S16 : AnalogIODataType::Volts;
-		std::static_pointer_cast<AnalogIO>(device)->setDataType(newType);
-		return;
-	}
-
 	for (int i = 0; i < numChannels; i += 1)
 	{
 		if (cb == channelDirectionComboBoxes[i].get())
 		{
 			AnalogIODirection newDirection = channelDirectionComboBoxes[i]->getText() == "Input" ? AnalogIODirection::Input : AnalogIODirection::Output;
 			std::static_pointer_cast<AnalogIO>(device)->setChannelDirection(i, newDirection);
-			return;
-		}
-		else if (cb == voltageRangeComboBoxes[i].get())
-		{
-			AnalogIOVoltageRange newVoltageRange = AnalogIOVoltageRange::TwoPointFiveVolts;
-			
-			if (voltageRangeComboBoxes[i]->getText() == "+/- 2.5 V") newVoltageRange = AnalogIOVoltageRange::TwoPointFiveVolts;
-			else if (voltageRangeComboBoxes[i]->getText() == "+/- 5.0 V") newVoltageRange = AnalogIOVoltageRange::FiveVolts;
-			else if (voltageRangeComboBoxes[i]->getText() == "+/- 10.0 V") newVoltageRange = AnalogIOVoltageRange::TenVolts;
-
-			std::static_pointer_cast<AnalogIO>(device)->setChannelVoltageRange(i, newVoltageRange);
 			return;
 		}
 	}

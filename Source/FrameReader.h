@@ -34,8 +34,6 @@ class FrameReader : public Thread
 public:
 	FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1>);
 
-	~FrameReader();
-
 	void run() override;
 
 private:

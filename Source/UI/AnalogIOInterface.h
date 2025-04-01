@@ -62,11 +62,6 @@ private:
 
 	static const int numChannels = 12;
 
-	std::unique_ptr<Label> dataTypeLabel;
-	std::unique_ptr<ComboBox> dataTypeComboBox;
-
-	std::array<std::unique_ptr<Label>, numChannels> voltageRangeLabels;
-	std::array<std::unique_ptr<ComboBox>, numChannels> voltageRangeComboBoxes;
 	std::array<std::unique_ptr<Label>, numChannels> channelDirectionLabels;
 	std::array<std::unique_ptr<ComboBox>, numChannels> channelDirectionComboBoxes;
 

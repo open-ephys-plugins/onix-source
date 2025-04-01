@@ -88,7 +88,7 @@ public:
 
 private:
 
-	float frequencyHz = 1e6;
+	double frequencyHz = 1e6;
 	uint32_t dutyCycle = 50;
 	uint32_t delay = 0;
 

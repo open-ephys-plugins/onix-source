@@ -30,10 +30,6 @@ FrameReader::FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1> ctx_)
 	context = ctx_;
 }
 
-FrameReader::~FrameReader()
-{
-}
-
 void FrameReader::run()
 {
 	while (!threadShouldExit())

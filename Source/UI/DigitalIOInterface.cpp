@@ -31,7 +31,7 @@ DigitalIOInterface::DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceE
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
 		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
 		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(35, 35, 100, 22);
+		deviceEnableButton->setBounds(50, 40, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, the Digital IO device will not stream events during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);
@@ -49,7 +49,6 @@ void DigitalIOInterface::buttonClicked(Button* button)
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
 		device->configureDevice();
-		if (canvas->foundInputSource()) canvas->resetContext();
 
 		if (device->isEnabled())
 		{

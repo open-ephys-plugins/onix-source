@@ -138,6 +138,8 @@ public:
 
 	void setDataType(AnalogIODataType type) { dataType = type; }
 
+	int getNumChannels() { return numChannels; }
+
 private:
 
 	DataBuffer* analogInputBuffer = nullptr;
@@ -152,7 +154,7 @@ private:
 	std::array<AnalogIODirection, numChannels> channelDirection;
 	std::array<AnalogIOVoltageRange, numChannels> channelVoltageRange;
 
-	AnalogIODataType dataType = AnalogIODataType::S16;
+	AnalogIODataType dataType = AnalogIODataType::Volts;
 
 	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 

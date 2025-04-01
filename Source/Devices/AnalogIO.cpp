@@ -34,7 +34,7 @@ AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<
 		std::floor(100000 / framesToAverage),
 		"AnalogInput",
 		ContinuousChannel::Type::ADC,
-		1.0f,
+		20.0f / numberOfDivisions, // NB: +/- 10 Volts
 		"V",
 		{});
 	streamInfos.add(analogInputStream);
@@ -45,10 +45,10 @@ AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<
 	for (int i = 0; i < numChannels; i += 1)
 	{
 		channelDirection[i] = AnalogIODirection::Input;
-		channelVoltageRange[i] = AnalogIOVoltageRange::FiveVolts;
+		channelVoltageRange[i] = AnalogIOVoltageRange::TenVolts;
 	}
 
-	dataType = AnalogIODataType::S16;
+	dataType = AnalogIODataType::Volts;
 }
 
 int AnalogIO::configureDevice()

@@ -33,7 +33,7 @@ HarpSyncInputInterface::HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d,
 		deviceEnableButton->setRadius(3.0f);
 		deviceEnableButton->setBounds(50, 40, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
-		deviceEnableButton->setTooltip("If disabled, Memory Monitor will not stream data during acquisition");
+		deviceEnableButton->setTooltip("If disabled, Harp Sync Input will not stream data during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);
 		deviceEnableButton->addListener(this);
 		addAndMakeVisible(deviceEnableButton.get());
@@ -49,7 +49,6 @@ void HarpSyncInputInterface::buttonClicked(Button* button)
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
 		device->configureDevice();
-		if (canvas->foundInputSource()) canvas->resetContext();
 
 		if (device->isEnabled())
 		{

@@ -168,21 +168,37 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	if (ind == -1)
 	{
 		if (device->type != OnixDeviceType::MEMORYMONITOR && device->type != OnixDeviceType::HEARTBEAT)
-			LOGD("Unable to match " + device->getName() + " to an open tab."); 
-		
+			LOGD("Unable to match " + device->getName() + " to an open tab.");
+
 		return;
 	}
 
 	if (device->type == OnixDeviceType::NEUROPIXELS_1)
 	{
-		// NB: Neuropixels-specific settings need to be updated
 		auto npx1Found = std::static_pointer_cast<Neuropixels_1>(device);
 		auto npx1Selected = std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device);
 		npx1Found->setSettings(npx1Selected->settings.get());
 		npx1Found->adcCalibrationFilePath = npx1Selected->adcCalibrationFilePath;
 		npx1Found->gainCalibrationFilePath = npx1Selected->gainCalibrationFilePath;
 	}
-	// TODO: Add more devices, since they will have device-specific settings to be updated
+	else if (device->type == OnixDeviceType::OUTPUTCLOCK)
+	{
+		auto outputClockFound = std::static_pointer_cast<OutputClock>(device);
+		auto outputClockSelected = std::static_pointer_cast<OutputClock>(settingsInterfaces[ind]->device);
+		outputClockFound->setDelay(outputClockSelected->getDelay());
+		outputClockFound->setDutyCycle(outputClockSelected->getDutyCycle());
+		outputClockFound->setFrequencyHz(outputClockSelected->getFrequencyHz());
+		outputClockFound->setGateRun(outputClockSelected->getGateRun());
+	}
+	else if (device->type == OnixDeviceType::ANALOGIO)
+	{
+		auto analogIOFound = std::static_pointer_cast<AnalogIO>(device);
+		auto analogIOSelected = std::static_pointer_cast<AnalogIO>(settingsInterfaces[ind]->device);
+		for (int i = 0; i < analogIOFound->getNumChannels(); i++)
+		{
+			analogIOFound->setChannelDirection(i, analogIOSelected->getChannelDirection(i));
+		}
+	}
 
 	device->setEnabled(settingsInterfaces[ind]->device->isEnabled());
 	settingsInterfaces[ind]->device.reset();
