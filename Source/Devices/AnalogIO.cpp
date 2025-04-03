@@ -30,7 +30,7 @@ AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<
 		"Analog Input data",
 		"onix-analogio.data.input",
 		12,
-		std::floor(100000 / framesToAverage),
+		std::floor(AnalogIOFrequencyHz / framesToAverage),
 		"AnalogInput",
 		ContinuousChannel::Type::ADC,
 		20.0f / numberOfDivisions, // NB: +/- 10 Volts

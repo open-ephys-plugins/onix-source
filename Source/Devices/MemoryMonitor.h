@@ -124,5 +124,7 @@ private:
 	//	   using the following equation: y = log_e(x + 1) / log_e(x_max + 1);
 	const float maxLogarithmicValue = std::log(101);
 
+	const int TimerFrequencyHz = 10;
+
 	JUCE_LEAK_DETECTOR(MemoryMonitorUsage);
 };

@@ -97,7 +97,7 @@ void OutputClockInterface::labelTextChanged(Label* l)
 
 		auto rate = l->getText().getFloatValue();
 
-		if (rate < 0.1 || rate > 10e6)
+		if (rate < MinFrequencyHz || rate > MaxFrequencyHz)
 		{
 			l->setText(String(d->getFrequencyHz()), dontSendNotification);
 			return;
@@ -111,7 +111,7 @@ void OutputClockInterface::labelTextChanged(Label* l)
 
 		uint32_t rate = l->getText().getIntValue();
 
-		if (rate < 10 || rate > 90)
+		if (rate < MinDutyCyclePercent || rate > MaxDutyCyclePercent)
 		{
 			l->setText(String(d->getDutyCycle()), dontSendNotification);
 			return;
@@ -125,7 +125,7 @@ void OutputClockInterface::labelTextChanged(Label* l)
 
 		uint32_t rate = l->getText().getIntValue();
 
-		if (rate < 0 || rate > 3600)
+		if (rate < MinDelaySeconds || rate > MaxDelaySeconds)
 		{
 			l->setText(String(d->getDelay()), dontSendNotification);
 			return;

@@ -142,6 +142,8 @@ private:
 
 	DataBuffer* analogInputBuffer = nullptr;
 
+	static const int AnalogIOFrequencyHz = 100000;
+
 	static const int numFrames = 25;
 	static const int framesToAverage = 4; // NB: Downsampling from 100 kHz to 25 kHz
 	static const int numChannels = 12;

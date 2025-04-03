@@ -380,9 +380,9 @@ String OnixSourceEditor::getHeadstageSelected(int offset)
 	{
 	case 0:
 		return "Breakout Board";
-	case 256: // NB: Port A
+	case PortController::HubAddressPortA:
 		return headstageComboBoxA->getText();
-	case 512: // NB: Port B
+	case PortController::HubAddressPortB:
 		return headstageComboBoxB->getText();
 	default:
 		return "";

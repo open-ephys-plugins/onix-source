@@ -20,7 +20,7 @@
 
 */
 
-#pragma
+#pragma once
 
 #include <VisualizerEditorHeaders.h>
 

@@ -45,7 +45,7 @@ void MemoryMonitorUsage::setMemoryMonitor(std::shared_ptr<MemoryMonitor> memoryM
 
 void MemoryMonitorUsage::startAcquisition()
 {
-	startTimerHz(10);
+	startTimerHz(TimerFrequencyHz);
 }
 
 void MemoryMonitorUsage::stopAcquisition()

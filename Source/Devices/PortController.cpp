@@ -100,9 +100,9 @@ String PortController::getPortName(int offset)
 	{
 	case 0:
 		return "";
-	case 256: // NB: Port A
+	case HubAddressPortA:
 		return "Port A";
-	case 512: // NB: Port B
+	case HubAddressPortB:
 		return "Port B";
 	default:
 		return "";

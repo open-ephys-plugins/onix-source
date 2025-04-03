@@ -69,5 +69,14 @@ private:
 
 	std::unique_ptr<ToggleButton> gateRunButton;
 
+	const float MinFrequencyHz = 0.1f;
+	const float MaxFrequencyHz = 10e6;
+
+	const int MinDutyCyclePercent = 10;
+	const int MaxDutyCyclePercent = 90;
+
+	const int MinDelaySeconds = 0;
+	const int MaxDelaySeconds = 3600;
+
 	JUCE_LEAK_DETECTOR(OutputClockInterface);
 };

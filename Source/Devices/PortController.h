@@ -69,8 +69,6 @@ public:
 		voltageIncrement = voltageIncrement_;
 	}
 
-	~DiscoveryParameters() {};
-
 	bool operator==(const DiscoveryParameters& rhs) const
 	{
 		return rhs.minVoltage == minVoltage && rhs.maxVoltage == maxVoltage && rhs.voltageOffset == voltageOffset && rhs.voltageIncrement == voltageIncrement;
@@ -126,6 +124,9 @@ public:
 
 	/** Check if the port status changed and there is an error reported */
 	bool getErrorFlag() { return errorFlag; }
+
+	static const int HubAddressPortA = 256;
+	static const int HubAddressPortB = 512;
 
 private:
 	Array<oni_frame_t*, CriticalSection, 10> frameArray;
