@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2024 Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __PROBEINTERFACE_H__
-#define __PROBEINTERFACE_H__
+#pragma once
 
 #include "../NeuropixComponents.h"
 
@@ -171,5 +169,3 @@ public:
 		return true;
 	}
 };
-
-#endif

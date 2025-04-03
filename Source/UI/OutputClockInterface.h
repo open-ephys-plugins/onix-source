@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __OUTPUTCLOCKINTERFACE_H__
-#define __OUTPUTCLOCKINTERFACE_H__
+#pragma once
 
 #include <VisualizerEditorHeaders.h>
 
@@ -73,5 +71,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(OutputClockInterface);
 };
-
-#endif // !__OUTPUTCLOCKINTERFACE_H__

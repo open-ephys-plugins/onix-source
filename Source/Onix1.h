@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __ONIX1_H__
-#define __ONIX1_H__
+#pragma once
 
 #include <oni.h>
 #include <onix.h>
@@ -116,5 +114,3 @@ private:
 
 	void get_opt_(int option, void* value, size_t* size);
 };
-
-#endif // !__ONIX1_H__

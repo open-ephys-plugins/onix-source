@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __I2CRegisterContext_H__
-#define __I2CRegisterContext_H__
+#pragma once
 
 #include "ProcessorHeaders.h"
 
@@ -53,5 +51,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(I2CRegisterContext);
 };
-
-#endif // !__I2CRegisterContext_H__

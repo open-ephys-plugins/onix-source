@@ -1,8 +1,7 @@
 /*
     ------------------------------------------------------------------
 
-    This file is part of the Open Ephys GUI
-    Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+    Copyright (C) Open Ephys
 
     ------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __SETTINGSINTERFACE_H__
-#define __SETTINGSINTERFACE_H__
+#pragma once
 
 #include <VisualizerEditorHeaders.h>
 
@@ -92,5 +90,3 @@ protected:
     OnixSourceEditor* editor;
     OnixSourceCanvas* canvas;
 };
-
-#endif //__SETTINGSINTERFACE_H__

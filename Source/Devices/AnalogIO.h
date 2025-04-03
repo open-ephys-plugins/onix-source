@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __ANALOGIO_H__
-#define __ANALOGIO_H__
+#pragma once
 
 #include "../OnixDevice.h"
 
@@ -176,5 +174,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(AnalogIO);
 };
-
-#endif

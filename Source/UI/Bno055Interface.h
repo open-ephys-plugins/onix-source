@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __BNO055INTERFACE_H__
-#define __BNO055INTERFACE_H__
+#pragma once
 
 #include <VisualizerEditorHeaders.h>
 
@@ -62,5 +60,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(Bno055Interface);
 };
-
-#endif // !__BNO055INTERFACE_H__

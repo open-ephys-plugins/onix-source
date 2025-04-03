@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __OnixDevice_H__
-#define __OnixDevice_H__
+#pragma once
 
 #include <DataThreadHeaders.h>
 
@@ -186,5 +184,3 @@ private:
 };
 
 using OnixDeviceVector = std::vector<std::shared_ptr<OnixDevice>>;
-
-#endif

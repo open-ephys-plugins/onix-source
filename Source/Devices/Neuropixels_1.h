@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef NEUROPIXELS1_H_DEFINED
-#define NEUROPIXELS1_H_DEFINED
+#pragma once
 
 #include "../OnixDevice.h"
 #include "../NeuropixComponents.h"
@@ -299,5 +297,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(BackgroundUpdaterWithProgressWindow);
 };
-
-#endif

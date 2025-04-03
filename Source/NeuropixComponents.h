@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __NEUROPIXELCOMPONENTS_H__
-#define __NEUROPIXELCOMPONENTS_H__
+#pragma once
 
 #include <DataThreadHeaders.h>
 #include <stdio.h>
@@ -162,5 +160,3 @@ struct ProbeSettings
 
 	ProbeMetadata probeMetadata;
 };
-
-#endif  // __NEUROPIXELCOMPONENTS_H__

@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __NEUROPIXINTERFACE_H__
-#define __NEUROPIXINTERFACE_H__
+#pragma once
 
 #include <VisualizerEditorHeaders.h>
 
@@ -172,5 +170,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(NeuropixV1Interface);
 };
-
-#endif //__NEUROPIXINTERFACE_H__

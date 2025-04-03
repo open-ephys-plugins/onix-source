@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __PORTCONTROLLER_H__
-#define __PORTCONTROLLER_H__
+#pragma once
 
 #include <thread>
 #include <chrono>
@@ -145,5 +143,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(PortController);
 };
-
-#endif // !__PORTCONTROLLER_H__
