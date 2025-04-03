@@ -651,12 +651,8 @@ void NeuropixV1Interface::checkForExistingChannelPreset()
 			break;
 		}
 	}
-	else
-	{
-		npx->settings->electrodeConfigurationIndex = -1;
-	}
 
-	electrodeConfigurationComboBox->setSelectedId(npx->settings->electrodeConfigurationIndex + 2, dontSendNotification);
+	electrodeConfigurationComboBox->setSelectedId(settings->electrodeConfigurationIndex + 2, dontSendNotification);
 }
 
 void NeuropixV1Interface::buttonClicked(Button* button)

@@ -46,11 +46,6 @@ CustomTabComponent* OnixSourceCanvas::addTopLevelTab(String tabName, int index)
 	return tab;
 }
 
-Parameter* OnixSourceCanvas::getSourceParameter(String name)
-{
-	return source->getParameter(name);
-}
-
 void OnixSourceCanvas::addHub(String hubName, int offset)
 {
 	CustomTabComponent* tab = nullptr;
@@ -59,9 +54,7 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 
 	if (hubName == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
-		const int passthroughIndex = (offset >> 8) + 7;
-
-		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port - 1);
+		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
 		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
 		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
@@ -80,10 +73,10 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 	{
 		const int passthroughIndex = (offset >> 8) + 7;
 
-		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port - 1);
+		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
 		devices.emplace_back(std::make_shared<Neuropixels2e>("Neuropixels 2e-A", passthroughIndex, nullptr));
-		// TODO: Add Polled BNO here
+		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", passthroughIndex, nullptr));
 	}
 
 	if (tab != nullptr && devices.size() > 0)
@@ -132,6 +125,11 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 		{
 			auto npxv2eInterface = std::make_shared<NeuropixelsV2eInterface>(std::static_pointer_cast<Neuropixels2e>(device), editor, this);
 			addInterfaceToTab(getDeviceTabName(device), tab, npxv2eInterface);
+		}
+		else if (device->type == OnixDeviceType::POLLEDBNO)
+		{
+			auto polledBnoInterface = std::make_shared<PolledBno055Interface>(std::static_pointer_cast<PolledBno055>(device), editor, this);
+			addInterfaceToTab(getDeviceTabName(device), tab, polledBnoInterface);
 		}
 	}
 }
@@ -214,7 +212,7 @@ String OnixSourceCanvas::getTopLevelTabName(PortName port, String headstage)
 
 String OnixSourceCanvas::getDeviceTabName(std::shared_ptr<OnixDevice> device)
 {
-	return String(device->getDeviceIdx()) + ": " + device->getName();
+	return device->getName();
 }
 
 Array<CustomTabComponent*> OnixSourceCanvas::getHeadstageTabs()
@@ -227,13 +225,6 @@ Array<CustomTabComponent*> OnixSourceCanvas::getHeadstageTabs()
 	}
 
 	return tabs;
-}
-
-CustomViewport* OnixSourceCanvas::createCustomViewport(SettingsInterface* settingsInterface)
-{
-	Rectangle bounds = settingsInterface->getBounds();
-
-	return new CustomViewport(settingsInterface, bounds.getWidth(), bounds.getHeight());
 }
 
 void OnixSourceCanvas::refresh()

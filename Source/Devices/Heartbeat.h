@@ -32,7 +32,7 @@ enum class HeartbeatRegisters : uint32_t
 };
 
 /*
-	Configures and streams data from a MemoryMonitor device on a Breakout Board
+	Configures and streams data from a Heartbeat device on a Breakout Board
 */
 class Heartbeat : public OnixDevice
 {

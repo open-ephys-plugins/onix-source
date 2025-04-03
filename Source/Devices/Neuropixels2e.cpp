@@ -367,7 +367,7 @@ int Neuropixels2e::configureDevice()
 		m_numProbes = 1;
 	}
 
-	streams.clear();
+	streamInfos.clear();
 
 	for (int i = 0; i < m_numProbes; i++)
 	{
@@ -385,7 +385,7 @@ bool Neuropixels2e::updateSettings()
 		{
 			if (gainCorrectionFilePath[i] == "None" || gainCorrectionFilePath[i] == "")
 			{
-				LOGE("Missing gain correction file for probe " + probeSN[i]);
+				LOGE("Missing gain correction file for probe " + String(probeSN[i]));
 				return false;
 			}
 
@@ -393,7 +393,7 @@ bool Neuropixels2e::updateSettings()
 
 			if (!gainCorrectionFile.existsAsFile())
 			{
-				LOGE("The gain correction file \"", gainCorrectionFilePath[i], "\" for probe ", probeSN[i], " does not exist.");
+				LOGE("The gain correction file \"", gainCorrectionFilePath[i], "\" for probe ", String(probeSN[i]), " does not exist.");
 				return false;
 			}
 
@@ -406,7 +406,7 @@ bool Neuropixels2e::updateSettings()
 
 			if (gainSN != probeSN[i])
 			{
-				LOGE("Invalid serial number found in the calibration file. Should match the probe serial number (", probeSN[i], ")");
+				LOGE("Invalid serial number found in the calibration file. Should match the probe serial number (", String(probeSN[i]), ")");
 				return false;
 			}
 
@@ -427,7 +427,7 @@ bool Neuropixels2e::updateSettings()
 
 				if (std::stoi(calibrationValues[0].toStdString()) != j || std::stod(calibrationValues[1].toStdString()) != correctionValue)
 				{
-					LOGE("Calibration file is incorrectly formatted for probe ", probeSN[i]);
+					LOGE("Calibration file is incorrectly formatted for probe ", String(probeSN[i]));
 					return false;
 				}
 			}

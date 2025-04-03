@@ -28,11 +28,11 @@ OnixDevice::OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t d
 	deviceContext = ctx;
 	name = name_;
 
-	if (type == OnixDeviceType::NEUROPIXELSV2E)
+	if (type == OnixDeviceType::NEUROPIXELSV2E || type == OnixDeviceType::POLLEDBNO)
 		isPassthrough = true;
 }
 
-oni_dev_idx_t OnixDevice::getDeviceIdx(bool getPassthroughIndex) const
+oni_dev_idx_t OnixDevice::getDeviceIdx(bool getPassthroughIndex)
 {
 	if (isPassthrough && !getPassthroughIndex)
 		return getDeviceIndexFromPassthroughIndex(deviceIdx);
@@ -42,5 +42,10 @@ oni_dev_idx_t OnixDevice::getDeviceIdx(bool getPassthroughIndex) const
 
 oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex)
 {
-	return (passthroughIndex - 7) << 8;
+	oni_dev_idx_t idx = (passthroughIndex - 7) << 8;
+
+	if (type == OnixDeviceType::POLLEDBNO)
+		idx++;
+
+	return idx;
 }

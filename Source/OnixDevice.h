@@ -44,6 +44,7 @@ enum class PortName
 enum class OnixDeviceType {
 	HS64,
 	BNO,
+	POLLEDBNO,
 	NEUROPIXELS_1,
 	NEUROPIXELSV2E,
 	ADC,
@@ -161,7 +162,7 @@ public:
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 	virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
 
-	oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false) const;
+	oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
 	const OnixDeviceType type;
 
@@ -171,7 +172,7 @@ public:
 
 protected:
 
-	static oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t hubIndex);
+	oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t hubIndex);
 
 	const oni_dev_idx_t deviceIdx;
 	std::shared_ptr<Onix1> deviceContext;

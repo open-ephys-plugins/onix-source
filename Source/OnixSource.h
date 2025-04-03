@@ -96,6 +96,8 @@ public:
 
 	OnixDeviceVector getDataSources();
 
+	OnixDeviceVector getEnabledDataSources();
+
 	OnixDeviceVector getDataSourcesFromPort(PortName port);
 
 	OnixDeviceVector getDataSourcesFromOffset(int offset);
@@ -122,6 +124,7 @@ private:
 
 	/** Available data sources */
 	OnixDeviceVector sources;
+	OnixDeviceVector enabledSources;
 
 	/** Available headstages, indexed by their offset value */
 	std::map<int, String> headstages;

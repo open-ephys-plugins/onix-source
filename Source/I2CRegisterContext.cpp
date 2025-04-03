@@ -23,14 +23,14 @@
 #include "I2CRegisterContext.h"
 
 I2CRegisterContext::I2CRegisterContext(uint32_t address_, const oni_dev_idx_t devIdx_, std::shared_ptr<Onix1> ctx_)
-	: deviceIndex(devIdx_), i2caddress(address_)
+	: deviceIndex(devIdx_), i2cAddress(address_)
 {
 	i2cContext = ctx_;
 }
 
 void I2CRegisterContext::WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress)
 {
-	uint32_t registerAddress = (address << 7) | (i2caddress & 0x7F);
+	uint32_t registerAddress = (address << 7) | (i2cAddress & 0x7F);
 	registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
 
 	i2cContext->writeRegister(deviceIndex, registerAddress, value);
@@ -38,7 +38,7 @@ void I2CRegisterContext::WriteByte(uint32_t address, uint32_t value, bool sixtee
 
 void I2CRegisterContext::ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress)
 {
-	uint32_t registerAddress = (address << 7) | (i2caddress & 0x7F);
+	uint32_t registerAddress = (address << 7) | (i2cAddress & 0x7F);
 	registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
 
 	*value = i2cContext->readRegister(deviceIndex, registerAddress);

@@ -224,6 +224,23 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 				sources.emplace_back(np2);
 
+				auto polledBno = std::make_shared<PolledBno055>("BNO055", index, context);
+
+				if (polledBno->configureDevice() != ONI_ESUCCESS)
+				{
+					if (res == -1)
+					{
+						LOGE("Context is not initialized properly for PolledBno055");
+					}
+					else if (res == -2)
+					{
+						LOGE("Error writing bytes for PolledBno055");
+					}
+					continue;
+				}
+
+				sources.emplace_back(polledBno);
+
 				headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
 		}
@@ -341,6 +358,19 @@ OnixDeviceVector OnixSource::getDataSources()
 	for (const auto& source : sources)
 	{
 		devices.emplace_back(source);
+	}
+
+	return devices;
+}
+
+OnixDeviceVector OnixSource::getEnabledDataSources()
+{
+	OnixDeviceVector devices{};
+
+	for (const auto& source : sources)
+	{
+		if (source->isEnabled())
+			devices.emplace_back(source);
 	}
 
 	return devices;
@@ -530,7 +560,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->type == OnixDeviceType::BNO)
+			else if (source->type == OnixDeviceType::BNO || source->type == OnixDeviceType::POLLEDBNO)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -730,24 +760,17 @@ bool OnixSource::startAcquisition()
 {
 	frameReader.reset();
 
-	OnixDeviceVector devices;
+	enabledSources = getEnabledDataSources();
 
-	for (const auto& source : sources)
-	{
-		if (!source->isEnabled()) continue;
+	enabledSources.emplace_back(portA);
+	enabledSources.emplace_back(portB);
 
-		devices.emplace_back(source);
-	}
-
-	devices.emplace_back(portA);
-	devices.emplace_back(portB);
-
-	for (const auto& source : devices)
+	for (const auto& source : enabledSources)
 	{
 		source->startAcquisition();
 	}
 
-	frameReader = std::make_unique<FrameReader>(devices, context);
+	frameReader = std::make_unique<FrameReader>(enabledSources, context);
 	frameReader->startThread();
 
 	startThread();
@@ -766,21 +789,13 @@ bool OnixSource::stopAcquisition()
 	if (!portA->getErrorFlag() && !portB->getErrorFlag())
 		waitForThreadToExit(2000);
 
-	if (devicesFound)
+	for (const auto& source : enabledSources)
 	{
-		oni_size_t reg = 0;
-		context->setOption(ONI_OPT_RUNNING, reg);
-	}
-
-	for (const auto& source : sources)
-	{
-		if (!source->isEnabled()) continue;
-
 		source->stopAcquisition();
 	}
 
-	portA->stopAcquisition();
-	portB->stopAcquisition();
+	oni_size_t reg = 0;
+	context->setOption(ONI_OPT_RUNNING, reg);
 
 	for (auto buffers : sourceBuffers)
 		buffers->clear();
@@ -811,10 +826,8 @@ bool OnixSource::stopAcquisition()
 
 bool OnixSource::updateBuffer()
 {
-	for (const auto& source : sources)
+	for (const auto& source : enabledSources)
 	{
-		if (!source->isEnabled()) continue;
-
 		source->processFrames();
 	}
 

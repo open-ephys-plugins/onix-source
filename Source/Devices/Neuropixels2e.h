@@ -261,5 +261,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(Neuropixels2e);
 };
-
-#endif // !__NEUROPIXELS2E_H__

@@ -293,14 +293,11 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 	bool otherHeadstageSelected = isPortA ? headstageComboBoxB->getSelectedId() > 1 : headstageComboBoxA->getSelectedId() > 1;
 	bool currentHeadstageSelected = isPortA ? headstageComboBoxA->getSelectedId() > 1 : headstageComboBoxB->getSelectedId() > 1;
 
-	if (otherHeadstageSelected)
-		canvas->removeTabs(currentPort);
-	else
-		canvas->removeAllTabs();
+	canvas->removeTabs(currentPort);
 
-  String passthroughName = isPortA ? "passthroughA" : "passthroughB";
-  bool passthroughValue = false;
-  
+	String passthroughName = isPortA ? "passthroughA" : "passthroughB";
+	bool passthroughValue = false;
+
 	if (currentHeadstageSelected)
 	{
 		String headstage = isPortA ? headstageComboBoxA->getText() : headstageComboBoxB->getText();

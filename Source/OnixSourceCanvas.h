@@ -86,9 +86,6 @@ public:
 	/** Sets bounds of sub-components*/
 	void resized();
 
-	/** Get the given parameter from the source node */
-	Parameter* getSourceParameter(String name);
-
 	Array<CustomTabComponent*> getHeadstageTabs();
 
 	std::map<int, OnixDeviceType> createSelectedMap(std::vector<std::shared_ptr<SettingsInterface>>);
