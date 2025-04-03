@@ -24,59 +24,43 @@
 
 #include "../OnixDevice.h"
 
-enum class Bno055Registers
+enum class HeartbeatRegisters : uint32_t
 {
-	ENABLE = 0x00
+	ENABLE = 0,
+	CLK_DIV = 1,
+	CLK_HZ = 2
 };
 
 /*
-	Configures and streams data from a BNO055 device
+	Configures and streams data from a MemoryMonitor device on a Breakout Board
 */
-class Bno055 : public OnixDevice
+class Heartbeat : public OnixDevice
 {
 public:
+	Heartbeat(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
-	/** Constructor */
-	Bno055(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
-
+	/** Configures the device so that it is ready to stream with default settings */
 	int configureDevice() override;
 
 	/** Update the settings of the device */
 	bool updateSettings() override;
 
 	/** Starts probe data streaming */
-	void startAcquisition() override;
+	void startAcquisition() override {};
 
 	/** Stops probe data streaming*/
-	void stopAcquisition() override;
+	void stopAcquisition() override {};
 
-	void addFrame(oni_frame_t*) override;
+	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
+	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
 
-	void processFrames() override;
+	void addFrame(oni_frame_t* frame) override { oni_destroy_frame(frame); }
 
-	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+	void processFrames() override {};
 
 private:
 
-	DataBuffer* bnoBuffer;
+	const uint32_t beatsPerSecond = 100;
 
-	static const int numFrames = 2;
-
-	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
-
-	bool shouldAddToBuffer = false;
-
-	static const int numberOfChannels = 3 + 3 + 4 + 3 + 1;
-	static constexpr float sampleRate = 100.0f;
-
-	float bnoSamples[numberOfChannels * numFrames];
-
-	double bnoTimestamps[numFrames];
-	int64 sampleNumbers[numFrames];
-	uint64 eventCodes[numFrames];
-
-	unsigned short currentFrame = 0;
-	int sampleNumber = 0;
-
-	JUCE_LEAK_DETECTOR(Bno055);
+	JUCE_LEAK_DETECTOR(Heartbeat);
 };

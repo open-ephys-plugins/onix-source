@@ -1,8 +1,7 @@
 /*
     ------------------------------------------------------------------
 
-    This file is part of the Open Ephys GUI
-    Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
+    Copyright (C) Open Ephys
 
     ------------------------------------------------------------------
 
@@ -21,13 +20,13 @@
 
 */
 
-#ifndef __OnixSourceEditor_H__
-#define __OnixSourceEditor_H__
+#pragma once
 
 #include <VisualizerEditorHeaders.h>
 
 #include "OnixSourceCanvas.h"
 #include "NeuropixComponents.h"
+#include "Devices/MemoryMonitor.h"
 
 class OnixSource;
 
@@ -47,9 +46,6 @@ public:
 
     /** Constructor */
     OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_);
-
-    /** Destructor */
-    virtual ~OnixSourceEditor() { }
 
     /** Listener methods */
     void labelTextChanged(Label* l) override;
@@ -77,6 +73,8 @@ public:
     void resetCanvas();
 
     bool isHeadstageSelected(PortName port);
+
+    String getHeadstageSelected(int offset);
 
     String getHeadstageSelected(PortName port);
 
@@ -109,7 +107,7 @@ private:
     void setComboBoxSelection(ComboBox* comboBox, String headstage);
     void addHeadstageComboBoxOptions(ComboBox* comboBox);
 
+    std::unique_ptr<MemoryMonitorUsage> memoryUsage;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
 };
-
-#endif // __OnixSourceEditor_H__

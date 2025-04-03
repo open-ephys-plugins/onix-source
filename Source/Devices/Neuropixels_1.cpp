@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -22,16 +21,11 @@
 */
 
 #include "Neuropixels_1.h"
-#include "../OnixSource.h"
 
 BackgroundUpdaterWithProgressWindow::BackgroundUpdaterWithProgressWindow(Neuropixels_1* d)
 	: ThreadWithProgressWindow("Writing calibration files to Neuropixels Probe: " + d->getName(), true, false)
 {
 	device = d;
-}
-
-BackgroundUpdaterWithProgressWindow::~BackgroundUpdaterWithProgressWindow()
-{
 }
 
 bool BackgroundUpdaterWithProgressWindow::updateSettings()
@@ -189,7 +183,7 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 		0.195f,
 		CharPointer_UTF8("\xc2\xb5V"),
 		{});
-	streams.add(apStream);
+	streamInfos.add(apStream);
 
 	StreamInfo lfpStream = StreamInfo(
 		name + "-LFP",
@@ -202,17 +196,13 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 		0.195f,
 		CharPointer_UTF8("\xc2\xb5V"),
 		{});
-	streams.add(lfpStream);
+	streamInfos.add(lfpStream);
 
 	settings = std::make_unique<ProbeSettings>();
 	defineMetadata(settings.get());
 
 	adcCalibrationFilePath = "None";
 	gainCalibrationFilePath = "None";
-}
-
-Neuropixels_1::~Neuropixels_1()
-{
 }
 
 NeuropixelsGain Neuropixels_1::getGainEnum(int index)
@@ -325,7 +315,7 @@ int Neuropixels_1::configureDevice()
 	WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD);
 	if (i2cContext->getLastResult() != ONI_ESUCCESS) return -3;
 
-	return 0;
+	return deviceContext->getLastResult();
 }
 
 bool Neuropixels_1::updateSettings()
@@ -429,7 +419,7 @@ void Neuropixels_1::stopAcquisition()
 
 void Neuropixels_1::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	for (StreamInfo streamInfo : streams)
+	for (StreamInfo streamInfo : streamInfos)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
@@ -456,16 +446,9 @@ void Neuropixels_1::processFrames()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
-		uint16_t* dataPtr;
-		dataPtr = (uint16_t*)frame->data;
+		uint16_t* dataPtr = (uint16_t*)frame->data;
 
-		auto dataclock = (unsigned char*)frame->data + 936;
-		uint64 hubClock = ((uint64_t)(*(uint16_t*)dataclock) << 48) |
-			((uint64_t)(*(uint16_t*)(dataclock + 2)) << 32) |
-			((uint64_t)(*(uint16_t*)(dataclock + 4)) << 16) |
-			((uint64_t)(*(uint16_t*)(dataclock + 6)) << 0);
-
-		apTimestamps[superFrameCount] = hubClock;
+		apTimestamps[superFrameCount] = frame->time;
 		apSampleNumbers[superFrameCount] = apSampleNumber++;
 
 		for (int i = 0; i < framesPerSuperFrame; i++)

@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-# ifndef __ONIXSOURCECANVAS_H__
-# define __ONIXSOURCECANVAS_H__
+#pragma once
 
 #include <VisualizerEditorHeaders.h>
 
@@ -30,6 +28,8 @@
 
 #include "OnixSourceEditor.h"
 #include "OnixSource.h"
+
+class OnixSource;
 
 /**
 
@@ -83,12 +83,6 @@ public:
 	/** Constructor */
 	OnixSourceCanvas(GenericProcessor*, OnixSourceEditor*, OnixSource*);
 
-	/** Destructor */
-	~OnixSourceCanvas();
-
-	/** Fills background */
-	void paint(Graphics& g);
-
 	/** Renders the Visualizer on each animation callback cycle */
 	void refresh() override;
 
@@ -120,8 +114,8 @@ public:
 	/** Stops animation of sub-interfaces */
 	void stopAcquisition();
 
-	/** Add the headstage and all of its devices to the canvas */
-	void addHeadstage(String headstage, PortName port);
+	/** Add the hub and all of its devices to the canvas */
+	void addHub(String, int);
 
 	/** Called when the basestation is created or refreshed */
 	void populateSourceTabs(CustomTabComponent*, OnixDeviceVector);
@@ -174,15 +168,13 @@ private:
 		Create an alert window that asks whether to keep the selected headstage on the given port,
 		or to remove it since the hardware was not found
 	*/
-	void askKeepRemove(PortName port);
+	void askKeepRemove(int offset);
 
 	/**
 		Create an alert window that asks whether to keep the selected headstage on the given port,
 		or to update to the headstage that was found
 	*/
-	void askKeepUpdate(PortName port, String foundHeadstage, OnixDeviceVector devices);
+	void askKeepUpdate(int offset, String foundHeadstage, OnixDeviceVector devices);
 
 	JUCE_LEAK_DETECTOR(OnixSourceCanvas);
 };
-
-# endif // __ONIXSOURCECANVAS_H__

@@ -27,14 +27,15 @@
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
 
-#include "../Devices/Bno055.h"
+#include "../Devices/OutputClock.h"
 
-class Bno055Interface : public SettingsInterface,
+class OutputClockInterface : public SettingsInterface,
+	public Label::Listener,
 	public Button::Listener
 {
 public:
-	/** Constructor */
-	Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+
+	OutputClockInterface(std::shared_ptr<OutputClock> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override {};
@@ -53,10 +54,29 @@ public:
 
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
+	void labelTextChanged(Label* l) override;
 
 private:
 
-	std::unique_ptr<UtilityButton> deviceEnableButton;
+	std::unique_ptr<Label> frequencyHzLabel;
+	std::unique_ptr<Label> frequencyHzValue;
 
-	JUCE_LEAK_DETECTOR(Bno055Interface);
+	std::unique_ptr<Label> dutyCycleLabel;
+	std::unique_ptr<Label> dutyCycleValue;
+
+	std::unique_ptr<Label> delayLabel;
+	std::unique_ptr<Label> delayValue;
+
+	std::unique_ptr<ToggleButton> gateRunButton;
+
+	const float MinFrequencyHz = 0.1f;
+	const float MaxFrequencyHz = 10e6;
+
+	const int MinDutyCyclePercent = 10;
+	const int MaxDutyCyclePercent = 90;
+
+	const int MinDelaySeconds = 0;
+	const int MaxDelaySeconds = 3600;
+
+	JUCE_LEAK_DETECTOR(OutputClockInterface);
 };

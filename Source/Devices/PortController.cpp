@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -29,12 +28,10 @@ PortController::PortController(PortName port_, std::shared_ptr<Onix1> ctx_) :
 {
 }
 
-PortController::~PortController()
-{
-}
-
 int PortController::configureDevice()
 {
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;
+
 	deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1);
 
 	return deviceContext->getLastResult();
@@ -97,6 +94,21 @@ DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String heads
 	return DiscoveryParameters();
 }
 
+String PortController::getPortName(int offset)
+{
+	switch (offset)
+	{
+	case 0:
+		return "";
+	case HubAddressPortA:
+		return "Port A";
+	case HubAddressPortB:
+		return "Port B";
+	default:
+		return "";
+	}
+}
+
 bool PortController::configureVoltage(float voltage)
 {
 	if (voltage == defaultVoltage)
@@ -142,7 +154,7 @@ void PortController::setVoltage(float voltage)
 	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, 0);
 	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
 	sleep_for(std::chrono::milliseconds(300));
-	
+
 	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
 	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
 	sleep_for(std::chrono::milliseconds(500));
@@ -160,6 +172,23 @@ bool PortController::checkLinkState() const
 PortName PortController::getPortFromIndex(oni_dev_idx_t index)
 {
 	return index & (1 << 8) ? PortName::PortA : PortName::PortB;
+}
+
+int PortController::getOffsetFromIndex(oni_dev_idx_t index)
+{
+	return index & 0b1100000000;
+}
+
+Array<int> PortController::getUniqueOffsetsFromIndices(std::vector<int> indices)
+{
+	Array<int> offsets;
+
+	for (auto index : indices)
+	{
+		offsets.addIfNotAlreadyThere(getOffsetFromIndex(index));
+	}
+
+	return offsets;
 }
 
 Array<PortName> PortController::getUniquePortsFromIndices(std::vector<int> indices)

@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,13 +20,10 @@
 
 */
 
-#ifndef NEUROPIXELS1_H_DEFINED
-#define NEUROPIXELS1_H_DEFINED
+#pragma once
 
 #include "../OnixDevice.h"
 #include "../NeuropixComponents.h"
-
-class OnixSource;
 
 #include <ctime>
 #include <chrono>
@@ -149,7 +145,7 @@ public:
 
 /**
 
-	Streams data from an ONIX device
+	Configures and streams data from a Neuropixels 1.0f device
 
 */
 class Neuropixels_1 : public OnixDevice,
@@ -159,10 +155,7 @@ public:
 	/** Constructor */
 	Neuropixels_1(String name, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
-	/** Destructor */
-	~Neuropixels_1();
-
-	/** Enables the device so that it is ready to stream with default settings */
+	/** Configures the device so that it is ready to stream with default settings */
 	int configureDevice() override;
 
 	/** Update the settings of the device by writing to hardware */
@@ -292,8 +285,6 @@ class BackgroundUpdaterWithProgressWindow : public ThreadWithProgressWindow
 public:
 	BackgroundUpdaterWithProgressWindow(Neuropixels_1* d);
 
-	~BackgroundUpdaterWithProgressWindow();
-
 	void run();
 
 	bool updateSettings();
@@ -306,5 +297,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(BackgroundUpdaterWithProgressWindow);
 };
-
-#endif

@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -30,10 +29,6 @@ FrameReader::FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1> ctx_)
 	context = ctx_;
 }
 
-FrameReader::~FrameReader()
-{
-}
-
 void FrameReader::run()
 {
 	while (!threadShouldExit())
@@ -42,6 +37,8 @@ void FrameReader::run()
 
 		if (context->getLastResult() < ONI_ESUCCESS)
 		{
+			if (threadShouldExit()) return;
+
 			CoreServices::sendStatusMessage("Unable to read data frames. Stopping acquisition...");
 			CoreServices::setAcquisitionStatus(false);
 			return;

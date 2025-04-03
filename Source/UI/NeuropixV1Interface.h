@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __NEUROPIXINTERFACE_H__
-#define __NEUROPIXINTERFACE_H__
+#pragma once
 
 #include <VisualizerEditorHeaders.h>
 
@@ -58,9 +56,6 @@ public:
 
 	/** Constructor */
 	NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
-
-	/** Destructor */
-	~NeuropixV1Interface();
 
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
@@ -116,7 +111,7 @@ private:
 	std::unique_ptr<Label> adcCalibrationFileLabel;
 	std::unique_ptr<Label> gainCalibrationFileLabel;
 
-	std::unique_ptr<UtilityButton> probeEnableButton;
+	std::unique_ptr<UtilityButton> deviceEnableButton;
 	std::unique_ptr<UtilityButton> selectElectrodeButton;
 
 	std::unique_ptr<UtilityButton> enableViewButton;
@@ -175,5 +170,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(NeuropixV1Interface);
 };
-
-#endif //__NEUROPIXINTERFACE_H__

@@ -27,14 +27,15 @@
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
 
-#include "../Devices/Bno055.h"
+#include "../Devices/AnalogIO.h"
 
-class Bno055Interface : public SettingsInterface,
-	public Button::Listener
+class AnalogIOInterface : public SettingsInterface,
+	public Button::Listener,
+	public ComboBox::Listener
 {
 public:
 	/** Constructor */
-	Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override {};
@@ -53,10 +54,20 @@ public:
 
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
+	void comboBoxChanged(ComboBox* cb) override;
 
 private:
 
+	static const int numChannels = 12;
+
+	std::array<std::unique_ptr<Label>, numChannels> channelDirectionLabels;
+	std::array<std::unique_ptr<ComboBox>, numChannels> channelDirectionComboBoxes;
+
 	std::unique_ptr<UtilityButton> deviceEnableButton;
 
-	JUCE_LEAK_DETECTOR(Bno055Interface);
+	static int getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber);
+	static int getChannelVoltageRangeId(std::shared_ptr<AnalogIO> device, int channelNumber);
+	static int getDataTypeId(std::shared_ptr<AnalogIO> device);
+
+	JUCE_LEAK_DETECTOR(AnalogIOInterface);
 };

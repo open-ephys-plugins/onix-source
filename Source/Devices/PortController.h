@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __PORTCONTROLLER_H__
-#define __PORTCONTROLLER_H__
+#pragma once
 
 #include <thread>
 #include <chrono>
@@ -71,8 +69,6 @@ public:
 		voltageIncrement = voltageIncrement_;
 	}
 
-	~DiscoveryParameters() {};
-
 	bool operator==(const DiscoveryParameters& rhs) const
 	{
 		return rhs.minVoltage == minVoltage && rhs.maxVoltage == maxVoltage && rhs.voltageOffset == voltageOffset && rhs.voltageIncrement == voltageIncrement;
@@ -83,8 +79,6 @@ class PortController : public OnixDevice
 {
 public:
 	PortController(PortName port_, std::shared_ptr<Onix1> ctx_);
-
-	~PortController();
 
 	int configureDevice() override;
 
@@ -116,14 +110,23 @@ public:
 
 	static int getPortOffset(PortName port) { return (uint32_t)port << 8; }
 
+	static String getPortName(int offset);
+
 	static String getPortName(PortName port) { return port == PortName::PortA ? "Port A" : "Port B"; }
 
 	static PortName getPortFromIndex(oni_dev_idx_t index);
+
+	static int getOffsetFromIndex(oni_dev_idx_t index);
+
+	static Array<int> getUniqueOffsetsFromIndices(std::vector<int> indices);
 
 	static Array<PortName> getUniquePortsFromIndices(std::vector<int>);
 
 	/** Check if the port status changed and there is an error reported */
 	bool getErrorFlag() { return errorFlag; }
+
+	static const int HubAddressPortA = 256;
+	static const int HubAddressPortB = 512;
 
 private:
 	Array<oni_frame_t*, CriticalSection, 10> frameArray;
@@ -141,5 +144,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(PortController);
 };
-
-#endif // !__PORTCONTROLLER_H__

@@ -1,8 +1,7 @@
 /*
     ------------------------------------------------------------------
 
-    This file is part of the Open Ephys GUI
-    Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+    Copyright (C) Open Ephys
 
     ------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __CUSTOMVIEWPORT_H__
-#define __CUSTOMVIEWPORT_H__
+#pragma once
 
 #include "SettingsInterface.h"
 
@@ -79,5 +77,3 @@ private:
 
     JUCE_LEAK_DETECTOR(CustomViewport);
 };
-
-#endif // __CUSTOMVIEWPORT_H__

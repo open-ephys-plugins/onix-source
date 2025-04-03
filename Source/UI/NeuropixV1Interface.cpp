@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright(C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright(C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -55,19 +54,20 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		nameLabel->setBounds(625, 40, 370, 45);
 		addAndMakeVisible(nameLabel.get());
 
-		probeEnableButton = std::make_unique<UtilityButton>("ENABLED");
-		probeEnableButton->setFont(fontRegularButton);
-		probeEnableButton->setRadius(3.0f);
-		probeEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
-		probeEnableButton->setClickingTogglesState(true);
-		probeEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
-		probeEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
-		probeEnableButton->addListener(this);
-		addAndMakeVisible(probeEnableButton.get());
+		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+		deviceEnableButton->setFont(fontRegularButton);
+		deviceEnableButton->setRadius(3.0f);
+		deviceEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
+		deviceEnableButton->setClickingTogglesState(true);
+		deviceEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
+		deviceEnableButton->setToggleState(true, dontSendNotification);
+		deviceEnableButton->addListener(this);
+		addAndMakeVisible(deviceEnableButton.get());
+		deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
 
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(probeEnableButton->getX(), probeEnableButton->getBottom() + 10, nameLabel->getWidth(), 65);
+		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, nameLabel->getWidth(), 65);
 		infoLabel->setJustificationType(Justification::topLeft);
 		addAndMakeVisible(infoLabel.get());
 
@@ -532,10 +532,6 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 	updateInfoString();
 }
 
-NeuropixV1Interface::~NeuropixV1Interface()
-{
-}
-
 void NeuropixV1Interface::updateInfoString()
 {
 	String nameString, infoString;
@@ -564,6 +560,8 @@ void NeuropixV1Interface::updateInfoString()
 
 void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
 {
+	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+
 	if (!editor->acquisitionIsActive)
 	{
 		auto npx = std::static_pointer_cast<Neuropixels_1>(device);
@@ -720,9 +718,9 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 {
 	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
-	if (button == probeEnableButton.get())
+	if (button == deviceEnableButton.get())
 	{
-		device->setEnabled(probeEnableButton->getToggleState());
+		npx->setEnabled(deviceEnableButton->getToggleState());
 
 		if (canvas->foundInputSource())
 		{
@@ -732,11 +730,11 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (npx->isEnabled())
 		{
-			probeEnableButton->setLabel("ENABLED");
+			deviceEnableButton->setLabel("ENABLED");
 		}
 		else
 		{
-			probeEnableButton->setLabel("DISABLED");
+			deviceEnableButton->setLabel("DISABLED");
 		}
 
 		CoreServices::updateSignalChain(editor);
@@ -932,8 +930,8 @@ void NeuropixV1Interface::selectElectrodes(Array<int> electrodes)
 
 void NeuropixV1Interface::setInterfaceEnabledState(bool enabledState)
 {
-	if (probeEnableButton != nullptr)
-		probeEnableButton->setEnabled(enabledState);
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(enabledState);
 
 	if (selectElectrodeButton != nullptr)
 		selectElectrodeButton->setEnabled(enabledState);
@@ -1006,6 +1004,8 @@ void NeuropixV1Interface::drawLegend()
 
 bool NeuropixV1Interface::applyProbeSettings(ProbeSettings* p, bool shouldUpdateProbe)
 {
+	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+
 	if (electrodeConfigurationComboBox != 0)
 		electrodeConfigurationComboBox->setSelectedId(p->electrodeConfigurationIndex + 2, dontSendNotification);
 
@@ -1026,9 +1026,7 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings* p, bool shouldUpdate
 
 	if (referenceComboBox != 0)
 		referenceComboBox->setSelectedId(p->referenceIndex + 1, dontSendNotification);
-
-	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
-
+	
 	for (int i = 0; i < npx->settings->electrodeMetadata.size(); i++)
 	{
 		if (npx->settings->electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
@@ -1152,7 +1150,9 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 
 void NeuropixV1Interface::loadParameters(XmlElement* xml)
 {
-	if (device != nullptr)
+	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+
+	if (npx != nullptr)
 	{
 		//auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 

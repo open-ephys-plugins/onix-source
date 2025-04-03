@@ -20,9 +20,9 @@
 
 */
 
-#include "Bno055Interface.h"
+#include "DigitalIOInterface.h"
 
-Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
+DigitalIOInterface::DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {
 	if (device != nullptr)
@@ -32,17 +32,17 @@ Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e,
 		deviceEnableButton->setRadius(3.0f);
 		deviceEnableButton->setBounds(50, 40, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
-		deviceEnableButton->setTooltip("If disabled, BNO055 device will not stream data during acquisition");
+		deviceEnableButton->setTooltip("If disabled, the Digital IO device will not stream events during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);
 		deviceEnableButton->addListener(this);
 		addAndMakeVisible(deviceEnableButton.get());
 		deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
 	}
 
-	type = SettingsInterface::Type::BNO055_SETTINGS_INTERFACE;
+	type = SettingsInterface::Type::DIGITALIO_SETTINGS_INTERFACE;
 }
 
-void Bno055Interface::buttonClicked(Button* button)
+void DigitalIOInterface::buttonClicked(Button* button)
 {
 	if (button == deviceEnableButton.get())
 	{

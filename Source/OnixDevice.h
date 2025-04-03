@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2020 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __OnixDevice_H__
-#define __OnixDevice_H__
+#pragma once
 
 #include <DataThreadHeaders.h>
 
@@ -49,7 +47,13 @@ enum class OnixDeviceType {
 	NEUROPIXELS_1,
 	NEUROPIXELS_2,
 	ADC,
-	PORT_CONTROL
+	PORT_CONTROL,
+	MEMORYMONITOR,
+	OUTPUTCLOCK,
+	HEARTBEAT,
+	HARPSYNCINPUT,
+	ANALOGIO,
+	DIGITALIO,
 };
 
 struct StreamInfo {
@@ -84,7 +88,9 @@ public:
 
 		if (numChannels_ != suffixes_.size())
 		{
-			LOGE("Difference between number of channels and suffixes. Generating default suffixes instead.");
+			if (suffixes_.size() != 0)
+				LOGE("Difference between number of channels and suffixes. Generating default suffixes instead.");
+
 			suffixes_.clear();
 			suffixes_.ensureStorageAllocated(numChannels);
 			
@@ -97,7 +103,7 @@ public:
 
 	String getName() const { return name_; }
 	String getDescription() const { return description_; }
-	String getIdentifer() const { return identifier_; }
+	String getIdentifier() const { return identifier_; }
 	int getNumChannels() const { return numChannels_; }
 	float getSampleRate() const { return sampleRate_; }
 	String getChannelPrefix() const { return channelPrefix_; }
@@ -159,7 +165,7 @@ public:
 
 	OnixDeviceType type;
 
-	Array<StreamInfo> streams;
+	Array<StreamInfo> streamInfos;
 
 	const int bufferSizeInSeconds = 10;
 
@@ -178,5 +184,3 @@ private:
 };
 
 using OnixDeviceVector = std::vector<std::shared_ptr<OnixDevice>>;
-
-#endif

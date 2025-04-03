@@ -1,8 +1,7 @@
 /*
 	------------------------------------------------------------------
 
-	This file is part of the Open Ephys GUI
-	Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
+	Copyright (C) Open Ephys
 
 	------------------------------------------------------------------
 
@@ -21,8 +20,7 @@
 
 */
 
-#ifndef __FRAMEREADER_H__
-#define __FRAMEREADER_H__
+#pragma once
 
 #include <DataThreadHeaders.h>
 
@@ -34,8 +32,6 @@ class FrameReader : public Thread
 public:
 	FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1>);
 
-	~FrameReader();
-
 	void run() override;
 
 private:
@@ -45,5 +41,3 @@ private:
 
 	JUCE_LEAK_DETECTOR(FrameReader);
 };
-
-#endif // __FRAMEREADER_H__
