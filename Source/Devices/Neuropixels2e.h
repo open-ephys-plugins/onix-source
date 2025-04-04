@@ -102,6 +102,10 @@ public:
 
 	String getGainCorrectionFile(int index);
 
+	bool getShouldCorrectOffset() const { return shouldCorrectOffset; }
+
+	void setShouldCorrectOffset(bool value) { shouldCorrectOffset = value; }
+
 	// INeuropixel Methods
 
 	std::vector<int> selectElectrodeConfiguration(String config) override;
@@ -135,9 +139,11 @@ private:
 
 	int m_numProbes = 0;
 
+	const float sampleRate = 30000.0f;
 	static const int numFrames = 10;
+	static const int numSamples = numberOfChannels * numFrames;
 
-	std::array<float, numberOfChannels * numFrames> samples;
+	std::array<float, numSamples> samples;
 
 	int64 sampleNumbers[numFrames];
 	double timestamps[numFrames];
@@ -148,6 +154,16 @@ private:
 	int sampleNumber = 0;
 
 	bool singleProbe = false;
+
+	static const int secondsToSettle = 15;
+	static const int samplesToAverage = 100;
+
+	bool offsetCalculated = false;
+	bool shouldCorrectOffset = true;
+	std::array<float, numberOfChannels> offsets;
+	std::vector<std::vector<float>> offsetValues;
+
+	void updateLfpOffsets(std::array<float, numSamples>&, int64);
 
 	std::unique_ptr<I2CRegisterContext> serializer;
 	std::unique_ptr<I2CRegisterContext> deserializer;

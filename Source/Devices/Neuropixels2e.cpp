@@ -45,8 +45,8 @@ void Neuropixels2e::createDataStream(int n)
 		getName() + "-" + String(n),
 		"Neuropixels 2.0 data stream",
 		"onix-neuropixels2.data",
-		384,
-		30000.0f,
+		numberOfChannels,
+		sampleRate,
 		"CH",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
@@ -575,6 +575,19 @@ void Neuropixels2e::startAcquisition()
 	frameCount = 0;
 
 	singleProbe = m_numProbes == 1;
+
+	offsetValues.clear();
+	offsetValues.reserve(numberOfChannels);
+
+	for (int i = 0; i < numberOfChannels; i++)
+	{
+		offsets[i] = 0;
+
+		offsetValues.emplace_back(std::vector<float>{});
+	}
+
+	offsetCalculated = false;
+
 }
 
 void Neuropixels2e::stopAcquisition()
@@ -625,8 +638,11 @@ void Neuropixels2e::processFrames()
 
 			for (int j = 0; j < AdcsPerProbe; j++)
 			{
-				samples[rawToChannel[j][i] * numFrames + frameCount] =
-					(float)(*(amplifierData + adcIndices[j] + adcDataOffset) * gainCorrection[probeIndex]);
+				const int channelIndex = rawToChannel[j][i];
+				float offset = shouldCorrectOffset && offsetCalculated ? offsets.at(channelIndex) : 0.0f;
+
+				samples[channelIndex * numFrames + frameCount] =
+					(float)(*(amplifierData + adcIndices[j] + adcDataOffset)) * gainCorrection[probeIndex] - offset;
 			}
 		}
 
@@ -644,9 +660,42 @@ void Neuropixels2e::processFrames()
 			shouldAddToBuffer = false;
 
 			amplifierBuffer[probeIndex]->addToBuffer(samples.data(), sampleNumbers, timestamps, eventCodes, numFrames);
+
+			if (!offsetCalculated) updateLfpOffsets(samples, sampleNumbers[0]);
 		}
 
 		oni_destroy_frame(frame);
+	}
+}
+
+void Neuropixels2e::updateLfpOffsets(std::array<float, numSamples>& samples, int64 sampleNumber)
+{
+	if (sampleNumber > sampleRate * secondsToSettle)
+	{
+		uint32_t counter = 0;
+
+		while (offsetValues[0].size() < samplesToAverage)
+		{
+			if (counter >= numFrames) break;
+
+			for (int i = 0; i < numberOfChannels; i++)
+			{
+				offsetValues[i].emplace_back(samples[i * numFrames + counter]);
+			}
+
+			counter++;
+		}
+
+		if (offsetValues[0].size() >= samplesToAverage)
+		{
+			for (int i = 0; i < numberOfChannels; i++)
+			{
+				offsets[i] = std::reduce(offsetValues.at(i).begin(), offsetValues.at(i).end()) / offsetValues.at(i).size();
+			}
+
+			offsetCalculated = true;
+			offsetValues.clear();
+		}
 	}
 }
 
