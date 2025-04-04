@@ -26,6 +26,8 @@
 #include "../I2CRegisterContext.h"
 #include "DS90UB9x.h"
 
+#include <chrono>
+
 class PolledBno055 : public OnixDevice,
 	public I2CRegisterContext,
 	public HighResolutionTimer
@@ -66,7 +68,13 @@ private:
 	static const int Bno055Address = 0x28;
 	static const int EulerHeadingLsbAddress = 0x1A;
 
+	const double i2cRate = 400e3;
+
 	static const int numberOfBytes = 28;
+
+	const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
+	const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
+	const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
 
 	std::unique_ptr<I2CRegisterContext> deserializer;
 
@@ -103,7 +111,7 @@ private:
 	const Bno055AxisSign axisSign = Bno055AxisSign::Default;
 
 	static const int numberOfChannels = 3 + 3 + 4 + 3 + 1 + 1;
-	static constexpr float sampleRate = 100.0f;
+	static constexpr double sampleRate = 50.0;
 
 	static const int timerIntervalInMilliseconds = (int)(1e3 * (1 / sampleRate));
 
@@ -113,6 +121,9 @@ private:
 	uint64 eventCode;
 
 	int64_t sampleNumber = 0;
+
+	// Given the starting address (i.e., the LSB), read two bytes and convert to an int16_t
+	int16_t readInt16(uint32_t);
 
 	JUCE_LEAK_DETECTOR(PolledBno055);
 };

@@ -145,6 +145,8 @@ bool PolledBno055::updateSettings()
 	WriteByte(0x3D, 0x0C); // Operation mode is NDOF
 	if (getLastResult() != ONI_ESUCCESS) return false;
 
+	set933I2cRate(i2cRate);
+
 	return true;
 }
 
@@ -159,6 +161,9 @@ void PolledBno055::startAcquisition()
 void PolledBno055::stopAcquisition()
 {
 	stopTimer();
+
+	while (isTimerRunning())
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 void PolledBno055::addFrame(oni_frame_t* frame)
@@ -173,96 +178,82 @@ void PolledBno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	bnoBuffer = sourceBuffers.getLast();
 }
 
-void PolledBno055::hiResTimerCallback()
+int16_t PolledBno055::readInt16(uint32_t startAddress)
 {
 	oni_reg_val_t byte1 = 0, byte2 = 0;
+
+	ReadByte(startAddress, &byte1);
+	ReadByte(startAddress + 1, &byte2);
+
+	return (static_cast<int16_t>(byte2) << 8) | byte1;
+}
+
+void PolledBno055::hiResTimerCallback()
+{
 	int offset = 0;
 
 	// Euler
-	ReadByte(EulerHeadingLsbAddress + 0, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 1, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress) * eulerAngleScale;
 	offset++;
 
-	ReadByte(EulerHeadingLsbAddress + 2, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 3, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 2) * eulerAngleScale;
 	offset++;
 
-	ReadByte(EulerHeadingLsbAddress + 4, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 5, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 4) * eulerAngleScale;
 	offset++;
 
 	// Quaternion
-	ReadByte(EulerHeadingLsbAddress + 6, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 7, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 6) * quaternionScale;
 	offset++;
 
-	ReadByte(EulerHeadingLsbAddress + 8, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 9, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 8) * quaternionScale;
 	offset++;
 
-	ReadByte(EulerHeadingLsbAddress + 10, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 11, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 10) * quaternionScale;
 	offset++;
 
-	ReadByte(EulerHeadingLsbAddress + 12, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 13, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 12) * quaternionScale;
 	offset++;
 
 	// Acceleration
 
-	ReadByte(EulerHeadingLsbAddress + 14, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 15, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 14) * accelerationScale;
 	offset++;
 
-	ReadByte(EulerHeadingLsbAddress + 16, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 17, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 16) * accelerationScale;
 	offset++;
 
-	ReadByte(EulerHeadingLsbAddress + 18, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 19, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 18) * accelerationScale;
 	offset++;
 
 	// Gravity
 
-	ReadByte(EulerHeadingLsbAddress + 20, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 21, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 20) * accelerationScale;
 	offset++;
 
-	ReadByte(EulerHeadingLsbAddress + 22, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 23, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 22) * accelerationScale;
 	offset++;
 
-	ReadByte(EulerHeadingLsbAddress + 24, &byte1);
-	ReadByte(EulerHeadingLsbAddress + 25, &byte2);
-	bnoSamples[offset] = byte1 << 8 | byte2;
+	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 24) * accelerationScale;
 	offset++;
 
 	// Temperature
 
-	ReadByte(EulerHeadingLsbAddress + 26, &byte1);
-	bnoSamples[offset] = byte1;
+	oni_reg_val_t byte;
+	ReadByte(EulerHeadingLsbAddress + 26, &byte);
+	bnoSamples[offset] = static_cast<uint8_t>(byte);
 	offset++;
 
 	// Calibration Status
 
-	ReadByte(EulerHeadingLsbAddress + 27, &byte1);
-	bnoSamples[offset] = byte1;
+	ReadByte(EulerHeadingLsbAddress + 27, &byte);
+	bnoSamples[offset] = byte;
 	offset++;
 
 	bnoTimestamp = deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CL);
 	bnoTimestamp += (uint64_t)deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CH) << 32;
 
 	bnoBuffer->addToBuffer(bnoSamples.data(), &sampleNumber, &bnoTimestamp, &eventCode, 1);
+
+	sampleNumber++;
 }

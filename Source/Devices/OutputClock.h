@@ -43,8 +43,6 @@ class OutputClock : public OnixDevice
 public:
 	OutputClock(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
-	~OutputClock();
-
 	/** Device is always enabled */
 	int configureDevice() override { setEnabled(true); return 0; };
 
@@ -52,10 +50,10 @@ public:
 	bool updateSettings() override;
 
 	/** Starts probe data streaming */
-	void startAcquisition() override;
+	void startAcquisition() override {};
 
 	/** Stops probe data streaming*/
-	void stopAcquisition() override;
+	void stopAcquisition() override {};
 
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};

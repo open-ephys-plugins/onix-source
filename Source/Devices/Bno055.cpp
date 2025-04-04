@@ -154,10 +154,6 @@ void Bno055::processFrames()
 
 		int dataOffset = 4;
 
-		const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
-		const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
-		const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
-
 		int channelOffset = 0;
 
 		// Euler

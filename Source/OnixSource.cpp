@@ -829,6 +829,8 @@ bool OnixSource::updateBuffer()
 	for (const auto& source : enabledSources)
 	{
 		source->processFrames();
+
+		if (threadShouldExit()) return true;
 	}
 
 	portA->processFrames();

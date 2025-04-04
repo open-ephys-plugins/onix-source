@@ -25,6 +25,7 @@
 #include "ProcessorHeaders.h"
 
 #include "Onix1.h"
+#include "Devices/DS90UB9x.h"
 
 #include <cstddef>
 
@@ -39,6 +40,8 @@ public:
 	void ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
 
 	int getLastResult() { return i2cContext->getLastResult(); }
+
+	void set933I2cRate(double);
 
 protected:
 	std::shared_ptr<Onix1> i2cContext;

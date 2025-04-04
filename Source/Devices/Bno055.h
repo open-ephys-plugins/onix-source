@@ -60,6 +60,10 @@ private:
 
 	DataBuffer* bnoBuffer;
 
+	const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
+	const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
+	const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
+
 	static const int numFrames = 2;
 
 	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;

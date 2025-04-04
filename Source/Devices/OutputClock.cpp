@@ -27,11 +27,6 @@ OutputClock::OutputClock(String name, const oni_dev_idx_t deviceIdx_, std::share
 {
 }
 
-OutputClock::~OutputClock()
-{
-	if (deviceContext != nullptr && deviceContext->isInitialized()) setGateRun(false, true);
-}
-
 bool OutputClock::updateSettings()
 {
 	oni_reg_val_t baseFreqHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::BASE_FREQ_HZ);
@@ -50,14 +45,4 @@ bool OutputClock::updateSettings()
 	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, gateRun ? 1 : 0); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
 
 	return true;
-}
-
-void OutputClock::startAcquisition()
-{
-	writeGateRunRegister();
-}
-
-void OutputClock::stopAcquisition()
-{
-	setGateRun(false, true);
 }

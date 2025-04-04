@@ -73,21 +73,24 @@ oni_reg_val_t Onix1::readRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registe
 {
 	oni_reg_val_t value = 0;
 	result = oni_read_reg(ctx_, devIndex, registerAddress, &value);
-	if (result != ONI_ESUCCESS) LOGE(oni_error_str(result));
+	if (result != ONI_ESUCCESS) 
+		LOGE(oni_error_str(result));
 	return value;
 }
 
 void Onix1::writeRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, oni_reg_val_t value)
 {
 	result = oni_write_reg(ctx_, devIndex, registerAddress, value);
-	if (result != ONI_ESUCCESS) LOGE(oni_error_str(result));
+	if (result != ONI_ESUCCESS) 
+		LOGE(oni_error_str(result));
 }
 
 oni_frame_t* Onix1::readFrame()
 {
 	oni_frame_t* frame;
 	result = oni_read_frame(ctx_, &frame);
-	if (result < ONI_ESUCCESS) LOGE(oni_error_str(result));
+	if (result < ONI_ESUCCESS) 
+		LOGE(oni_error_str(result));
 
 	return frame;
 }

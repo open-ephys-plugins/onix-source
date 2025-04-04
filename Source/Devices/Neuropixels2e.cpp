@@ -342,11 +342,11 @@ int Neuropixels2e::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
+	deviceContext->writeRegister(deviceIdx, DS90UB9x::ENABLE, isEnabled() ? 1 : 0);
+
 	configureSerDes();
 	setProbeSupply(true);
-	auto sclTimes = (uint32_t)(std::round(1.0 / (100e-9 * 400e3))); // NB: set I2C clock rate to ~400 kHz
-	serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, sclTimes);
-	serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, sclTimes);
+	serializer->set933I2cRate(400e3);
 	probeSN[0] = getProbeSN(ProbeASelected);
 	probeSN[1] = getProbeSN(ProbeBSelected);
 	setProbeSupply(false);
