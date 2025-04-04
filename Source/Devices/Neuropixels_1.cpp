@@ -284,6 +284,8 @@ int Neuropixels_1::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;
 
+	deviceContext->writeRegister(deviceIdx, ENABLE, isEnabled() ? 1 : 0);
+
 	// Get Probe SN
 	uint32_t eepromOffset = 0;
 	uint32_t i2cAddr = 0x50;
@@ -304,6 +306,11 @@ int Neuropixels_1::configureDevice()
 	}
 
 	LOGD("Probe SN: ", probeNumber);
+
+	if (!isEnabled())
+	{
+		return 0;
+	}
 
 	// Enable device streaming
 	deviceContext->writeRegister(deviceIdx, 0x8000, 1);

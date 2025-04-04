@@ -208,6 +208,8 @@ private:
 	DataBuffer* apBuffer;
 	DataBuffer* lfpBuffer;
 
+	const uint32_t ENABLE = 0x8000;
+
 	static const int superFramesPerUltraFrame = 12;
 	static const int framesPerSuperFrame = 13;
 	static const int framesPerUltraFrame = superFramesPerUltraFrame * framesPerSuperFrame;
