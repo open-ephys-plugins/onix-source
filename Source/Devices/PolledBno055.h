@@ -111,16 +111,20 @@ private:
 	const Bno055AxisSign axisSign = Bno055AxisSign::Default;
 
 	static const int numberOfChannels = 3 + 3 + 4 + 3 + 1 + 1;
-	static constexpr double sampleRate = 50.0;
+	static constexpr double sampleRate = 25.0;
 
 	static const int timerIntervalInMilliseconds = (int)(1e3 * (1 / sampleRate));
 
-	std::array<float, numberOfChannels> bnoSamples;
+	static const int numFrames = 5;
 
-	double bnoTimestamp;
-	uint64 eventCode;
+	std::array<float, numberOfChannels * numFrames> bnoSamples;
 
-	int64_t sampleNumber = 0;
+	double bnoTimestamps[numFrames];
+	int64 sampleNumbers[numFrames];
+	uint64 eventCodes[numFrames];
+
+	unsigned short currentFrame = 0;
+	int sampleNumber = 0;
 
 	// Given the starting address (i.e., the LSB), read two bytes and convert to an int16_t
 	int16_t readInt16(uint32_t);

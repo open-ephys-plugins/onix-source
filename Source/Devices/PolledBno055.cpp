@@ -106,7 +106,8 @@ PolledBno055::PolledBno055(String name, const oni_dev_idx_t deviceIdx_, std::sha
 		{ "" });
 	streamInfos.add(calibrationStatusStream);
 
-	eventCode = 0;
+	for (int i = 0; i < numFrames; i++)
+		eventCodes[i] = 0;
 }
 
 int PolledBno055::configureDevice()
@@ -153,6 +154,7 @@ bool PolledBno055::updateSettings()
 void PolledBno055::startAcquisition()
 {
 	sampleNumber = 0;
+	currentFrame = 0;
 
 	if (isEnabled())
 		startTimer(timerIntervalInMilliseconds);
@@ -193,67 +195,74 @@ void PolledBno055::hiResTimerCallback()
 	int offset = 0;
 
 	// Euler
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress) * eulerAngleScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress) * eulerAngleScale;
 	offset++;
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 2) * eulerAngleScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 2) * eulerAngleScale;
 	offset++;
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 4) * eulerAngleScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 4) * eulerAngleScale;
 	offset++;
 
 	// Quaternion
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 6) * quaternionScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 6) * quaternionScale;
 	offset++;
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 8) * quaternionScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 8) * quaternionScale;
 	offset++;
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 10) * quaternionScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 10) * quaternionScale;
 	offset++;
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 12) * quaternionScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 12) * quaternionScale;
 	offset++;
 
 	// Acceleration
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 14) * accelerationScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 14) * accelerationScale;
 	offset++;
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 16) * accelerationScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 16) * accelerationScale;
 	offset++;
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 18) * accelerationScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 18) * accelerationScale;
 	offset++;
 
 	// Gravity
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 20) * accelerationScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 20) * accelerationScale;
 	offset++;
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 22) * accelerationScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 22) * accelerationScale;
 	offset++;
 
-	bnoSamples[offset] = readInt16(EulerHeadingLsbAddress + 24) * accelerationScale;
+	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 24) * accelerationScale;
 	offset++;
 
 	// Temperature
 
 	oni_reg_val_t byte;
 	ReadByte(EulerHeadingLsbAddress + 26, &byte);
-	bnoSamples[offset] = static_cast<uint8_t>(byte);
+	bnoSamples[offset * numFrames + currentFrame] = static_cast<uint8_t>(byte);
 	offset++;
 
 	// Calibration Status
 
 	ReadByte(EulerHeadingLsbAddress + 27, &byte);
-	bnoSamples[offset] = byte;
+	bnoSamples[offset * numFrames + currentFrame] = byte;
 	offset++;
 
-	bnoTimestamp = deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CL);
-	bnoTimestamp += (uint64_t)deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CH) << 32;
+	bnoTimestamps[currentFrame] = deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CL);
+	bnoTimestamps[currentFrame] += (uint64_t)deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CH) << 32;
 
-	bnoBuffer->addToBuffer(bnoSamples.data(), &sampleNumber, &bnoTimestamp, &eventCode, 1);
+	sampleNumbers[currentFrame] = sampleNumber++;
 
-	sampleNumber++;
+	currentFrame++;
+
+	if (currentFrame >= numFrames)
+	{
+		bnoBuffer->addToBuffer(bnoSamples.data(), sampleNumbers, bnoTimestamps, eventCodes, numFrames);
+		currentFrame = 0;
+	}
+
 }
