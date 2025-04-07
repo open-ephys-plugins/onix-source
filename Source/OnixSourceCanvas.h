@@ -111,6 +111,9 @@ private:
 
 	void updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice>);
 
+	// Compare two device names, ignoring the "-X" if it exists
+	bool compareDeviceNames(String dev1, String dev2);
+
 	String getTopLevelTabName(PortName port, String headstage);
 
 	String getDeviceTabName(std::shared_ptr<OnixDevice> device);

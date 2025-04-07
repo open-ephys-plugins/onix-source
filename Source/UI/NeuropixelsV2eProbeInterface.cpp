@@ -80,7 +80,7 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		gainCorrectionFileButton->setTooltip("Open a file dialog to choose the gain correction file for this probe.");
 		addAndMakeVisible(gainCorrectionFileButton.get());
 
-		gainCorrectionFileChooser = std::make_unique<FileChooser>("Select Gain Correction file.", File::getSpecialLocation(File::userHomeDirectory), "*_gainCalValues.csv");
+		gainCorrectionFileChooser = std::make_unique<FileChooser>("Select Gain Correction file.", File(), "*_gainCalValues.csv");
 
 		saveJsonButton = std::make_unique<UtilityButton>("SAVE TO JSON");
 		saveJsonButton->setRadius(3.0f);

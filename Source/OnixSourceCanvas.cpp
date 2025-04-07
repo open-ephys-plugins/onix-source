@@ -140,6 +140,18 @@ void OnixSourceCanvas::addInterfaceToTab(String tabName, CustomTabComponent* tab
 	tab->addTab(tabName, Colours::darkgrey, CustomViewport::createCustomViewport(interface_.get()), true);
 }
 
+bool OnixSourceCanvas::compareDeviceNames(String dev1, String dev2)
+{
+	StringRef charsToTrim = "-ABCD";
+
+	if (dev1 == dev2)
+		return true;
+	else if (dev1.trimCharactersAtEnd(charsToTrim) == dev2.trimCharactersAtEnd(charsToTrim))
+		return true;
+	else
+		return false;
+}
+
 void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice> device)
 {
 	int ind = -1;
@@ -147,7 +159,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	for (int j = 0; j < settingsInterfaces.size(); j++)
 	{
 		if (device->getDeviceIdx() == settingsInterfaces[j]->device->getDeviceIdx() &&
-			device->getName() == settingsInterfaces[j]->device->getName())
+			compareDeviceNames(device->getName(), settingsInterfaces[j]->device->getName()))
 		{
 			ind = j;
 			break;

@@ -95,7 +95,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		adcCalibrationFileButton->setTooltip("Open a file dialog to choose the ADC calibration file for this probe.");
 		addAndMakeVisible(adcCalibrationFileButton.get());
 
-		adcCalibrationFileChooser = std::make_unique<FileChooser>("Select ADC Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_ADCCalibration.csv");
+		adcCalibrationFileChooser = std::make_unique<FileChooser>("Select ADC Calibration file.", File(), "*_ADCCalibration.csv");
 
 		gainCalibrationFileLabel = std::make_unique<Label>("gainCalibrationFileLabel", "Gain Calibration File");
 		gainCalibrationFileLabel->setBounds(adcCalibrationFile->getX(), adcCalibrationFile->getBottom() + 3, adcCalibrationFile->getWidth(), adcCalibrationFile->getHeight());
@@ -116,7 +116,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		gainCalibrationFileButton->setTooltip("Open a file dialog to choose the Gain calibration file for this probe.");
 		addAndMakeVisible(gainCalibrationFileButton.get());
 
-		gainCalibrationFileChooser = std::make_unique<FileChooser>("Select Gain Calibration file.", File::getSpecialLocation(File::userHomeDirectory), "*_gainCalValues.csv");
+		gainCalibrationFileChooser = std::make_unique<FileChooser>("Select Gain Calibration file.", File(), "*_gainCalValues.csv");
 
 		probeInterfaceRectangle = std::make_unique<DrawableRectangle>();
 		probeInterfaceRectangle->setFill(Colours::darkgrey);
