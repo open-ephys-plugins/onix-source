@@ -111,7 +111,7 @@ private:
 	const Bno055AxisSign axisSign = Bno055AxisSign::Default;
 
 	static const int numberOfChannels = 3 + 3 + 4 + 3 + 1 + 1;
-	static constexpr double sampleRate = 25.0;
+	static constexpr double sampleRate = 30.0;
 
 	static const int timerIntervalInMilliseconds = (int)(1e3 * (1 / sampleRate));
 
