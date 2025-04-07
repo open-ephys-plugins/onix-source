@@ -44,10 +44,10 @@ public:
 	void stopAcquisition() override {};
 
 	/** Save parameters to XML */
-	void saveParameters(XmlElement* xml) override {};
+	void saveParameters(XmlElement* xml) override;
 
 	/** Load parameters from XML */
-	void loadParameters(XmlElement* xml) override {};
+	void loadParameters(XmlElement* xml) override;
 
 	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override {};
@@ -70,6 +70,7 @@ private:
 	static int getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber);
 	static int getChannelVoltageRangeId(std::shared_ptr<AnalogIO> device, int channelNumber);
 	static int getDataTypeId(std::shared_ptr<AnalogIO> device);
+	static AnalogIODirection getChannelDirectionFromString(String direction);
 
 	JUCE_LEAK_DETECTOR(AnalogIOInterface);
 };

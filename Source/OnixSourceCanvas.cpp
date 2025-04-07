@@ -532,12 +532,12 @@ void OnixSourceCanvas::stopAcquisition()
 
 void OnixSourceCanvas::saveCustomParametersToXml(XmlElement* xml)
 {
-	//for (int i = 0; i < settingsInterfaces.size(); i++)
-	//	settingsInterfaces[i]->saveParameters(xml);
+	for (int i = 0; i < settingsInterfaces.size(); i++)
+		settingsInterfaces[i]->saveParameters(xml);
 }
 
 void OnixSourceCanvas::loadCustomParametersFromXml(XmlElement* xml)
 {
-	//for (int i = 0; i < settingsInterfaces.size(); i++)
-	//	settingsInterfaces[i]->loadParameters(xml);
+	for (int i = 0; i < settingsInterfaces.size(); i++)
+		settingsInterfaces[i]->loadParameters(xml);
 }

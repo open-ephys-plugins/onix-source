@@ -50,11 +50,6 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 		directionList.add("Input");
 		directionList.add("Output");
 
-		StringArray voltageRangeList;
-		voltageRangeList.add("+/- 2.5 V");
-		voltageRangeList.add("+/- 5.0 V");
-		voltageRangeList.add("+/- 10.0 V");
-
 		for (int i = 0; i < numChannels; i += 1)
 		{
 			channelDirectionLabels[i] = std::make_unique<Label>("channelDirectionLabel" + String(i), "Channel " + String(i) + String(": Direction"));
@@ -69,13 +64,15 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 			channelDirectionComboBoxes[i]->addListener(this);
 			channelDirectionComboBoxes[i]->setTooltip("Sets the direction of Channel " + String(i));
 			channelDirectionComboBoxes[i]->addItemList(directionList, 1);
-			channelDirectionComboBoxes[i]->setSelectedId(getChannelDirectionId(std::static_pointer_cast<AnalogIO>(device), i), dontSendNotification);
+			channelDirectionComboBoxes[i]->setSelectedId(1, dontSendNotification);
 			addAndMakeVisible(channelDirectionComboBoxes[i].get());
 
 			prevComboBoxRectangle = channelDirectionComboBoxes[i]->getBounds();
 		}
 
 		updateInfoString();
+
+		updateSettings();
 	}
 
 	type = SettingsInterface::Type::ANALOGIO_SETTINGS_INTERFACE;
@@ -83,7 +80,9 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 
 void AnalogIOInterface::updateSettings()
 {
-	deviceEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
+	if (device == nullptr) return;
+
+	deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
 
 	auto analogIO = std::static_pointer_cast<AnalogIO>(device);
 
@@ -119,11 +118,23 @@ void AnalogIOInterface::comboBoxChanged(ComboBox* cb)
 	{
 		if (cb == channelDirectionComboBoxes[i].get())
 		{
-			AnalogIODirection newDirection = channelDirectionComboBoxes[i]->getText() == "Input" ? AnalogIODirection::Input : AnalogIODirection::Output;
+			AnalogIODirection newDirection = getChannelDirectionFromString(channelDirectionComboBoxes[i]->getText());
 			std::static_pointer_cast<AnalogIO>(device)->setChannelDirection(i, newDirection);
 			return;
 		}
 	}
+}
+
+AnalogIODirection AnalogIOInterface::getChannelDirectionFromString(String direction)
+{
+	if (direction == "Input")
+		return AnalogIODirection::Input;
+	else if (direction == "Output")
+		return AnalogIODirection::Output;
+	else
+		LOGE("Invalid direction given.");
+
+	return AnalogIODirection::Input;
 }
 
 int AnalogIOInterface::getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber)
@@ -165,4 +176,60 @@ int AnalogIOInterface::getDataTypeId(std::shared_ptr<AnalogIO> device)
 	default:
 		return 0;
 	}
+}
+
+void AnalogIOInterface::saveParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	auto analogIO = std::static_pointer_cast<AnalogIO>(device);
+
+	LOGD("Saving AnalogIO settings.");
+
+	XmlElement* xmlNode = xml->createNewChildElement("ANALOGIO");
+
+	xmlNode->setAttribute("isEnabled", device->isEnabled());
+
+	XmlElement* channelDirectionNode = xmlNode->createNewChildElement("CHANNEL_DIRECTION");
+
+	for (int i = 0; i < numChannels; i++)
+	{
+		channelDirectionNode->setAttribute("CH" + String(i), AnalogIO::getChannelDirection(analogIO->getChannelDirection(i)));
+	}
+}
+
+void AnalogIOInterface::loadParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Loading AnalogIO settings.");
+
+	auto analogIO = std::static_pointer_cast<AnalogIO>(device);
+
+	auto xmlNode = xml->getChildByName("ANALOGIO");
+
+	if (xmlNode == nullptr)
+	{
+		LOGE("No ANALOGIO element found.");
+		return;
+	}
+
+	auto enabled = xmlNode->getBoolAttribute("isEnabled");
+	analogIO->setEnabled(enabled);
+
+	auto chDirectionNode = xmlNode->getChildByName("CHANNEL_DIRECTION");
+
+	if (chDirectionNode == nullptr)
+	{
+		LOGE("No CHANNEL_DIRECTION element found");
+		return;
+	}
+
+	for (int i = 0; i < numChannels; i++)
+	{
+		AnalogIODirection direction = getChannelDirectionFromString(chDirectionNode->getStringAttribute("CH" + String(i)));
+		analogIO->setChannelDirection(i, direction);
+	}
+
+	updateSettings();
 }
