@@ -62,6 +62,10 @@ public:
 
     Visualizer* createNewCanvas(void) override;
 
+    void saveVisualizerEditorParameters(XmlElement* xml) override;
+
+    void loadVisualizerEditorParameters(XmlElement* xml) override;
+
     void checkCanvas() { checkForCanvas(); };
 
     void resetCanvas();

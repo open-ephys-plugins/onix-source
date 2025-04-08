@@ -142,7 +142,7 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 	// TODO: Add headstage specific parameters to limit voltage within safe levels
 	if (l == portVoltageValueA.get())
 	{
-		if (l->getText() == "")
+		if (l->getText() == "" || l->getText() == "Auto")
 		{
 			l->setText("Auto", dontSendNotification);
 			return;
@@ -161,7 +161,7 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 	}
 	else if (l == portVoltageValueB.get())
 	{
-		if (l->getText() == "")
+		if (l->getText() == "" || l->getText() == "Auto")
 		{
 			l->setText("Auto", dontSendNotification);
 			return;
@@ -439,9 +439,12 @@ void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage
 	{
 		if (headstage.contains(comboBox->getItemText(i)))
 		{
-			comboBox->setSelectedItemIndex(i, dontSendNotification);
+			comboBox->setSelectedItemIndex(i, dontSendNotification); // TODO: double check this indexing
+			return;
 		}
 	}
+
+	comboBox->setSelectedItemIndex(0, dontSendNotification);
 }
 
 void OnixSourceEditor::refreshComboBoxSelection()
@@ -473,4 +476,29 @@ void OnixSourceEditor::refreshComboBoxSelection()
 std::map<int, OnixDeviceType> OnixSourceEditor::createTabMapFromCanvas()
 {
 	return canvas->createSelectedMap(canvas->settingsInterfaces);
+}
+
+void OnixSourceEditor::saveVisualizerEditorParameters(XmlElement* xml)
+{
+	LOGD("Saving OnixSourceEditor settings.");
+
+	xml->setAttribute("headstagePortA", headstageComboBoxA->getText());
+	xml->setAttribute("headstagePortB", headstageComboBoxB->getText());
+
+	xml->setAttribute("portVoltageA", portVoltageValueA->getText());
+	xml->setAttribute("portVoltageB", portVoltageValueB->getText());
+}
+
+void OnixSourceEditor::loadVisualizerEditorParameters(XmlElement* xml)
+{
+	LOGD("Loading OnixSourceEditor settings.");
+
+	setComboBoxSelection(headstageComboBoxA.get(), xml->getStringAttribute("headstagePortA"));
+	updateComboBox(headstageComboBoxA.get());
+
+	setComboBoxSelection(headstageComboBoxB.get(), xml->getStringAttribute("headstagePortB"));
+	updateComboBox(headstageComboBoxB.get());
+
+	portVoltageValueA->setText(xml->getStringAttribute("portVoltageA"), sendNotification);
+	portVoltageValueB->setText(xml->getStringAttribute("portVoltageB"), sendNotification);
 }
