@@ -32,7 +32,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 	{
 		auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
-		type = SettingsInterface::Type::PROBE_SETTINGS_INTERFACE;
+		type = SettingsInterface::Type::NEUROPIXELS1F_SETTINGS_INTERFACE;
 
 		mode = VisualizationMode::ENABLE_VIEW;
 

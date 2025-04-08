@@ -38,7 +38,7 @@ NeuropixelsV2eInterface::NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> 
 	topLevelTabComponent->addTab("Probe B", Colours::grey, CustomViewport::createCustomViewport(probeInterfaces[1].get()), true, 1);
 
 	deviceComponent = std::make_unique<Component>();
-	deviceComponent->setBounds(0, 0, 600, 600);
+	deviceComponent->setBounds(0, 0, 600, 150);
 
 	probeEnableButton = std::make_unique<UtilityButton>("ENABLED");
 	probeEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
@@ -66,7 +66,11 @@ NeuropixelsV2eInterface::NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> 
 	invertSignalCheckbox->addListener(this);
 	deviceComponent->addAndMakeVisible(invertSignalCheckbox.get());
 
-	topLevelTabComponent->addTab("Device", Colours::grey, deviceComponent.get(), true);
+	addAndMakeVisible(deviceComponent.get());
+
+	setBounds(0, 0, 1000, 800);
+
+	type = Type::NEUROPIXELS2E_SETTINGS_INTERFACE;
 }
 
 void NeuropixelsV2eInterface::updateDevice(std::shared_ptr<Neuropixels2e> d)
@@ -81,7 +85,7 @@ void NeuropixelsV2eInterface::updateDevice(std::shared_ptr<Neuropixels2e> d)
 
 void NeuropixelsV2eInterface::resized()
 {
-	topLevelTabComponent->setBounds(0, 0, canvas->getWidth(), canvas->getHeight());
+	topLevelTabComponent->setBounds(0, 150, canvas->getWidth() * 0.99, canvas->getHeight() - 150);
 }
 
 void NeuropixelsV2eInterface::updateInfoString()
