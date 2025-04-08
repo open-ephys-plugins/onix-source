@@ -346,9 +346,9 @@ void NeuropixelsV2eProbeInterface::updateInfoString()
 
 	if (device != nullptr)
 	{
-		nameString += "NeuropixelsV2e";
+		nameString += NEUROPIXELSV2E_HEADSTAGE_NAME;
 
-		infoString = "Device: Neuropixels V2 Probe";
+		infoString = "Device: Neuropixels 2.0 Probe";
 		infoString += "\n";
 		infoString += "\n";
 

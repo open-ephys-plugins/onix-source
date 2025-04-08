@@ -41,8 +41,10 @@ Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, std::s
 
 void Neuropixels2e::createDataStream(int n)
 {
+	const char* capitalA = "A";
+
 	StreamInfo apStream = StreamInfo(
-		getName() + "-" + String(n),
+		getName() + " Probe-" + String(capitalA + n),
 		"Neuropixels 2.0 data stream",
 		"onix-neuropixels2.data",
 		numberOfChannels,

@@ -56,9 +56,9 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
-		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
-		devices.emplace_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe-A", offset, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe-B", offset + 1, nullptr));
+		devices.emplace_back(std::make_shared<Bno055>("Neuropixels 1.0/BNO055", offset + 2, nullptr));
 	}
 	else if (hubName == BREAKOUT_BOARD_NAME)
 	{
@@ -75,8 +75,8 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.emplace_back(std::make_shared<Neuropixels2e>("Neuropixels 2e-A", passthroughIndex, nullptr));
-		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", passthroughIndex, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels2e>("Neuropixels 2.0", passthroughIndex, nullptr));
+		devices.emplace_back(std::make_shared<PolledBno055>("Neuropixels 2.0/BNO055", passthroughIndex, nullptr));
 	}
 
 	if (tab != nullptr && devices.size() > 0)

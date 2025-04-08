@@ -59,8 +59,6 @@ OnixSource::OnixSource(SourceNode* sn) :
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 
-	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
-
 	portA = std::make_shared<PortController>(PortName::PortA, context);
 	portB = std::make_shared<PortController>(PortName::PortB, context);
 
@@ -151,7 +149,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (device.id == ONIX_NEUROPIX1R0)
 		{
-			auto np1 = std::make_shared<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
+			auto np1 = std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
 
 			int res = np1->configureDevice();
 
@@ -184,7 +182,14 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 		else if (device.id == ONIX_BNO055)
 		{
-			auto bno = std::make_shared<Bno055>("BNO055", index, context);
+			String bnoName = "BNO055";
+
+			if (headstages.find(PortController::getOffsetFromIndex(index))->second == NEUROPIXELSV1F_HEADSTAGE_NAME)
+			{
+				bnoName = "Neuropixels 1.0/" + bnoName;
+			}
+
+			auto bno = std::make_shared<Bno055>(bnoName, index, context);
 
 			int result = bno->configureDevice();
 
@@ -209,7 +214,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			LOGD("Detected headstage ", hsid);
 			if (hsid == ONIX_HUB_HSNP2E)
 			{
-				auto np2 = std::make_shared<Neuropixels2e>("Neuropixels 2e-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
+				auto np2 = std::make_shared<Neuropixels2e>("Neuropixels 2.0", index, context);
 				int res = np2->configureDevice();
 				if (res != ONI_ESUCCESS)
 				{
@@ -220,11 +225,10 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 					//TODO add other errors if needed
 					continue;
 				}
-				npxProbeIdx += np2->getNumProbes();
-
+				
 				sources.emplace_back(np2);
 
-				auto polledBno = std::make_shared<PolledBno055>("BNO055", index, context);
+				auto polledBno = std::make_shared<PolledBno055>("Neuropixels 2.0/BNO055", index, context);
 
 				if (polledBno->configureDevice() != ONI_ESUCCESS)
 				{
@@ -573,7 +577,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				DataStream::Settings dataStreamSettings{
-					"Bno055",
+					source->getName(),
 					"Continuous data from a Bno055 9-axis IMU",
 					"onix-bno055.data",
 					source->streamInfos[0].getSampleRate()
