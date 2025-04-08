@@ -22,7 +22,7 @@
 
 #include "OutputClockInterface.h"
 
-OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixSourceEditor* e, OnixSourceCanvas* c) : 
+OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {
 	if (device != nullptr)
@@ -31,7 +31,7 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 		frequencyHzLabel->setBounds(50, 40, 130, 20);
 		addAndMakeVisible(frequencyHzLabel.get());
 
-		frequencyHzValue = std::make_unique<Label>("frequencyHzValue", String(std::static_pointer_cast<OutputClock>(device)->getFrequencyHz()));
+		frequencyHzValue = std::make_unique<Label>("frequencyHzValue", String(1e6));
 		frequencyHzValue->setEditable(true);
 		frequencyHzValue->setBounds(frequencyHzLabel->getRight() + 3, frequencyHzLabel->getY(), 50, 20);
 		frequencyHzValue->setTooltip("Sets the output clock frequency in Hz. Must be between 0.1 Hz and 10 MHz.");
@@ -44,7 +44,7 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 		dutyCycleLabel->setBounds(frequencyHzLabel->getX(), frequencyHzLabel->getBottom() + 10, 130, 20);
 		addAndMakeVisible(dutyCycleLabel.get());
 
-		dutyCycleValue = std::make_unique<Label>("dutyCycleValue", String(std::static_pointer_cast<OutputClock>(device)->getDutyCycle()));
+		dutyCycleValue = std::make_unique<Label>("dutyCycleValue", "50");
 		dutyCycleValue->setEditable(true);
 		dutyCycleValue->setBounds(dutyCycleLabel->getRight() + 3, dutyCycleLabel->getY(), 50, 20);
 		dutyCycleValue->setTooltip("Sets the output clock duty cycle in percent. Values must be between 10 and 90.");
@@ -57,7 +57,7 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 		delayLabel->setBounds(dutyCycleLabel->getX(), dutyCycleLabel->getBottom() + 10, 130, 20);
 		addAndMakeVisible(delayLabel.get());
 
-		delayValue = std::make_unique<Label>("delayValue", String(std::static_pointer_cast<OutputClock>(device)->getDelay()));
+		delayValue = std::make_unique<Label>("delayValue", "0");
 		delayValue->setEditable(true);
 		delayValue->setBounds(delayLabel->getRight() + 3, delayLabel->getY(), 50, 20);
 		delayValue->setTooltip("Sets the delay after acquisition commences before the clock becomes active, in seconds. Values must be between 0 and 3600 seconds.");
@@ -70,67 +70,119 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 		gateRunButton->setBounds(delayLabel->getX(), delayLabel->getBottom() + 5, 250, 22);
 		gateRunButton->setClickingTogglesState(true);
 		gateRunButton->setToggleState(std::static_pointer_cast<OutputClock>(device)->getGateRun(), dontSendNotification);
-		gateRunButton->setTooltip("Toggles the output clock gate. If checked, the clock output will follow the acquisition status." + 
+		gateRunButton->setTooltip("Toggles the output clock gate. If checked, the clock output will follow the acquisition status." +
 			String(" If unchecked, the clock output will run continuously."));
 		gateRunButton->addListener(this);
 		addAndMakeVisible(gateRunButton.get());
+
+		updateSettings();
 	}
 
 	type = Type::OUTPUTCLOCK_SETTINGS_INTERFACE;
 }
 
+void OutputClockInterface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	auto outputClock = std::static_pointer_cast<OutputClock>(device);
+
+	frequencyHzValue->setText(String(outputClock->getFrequencyHz()), dontSendNotification);
+	dutyCycleValue->setText(String(outputClock->getDutyCycle()), dontSendNotification);
+	delayValue->setText(String(outputClock->getDelay()), dontSendNotification);
+	gateRunButton->setToggleState(outputClock->getGateRun(), dontSendNotification);
+}
+
 void OutputClockInterface::buttonClicked(Button* b)
 {
+	auto outputClock = std::static_pointer_cast<OutputClock>(device);
+
 	if (b == gateRunButton.get())
 	{
-		auto clockOutput = std::static_pointer_cast<OutputClock>(device);
-
-		clockOutput->setGateRun(gateRunButton->getToggleState(), editor->acquisitionIsActive);
+		outputClock->setGateRun(gateRunButton->getToggleState(), editor->acquisitionIsActive);
 	}
 }
 
 void OutputClockInterface::labelTextChanged(Label* l)
 {
+	auto outputClock = std::static_pointer_cast<OutputClock>(device);
+
 	if (l == frequencyHzValue.get())
 	{
-		auto d = std::static_pointer_cast<OutputClock>(device);
-
 		auto rate = l->getText().getFloatValue();
 
 		if (rate < MinFrequencyHz || rate > MaxFrequencyHz)
 		{
-			l->setText(String(d->getFrequencyHz()), dontSendNotification);
+			l->setText(String(outputClock->getFrequencyHz()), dontSendNotification);
 			return;
 		}
 
-		d->setFrequencyHz(rate);
+		outputClock->setFrequencyHz(rate);
 	}
 	else if (l == dutyCycleValue.get())
 	{
-		auto d = std::static_pointer_cast<OutputClock>(device);
-
 		uint32_t rate = l->getText().getIntValue();
 
 		if (rate < MinDutyCyclePercent || rate > MaxDutyCyclePercent)
 		{
-			l->setText(String(d->getDutyCycle()), dontSendNotification);
+			l->setText(String(outputClock->getDutyCycle()), dontSendNotification);
 			return;
 		}
 
-		d->setDutyCycle(rate);
+		outputClock->setDutyCycle(rate);
 	}
 	else if (l == delayValue.get())
 	{
-		auto d = std::static_pointer_cast<OutputClock>(device);
-
 		uint32_t rate = l->getText().getIntValue();
 
 		if (rate < MinDelaySeconds || rate > MaxDelaySeconds)
 		{
-			l->setText(String(d->getDelay()), dontSendNotification);
+			l->setText(String(outputClock->getDelay()), dontSendNotification);
 			return;
 		}
 
-		d->setDelay(rate);
+		outputClock->setDelay(rate);
 	}
+}
+
+void OutputClockInterface::saveParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	auto outputClock = std::static_pointer_cast<OutputClock>(device);
+
+	LOGD("Saving Output Clock settings.");
+
+	XmlElement* xmlNode = xml->createNewChildElement("OUTPUTCLOCK");
+
+	xmlNode->setAttribute("frequencyHz", outputClock->getFrequencyHz());
+	xmlNode->setAttribute("dutyCycle", outputClock->getDutyCycle());
+	xmlNode->setAttribute("delay", outputClock->getDelay());
+	xmlNode->setAttribute("gateRun", outputClock->getGateRun());
+}
+
+void OutputClockInterface::loadParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Loading OutputClock settings.");
+
+	auto outputClock = std::static_pointer_cast<OutputClock>(device);
+
+	auto xmlNode = xml->getChildByName("OUTPUTCLOCK");
+
+	if (xmlNode == nullptr)
+	{
+		LOGE("No OUTPUTCLOCK element found.");
+		return;
+	}
+
+	outputClock->setEnabled(true);
+
+	outputClock->setFrequencyHz(xmlNode->getDoubleAttribute("frequencyHz"));
+	outputClock->setDutyCycle(xmlNode->getIntAttribute("dutyCycle"));
+	outputClock->setDelay(xmlNode->getIntAttribute("delay"));
+	outputClock->setGateRun(xmlNode->getIntAttribute("gateRun"));
+
+	updateSettings();
 }
