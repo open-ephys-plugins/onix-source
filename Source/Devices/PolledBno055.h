@@ -115,7 +115,7 @@ private:
 
 	static const int timerIntervalInMilliseconds = (int)(1e3 * (1 / sampleRate));
 
-	static const int numFrames = 5;
+	static const int numFrames = 2;
 
 	std::array<float, numberOfChannels * numFrames> bnoSamples;
 
