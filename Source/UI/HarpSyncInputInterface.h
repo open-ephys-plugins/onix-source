@@ -43,14 +43,14 @@ public:
 	void stopAcquisition() override {};
 
 	/** Save parameters to XML */
-	void saveParameters(XmlElement* xml) override {};
+	void saveParameters(XmlElement* xml) override;
 
 	/** Load parameters from XML */
-	void loadParameters(XmlElement* xml) override {};
+	void loadParameters(XmlElement* xml) override;
 
 	void updateInfoString() override {};
 
-	void updateSettings() override {};
+	void updateSettings() override;
 
 	/** Listener methods*/
 	void buttonClicked(Button*) override;

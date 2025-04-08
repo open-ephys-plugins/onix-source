@@ -42,6 +42,13 @@ HarpSyncInputInterface::HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d,
 	type = SettingsInterface::Type::HARPSYNCINPUT_SETTINGS_INTERFACE;
 }
 
+void HarpSyncInputInterface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
+}
+
 void HarpSyncInputInterface::buttonClicked(Button* button)
 {
 	if (button == deviceEnableButton.get())
@@ -60,4 +67,34 @@ void HarpSyncInputInterface::buttonClicked(Button* button)
 
 		CoreServices::updateSignalChain(editor);
 	}
+}
+
+void HarpSyncInputInterface::saveParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Saving HarpSyncInput settings.");
+
+	XmlElement* xmlNode = xml->createNewChildElement("HARPSYNCINPUT");
+
+	xmlNode->setAttribute("isEnabled", device->isEnabled());
+}
+
+void HarpSyncInputInterface::loadParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Loading HarpSyncInput settings.");
+
+	auto xmlNode = xml->getChildByName("HARPSYNCINPUT");
+
+	if (xmlNode == nullptr)
+	{
+		LOGE("No HARPSYNCINPUT element found.");
+		return;
+	}
+
+	device->setEnabled(xmlNode->getBoolAttribute("isEnabled"));
+
+	updateSettings();
 }
