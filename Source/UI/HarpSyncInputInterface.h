@@ -50,6 +50,8 @@ public:
 
 	void updateInfoString() override {};
 
+	void updateSettings() override {};
+
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
 

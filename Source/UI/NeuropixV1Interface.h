@@ -69,6 +69,8 @@ public:
 	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override;
 
+	void updateSettings() override {};
+
 	/** Set parameters */
 	void setApGain(int index);
 	void setLfpGain(int index);

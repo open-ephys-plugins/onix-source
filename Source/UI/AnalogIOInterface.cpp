@@ -81,6 +81,18 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 	type = SettingsInterface::Type::ANALOGIO_SETTINGS_INTERFACE;
 }
 
+void AnalogIOInterface::updateSettings()
+{
+	deviceEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
+
+	auto analogIO = std::static_pointer_cast<AnalogIO>(device);
+
+	for (int i = 0; i < numChannels; i++)
+	{
+		channelDirectionComboBoxes[i]->setSelectedId(getChannelDirectionId(analogIO, i), dontSendNotification);
+	}
+}
+
 void AnalogIOInterface::buttonClicked(Button* button)
 {
 	if (button == deviceEnableButton.get())

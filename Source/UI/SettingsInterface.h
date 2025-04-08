@@ -83,7 +83,8 @@ public:
     /** Updates the string with info about the underlying data source*/
     virtual void updateInfoString() = 0;
 
-    virtual String getReferenceText() { return ""; }
+    /** Updates the UI elements based on the current device settings */
+    virtual void updateSettings() = 0;
 
     /** Default type */
     Type type = Type::UNKNOWN_SETTINGS_INTERFACE;

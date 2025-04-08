@@ -52,6 +52,8 @@ public:
 	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override {};
 
+	void updateSettings() override;
+
 	/** Listener methods*/
 	void buttonClicked(Button*) override;
 	void labelTextChanged(Label* l) override;
