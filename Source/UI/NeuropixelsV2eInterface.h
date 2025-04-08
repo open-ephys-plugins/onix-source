@@ -53,6 +53,9 @@ private:
 
 	std::unique_ptr<CustomTabComponent> topLevelTabComponent;
 
+	std::unique_ptr<ToggleButton> offsetCorrectionCheckbox;
+	std::unique_ptr<ToggleButton> invertSignalCheckbox;
+
 	std::unique_ptr<UtilityButton> probeEnableButton;
 	std::unique_ptr<Component> deviceComponent;
 

@@ -183,9 +183,13 @@ public:
 	String adcCalibrationFilePath;
 	String gainCalibrationFilePath;
 
-	bool getShouldCorrectOffset() const { return shouldCorrectOffset; }
+	bool getCorrectOffset() const { return correctOffset; }
 
-	void setShouldCorrectOffset(bool value) { shouldCorrectOffset = value; }
+	void setCorrectOffset(bool value) { correctOffset = value; }
+
+	bool getInvertSignal() const { return invertSignal; }
+
+	void setInvertSignal(bool value) { invertSignal = value; }
 
 	ShankBitset static makeShankBits(NeuropixelsV1Reference reference, std::array<int, numberOfChannels> channelMap);
 
@@ -228,6 +232,9 @@ private:
 	bool lfpOffsetCalculated = false;
 	bool apOffsetCalculated = false;
 
+	bool correctOffset = true;
+	bool invertSignal = true;
+
 	std::array<float, numberOfChannels> apOffsets;
 	std::array<float, numberOfChannels> lfpOffsets;
 
@@ -263,8 +270,6 @@ private:
 
 	int apGain = 1000;
 	int lfpGain = 50;
-
-	bool shouldCorrectOffset = true;
 
 	JUCE_LEAK_DETECTOR(Neuropixels_1);
 };

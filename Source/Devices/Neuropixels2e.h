@@ -102,9 +102,13 @@ public:
 
 	String getGainCorrectionFile(int index);
 
-	bool getShouldCorrectOffset() const { return shouldCorrectOffset; }
+	bool getCorrectOffset() const { return correctOffset; }
 
-	void setShouldCorrectOffset(bool value) { shouldCorrectOffset = value; }
+	void setCorrectOffset(bool value) { correctOffset = value; }
+
+	bool getInvertSignal() const { return invertSignal; }
+
+	void setInvertSignal(bool value) { invertSignal = value; }
 
 	// INeuropixel Methods
 
@@ -159,7 +163,9 @@ private:
 	static const int samplesToAverage = 100;
 
 	bool offsetCalculated = false;
-	bool shouldCorrectOffset = true;
+	bool correctOffset = true;
+	bool invertSignal = true;
+
 	std::array<float, numberOfChannels> offsets;
 	std::vector<std::vector<float>> offsetValues;
 

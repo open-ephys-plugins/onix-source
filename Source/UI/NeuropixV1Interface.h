@@ -129,6 +129,7 @@ private:
 	std::unique_ptr<NeuropixelsV1fProbeBrowser> probeBrowser;
 
 	std::unique_ptr<ToggleButton> offsetCorrectionCheckbox;
+	std::unique_ptr<ToggleButton> invertSignalCheckbox;
 
 	std::unique_ptr<Component> enableViewComponent;
 	std::unique_ptr<Component> apGainViewComponent;

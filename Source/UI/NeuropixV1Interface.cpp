@@ -71,13 +71,21 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		offsetCorrectionCheckbox = std::make_unique<ToggleButton>("Apply software offset correction");
 		offsetCorrectionCheckbox->setBounds(infoLabel->getX() + 2, infoLabel->getBottom() + 5, 240, 22);
 		offsetCorrectionCheckbox->setClickingTogglesState(true);
-		offsetCorrectionCheckbox->setToggleState(npx->getShouldCorrectOffset(), dontSendNotification);
+		offsetCorrectionCheckbox->setToggleState(npx->getCorrectOffset(), dontSendNotification);
 		offsetCorrectionCheckbox->setTooltip("If enabled, the plugin will wait 5 seconds and then calculate a mean value to correct a constant offset present in most channels.");
 		offsetCorrectionCheckbox->addListener(this);
 		addAndMakeVisible(offsetCorrectionCheckbox.get());
 
+		invertSignalCheckbox = std::make_unique<ToggleButton>("Invert incoming data");
+		invertSignalCheckbox->setBounds(offsetCorrectionCheckbox->getX(), offsetCorrectionCheckbox->getBottom() + 5, offsetCorrectionCheckbox->getWidth(), offsetCorrectionCheckbox->getHeight());
+		invertSignalCheckbox->setClickingTogglesState(true);
+		invertSignalCheckbox->setToggleState(npx->getInvertSignal(), dontSendNotification);
+		invertSignalCheckbox->setTooltip("If enabled, the plugin will invert all incoming data.");
+		invertSignalCheckbox->addListener(this);
+		addAndMakeVisible(invertSignalCheckbox.get());
+
 		adcCalibrationFileLabel = std::make_unique<Label>("adcCalibrationFileLabel", "ADC Calibration File");
-		adcCalibrationFileLabel->setBounds(offsetCorrectionCheckbox->getX(), offsetCorrectionCheckbox->getBottom() + 15, 240, 16);
+		adcCalibrationFileLabel->setBounds(invertSignalCheckbox->getX(), invertSignalCheckbox->getBottom() + 15, 240, 16);
 		adcCalibrationFileLabel->setColour(Label::textColourId, Colours::black);
 		addAndMakeVisible(adcCalibrationFileLabel.get());
 
@@ -789,7 +797,11 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 	}
 	else if (button == offsetCorrectionCheckbox.get())
 	{
-		npx->setShouldCorrectOffset(offsetCorrectionCheckbox->getToggleState());
+		npx->setCorrectOffset(offsetCorrectionCheckbox->getToggleState());
+	}
+	else if (button == invertSignalCheckbox.get())
+	{
+		npx->setInvertSignal(invertSignalCheckbox->getToggleState());
 	}
 }
 

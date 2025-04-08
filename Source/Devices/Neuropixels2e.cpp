@@ -432,7 +432,7 @@ bool Neuropixels2e::updateSettings()
 				}
 			}
 
-			gainCorrection[i] = correctionValue;
+			gainCorrection[i] = correctionValue * (invertSignal ? -1.0f : 1.0f);
 		}
 	}
 
@@ -639,7 +639,7 @@ void Neuropixels2e::processFrames()
 			for (int j = 0; j < AdcsPerProbe; j++)
 			{
 				const int channelIndex = rawToChannel[j][i];
-				float offset = shouldCorrectOffset && offsetCalculated ? offsets.at(channelIndex) : 0.0f;
+				float offset = correctOffset && offsetCalculated ? offsets.at(channelIndex) : 0.0f;
 
 				samples[channelIndex * numFrames + frameCount] =
 					(float)(*(amplifierData + adcIndices[j] + adcDataOffset)) * gainCorrection[probeIndex] - offset;
