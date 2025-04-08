@@ -94,6 +94,8 @@ public:
 
     VisualizationMode getMode() const { return mode; }
 
+    virtual String getReferenceText() { return ""; }
+
 protected:
     OnixSourceEditor* editor;
     OnixSourceCanvas* canvas;

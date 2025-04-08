@@ -104,3 +104,13 @@ void NeuropixelsV2eInterface::buttonClicked(Button* b)
 		CoreServices::updateSignalChain(editor);
 	}
 }
+
+void NeuropixelsV2eInterface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	for (const auto& probeInterface : probeInterfaces)
+	{
+		probeInterface->updateSettings();
+	}
+}

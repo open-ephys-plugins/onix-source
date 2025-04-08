@@ -33,26 +33,21 @@ class PolledBno055Interface : public SettingsInterface,
 	public Button::Listener
 {
 public:
-	/** Constructor */
 	PolledBno055Interface(std::shared_ptr<PolledBno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override {};
 
-	/** Enables buttons and start animation if necessary */
 	void stopAcquisition() override {};
 
-	/** Save parameters to XML */
 	void saveParameters(XmlElement* xml) override {};
 
-	/** Load parameters from XML */
 	void loadParameters(XmlElement* xml) override {};
 
-	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override {};
 
-	/** Listener methods*/
 	void buttonClicked(Button*) override;
+
+	void updateSettings() override;
 
 private:
 

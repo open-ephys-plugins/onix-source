@@ -47,6 +47,8 @@ public:
 
 	void buttonClicked(Button* b) override;
 
+	void updateSettings() override;
+
 	void updateDevice(std::shared_ptr<Neuropixels2e> d);
 
 private:

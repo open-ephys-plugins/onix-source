@@ -67,3 +67,10 @@ void PolledBno055Interface::buttonClicked(Button* button)
 		CoreServices::updateSignalChain(editor);
 	}
 }
+
+void PolledBno055Interface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
+}

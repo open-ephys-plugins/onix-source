@@ -58,7 +58,7 @@ public:
 	void stopAcquisition() override;
 
 	/** Settings-related functions*/
-	bool applyProbeSettings(ProbeSettings<Neuropixels_1::numberOfChannels, Neuropixels_1::numberOfElectrodes>* p, bool shouldUpdateProbe = true);
+	bool applyProbeSettings(ProbeSettings<Neuropixels_1::numberOfChannels, Neuropixels_1::numberOfElectrodes>* p);
 
 	/** Save parameters to XML */
 	void saveParameters(XmlElement* xml) override;
@@ -69,7 +69,7 @@ public:
 	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override;
 
-	void updateSettings() override {};
+	void updateSettings() override;
 
 	/** Set parameters */
 	void setApGain(int index);
@@ -158,6 +158,8 @@ private:
 
 	/** Checks if the current channel map matches an existing channel preset, and updates the combo box if it does */
 	void checkForExistingChannelPreset();
+
+	int getIndexOfComboBoxItem(ComboBox* cb, String item);
 
 	JUCE_LEAK_DETECTOR(NeuropixV1Interface);
 };

@@ -520,15 +520,28 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 #pragma endregion
 
 		addAndMakeVisible(activityViewComponent.get());
-	}
-	else
-	{
-		type = SettingsInterface::Type::UNKNOWN_SETTINGS_INTERFACE;
+
+		updateSettings();
 	}
 
 	drawLegend();
 
 	updateInfoString();
+}
+
+void NeuropixV1Interface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	auto npx1 = std::static_pointer_cast<Neuropixels_1>(device);
+
+	applyProbeSettings(npx1->settings[0].get());
+	checkForExistingChannelPreset();
+
+	deviceEnableButton->setToggleState(npx1->isEnabled(), sendNotification);
+
+	gainCalibrationFile->setText(npx1->gainCalibrationFilePath == "None" ? "" : npx1->gainCalibrationFilePath, dontSendNotification);
+	adcCalibrationFile->setText(npx1->adcCalibrationFilePath == "None" ? "" : npx1->adcCalibrationFilePath, dontSendNotification);
 }
 
 void NeuropixV1Interface::updateInfoString()
@@ -801,24 +814,35 @@ std::vector<int> NeuropixV1Interface::getSelectedElectrodes() const
 	return electrodeIndices;
 }
 
+int NeuropixV1Interface::getIndexOfComboBoxItem(ComboBox* cb, String item)
+{
+	for (int i = 0; i < cb->getNumItems(); i++)
+	{
+		if (item == cb->getItemText(i))
+			return i;
+	}
+
+	return -1;
+}
+
 void NeuropixV1Interface::setApGain(int index)
 {
-	apGainComboBox->setSelectedId(index + 1, true);
+	apGainComboBox->setSelectedId(index + 1, sendNotification);
 }
 
 void NeuropixV1Interface::setLfpGain(int index)
 {
-	lfpGainComboBox->setSelectedId(index + 1, true);
+	lfpGainComboBox->setSelectedId(index + 1, sendNotification);
 }
 
 void NeuropixV1Interface::setReference(int index)
 {
-	referenceComboBox->setSelectedId(index + 1, true);
+	referenceComboBox->setSelectedId(index + 1, sendNotification);
 }
 
 void NeuropixV1Interface::setApFilterState(bool state)
 {
-	filterComboBox->setSelectedId(int(!state) + 1, true);
+	filterComboBox->setSelectedId(int(!state) + 1, sendNotification);
 }
 
 void NeuropixV1Interface::selectElectrodes(std::vector<int> electrodes)
@@ -902,7 +926,7 @@ void NeuropixV1Interface::drawLegend()
 	}
 }
 
-bool NeuropixV1Interface::applyProbeSettings(ProbeSettings<Neuropixels_1::numberOfChannels, Neuropixels_1::numberOfElectrodes>* p, bool shouldUpdateProbe)
+bool NeuropixV1Interface::applyProbeSettings(ProbeSettings<Neuropixels_1::numberOfChannels, Neuropixels_1::numberOfElectrodes>* p)
 {
 	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
@@ -945,10 +969,6 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings<Neuropixels_1::number
 	settings->selectedElectrode = p->selectedElectrode;
 	settings->selectedShank = p->selectedShank;
 
-	if (shouldUpdateProbe)
-	{
-		CoreServices::saveRecoveryConfig();
-	}
 
 	drawLegend();
 	repaint();
@@ -958,101 +978,169 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings<Neuropixels_1::number
 
 void NeuropixV1Interface::saveParameters(XmlElement* xml)
 {
-	if (device != nullptr)
+	if (device == nullptr) return;
+
+	LOGD("Saving Neuropixels 1.0f settings.");
+
+	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+	auto settings = npx->settings[0].get();
+
+	XmlElement* xmlNode = xml->createNewChildElement("NEUROPIXELSV1F");
+
+	xmlNode->setAttribute("name", npx->getName());
+	xmlNode->setAttribute("idx", (int)npx->getDeviceIdx());
+	xmlNode->setAttribute("probeSerialNumber", String(npx->getProbeSerialNumber()));
+
+	xmlNode->setAttribute("isEnabled", bool(device->isEnabled()));
+
+	xmlNode->setAttribute("adcCalibrationFile", npx->adcCalibrationFilePath);
+	xmlNode->setAttribute("gainCalibrationFile", npx->gainCalibrationFilePath);
+
+	XmlElement* probeViewerNode = xmlNode->createNewChildElement("PROBE_VIEWER");
+
+	probeViewerNode->setAttribute("zoomHeight", probeBrowser->getZoomHeight());
+	probeViewerNode->setAttribute("zoomOffset", probeBrowser->getZoomOffset());
+
+	probeViewerNode->setAttribute("apGain", apGainComboBox->getText());
+	probeViewerNode->setAttribute("lfpGain", lfpGainComboBox->getText());
+	probeViewerNode->setAttribute("referenceChannel", referenceComboBox->getText());
+	probeViewerNode->setAttribute("apFilter", filterComboBox->getText());
+
+	probeViewerNode->setAttribute("visualizationMode", (int)mode);
+	probeViewerNode->setAttribute("activityToView", (int)probeBrowser->activityToView);
+
+	XmlElement* channelsNode = xmlNode->createNewChildElement("SELECTED_CHANNELS");
+
+	for (int i = 0; i < settings->selectedElectrode.size(); i++)
 	{
-		auto npx = std::static_pointer_cast<Neuropixels_1>(device);
-		auto settings = npx->settings[0].get();
+		int globalIndex = settings->selectedElectrode[i];
 
-		LOGD("Saving Neuropix display.");
-
-		XmlElement* xmlNode = xml->createNewChildElement("NP_PROBE");
-
-		xmlNode->setAttribute("probe_serial_number", String(npx->getProbeSerialNumber()));
-		xmlNode->setAttribute("probe_name", npx->getName());
-		xmlNode->setAttribute("num_adcs", settings->probeMetadata.num_adcs);
-
-		xmlNode->setAttribute("ZoomHeight", probeBrowser->getZoomHeight());
-		xmlNode->setAttribute("ZoomOffset", probeBrowser->getZoomOffset());
-
-		if (apGainComboBox != nullptr)
-		{
-			xmlNode->setAttribute("apGainValue", apGainComboBox->getText());
-			xmlNode->setAttribute("apGainIndex", apGainComboBox->getSelectedId() - 1);
-		}
-
-		if (lfpGainComboBox != nullptr)
-		{
-			xmlNode->setAttribute("lfpGainValue", lfpGainComboBox->getText());
-			xmlNode->setAttribute("lfpGainIndex", lfpGainComboBox->getSelectedId() - 1);
-		}
-
-		if (electrodeConfigurationComboBox != nullptr)
-		{
-			if (electrodeConfigurationComboBox->getSelectedId() > 1)
-			{
-				xmlNode->setAttribute("electrodeConfigurationPreset", electrodeConfigurationComboBox->getText());
-			}
-			else
-			{
-				xmlNode->setAttribute("electrodeConfigurationPreset", "NONE");
-			}
-		}
-
-		if (referenceComboBox != nullptr)
-		{
-			if (referenceComboBox->getSelectedId() > 0)
-			{
-				xmlNode->setAttribute("referenceChannel", referenceComboBox->getText());
-				xmlNode->setAttribute("referenceChannelIndex", referenceComboBox->getSelectedId() - 1);
-			}
-			else
-			{
-				xmlNode->setAttribute("referenceChannel", "Ext");
-				xmlNode->setAttribute("referenceChannelIndex", 0);
-			}
-		}
-
-		if (filterComboBox != nullptr)
-		{
-			xmlNode->setAttribute("filterCut", filterComboBox->getText());
-			xmlNode->setAttribute("filterCutIndex", filterComboBox->getSelectedId());
-		}
-
-		XmlElement* channelNode = xmlNode->createNewChildElement("CHANNELS");
-		XmlElement* xposNode = xmlNode->createNewChildElement("ELECTRODE_XPOS");
-		XmlElement* yposNode = xmlNode->createNewChildElement("ELECTRODE_YPOS");
-
-		for (int i = 0; i < settings->selectedElectrode.size(); i++)
-		{
-			int bank = int(settings->selectedBank[i]);
-			int shank = settings->selectedShank[i];
-			int electrode = settings->selectedElectrode[i];
-
-			String chString = String(bank);
-
-			String chId = "CH" + String(i);
-
-			channelNode->setAttribute(chId, chString);
-			xposNode->setAttribute(chId, String(settings->electrodeMetadata[electrode].xpos + 250 * shank));
-			yposNode->setAttribute(chId, String(settings->electrodeMetadata[electrode].ypos));
-		}
-
-		xmlNode->setAttribute("visualizationMode", (double)mode);
-		xmlNode->setAttribute("activityToView", (double)probeBrowser->activityToView);
-
-		xmlNode->setAttribute("isEnabled", bool(device->isEnabled()));
+		channelsNode->setAttribute("CH" + String(i), String(globalIndex));
 	}
 }
 
 void NeuropixV1Interface::loadParameters(XmlElement* xml)
 {
+	if (device == nullptr) return;
+
+	LOGD("Loading Neuropixels 1.0f settings.");
+
 	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+	auto settings = npx->settings[0].get();
 
-	if (npx != nullptr)
+	XmlElement* xmlNode = nullptr;
+
+	for (auto* node : xml->getChildIterator())
 	{
-		//auto npx = std::static_pointer_cast<Neuropixels_1>(device);
-
-		// TODO: load parameters, put them into device->settings, and then update the interface
-		//applyProbeSettings(device->settings.get(), false);
+		if (node->hasTagName("NEUROPIXELSV1F"))
+		{
+			if (node->getStringAttribute("name") == npx->getName() &&
+				node->getIntAttribute("idx") == npx->getDeviceIdx())
+			{
+				xmlNode = node;
+				break;
+			}
+		}
 	}
+
+	if (xmlNode == nullptr)
+	{
+		LOGD("No NEUROPIXELSV1F element found matching name = " + npx->getName() + ", and idx = " + npx->getDeviceIdx());
+		return;
+	}
+
+	if (npx->getProbeSerialNumber() != 0 && xmlNode->getIntAttribute("probeSerialNumber") != npx->getProbeSerialNumber())
+	{
+		LOGC("Different serial numbers found. Current serial number is " + String(npx->getProbeSerialNumber()) + ", while the saved serial number is " + String(xmlNode->getIntAttribute("probeSerialNumber")) + ". Updating settings...");
+	}
+
+	npx->setEnabled(xmlNode->getBoolAttribute("isEnabled"));
+
+	npx->adcCalibrationFilePath = xmlNode->getStringAttribute("adcCalibrationFile");
+	npx->gainCalibrationFilePath = xmlNode->getStringAttribute("gainCalibrationFile");
+
+	XmlElement* probeViewerNode = xmlNode->getChildByName("PROBE_VIEWER");
+
+	if (probeViewerNode == nullptr)
+	{
+		LOGE("No PROBE_VIEWER element found.");
+		return;
+	}
+
+	probeBrowser->setZoomHeightAndOffset(probeViewerNode->getIntAttribute("zoomHeight"), probeViewerNode->getIntAttribute("zoomOffset"));
+
+	int idx = -1;
+
+	idx = getIndexOfComboBoxItem(apGainComboBox.get(), probeViewerNode->getStringAttribute("apGain"));
+	if (idx == -1)
+	{
+		LOGE("No AP gain variable found.");
+	}
+	else
+		settings->apGainIndex = idx;
+
+	idx = getIndexOfComboBoxItem(lfpGainComboBox.get(), probeViewerNode->getStringAttribute("lfpGain"));
+	if (idx == -1)
+	{
+		LOGE("No LFP gain variable found.");
+	}
+	else
+		settings->lfpGainIndex = idx;
+
+	idx = getIndexOfComboBoxItem(referenceComboBox.get(), probeViewerNode->getStringAttribute("referenceChannel"));
+	if (idx == -1)
+	{
+		LOGE("No reference channel variable found.");
+	}
+	else
+		settings->referenceIndex = idx;
+
+	idx = getIndexOfComboBoxItem(filterComboBox.get(), probeViewerNode->getStringAttribute("apFilter"));
+	if (idx == -1)
+	{
+		LOGE("No AP filter variable found.");
+	}
+	else
+		settings->apFilterState = idx == 1 ? true : false;
+
+	mode = (VisualizationMode)probeViewerNode->getIntAttribute("visualizationMode");
+	probeBrowser->activityToView = (ActivityToView)probeViewerNode->getIntAttribute("activityToView");
+
+	XmlElement* channelsNode = xmlNode->getChildByName("SELECTED_CHANNELS");
+
+	if (channelsNode == nullptr)
+	{
+		LOGE("No SELECTED_CHANNELS element found.");
+		return;
+	}
+
+	std::vector<int> selectedChannels{};
+	selectedChannels.reserve(npx->numberOfChannels);
+
+	for (int i = 0; i < npx->numberOfChannels; i++)
+	{
+		String chIdx = channelsNode->getStringAttribute("CH" + String(i), "");
+
+		if (chIdx == "")
+		{
+			LOGE("Channel #" + String(i) + " not found. Channel map will not be updated.");
+			return;
+		}
+
+		selectedChannels.emplace_back(std::stoi(chIdx.toStdString()));
+	}
+
+	std::sort(selectedChannels.begin(), selectedChannels.end());
+	auto last = std::unique(selectedChannels.begin(), selectedChannels.end());
+	selectedChannels.erase(last, selectedChannels.end());
+
+	if (selectedChannels.size() != npx->numberOfChannels)
+	{
+		LOGE("Invalid channel map. Some duplicate channels were found. Channel map was not updated");
+		return;
+	}
+
+	selectElectrodes(selectedChannels);
+
+	updateSettings();
 }

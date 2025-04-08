@@ -627,6 +627,18 @@ void NeuropixelsV2eProbeInterface::drawLegend()
 	}
 }
 
+void NeuropixelsV2eProbeInterface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+
+	applyProbeSettings(npx->settings[probeIndex].get());
+	checkForExistingChannelPreset();
+
+	gainCorrectionFile->setText(npx->getGainCorrectionFile(probeIndex) == "None" ? "" : npx->getGainCorrectionFile(probeIndex), dontSendNotification);
+}
+
 bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe)
 {
 	if (electrodeConfigurationComboBox != 0)

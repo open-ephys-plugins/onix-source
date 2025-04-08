@@ -45,34 +45,29 @@ class NeuropixelsV2eProbeInterface : public SettingsInterface,
 public:
 	friend class ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>;
 
-	/** Constructor */
 	NeuropixelsV2eProbeInterface(std::shared_ptr<Neuropixels2e> d, int ind, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	/** Listener methods*/
 	void buttonClicked(Button*) override;
 	void comboBoxChanged(ComboBox*) override;
 
-	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override;
 
-	/** Enables buttons and start animation if necessary */
 	void stopAcquisition() override;
 
-	/** Settings-related functions*/
 	bool applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe = true);
 
-	/** Save parameters to XML */
 	void saveParameters(XmlElement* xml) override;
 
-	/** Load parameters from XML */
 	void loadParameters(XmlElement* xml) override;
 
-	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override;
 
-	/** Set parameters */
+	void updateSettings() override;
+
 	void setReference(int index);
 	void selectElectrodes(std::vector<int> electrodes);
+
+	String getReferenceText() override { return referenceComboBox->getText(); }
 
 private:
 	XmlElement neuropix_info;
@@ -81,12 +76,10 @@ private:
 
 	const int probeIndex;
 
-	// Combo box - probe-specific settings
 	std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
 	std::unique_ptr<ComboBox> referenceComboBox;
 	std::unique_ptr<ComboBox> activityViewComboBox;
 
-	// LABELS
 	std::unique_ptr<Label> deviceLabel;
 	std::unique_ptr<Label> infoLabel;
 	std::unique_ptr<Label> electrodesLabel;
@@ -132,7 +125,6 @@ private:
 
 	void setInterfaceEnabledState(bool enabledState);
 
-	/** Checks if the current channel map matches an existing channel preset, and updates the combo box if it does */
 	void checkForExistingChannelPreset();
 
 	JUCE_LEAK_DETECTOR(NeuropixelsV2eProbeInterface);
