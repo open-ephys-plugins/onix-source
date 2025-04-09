@@ -56,6 +56,8 @@ public:
 
     void updateSettings() override;
 
+    void setInterfaceEnabledState(bool newState);
+
     void startAcquisition() override;
 
     void stopAcquisition() override;
@@ -76,7 +78,6 @@ public:
 
     String getHeadstageSelected(PortName port);
 
-    /** Updates the combo boxes based on the headstages found in the canvas tabs */
     void refreshComboBoxSelection();
 
     std::map<int, OnixDeviceType> createTabMapFromCanvas();

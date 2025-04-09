@@ -44,6 +44,7 @@ class NeuropixelsV2eProbeInterface : public SettingsInterface,
 {
 public:
 	friend class ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>;
+	friend class NeuropixelsV2eInterface;
 
 	NeuropixelsV2eProbeInterface(std::shared_ptr<Neuropixels2e> d, int ind, OnixSourceEditor* e, OnixSourceCanvas* c);
 
@@ -123,7 +124,7 @@ private:
 
 	std::vector<int> getSelectedElectrodes();
 
-	void setInterfaceEnabledState(bool enabledState);
+	void setInterfaceEnabledState(bool enabledState) override;
 
 	void checkForExistingChannelPreset();
 

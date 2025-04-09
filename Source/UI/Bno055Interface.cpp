@@ -42,6 +42,12 @@ Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e,
 	type = SettingsInterface::Type::BNO055_SETTINGS_INTERFACE;
 }
 
+void Bno055Interface::setInterfaceEnabledState(bool newState)
+{
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(newState);
+}
+
 void Bno055Interface::updateSettings()
 {
 	if (device == nullptr) return;

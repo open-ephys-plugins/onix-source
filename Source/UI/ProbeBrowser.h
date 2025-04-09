@@ -566,7 +566,7 @@ public:
 		if (newHeight >= minZoomHeight && newHeight <= maxZoomHeight)
 		{
 			zoomHeight = newHeight;
-			zoomOffset = 0;
+			zoomOffset = newOffset;
 		}
 	}
 

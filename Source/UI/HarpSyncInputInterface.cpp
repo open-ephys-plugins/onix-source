@@ -42,6 +42,12 @@ HarpSyncInputInterface::HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d,
 	type = SettingsInterface::Type::HARPSYNCINPUT_SETTINGS_INTERFACE;
 }
 
+void HarpSyncInputInterface::setInterfaceEnabledState(bool newState)
+{
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(newState);
+}
+
 void HarpSyncInputInterface::updateSettings()
 {
 	if (device == nullptr) return;

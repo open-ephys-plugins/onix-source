@@ -78,6 +78,18 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 	type = SettingsInterface::Type::ANALOGIO_SETTINGS_INTERFACE;
 }
 
+void AnalogIOInterface::setInterfaceEnabledState(bool newState)
+{
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(newState);
+
+	for (int i = 0; i < numChannels; i++)
+	{
+		if (channelDirectionComboBoxes[i] != nullptr)
+			channelDirectionComboBoxes[i]->setEnabled(newState);
+	}
+}
+
 void AnalogIOInterface::updateSettings()
 {
 	if (device == nullptr) return;

@@ -74,3 +74,9 @@ void PolledBno055Interface::updateSettings()
 
 	deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
 }
+
+void PolledBno055Interface::setInterfaceEnabledState(bool newState)
+{
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(newState);
+}

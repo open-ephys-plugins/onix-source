@@ -35,10 +35,6 @@ class PolledBno055Interface : public SettingsInterface,
 public:
 	PolledBno055Interface(std::shared_ptr<PolledBno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void startAcquisition() override {};
-
-	void stopAcquisition() override {};
-
 	void saveParameters(XmlElement* xml) override {};
 
 	void loadParameters(XmlElement* xml) override {};
@@ -48,6 +44,8 @@ public:
 	void buttonClicked(Button*) override;
 
 	void updateSettings() override;
+
+	void setInterfaceEnabledState(bool newState) override;
 
 private:
 

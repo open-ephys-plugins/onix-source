@@ -327,10 +327,17 @@ void OnixSourceEditor::updateSettings()
 		canvas->update();
 }
 
+void OnixSourceEditor::setInterfaceEnabledState(bool newState)
+{
+	connectButton->setEnabled(newState);
+
+	portVoltageValueA->setEnabled(newState);
+	portVoltageValueB->setEnabled(newState);
+}
+
 void OnixSourceEditor::startAcquisition()
 {
-	// TODO: Disable all UI elements that should not be changed during acquisition...
-	connectButton->setEnabled(false);
+	setInterfaceEnabledState(false);
 
 	for (const auto& source : source->getDataSources())
 	{
@@ -341,12 +348,14 @@ void OnixSourceEditor::startAcquisition()
 			break;
 		}
 	}
+
+	if (canvas != nullptr)
+		canvas->startAcquisition();
 }
 
 void OnixSourceEditor::stopAcquisition()
 {
-	// TODO: Re-enable all of the UI elements 
-	connectButton->setEnabled(true);
+	setInterfaceEnabledState(true);
 
 	for (const auto& source : source->getDataSources())
 	{
@@ -356,6 +365,9 @@ void OnixSourceEditor::stopAcquisition()
 			break;
 		}
 	}
+
+	if (canvas != nullptr)
+		canvas->stopAcquisition();
 }
 
 Visualizer* OnixSourceEditor::createNewCanvas(void)

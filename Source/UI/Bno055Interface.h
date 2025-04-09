@@ -33,12 +33,9 @@ class Bno055Interface : public SettingsInterface,
 	public Button::Listener
 {
 public:
-	/** Constructor */
 	Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void startAcquisition() override {};
-
-	void stopAcquisition() override {};
+	void setInterfaceEnabledState(bool newState) override;
 
 	void saveParameters(XmlElement* xml) override;
 

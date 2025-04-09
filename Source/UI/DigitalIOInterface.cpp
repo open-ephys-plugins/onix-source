@@ -42,6 +42,12 @@ DigitalIOInterface::DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceE
 	type = SettingsInterface::Type::DIGITALIO_SETTINGS_INTERFACE;
 }
 
+void DigitalIOInterface::setInterfaceEnabledState(bool newState)
+{
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(newState);
+}
+
 void DigitalIOInterface::updateSettings()
 {
 	if (device == nullptr) return;

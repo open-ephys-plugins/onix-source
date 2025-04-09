@@ -53,6 +53,8 @@ public:
 
 private:
 
+	void setInterfaceEnabledState(bool newState) override;
+
 	std::unique_ptr<CustomTabComponent> topLevelTabComponent;
 
 	std::unique_ptr<UtilityButton> probeEnableButton;

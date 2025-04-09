@@ -44,43 +44,34 @@ class NeuropixV1Interface : public SettingsInterface,
 public:
 	friend class ProbeBrowser<Neuropixels_1::numberOfChannels, Neuropixels_1::numberOfElectrodes>;
 
-	/** Constructor */
 	NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
-
-	/** Listener methods*/
+	
 	void buttonClicked(Button*) override;
 	void comboBoxChanged(ComboBox*) override;
 
-	/** Disables buttons and starts animation if necessary */
 	void startAcquisition() override;
 
-	/** Enables buttons and start animation if necessary */
 	void stopAcquisition() override;
 
 	/** Settings-related functions*/
 	bool applyProbeSettings(ProbeSettings<Neuropixels_1::numberOfChannels, Neuropixels_1::numberOfElectrodes>* p);
 
-	/** Save parameters to XML */
 	void saveParameters(XmlElement* xml) override;
 
-	/** Load parameters from XML */
 	void loadParameters(XmlElement* xml) override;
 
-	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override;
 
 	void updateSettings() override;
 
-	/** Set parameters */
-	void setApGain(int index);
-	void setLfpGain(int index);
-	void setReference(int index);
-	void setApFilterState(bool state);
 	void selectElectrodes(std::vector<int> electrodes);
 
 	String getReferenceText() override { return referenceComboBox->getText(); }
 
 private:
+
+	void setInterfaceEnabledState(bool newState) override;
+
 	XmlElement neuropix_info;
 
 	bool acquisitionIsActive = false;
@@ -153,8 +144,6 @@ private:
 	void drawLegend();
 
 	std::vector<int> getSelectedElectrodes() const;
-
-	void setInterfaceEnabledState(bool enabledState);
 
 	/** Checks if the current channel map matches an existing channel preset, and updates the combo box if it does */
 	void checkForExistingChannelPreset();

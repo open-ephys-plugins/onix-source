@@ -825,26 +825,6 @@ int NeuropixV1Interface::getIndexOfComboBoxItem(ComboBox* cb, String item)
 	return -1;
 }
 
-void NeuropixV1Interface::setApGain(int index)
-{
-	apGainComboBox->setSelectedId(index + 1, sendNotification);
-}
-
-void NeuropixV1Interface::setLfpGain(int index)
-{
-	lfpGainComboBox->setSelectedId(index + 1, sendNotification);
-}
-
-void NeuropixV1Interface::setReference(int index)
-{
-	referenceComboBox->setSelectedId(index + 1, sendNotification);
-}
-
-void NeuropixV1Interface::setApFilterState(bool state)
-{
-	filterComboBox->setSelectedId(int(!state) + 1, sendNotification);
-}
-
 void NeuropixV1Interface::selectElectrodes(std::vector<int> electrodes)
 {
 	std::static_pointer_cast<Neuropixels_1>(device)->settings[0]->selectElectrodes(electrodes);
@@ -875,8 +855,20 @@ void NeuropixV1Interface::setInterfaceEnabledState(bool enabledState)
 	if (referenceComboBox != nullptr)
 		referenceComboBox->setEnabled(enabledState);
 
+	if (saveJsonButton != nullptr)
+		saveJsonButton->setEnabled(enabledState);
+
 	if (loadJsonButton != nullptr)
 		loadJsonButton->setEnabled(enabledState);
+
+	if (offsetCorrectionCheckbox != nullptr)
+		offsetCorrectionCheckbox->setEnabled(enabledState);
+
+	if (adcCalibrationFileButton != nullptr)
+		adcCalibrationFileButton->setEnabled(enabledState);
+
+	if (gainCalibrationFileButton != nullptr)
+		gainCalibrationFileButton->setEnabled(enabledState);
 }
 
 void NeuropixV1Interface::startAcquisition()

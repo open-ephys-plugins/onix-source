@@ -63,7 +63,7 @@ void NeuropixelsV2eInterface::updateDevice(std::shared_ptr<Neuropixels2e> d)
 
 	for (const auto& probeInterface : probeInterfaces)
 	{
-		probeInterface->device = device;
+		probeInterface->setDevice(device);
 	}
 }
 
@@ -112,5 +112,18 @@ void NeuropixelsV2eInterface::updateSettings()
 	for (const auto& probeInterface : probeInterfaces)
 	{
 		probeInterface->updateSettings();
+	}
+}
+
+void NeuropixelsV2eInterface::setInterfaceEnabledState(bool newState)
+{
+	if (device == nullptr) return;
+
+	if (probeEnableButton != nullptr)
+		probeEnableButton->setEnabled(newState);
+
+	for (const auto& probeInterface : probeInterfaces)
+	{
+		probeInterface->setInterfaceEnabledState(newState);
 	}
 }

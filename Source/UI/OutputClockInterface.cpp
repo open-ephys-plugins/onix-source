@@ -81,6 +81,21 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 	type = Type::OUTPUTCLOCK_SETTINGS_INTERFACE;
 }
 
+void OutputClockInterface::setInterfaceEnabledState(bool newState)
+{
+	if (frequencyHzValue != nullptr)
+		frequencyHzValue->setEnabled(newState);
+
+	if (dutyCycleValue != nullptr)
+		dutyCycleValue->setEnabled(newState);
+
+	if (delayValue != nullptr)
+		delayValue->setEnabled(newState);
+
+	if (gateRunButton != nullptr)
+		gateRunButton->setEnabled(newState);
+}
+
 void OutputClockInterface::updateSettings()
 {
 	if (device == nullptr) return;
