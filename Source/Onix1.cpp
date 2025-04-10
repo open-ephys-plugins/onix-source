@@ -33,6 +33,8 @@ Onix1::Onix1(int hostIndex)
 
 	if (result != ONI_ESUCCESS)
 		throw error_t(result);
+
+	oni_version(&major, &minor, &patch);
 }
 
 Onix1::~Onix1()

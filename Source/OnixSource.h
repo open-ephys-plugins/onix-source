@@ -110,6 +110,8 @@ public:
 
 	std::map<int, String> getHeadstageMap();
 
+	String getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
+
 	void updateSourceBuffers();
 
 	// DataThread Methods

@@ -117,6 +117,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
 		connectButton->addListener(this);
 		addAndMakeVisible(connectButton.get());
+
+		liboniVersionLabel = std::make_unique<Label>("liboniVersion", "liboni: v" + source->getLiboniVersion());
+		liboniVersionLabel->setFont(fontOptionSmall);
+		liboniVersionLabel->setBounds(desiredWidth - 85, 110, 90, 22);
+		liboniVersionLabel->setEnabled(false);
+		liboniVersionLabel->setTooltip("Displays the version of liboni running.");
+		addAndMakeVisible(liboniVersionLabel.get());
 	}
 }
 

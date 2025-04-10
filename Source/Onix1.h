@@ -90,10 +90,16 @@ public:
 
 	void issueReset() { int val = 1; setOption(ONI_OPT_RESET, val); }
 
+	String getVersion() { return String(major) + "." + String(minor) + "." + String(patch); }
+
 private:
 
 	/** The ONI ctx object */
 	oni_ctx ctx_;
+
+	int major;
+	int minor;
+	int patch;
 
 	device_map_t deviceTable;
 
