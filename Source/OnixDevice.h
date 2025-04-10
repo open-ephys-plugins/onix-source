@@ -164,6 +164,15 @@ public:
 
 	oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
+	/** Creates a stream name using the provided inputs, returning a String following the pattern: hub/device/data */
+	static String createStreamName(String hub, String device, String data)
+	{
+		if (data.isEmpty())
+			return hub + "/" + device;
+		else
+			return hub + "/" + device + "/" + data;
+	}
+
 	const OnixDeviceType type;
 
 	Array<StreamInfo> streamInfos;

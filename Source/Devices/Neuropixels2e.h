@@ -26,6 +26,7 @@
 #include "../I2CRegisterContext.h"
 #include "../NeuropixComponents.h"
 #include "DS90UB9x.h"
+#include "PortController.h"
 
 enum class NeuropixelsV2Reference : uint32_t
 {

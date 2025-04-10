@@ -90,7 +90,6 @@ private:
 	std::unique_ptr<ComboBox> filterComboBox;
 	std::unique_ptr<ComboBox> activityViewComboBox;
 
-	std::unique_ptr<Label> nameLabel;
 	std::unique_ptr<Label> infoLabel;
 	std::unique_ptr<Label> lfpGainLabel;
 	std::unique_ptr<Label> apGainLabel;

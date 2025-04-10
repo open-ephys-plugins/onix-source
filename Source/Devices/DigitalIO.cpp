@@ -59,7 +59,7 @@ EventChannel::Settings DigitalIO::getEventChannelSettings()
 	// NB: The stream must be assigned before adding the channel
 	EventChannel::Settings settings{
 		EventChannel::Type::TTL,
-		"DigitalIO Event Channel",
+		OnixDevice::createStreamName(BREAKOUT_BOARD_NAME, getName(), "Events"),
 		"Digital inputs and breakout button states coming from a DigitalIO device",
 		"onix-digitalio.events",
 		nullptr,

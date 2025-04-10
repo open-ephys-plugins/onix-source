@@ -182,14 +182,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 		else if (device.id == ONIX_BNO055)
 		{
-			String bnoName = "BNO055";
-
-			if (headstages.find(PortController::getOffsetFromIndex(index))->second == NEUROPIXELSV1F_HEADSTAGE_NAME)
-			{
-				bnoName = "Neuropixels 1.0/" + bnoName;
-			}
-
-			auto bno = std::make_shared<Bno055>(bnoName, index, context);
+			auto bno = std::make_shared<Bno055>("BNO055", index, context);
 
 			int result = bno->configureDevice();
 
@@ -228,7 +221,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				
 				sources.emplace_back(np2);
 
-				auto polledBno = std::make_shared<PolledBno055>("Neuropixels 2.0/BNO055", index, context);
+				auto polledBno = std::make_shared<PolledBno055>("BNO055", index, context);
 
 				if (polledBno->configureDevice() != ONI_ESUCCESS)
 				{
@@ -577,7 +570,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				DataStream::Settings dataStreamSettings{
-					source->getName(),
+					OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(source->getDeviceIdx())), source->getName(), ""),
 					"Continuous data from a Bno055 9-axis IMU",
 					"onix-bno055.data",
 					source->streamInfos[0].getSampleRate()

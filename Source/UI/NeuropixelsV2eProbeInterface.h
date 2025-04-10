@@ -87,7 +87,6 @@ private:
 	std::unique_ptr<ComboBox> activityViewComboBox;
 
 	// LABELS
-	std::unique_ptr<Label> nameLabel;
 	std::unique_ptr<Label> infoLabel;
 	std::unique_ptr<Label> electrodesLabel;
 	std::unique_ptr<Label> electrodePresetLabel;
@@ -103,6 +102,8 @@ private:
 	std::unique_ptr<UtilityButton> referenceViewButton;
 	std::unique_ptr<UtilityButton> activityViewButton;
 
+	std::unique_ptr<DrawableRectangle> probeInterfaceRectangle;
+	std::unique_ptr<Label> probeInterfaceLabel;
 	std::unique_ptr<UtilityButton> loadJsonButton;
 	std::unique_ptr<UtilityButton> saveJsonButton;
 

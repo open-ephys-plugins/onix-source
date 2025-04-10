@@ -46,15 +46,10 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		FontOptions fontRegularButton = FontOptions("Fira Code", "Regular", 12.0f);
 		FontOptions fontRegularLabel = FontOptions("Fira Code", "Regular", 13.0f);
 
-		nameLabel = std::make_unique<Label>("MAIN", "NAME");
-		nameLabel->setFont(fontName);
-		nameLabel->setBounds(625, 40, 370, 45);
-		addAndMakeVisible(nameLabel.get());
-
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
 		deviceEnableButton->setFont(fontRegularButton);
 		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(nameLabel->getX(), nameLabel->getBottom() + 3, 100, 22);
+		deviceEnableButton->setBounds(625, 40, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);
@@ -64,7 +59,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, nameLabel->getWidth(), 65);
+		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, 370, 65);
 		infoLabel->setJustificationType(Justification::topLeft);
 		addAndMakeVisible(infoLabel.get());
 
@@ -76,11 +71,11 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		offsetCorrectionCheckbox->addListener(this);
 		addAndMakeVisible(offsetCorrectionCheckbox.get());
 
-		invertSignalCheckbox = std::make_unique<ToggleButton>("Invert incoming data");
+		invertSignalCheckbox = std::make_unique<ToggleButton>("Invert ephys data");
 		invertSignalCheckbox->setBounds(offsetCorrectionCheckbox->getX(), offsetCorrectionCheckbox->getBottom() + 5, offsetCorrectionCheckbox->getWidth(), offsetCorrectionCheckbox->getHeight());
 		invertSignalCheckbox->setClickingTogglesState(true);
 		invertSignalCheckbox->setToggleState(npx->getInvertSignal(), dontSendNotification);
-		invertSignalCheckbox->setTooltip("If enabled, the plugin will invert all incoming data.");
+		invertSignalCheckbox->setTooltip("If enabled, the plugin will invert all ephys data.");
 		invertSignalCheckbox->addListener(this);
 		addAndMakeVisible(invertSignalCheckbox.get());
 
@@ -541,16 +536,12 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 void NeuropixV1Interface::updateInfoString()
 {
-	String nameString, infoString;
-
-	nameString = "Headstage: ";
+	String infoString;
 
 	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
 	if (device != nullptr)
 	{
-		nameString += NEUROPIXELSV1F_HEADSTAGE_NAME;
-
 		infoString = "Device: Neuropixels 1.0 Probe";
 		infoString += "\n";
 		infoString += "\n";
@@ -562,7 +553,6 @@ void NeuropixV1Interface::updateInfoString()
 	}
 
 	infoLabel->setText(infoString, dontSendNotification);
-	nameLabel->setText(nameString, dontSendNotification);
 }
 
 void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)

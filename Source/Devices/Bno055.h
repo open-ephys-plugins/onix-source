@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../OnixDevice.h"
+#include "PortController.h"
 
 enum class Bno055Registers
 {

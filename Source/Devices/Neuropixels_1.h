@@ -24,6 +24,7 @@
 
 #include "../OnixDevice.h"
 #include "../NeuropixComponents.h"
+#include "PortController.h"
 
 enum class NeuropixelsRegisters : uint32_t
 {
@@ -226,8 +227,8 @@ private:
 	static const uint32_t numLfpSamples = 384 * numUltraFrames;
 	static const uint32_t numApSamples = 384 * numUltraFrames * superFramesPerUltraFrame;
 
-	const float lfpSampleRate = 2500.0f;
-	const float apSampleRate = 30000.0f;
+	static constexpr float lfpSampleRate = 2500.0f;
+	static constexpr float apSampleRate = 30000.0f;
 
 	bool lfpOffsetCalculated = false;
 	bool apOffsetCalculated = false;

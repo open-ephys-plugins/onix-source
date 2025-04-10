@@ -28,7 +28,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	const float bitVolts = 1.0;
 
 	StreamInfo eulerAngleStream = StreamInfo(
-		name + "-Euler",
+		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "Euler"),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",
 		"onix-bno055.data.euler",
 		3,
@@ -41,7 +41,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	streamInfos.add(eulerAngleStream);
 
 	StreamInfo quaternionStream = StreamInfo(
-		name + "-Quaternion",
+		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "Quaternion"),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Quaternion",
 		"onix-bno055.data.quat",
 		4,
@@ -54,7 +54,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	streamInfos.add(quaternionStream);
 
 	StreamInfo accelerationStream = StreamInfo(
-		name + "-Acceleration",
+		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "Acceleration"),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Acceleration",
 		"onix-bno055.data.acc",
 		3,
@@ -67,7 +67,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	streamInfos.add(accelerationStream);
 
 	StreamInfo gravityStream = StreamInfo(
-		name + "-Gravity",
+		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "Gravity"),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Gravity",
 		"onix-bno055.data.grav",
 		3,
@@ -80,7 +80,7 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 	streamInfos.add(gravityStream);
 
 	StreamInfo temperatureStream = StreamInfo(
-		name + "-Temperature",
+		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "Temperature"),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Temperature",
 		"onix-bno055.data.temp",
 		1,
@@ -91,6 +91,8 @@ Bno055::Bno055(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix
 		"Celsius",
 		{ "" });
 	streamInfos.add(temperatureStream);
+
+	// TODO: Add calibration stream here?
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;

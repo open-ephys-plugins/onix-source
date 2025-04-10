@@ -44,7 +44,7 @@ void Neuropixels2e::createDataStream(int n)
 	const char* capitalA = "A";
 
 	StreamInfo apStream = StreamInfo(
-		getName() + " Probe-" + String(capitalA + n),
+		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "Probe-" + String(capitalA + n)),
 		"Neuropixels 2.0 data stream",
 		"onix-neuropixels2.data",
 		numberOfChannels,

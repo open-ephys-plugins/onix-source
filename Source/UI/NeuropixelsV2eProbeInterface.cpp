@@ -50,14 +50,9 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		FontOptions fontRegularButton = FontOptions("Fira Code", "Regular", 12.0f);
 		FontOptions fontRegularLabel = FontOptions("Fira Code", "Regular", 13.0f);
 
-		nameLabel = std::make_unique<Label>("MAIN", "NAME");
-		nameLabel->setFont(fontName);
-		nameLabel->setBounds(625, 40, 370, 45);
-		addAndMakeVisible(nameLabel.get());
-
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(nameLabel->getX(), nameLabel->getBottom() + 15, nameLabel->getWidth(), 50);
+		infoLabel->setBounds(625, 40, 370, 50);
 		infoLabel->setJustificationType(Justification::topLeft);
 		addAndMakeVisible(infoLabel.get());
 
@@ -82,9 +77,20 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 
 		gainCorrectionFileChooser = std::make_unique<FileChooser>("Select Gain Correction file.", File(), "*_gainCalValues.csv");
 
+		probeInterfaceRectangle = std::make_unique<DrawableRectangle>();
+		probeInterfaceRectangle->setFill(Colours::darkgrey);
+		probeInterfaceRectangle->setRectangle(Rectangle<float>(gainCorrectionFile->getX(), gainCorrectionFile->getBottom() + 15, 250, 50));
+		addAndMakeVisible(probeInterfaceRectangle.get());
+
+		probeInterfaceLabel = std::make_unique<Label>("probeInterfaceLabel", "Probe Interface");
+		probeInterfaceLabel->setFont(fontRegularLabel);
+		probeInterfaceLabel->setBounds(probeInterfaceRectangle->getX(), probeInterfaceRectangle->getY(), 90, 18);
+		probeInterfaceLabel->setColour(Label::textColourId, Colours::black);
+		addAndMakeVisible(probeInterfaceLabel.get());
+
 		saveJsonButton = std::make_unique<UtilityButton>("SAVE TO JSON");
 		saveJsonButton->setRadius(3.0f);
-		saveJsonButton->setBounds(gainCorrectionFile->getX(), gainCorrectionFile->getBottom() + 10, 120, 22);
+		saveJsonButton->setBounds(probeInterfaceRectangle->getX() + 3, probeInterfaceRectangle->getY() + 20, 120, 22);
 		saveJsonButton->addListener(this);
 		saveJsonButton->setTooltip("Save channel map to probeinterface .json file");
 		addAndMakeVisible(saveJsonButton.get());
@@ -338,16 +344,12 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 
 void NeuropixelsV2eProbeInterface::updateInfoString()
 {
-	String nameString, infoString;
-
-	nameString = "Headstage: ";
+	String infoString;
 
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
 	if (device != nullptr)
 	{
-		nameString += NEUROPIXELSV2E_HEADSTAGE_NAME;
-
 		infoString = "Device: Neuropixels 2.0 Probe";
 		infoString += "\n";
 		infoString += "\n";
@@ -359,7 +361,6 @@ void NeuropixelsV2eProbeInterface::updateInfoString()
 	}
 
 	infoLabel->setText(infoString, dontSendNotification);
-	nameLabel->setText(nameString, dontSendNotification);
 }
 
 void NeuropixelsV2eProbeInterface::comboBoxChanged(ComboBox* comboBox)

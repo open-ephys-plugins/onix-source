@@ -28,7 +28,7 @@ HarpSyncInput::HarpSyncInput(String name, const oni_dev_idx_t deviceIdx_, std::s
 	setEnabled(false);
 
 	StreamInfo harpTimeStream = StreamInfo(
-		name + "-HarpTime",
+		OnixDevice::createStreamName(BREAKOUT_BOARD_NAME, getName(), "HarpTime"),
 		"Harp clock time corresponding to the local acquisition ONIX clock count",
 		"onix-harpsyncinput.data.harptime",
 		1,

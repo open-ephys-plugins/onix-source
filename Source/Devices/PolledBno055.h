@@ -25,6 +25,7 @@
 #include "../OnixDevice.h"
 #include "../I2CRegisterContext.h"
 #include "DS90UB9x.h"
+#include "PortController.h"
 
 #include <chrono>
 

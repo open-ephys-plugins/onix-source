@@ -174,11 +174,11 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 	INeuropixel(NeuropixelsV1fValues::numberOfSettings, NeuropixelsV1fValues::numberOfShanks)
 {
 	StreamInfo apStream = StreamInfo(
-		name + "-AP",
+		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "AP"),
 		"Neuropixels 1.0 AP band data stream",
 		"onix-neuropixels1.data.ap",
-		384,
-		30000.0f,
+		numberOfChannels,
+		apSampleRate,
 		"AP",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
@@ -187,11 +187,11 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 	streamInfos.add(apStream);
 
 	StreamInfo lfpStream = StreamInfo(
-		name + "-LFP",
+		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "LFP"),
 		"Neuropixels 1.0 LFP band data stream",
 		"onix-neuropixels1.data.lfp",
-		384,
-		2500.0f,
+		numberOfChannels,
+		lfpSampleRate,
 		"LFP",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
