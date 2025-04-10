@@ -48,16 +48,12 @@ int HarpSyncInput::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)HarpSyncInputRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
-
-	return deviceContext->getLastResult();
+	return deviceContext->writeRegister(deviceIdx, (uint32_t)HarpSyncInputRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
 }
 
 bool HarpSyncInput::updateSettings()
 {
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HarpSyncInputRegisters::SOURCE, (oni_reg_val_t)HarpSyncSource::Breakout);
-
-	return deviceContext->getLastResult() == ONI_ESUCCESS;
+	return deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HarpSyncInputRegisters::SOURCE, (oni_reg_val_t)HarpSyncSource::Breakout);
 }
 
 void HarpSyncInput::startAcquisition()

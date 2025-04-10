@@ -116,10 +116,10 @@ int PolledBno055::configureDevice()
 
 	deserializer = std::make_unique<I2CRegisterContext>(DS90UB9x::DES_ADDR, deviceIdx, deviceContext);
 	uint32_t alias = Bno055Address << 1;
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID4, alias);
-	if (deserializer->getLastResult() != ONI_ESUCCESS) return -2;
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias4, alias);
-	if (deserializer->getLastResult() != ONI_ESUCCESS) return -2;
+	int rc = deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID4, alias);
+	if (rc != ONI_ESUCCESS) return -2;
+	rc = deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias4, alias);
+	if (rc != ONI_ESUCCESS) return -2;
 
 	return ONI_ESUCCESS;
 }
@@ -128,27 +128,27 @@ bool PolledBno055::updateSettings()
 {
 	if (!isEnabled()) return true;
 
-	WriteByte(0x3E, 0x00); // Power mode normal
-	if (getLastResult() != ONI_ESUCCESS) return false;
+	int rc = WriteByte(0x3E, 0x00); // Power mode normal
+	if (rc != ONI_ESUCCESS) return false;
 
-	WriteByte(0x07, 0x00); // Page ID address 0
-	if (getLastResult() != ONI_ESUCCESS) return false;
+	rc = WriteByte(0x07, 0x00); // Page ID address 0
+	if (rc != ONI_ESUCCESS) return false;
 
-	WriteByte(0x3F, 0x00); // Internal oscillator
-	if (getLastResult() != ONI_ESUCCESS) return false;
+	rc = WriteByte(0x3F, 0x00); // Internal oscillator
+	if (rc != ONI_ESUCCESS) return false;
 
-	WriteByte(0x41, (uint32_t)axisMap);  // Axis map config
-	if (getLastResult() != ONI_ESUCCESS) return false;
+	rc = WriteByte(0x41, (uint32_t)axisMap);  // Axis map config
+	if (rc != ONI_ESUCCESS) return false;
 
-	WriteByte(0x42, (uint32_t)axisSign); // Axis sign
-	if (getLastResult() != ONI_ESUCCESS) return false;
+	rc = WriteByte(0x42, (uint32_t)axisSign); // Axis sign
+	if (rc != ONI_ESUCCESS) return false;
 
-	WriteByte(0x3D, 0x0C); // Operation mode is NDOF
-	if (getLastResult() != ONI_ESUCCESS) return false;
+	rc = WriteByte(0x3D, 0x0C); // Operation mode is NDOF
+	if (rc != ONI_ESUCCESS) return false;
 
-	set933I2cRate(i2cRate);
+	rc = set933I2cRate(i2cRate);
 
-	return true;
+	return rc == ONI_ESUCCESS;
 }
 
 void PolledBno055::startAcquisition()
@@ -184,8 +184,10 @@ int16_t PolledBno055::readInt16(uint32_t startAddress)
 {
 	oni_reg_val_t byte1 = 0, byte2 = 0;
 
-	ReadByte(startAddress, &byte1);
-	ReadByte(startAddress + 1, &byte2);
+	int rc = ReadByte(startAddress, &byte1);
+	if (rc != ONI_ESUCCESS) return 0;
+	rc = ReadByte(startAddress + 1, &byte2);
+	if (rc != ONI_ESUCCESS) return 0;
 
 	return (static_cast<int16_t>(byte2) << 8) | byte1;
 }
@@ -252,8 +254,13 @@ void PolledBno055::hiResTimerCallback()
 	bnoSamples[offset * numFrames + currentFrame] = byte;
 	offset++;
 
-	bnoTimestamps[currentFrame] = deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CL);
-	bnoTimestamps[currentFrame] += (uint64_t)deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CH) << 32;
+	oni_reg_val_t timestampL = 0, timestampH = 0;
+	int rc = deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CL, &timestampL);
+	if (rc != ONI_ESUCCESS) return;
+	rc = (uint64_t)deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CH, &timestampH);
+	if (rc != ONI_ESUCCESS) return;
+
+	bnoTimestamps[currentFrame] = (uint64_t(timestampH) << 32) | uint64_t(timestampL);
 
 	sampleNumbers[currentFrame] = sampleNumber++;
 

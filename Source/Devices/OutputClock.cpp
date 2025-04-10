@@ -29,20 +29,21 @@ OutputClock::OutputClock(String name, const oni_dev_idx_t deviceIdx_, std::share
 
 bool OutputClock::updateSettings()
 {
-	oni_reg_val_t baseFreqHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::BASE_FREQ_HZ);
+	oni_reg_val_t baseFreqHz;
+	int rc = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::BASE_FREQ_HZ, &baseFreqHz);
 
 	auto periodCycles = (uint32_t)(baseFreqHz / frequencyHz);
 	auto h = (uint32_t)(periodCycles * ((double)dutyCycle / 100.0));
 	auto l = periodCycles - h;
 	auto delayCycles = (uint32_t)(delay * baseFreqHz);
 
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::CLOCK_GATE, 1); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::CLOCK_GATE, 1); if (rc != ONI_ESUCCESS) return false;
 
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::HIGH_CYCLES, h); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::LOW_CYCLES, l); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::DELAY_CYCLES, delayCycles); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::HIGH_CYCLES, h); if (rc != ONI_ESUCCESS) return false;
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::LOW_CYCLES, l); if (rc != ONI_ESUCCESS) return false;
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::DELAY_CYCLES, delayCycles); if (rc != ONI_ESUCCESS) return false;
 
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, gateRun ? 1 : 0); if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, gateRun ? 1 : 0); if (rc != ONI_ESUCCESS) return false;
 
 	return true;
 }

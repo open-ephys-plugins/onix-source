@@ -54,17 +54,17 @@ int AnalogIO::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)AnalogIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
-
-	return deviceContext->getLastResult();
+	return deviceContext->writeRegister(deviceIdx, (uint32_t)AnalogIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
 }
 
 bool AnalogIO::updateSettings()
 {
+	int rc = 0;
+
 	for (int i = 0; i < numChannels; i += 1)
 	{
-		deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE + i, (oni_reg_val_t)channelVoltageRange[i]); 
-		if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+		rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE + i, (oni_reg_val_t)channelVoltageRange[i]); 
+		if (rc != ONI_ESUCCESS) return false;
 	}
 
 	uint32_t ioReg = 0;
@@ -74,8 +74,8 @@ bool AnalogIO::updateSettings()
 		ioReg = (ioReg & ~((uint32_t)1 << i)) | ((uint32_t)(channelDirection[i]) << i);
 	}
 
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CHDIR, ioReg);
-	if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CHDIR, ioReg);
+	if (rc != ONI_ESUCCESS) return false;
 
 	for (int i = 0; i < numChannels; i += 1)
 	{

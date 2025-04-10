@@ -61,34 +61,32 @@ public:
 	inline bool isInitialized() const { return ctx_ != nullptr; }
 
 	template <typename opt_t>
-	opt_t getOption(int option)
+	int getOption(int option, opt_t* value)
 	{
-		opt_t value;
 		size_t len = sizeof(opt_t);
-		get_opt_(option, &value, &len);
-		return value;
+		int rc = get_opt_(option, value, &len);
+		return rc;
 	}
 
 	template <typename opt_t>
-	void setOption(int option, const opt_t value)
+	int setOption(int option, const opt_t value)
 	{
-		result = oni_set_opt(ctx_, option, &value, opt_size_<opt_t>(value));
-		if (result != ONI_ESUCCESS) LOGE(oni_error_str(result));
+		int rc = oni_set_opt(ctx_, option, &value, opt_size_<opt_t>(value));
+		if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
+		return rc;
 	}
+	
+	int readRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, oni_reg_val_t* value) const;
 
-	oni_reg_val_t readRegister(oni_dev_idx_t, oni_reg_addr_t);
-
-	void writeRegister(oni_dev_idx_t, oni_reg_addr_t, oni_reg_val_t);
+	int writeRegister(oni_dev_idx_t, oni_reg_addr_t, oni_reg_val_t) const;
 
 	device_map_t getDeviceTable() const noexcept { return deviceTable; }
 
-	void updateDeviceTable();
+	int updateDeviceTable();
 
-	oni_frame_t* readFrame();
+	oni_frame_t* readFrame() const;
 
-	int getLastResult() const { return result; }
-
-	void issueReset() { int val = 1; setOption(ONI_OPT_RESET, val); }
+	int issueReset() { int val = 1; int rc = setOption(ONI_OPT_RESET, val); return rc; }
 
 	String getVersion() { return String(major) + "." + String(minor) + "." + String(patch); }
 
@@ -102,8 +100,6 @@ private:
 	int patch;
 
 	device_map_t deviceTable;
-
-	int result;
 
 	template<typename opt_t>
 	size_t opt_size_(opt_t opt)
@@ -119,5 +115,5 @@ private:
 		return len;
 	}
 
-	void get_opt_(int option, void* value, size_t* size);
+	int get_opt_(int option, void* value, size_t* size) const;
 };

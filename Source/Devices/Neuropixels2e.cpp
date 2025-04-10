@@ -344,11 +344,13 @@ int Neuropixels2e::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, DS90UB9x::ENABLE, isEnabled() ? 1 : 0);
+	int rc = deviceContext->writeRegister(deviceIdx, DS90UB9x::ENABLE, isEnabled() ? 1 : 0);
+	if (rc != ONI_ESUCCESS) return rc;
 
 	configureSerDes();
 	setProbeSupply(true);
-	serializer->set933I2cRate(400e3);
+	rc = serializer->set933I2cRate(400e3);
+	if (rc != ONI_ESUCCESS) return rc;
 	probeSN[0] = getProbeSN(ProbeASelected);
 	probeSN[1] = getProbeSN(ProbeBSelected);
 	setProbeSupply(false);
@@ -436,6 +438,8 @@ bool Neuropixels2e::updateSettings()
 
 			gainCorrection[i] = correctionValue * (invertSignal ? -1.0f : 1.0f);
 		}
+		else
+			gainCorrection[i] = 0;
 	}
 
 	setProbeSupply(true);
@@ -552,15 +556,15 @@ uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 {
 	selectProbe(probeSelect);
 	uint64_t probeSN = 0;
-	int errorCode = 0;
+	int errorCode = 0, rc;
 	for (unsigned int i = 0; i < sizeof(probeSN); i++)
 	{
 		oni_reg_addr_t reg_addr = OFFSET_PROBE_SN + i;
 		oni_reg_val_t val;
 
-		flex->ReadByte(reg_addr, &val);
+		rc = flex->ReadByte(reg_addr, &val);
 
-		if (flex->getLastResult() != ONI_ESUCCESS) return 0;
+		if (rc != ONI_ESUCCESS) return 0;
 
 		if (val <= 0xFF)
 		{

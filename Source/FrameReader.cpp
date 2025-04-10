@@ -35,7 +35,7 @@ void FrameReader::run()
 	{
 		oni_frame_t* frame = context->readFrame();
 
-		if (context->getLastResult() < ONI_ESUCCESS)
+		if (frame == nullptr)
 		{
 			if (threadShouldExit()) return;
 

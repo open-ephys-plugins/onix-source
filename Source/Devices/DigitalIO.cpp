@@ -31,9 +31,7 @@ int DigitalIO::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
-
-	return deviceContext->getLastResult();
+	return deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
 }
 
 bool DigitalIO::updateSettings()

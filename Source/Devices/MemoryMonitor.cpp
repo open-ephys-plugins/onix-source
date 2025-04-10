@@ -81,21 +81,23 @@ int MemoryMonitor::configureDevice()
 
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, 1);
-	if (deviceContext->getLastResult() != ONI_ESUCCESS) return deviceContext->getLastResult();
+	int rc = deviceContext->writeRegister(deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, 1);
+	if (rc != ONI_ESUCCESS) return rc;
 
-	totalMemory = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::TOTAL_MEM);
+	rc = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::TOTAL_MEM, &totalMemory);
 
-	return deviceContext->getLastResult();
+	return rc;
 }
 
 bool MemoryMonitor::updateSettings()
 {
-	oni_reg_val_t clkHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_HZ);
+	oni_reg_val_t clkHz;
+	int rc = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_HZ, &clkHz);
+	if (rc != ONI_ESUCCESS) return rc;
 
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_DIV, clkHz / samplesPerSecond);
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_DIV, clkHz / samplesPerSecond);
 
-	return deviceContext->getLastResult() == ONI_ESUCCESS;
+	return rc == ONI_ESUCCESS;
 }
 
 void MemoryMonitor::startAcquisition()

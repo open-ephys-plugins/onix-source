@@ -123,9 +123,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	context->setOption(ONIX_OPT_PASSTHROUGH, val);
 
 	context->issueReset();
-	context->updateDeviceTable();
+	int rc = context->updateDeviceTable();
 
-	if (context->getLastResult() != ONI_ESUCCESS) return;
+	if (rc != ONI_ESUCCESS) return;
 
 	if (portA->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port A.");
 	if (portB->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port B.");
@@ -335,10 +335,11 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	context->issueReset();
 
-	oni_size_t frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE);
+	oni_size_t frameSize;
+	rc = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE, &frameSize);
 	printf("Max. read frame size: %u bytes\n", frameSize);
 
-	frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE);
+	rc = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE, &frameSize);
 	printf("Max. write frame size: %u bytes\n", frameSize);
 
 	context->setOption(ONI_OPT_BLOCKREADSIZE, block_read_size);
@@ -747,8 +748,8 @@ bool OnixSource::isReady()
 	}
 
 	uint32_t val = 2;
-	context->setOption(ONI_OPT_RESETACQCOUNTER, val);
-	if (context->getLastResult() != ONI_ESUCCESS) return false;
+	int rc = context->setOption(ONI_OPT_RESETACQCOUNTER, val);
+	if (rc != ONI_ESUCCESS) return false;
 
 	return true;
 }

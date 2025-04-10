@@ -29,10 +29,10 @@ Onix1::Onix1(int hostIndex)
 	if (ctx_ == nullptr)
 		throw std::system_error(errno, std::system_category());
 
-	result = oni_init_ctx(ctx_, hostIndex);
+	int rc = oni_init_ctx(ctx_, hostIndex);
 
-	if (result != ONI_ESUCCESS)
-		throw error_t(result);
+	if (rc != ONI_ESUCCESS)
+		throw error_t(rc);
 
 	oni_version(&major, &minor, &patch);
 }
@@ -42,14 +42,15 @@ Onix1::~Onix1()
 	oni_destroy_ctx(ctx_);
 }
 
-void Onix1::updateDeviceTable()
+int Onix1::updateDeviceTable()
 {
 	if (deviceTable.size() > 0)
 		deviceTable.clear();
 
-	auto numDevices = getOption<oni_size_t>(ONI_OPT_NUMDEVICES);
+	oni_size_t numDevices;
+	int rc = getOption<oni_size_t>(ONI_OPT_NUMDEVICES, &numDevices);
 
-	if (numDevices == 0) return;
+	if (numDevices == 0 || rc != ONI_ESUCCESS) return rc;
 
 	size_t devicesSize = sizeof(oni_device_t) * numDevices;
 	deviceTable.reserve(devicesSize);
@@ -57,42 +58,48 @@ void Onix1::updateDeviceTable()
 	std::vector<oni_device_t> devices;
 	devices.resize(numDevices);
 
-	get_opt_(ONI_OPT_DEVICETABLE, devices.data(), &devicesSize);
+	rc = get_opt_(ONI_OPT_DEVICETABLE, devices.data(), &devicesSize);
+
+	if (rc != ONI_ESUCCESS) return rc;
 
 	for (const auto& device : devices)
 	{
 		deviceTable.insert({ device.idx, device });
 	}
+
+	return rc;
 }
 
-void Onix1::get_opt_(int option, void* value, size_t* size)
+int Onix1::get_opt_(int option, void* value, size_t* size) const
 {
-	result = oni_get_opt(ctx_, option, value, size);
-	if (result != ONI_ESUCCESS) LOGE(oni_error_str(result));
+	int rc = oni_get_opt(ctx_, option, value, size);
+	if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
+	return rc;
 }
 
-oni_reg_val_t Onix1::readRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress)
+int Onix1::readRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, oni_reg_val_t* value) const
 {
-	oni_reg_val_t value = 0;
-	result = oni_read_reg(ctx_, devIndex, registerAddress, &value);
-	if (result != ONI_ESUCCESS) 
-		LOGE(oni_error_str(result));
-	return value;
+	int rc = oni_read_reg(ctx_, devIndex, registerAddress, value);
+	if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
+	return rc;
 }
 
-void Onix1::writeRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, oni_reg_val_t value)
+int Onix1::writeRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, oni_reg_val_t value) const
 {
-	result = oni_write_reg(ctx_, devIndex, registerAddress, value);
-	if (result != ONI_ESUCCESS) 
-		LOGE(oni_error_str(result));
+	int rc = oni_write_reg(ctx_, devIndex, registerAddress, value);
+	if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
+	return rc;
 }
 
-oni_frame_t* Onix1::readFrame()
+oni_frame_t* Onix1::readFrame() const
 {
-	oni_frame_t* frame;
-	result = oni_read_frame(ctx_, &frame);
-	if (result < ONI_ESUCCESS) 
-		LOGE(oni_error_str(result));
+	oni_frame_t* frame = nullptr;
+	int rc = oni_read_frame(ctx_, &frame);
+	if (rc < ONI_ESUCCESS)
+	{
+		LOGE(oni_error_str(rc));
+		return nullptr;
+	}
 
 	return frame;
 }
