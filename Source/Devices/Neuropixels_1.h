@@ -285,7 +285,7 @@ class BackgroundUpdaterWithProgressWindow : public ThreadWithProgressWindow
 public:
 	BackgroundUpdaterWithProgressWindow(Neuropixels_1* d);
 
-	void run();
+	void run() override;
 
 	bool updateSettings();
 

@@ -66,6 +66,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		portVoltageValueA->addListener(this);
 		addAndMakeVisible(portVoltageValueA.get());
 
+		lastVoltageSetA = std::make_unique<Label>("lastVoltageSetA", "0 V");
+		lastVoltageSetA->setBounds(portVoltageValueA->getRight() + 5, portVoltageValueA->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
+		lastVoltageSetA->setFont(fontOptionSmall);
+		lastVoltageSetA->setEditable(false);
+		lastVoltageSetA->setTooltip("Records the last voltage set for Port A. Useful for displaying what the automated voltage discovery algorithm settled on.");
+		addAndMakeVisible(lastVoltageSetA.get());
+
 		portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
 		portLabelB->setBounds(portLabelA->getX(), portVoltageOverrideLabelA->getBottom() + 3, portLabelA->getWidth(), portLabelA->getHeight());
 		portLabelB->setFont(fontOptionTitle);
@@ -94,6 +101,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		portVoltageValueB->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
 		portVoltageValueB->addListener(this);
 		addAndMakeVisible(portVoltageValueB.get());
+
+		lastVoltageSetB = std::make_unique<Label>("lastVoltageSetB", "0 V");
+		lastVoltageSetB->setBounds(portVoltageValueB->getRight() + 5, portVoltageValueB->getY(), portVoltageValueB->getWidth(), portVoltageValueB->getHeight());
+		lastVoltageSetB->setFont(fontOptionSmall);
+		lastVoltageSetB->setEditable(false);
+		lastVoltageSetB->setTooltip("Records the last voltage set for Port B. Useful for displaying what the automated voltage discovery algorithm settled on.");
+		addAndMakeVisible(lastVoltageSetB.get());
 
 		connectButton = std::make_unique<UtilityButton>("CONNECT");
 		connectButton->setFont(fontOptionSmall);
@@ -127,13 +141,13 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 			return;
 		}
 
-		float input = l->getText().getFloatValue();
+		auto input = l->getText().getDoubleValue();
 
-		if (input < 0.0f)
+		if (input < 0.0)
 		{
 			l->setText("0.0", dontSendNotification);
 		}
-		else if (input > 7.0f)
+		else if (input > 7.0)
 		{
 			l->setText("7.0", dontSendNotification);
 		}
@@ -146,13 +160,13 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 			return;
 		}
 
-		float input = l->getText().getFloatValue();
+		auto input = l->getText().getDoubleValue();
 
-		if (input < 0.0f)
+		if (input < 0.0)
 		{
 			l->setText("0.0", dontSendNotification);
 		}
-		else if (input > 7.0f)
+		else if (input > 7.0)
 		{
 			l->setText("7.0", dontSendNotification);
 		}
@@ -173,6 +187,8 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 	if (connected)
 	{
+		lastVoltageSetA->setText("---", dontSendNotification);
+
 		// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
 		if (isHeadstageSelected(PortName::PortA) || portVoltageValueA->getText() != "Auto")
 		{
@@ -186,6 +202,10 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 			source->setPortVoltage(PortName::PortA, 0);
 		}
 
+		lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
+
+		lastVoltageSetB->setText("---", dontSendNotification);
+
 		if (isHeadstageSelected(PortName::PortB) || portVoltageValueB->getText() != "Auto")
 		{
 			if (!source->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
@@ -197,6 +217,8 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		{
 			source->setPortVoltage(PortName::PortB, 0);
 		}
+
+		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
 
 		source->initializeDevices(false);
 		canvas->refreshTabs();
@@ -216,6 +238,9 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 	{
 		source->setPortVoltage(PortName::PortA, 0);
 		source->setPortVoltage(PortName::PortB, 0);
+
+		lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
+		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
 
 		source->disconnectDevices(true);
 		connectButton->setLabel("CONNECT");

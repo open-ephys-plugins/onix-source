@@ -88,7 +88,7 @@ DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String heads
 {
 	if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
-		return DiscoveryParameters(5.0f, 7.0f, 1.0f, 0.2f);
+		return DiscoveryParameters(5.0, 7.0, 1.0, 0.2);
 	}
 
 	return DiscoveryParameters();
@@ -109,28 +109,21 @@ String PortController::getPortName(int offset)
 	}
 }
 
-bool PortController::configureVoltage(float voltage)
+bool PortController::configureVoltage(double voltage)
 {
 	if (voltage == defaultVoltage)
 	{
-		if (discoveryParameters == DiscoveryParameters()) return false;
+		if (discoveryParameters == DiscoveryParameters() || discoveryParameters.voltageIncrement <= 0) 
+			return false;
 
-		for (voltage = discoveryParameters.minVoltage; voltage <= discoveryParameters.maxVoltage; voltage += discoveryParameters.voltageIncrement)
-		{
-			setVoltage(voltage);
+		ConfigureVoltageWithProgressBar progressBar = ConfigureVoltageWithProgressBar(discoveryParameters, this);
+		progressBar.runThread();
 
-			if (checkLinkState())
-			{
-				setVoltage(voltage + discoveryParameters.voltageOffset);
-				return checkLinkState();
-			}
-		}
+		return progressBar.getResult();
 	}
-	else if (voltage >= 0.0f && voltage <= 7.0f)
+	else if (voltage >= 0.0 && voltage <= 7.0)
 	{
-		setVoltageOverride(0.0f, true);
-		setVoltageOverride(voltage, true);
-		sleep_for(std::chrono::milliseconds(600));
+		setVoltage(voltage);
 
 		return checkLinkState();
 	}
@@ -138,25 +131,29 @@ bool PortController::configureVoltage(float voltage)
 	return false;
 }
 
-void PortController::setVoltageOverride(float voltage, bool waitToSettle)
+void PortController::setVoltageOverride(double voltage, bool waitToSettle)
 {
-	if (voltage < 0.0f && voltage > 7.0f) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
+	if (voltage < 0.0 && voltage > 7.0) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
 
 	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
-	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
+
+	lastVoltageSet = voltage;
+
 	if (waitToSettle) sleep_for(std::chrono::milliseconds(500));
 }
 
-void PortController::setVoltage(float voltage)
+void PortController::setVoltage(double voltage)
 {
-	if (voltage < 0.0f && voltage > 7.0f) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
+	if (voltage < 0.0 && voltage > 7.0) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
 
 	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, 0);
-	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
 	sleep_for(std::chrono::milliseconds(300));
+	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
 
 	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
-	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
+
+	lastVoltageSet = voltage;
+
 	sleep_for(std::chrono::milliseconds(500));
 }
 

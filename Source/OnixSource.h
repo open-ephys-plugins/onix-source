@@ -82,7 +82,9 @@ public:
 	bool configurePortVoltage(PortName port, String voltage) const;
 
 	/** Sets the port voltage */
-	void setPortVoltage(PortName port, float voltage) const;
+	void setPortVoltage(PortName port, double voltage) const;
+
+	double getLastVoltageSet(PortName port);
 
 	void resetContext() { if (context != nullptr && context->isInitialized()) context->issueReset(); }
 
