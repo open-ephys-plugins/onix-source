@@ -437,31 +437,48 @@ bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 		if (voltage == "" || voltage == "Auto")
 			return portA->configureVoltage();
 		else
-			return portA->configureVoltage(voltage.getFloatValue());
+			return portA->configureVoltage(voltage.getDoubleValue());
 	case PortName::PortB:
 		if (voltage == "" || voltage == "Auto")
 			return portB->configureVoltage();
 		else
-			return portB->configureVoltage(voltage.getFloatValue());
+			return portB->configureVoltage(voltage.getDoubleValue());
 	default:
 		return false;
 	}
 }
 
-void OnixSource::setPortVoltage(PortName port, float voltage) const
+void OnixSource::setPortVoltage(PortName port, double voltage) const
 {
 	if (!context->isInitialized()) return;
+
+	bool waitToSettle = voltage > 0;
 
 	switch (port)
 	{
 	case PortName::PortA:
-		portA->setVoltageOverride(voltage);
+		portA->setVoltageOverride(voltage, waitToSettle);
 		return;
 	case PortName::PortB:
-		portB->setVoltageOverride(voltage);
+		portB->setVoltageOverride(voltage, waitToSettle);
 		return;
 	default:
 		return;
+	}
+}
+
+double OnixSource::getLastVoltageSet(PortName port)
+{
+	if (!context->isInitialized()) return 0.0;
+
+	switch (port)
+	{
+	case PortName::PortA:
+		return portA->getLastVoltageSet();
+	case PortName::PortB:
+		return portB->getLastVoltageSet();
+	default:
+		return 0.0;
 	}
 }
 

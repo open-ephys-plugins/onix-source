@@ -54,14 +54,14 @@ enum class PortStatusCode : uint32_t
 class DiscoveryParameters
 {
 public:
-	float minVoltage = 0.0f;
-	float maxVoltage = 0.0f;
-	float voltageOffset = 0.0f;
-	float voltageIncrement = 0.0f;
+	double minVoltage = 0.0;
+	double maxVoltage = 0.0;
+	double voltageOffset = 0.0;
+	double voltageIncrement = 0.0;
 
 	DiscoveryParameters() {};
 
-	DiscoveryParameters(float minVoltage_, float maxVoltage_, float voltageOffset_, float voltageIncrement_)
+	DiscoveryParameters(double minVoltage_, double maxVoltage_, double voltageOffset_, double voltageIncrement_)
 	{
 		minVoltage = minVoltage_;
 		maxVoltage = maxVoltage_;
@@ -96,13 +96,13 @@ public:
 
 	void updateDiscoveryParameters(DiscoveryParameters parameters);
 
-	bool configureVoltage(float voltage = defaultVoltage);
+	bool configureVoltage(double voltage = defaultVoltage);
 
 	/** Sets the voltage to the given value, after setting the voltage to zero */
-	void setVoltage(float voltage);
+	void setVoltage(double voltage);
 
 	/** Overrides the voltage setting and directly sets it to the given voltage */
-	void setVoltageOverride(float voltage, bool waitToSettle = true);
+	void setVoltageOverride(double voltage, bool waitToSettle = true);
 
 	bool checkLinkState() const;
 
@@ -113,6 +113,8 @@ public:
 	static String getPortName(int offset);
 
 	static String getPortName(PortName port) { return port == PortName::PortA ? "Port A" : "Port B"; }
+
+	String getPortName() const { return getPortName(port); }
 
 	static PortName getPortFromIndex(oni_dev_idx_t index);
 
@@ -125,22 +127,76 @@ public:
 	/** Check if the port status changed and there is an error reported */
 	bool getErrorFlag() { return errorFlag; }
 
-	static const int HubAddressPortA = 256;
-	static const int HubAddressPortB = 512;
+	double getLastVoltageSet() const { return lastVoltageSet; }
+
+	static constexpr int HubAddressPortA = 256;
+	static constexpr int HubAddressPortB = 512;
 
 private:
 	Array<oni_frame_t*, CriticalSection, 10> frameArray;
 
 	const PortName port;
 
-	static constexpr float defaultVoltage = -1.0f;
+	static constexpr double defaultVoltage = -1.0;
 
-	const uint32_t LINKSTATE_PP = 0x2; // parity check pass bit
-	const uint32_t LINKSTATE_SL = 0x1; // SERDES lock bit
+	double lastVoltageSet = 0.0;
+
+	static constexpr uint32_t LINKSTATE_PP = 0x2; // parity check pass bit
+	static constexpr uint32_t LINKSTATE_SL = 0x1; // SERDES lock bit
 
 	DiscoveryParameters discoveryParameters;
 
 	std::atomic<bool> errorFlag = false;
 
 	JUCE_LEAK_DETECTOR(PortController);
+};
+
+class ConfigureVoltageWithProgressBar : public ThreadWithProgressWindow
+{
+public:
+	ConfigureVoltageWithProgressBar(DiscoveryParameters params, PortController* port)
+		: ThreadWithProgressWindow("Configuring voltage on " + port->getPortName(), true, false)
+	{
+		m_params = params;
+		m_port = port;
+	}
+
+	void run() override
+	{
+		double voltage, progress = 0.0;
+
+		double increment = m_params.voltageIncrement / (m_params.maxVoltage - m_params.minVoltage);
+
+		for (voltage = m_params.minVoltage; voltage <= m_params.maxVoltage; voltage += m_params.voltageIncrement)
+		{
+			progress += increment;
+			setProgress(progress);
+
+			m_port->setVoltage(voltage);
+
+			if (m_port->checkLinkState())
+			{
+				setProgress(0.95);
+				m_port->setVoltage(voltage + m_params.voltageOffset);
+				result = m_port->checkLinkState();;
+				setProgress(1.0);
+				return;
+			}
+		}
+
+		result = false;
+		return;
+	}
+
+	bool getResult() const { return result; }
+
+private:
+
+	DiscoveryParameters m_params;
+
+	PortController* m_port;
+
+	bool result = false;
+
+	JUCE_LEAK_DETECTOR(ConfigureVoltageWithProgressBar);
 };

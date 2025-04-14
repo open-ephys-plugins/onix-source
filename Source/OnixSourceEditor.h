@@ -44,10 +44,8 @@ class OnixSourceEditor : public VisualizerEditor,
 {
 public:
 
-    /** Constructor */
     OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_);
 
-    /** Listener methods */
     void labelTextChanged(Label* l) override;
 
     void buttonClicked(Button* b) override;
@@ -56,16 +54,12 @@ public:
 
     void updateComboBox(ComboBox* cb);
 
-    /** Called when settings are changed */
     void updateSettings() override;
 
-    /** Called at start of acquisition */
     void startAcquisition() override;
 
-    /** Called when acquisition finishes */
     void stopAcquisition() override;
 
-    /** Creates the Onix Source settings interface*/
     Visualizer* createNewCanvas(void) override;
 
     void checkCanvas() { checkForCanvas(); };
@@ -101,6 +95,9 @@ private:
 
     std::unique_ptr<Label> portVoltageValueA;
     std::unique_ptr<Label> portVoltageValueB;
+
+    std::unique_ptr<Label> lastVoltageSetA;
+    std::unique_ptr<Label> lastVoltageSetB;
 
     std::unique_ptr<UtilityButton> connectButton;
 
