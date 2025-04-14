@@ -436,7 +436,7 @@ bool Neuropixels2e::updateSettings()
 				}
 			}
 
-			gainCorrection[i] = correctionValue * (invertSignal ? -1.0f : 1.0f);
+			gainCorrection[i] = correctionValue * -1.0f;
 		}
 		else
 			gainCorrection[i] = 0;
@@ -581,19 +581,6 @@ void Neuropixels2e::startAcquisition()
 	frameCount = 0;
 
 	singleProbe = m_numProbes == 1;
-
-	offsetValues.clear();
-	offsetValues.reserve(numberOfChannels);
-
-	for (int i = 0; i < numberOfChannels; i++)
-	{
-		offsets[i] = 0;
-
-		offsetValues.emplace_back(std::vector<float>{});
-	}
-
-	offsetCalculated = false;
-
 }
 
 void Neuropixels2e::stopAcquisition()
@@ -645,10 +632,9 @@ void Neuropixels2e::processFrames()
 			for (int j = 0; j < AdcsPerProbe; j++)
 			{
 				const int channelIndex = rawToChannel[j][i];
-				float offset = correctOffset && offsetCalculated ? offsets.at(channelIndex) : 0.0f;
 
 				samples[channelIndex * numFrames + frameCount] =
-					(float)(*(amplifierData + adcIndices[j] + adcDataOffset)) * gainCorrection[probeIndex] - offset;
+					(float)(*(amplifierData + adcIndices[j] + adcDataOffset)) * gainCorrection[probeIndex];
 			}
 		}
 
@@ -666,42 +652,9 @@ void Neuropixels2e::processFrames()
 			shouldAddToBuffer = false;
 
 			amplifierBuffer[probeIndex]->addToBuffer(samples.data(), sampleNumbers, timestamps, eventCodes, numFrames);
-
-			if (!offsetCalculated) updateLfpOffsets(samples, sampleNumbers[0]);
 		}
 
 		oni_destroy_frame(frame);
-	}
-}
-
-void Neuropixels2e::updateLfpOffsets(std::array<float, numSamples>& samples, int64 sampleNumber)
-{
-	if (sampleNumber > sampleRate * secondsToSettle)
-	{
-		uint32_t counter = 0;
-
-		while (offsetValues[0].size() < samplesToAverage)
-		{
-			if (counter >= numFrames) break;
-
-			for (int i = 0; i < numberOfChannels; i++)
-			{
-				offsetValues[i].emplace_back(samples[i * numFrames + counter]);
-			}
-
-			counter++;
-		}
-
-		if (offsetValues[0].size() >= samplesToAverage)
-		{
-			for (int i = 0; i < numberOfChannels; i++)
-			{
-				offsets[i] = std::reduce(offsetValues.at(i).begin(), offsetValues.at(i).end()) / offsetValues.at(i).size();
-			}
-
-			offsetCalculated = true;
-			offsetValues.clear();
-		}
 	}
 }
 

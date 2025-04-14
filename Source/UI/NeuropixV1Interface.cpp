@@ -71,16 +71,8 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		offsetCorrectionCheckbox->addListener(this);
 		addAndMakeVisible(offsetCorrectionCheckbox.get());
 
-		invertSignalCheckbox = std::make_unique<ToggleButton>("Invert ephys data");
-		invertSignalCheckbox->setBounds(offsetCorrectionCheckbox->getX(), offsetCorrectionCheckbox->getBottom() + 5, offsetCorrectionCheckbox->getWidth(), offsetCorrectionCheckbox->getHeight());
-		invertSignalCheckbox->setClickingTogglesState(true);
-		invertSignalCheckbox->setToggleState(npx->getInvertSignal(), dontSendNotification);
-		invertSignalCheckbox->setTooltip("If enabled, the plugin will invert all ephys data.");
-		invertSignalCheckbox->addListener(this);
-		addAndMakeVisible(invertSignalCheckbox.get());
-
 		adcCalibrationFileLabel = std::make_unique<Label>("adcCalibrationFileLabel", "ADC Calibration File");
-		adcCalibrationFileLabel->setBounds(invertSignalCheckbox->getX(), invertSignalCheckbox->getBottom() + 15, 240, 16);
+		adcCalibrationFileLabel->setBounds(offsetCorrectionCheckbox->getX(), offsetCorrectionCheckbox->getBottom() + 15, 240, 16);
 		adcCalibrationFileLabel->setColour(Label::textColourId, Colours::black);
 		addAndMakeVisible(adcCalibrationFileLabel.get());
 
@@ -784,14 +776,6 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 		}
 
 		std::static_pointer_cast<Neuropixels_1>(device)->gainCalibrationFilePath = gainCalibrationFile->getText();
-	}
-	else if (button == offsetCorrectionCheckbox.get())
-	{
-		npx->setCorrectOffset(offsetCorrectionCheckbox->getToggleState());
-	}
-	else if (button == invertSignalCheckbox.get())
-	{
-		npx->setInvertSignal(invertSignalCheckbox->getToggleState());
 	}
 }
 

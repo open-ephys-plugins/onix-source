@@ -461,8 +461,8 @@ void Neuropixels_1::addFrame(oni_frame_t* frame)
 
 void Neuropixels_1::processFrames()
 {
-	const float apConversion = (1171.875 / apGain) * (invertSignal ? -1.0f : 1.0f);
-	const float lfpConversion = (1171.875 / lfpGain)* (invertSignal ? -1.0f : 1.0f);
+	const float apConversion = (1171.875 / apGain) * -1.0f;
+	const float lfpConversion = (1171.875 / lfpGain) * -1.0f;
 
 	while (!frameArray.isEmpty())
 	{
@@ -488,9 +488,8 @@ void Neuropixels_1::processFrames()
 				for (int adc = 0; adc < 32; adc++)
 				{
 					int chanIndex = adcToChannel[adc] + superCountOffset * 2; // map the ADC to muxed channel
-					float offset = correctOffset && lfpOffsetCalculated ? lfpOffsets.at(chanIndex) : 0.0f;
 					lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount] =
-						lfpConversion * float((*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) - 512) - offset;
+						lfpConversion * float((*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) - 512) - lfpOffsets.at(chanIndex);
 				}
 			}
 			else // AP data
@@ -499,9 +498,8 @@ void Neuropixels_1::processFrames()
 				for (int adc = 0; adc < 32; adc++)
 				{
 					int chanIndex = adcToChannel[adc] + chanOffset; //  map the ADC to muxed channel.
-					float offset = correctOffset && apOffsetCalculated ? apOffsets.at(chanIndex) : 0.0f;
 					apSamples[(chanIndex * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
-						apConversion * float((*(dataPtr + adcToFrameIndex[adc] + i * 36 + dataOffset) >> 5) - 512) - offset;
+						apConversion * float((*(dataPtr + adcToFrameIndex[adc] + i * 36 + dataOffset) >> 5) - 512) - apOffsets.at(chanIndex);
 				}
 			}
 		}

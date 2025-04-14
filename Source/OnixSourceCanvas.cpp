@@ -182,7 +182,6 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 		npx1Found->adcCalibrationFilePath = npx1Selected->adcCalibrationFilePath;
 		npx1Found->gainCalibrationFilePath = npx1Selected->gainCalibrationFilePath;
 		npx1Found->setCorrectOffset(npx1Selected->getCorrectOffset());
-		npx1Found->setInvertSignal(npx1Selected->getInvertSignal());
 	}
 	else if (device->type == OnixDeviceType::OUTPUTCLOCK)
 	{
@@ -210,8 +209,6 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 		npx2Found->setSettings(npx2Selected->settings[1].get(), 1);
 		npx2Found->setGainCorrectionFile(0, npx2Selected->getGainCorrectionFile(0));
 		npx2Found->setGainCorrectionFile(1, npx2Selected->getGainCorrectionFile(1));
-		npx2Found->setCorrectOffset(npx2Selected->getCorrectOffset());
-		npx2Found->setInvertSignal(npx2Selected->getInvertSignal());
 
 		std::static_pointer_cast<NeuropixelsV2eInterface>(settingsInterfaces[ind])->updateDevice(npx2Found);
 	}

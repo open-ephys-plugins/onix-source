@@ -188,10 +188,6 @@ public:
 
 	void setCorrectOffset(bool value) { correctOffset = value; }
 
-	bool getInvertSignal() const { return invertSignal; }
-
-	void setInvertSignal(bool value) { invertSignal = value; }
-
 	ShankBitset static makeShankBits(NeuropixelsV1Reference reference, std::array<int, numberOfChannels> channelMap);
 
 	CongigBitsArray static makeConfigBits(NeuropixelsV1Reference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
@@ -234,7 +230,6 @@ private:
 	bool apOffsetCalculated = false;
 
 	bool correctOffset = true;
-	bool invertSignal = true;
 
 	std::array<float, numberOfChannels> apOffsets;
 	std::array<float, numberOfChannels> lfpOffsets;

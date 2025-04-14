@@ -50,22 +50,6 @@ NeuropixelsV2eInterface::NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> 
 	probeEnableButton->addListener(this);
 	deviceComponent->addAndMakeVisible(probeEnableButton.get());
 
-	offsetCorrectionCheckbox = std::make_unique<ToggleButton>("Apply software offset correction");
-	offsetCorrectionCheckbox->setBounds(probeEnableButton->getRight() + 5, probeEnableButton->getY(), 240, 22);
-	offsetCorrectionCheckbox->setClickingTogglesState(true);
-	offsetCorrectionCheckbox->setToggleState(d->getCorrectOffset(), dontSendNotification);
-	offsetCorrectionCheckbox->setTooltip("If enabled, the plugin will wait 15 seconds and then calculate a mean value to correct a constant offset present in most channels.");
-	offsetCorrectionCheckbox->addListener(this);
-	deviceComponent->addAndMakeVisible(offsetCorrectionCheckbox.get());
-
-	invertSignalCheckbox = std::make_unique<ToggleButton>("Invert ephys data");
-	invertSignalCheckbox->setBounds(offsetCorrectionCheckbox->getRight() + 5, offsetCorrectionCheckbox->getY(), offsetCorrectionCheckbox->getWidth(), offsetCorrectionCheckbox->getHeight());
-	invertSignalCheckbox->setClickingTogglesState(true);
-	invertSignalCheckbox->setToggleState(d->getInvertSignal(), dontSendNotification);
-	invertSignalCheckbox->setTooltip("If enabled, the plugin will invert all ephys data.");
-	invertSignalCheckbox->addListener(this);
-	deviceComponent->addAndMakeVisible(invertSignalCheckbox.get());
-
 	addAndMakeVisible(deviceComponent.get());
 
 	setBounds(0, 0, 1000, 800);
@@ -118,17 +102,5 @@ void NeuropixelsV2eInterface::buttonClicked(Button* b)
 		}
 
 		CoreServices::updateSignalChain(editor);
-	}
-	else if (b == offsetCorrectionCheckbox.get())
-	{
-		auto npx = std::static_pointer_cast<Neuropixels2e>(device);
-
-		npx->setCorrectOffset(offsetCorrectionCheckbox->getToggleState());
-	}
-	else if (b == invertSignalCheckbox.get())
-	{
-		auto npx = std::static_pointer_cast<Neuropixels2e>(device);
-
-		npx->setInvertSignal(invertSignalCheckbox->getToggleState());
 	}
 }
