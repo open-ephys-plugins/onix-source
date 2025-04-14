@@ -87,6 +87,7 @@ private:
 	std::unique_ptr<ComboBox> activityViewComboBox;
 
 	// LABELS
+	std::unique_ptr<Label> deviceLabel;
 	std::unique_ptr<Label> infoLabel;
 	std::unique_ptr<Label> electrodesLabel;
 	std::unique_ptr<Label> electrodePresetLabel;

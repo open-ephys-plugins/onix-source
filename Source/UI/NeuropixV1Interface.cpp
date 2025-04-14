@@ -46,10 +46,15 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		FontOptions fontRegularButton = FontOptions("Fira Code", "Regular", 12.0f);
 		FontOptions fontRegularLabel = FontOptions("Fira Code", "Regular", 13.0f);
 
+		deviceLabel = std::make_unique<Label>("deviceLabel", "Device Name");
+		deviceLabel->setFont(fontName);
+		deviceLabel->setBounds(625, 40, 430, 45);
+		addAndMakeVisible(deviceLabel.get());
+
 		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
 		deviceEnableButton->setFont(fontRegularButton);
 		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(625, 40, 100, 22);
+		deviceEnableButton->setBounds(deviceLabel->getX(), deviceLabel->getBottom() + 3, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);
@@ -59,7 +64,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, 370, 65);
+		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, deviceLabel->getWidth(), 50);
 		infoLabel->setJustificationType(Justification::topLeft);
 		addAndMakeVisible(infoLabel.get());
 
@@ -528,22 +533,22 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 void NeuropixV1Interface::updateInfoString()
 {
-	String infoString;
+	String deviceString, infoString;
 
 	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
 
 	if (device != nullptr)
 	{
-		infoString = "Device: Neuropixels 1.0 Probe";
-		infoString += "\n";
-		infoString += "\n";
+		deviceString = "Device: Neuropixels 1.0 Probe";
 
+		infoString += "\n";
 		infoString += "Probe Number: ";
 		infoString += npx->getProbeSerialNumber();
 		infoString += "\n";
 		infoString += "\n";
 	}
 
+	deviceLabel->setText(deviceString, dontSendNotification);
 	infoLabel->setText(infoString, dontSendNotification);
 }
 

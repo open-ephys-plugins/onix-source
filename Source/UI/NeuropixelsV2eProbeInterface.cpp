@@ -50,9 +50,14 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		FontOptions fontRegularButton = FontOptions("Fira Code", "Regular", 12.0f);
 		FontOptions fontRegularLabel = FontOptions("Fira Code", "Regular", 13.0f);
 
+		deviceLabel = std::make_unique<Label>("deviceLabel", "Device Name");
+		deviceLabel->setFont(fontName);
+		deviceLabel->setBounds(625, 40, 430, 45);
+		addAndMakeVisible(deviceLabel.get());
+
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(625, 40, 370, 50);
+		infoLabel->setBounds(deviceLabel->getX(), deviceLabel->getBottom() + 3, deviceLabel->getWidth(), 50);
 		infoLabel->setJustificationType(Justification::topLeft);
 		addAndMakeVisible(infoLabel.get());
 
@@ -344,22 +349,22 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 
 void NeuropixelsV2eProbeInterface::updateInfoString()
 {
-	String infoString;
+	String deviceString, infoString;
 
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
 	if (device != nullptr)
 	{
-		infoString = "Device: Neuropixels 2.0 Probe";
-		infoString += "\n";
-		infoString += "\n";
+		deviceString = "Device: Neuropixels 2.0 Probe";
 
+		infoString += "\n";
 		infoString += "Probe Number: ";
 		infoString += npx->getProbeSerialNumber(probeIndex);
 		infoString += "\n";
 		infoString += "\n";
 	}
 
+	deviceLabel->setText(deviceString, dontSendNotification);
 	infoLabel->setText(infoString, dontSendNotification);
 }
 
