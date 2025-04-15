@@ -40,15 +40,15 @@ NeuropixelsV2eInterface::NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> 
 	deviceComponent = std::make_unique<Component>();
 	deviceComponent->setBounds(0, 0, 600, 40);
 
-	probeEnableButton = std::make_unique<UtilityButton>("ENABLED");
-	probeEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
-	probeEnableButton->setRadius(3.0f);
-	probeEnableButton->setBounds(10, 15, 100, 22);
-	probeEnableButton->setClickingTogglesState(true);
-	probeEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
-	probeEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
-	probeEnableButton->addListener(this);
-	deviceComponent->addAndMakeVisible(probeEnableButton.get());
+	deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+	deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
+	deviceEnableButton->setRadius(3.0f);
+	deviceEnableButton->setBounds(10, 15, 100, 22);
+	deviceEnableButton->setClickingTogglesState(true);
+	deviceEnableButton->setToggleState(device->isEnabled(), dontSendNotification);
+	deviceEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
+	deviceEnableButton->addListener(this);
+	deviceComponent->addAndMakeVisible(deviceEnableButton.get());
 
 	addAndMakeVisible(deviceComponent.get());
 
@@ -82,9 +82,9 @@ void NeuropixelsV2eInterface::updateInfoString()
 
 void NeuropixelsV2eInterface::buttonClicked(Button* b)
 {
-	if (b == probeEnableButton.get())
+	if (b == deviceEnableButton.get())
 	{
-		device->setEnabled(probeEnableButton->getToggleState());
+		device->setEnabled(deviceEnableButton->getToggleState());
 
 		if (canvas->foundInputSource())
 		{
@@ -94,11 +94,11 @@ void NeuropixelsV2eInterface::buttonClicked(Button* b)
 
 		if (device->isEnabled())
 		{
-			probeEnableButton->setLabel("ENABLED");
+			deviceEnableButton->setLabel("ENABLED");
 		}
 		else
 		{
-			probeEnableButton->setLabel("DISABLED");
+			deviceEnableButton->setLabel("DISABLED");
 		}
 
 		CoreServices::updateSignalChain(editor);
@@ -108,6 +108,8 @@ void NeuropixelsV2eInterface::buttonClicked(Button* b)
 void NeuropixelsV2eInterface::updateSettings()
 {
 	if (device == nullptr) return;
+
+	deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
 
 	for (const auto& probeInterface : probeInterfaces)
 	{
@@ -119,11 +121,65 @@ void NeuropixelsV2eInterface::setInterfaceEnabledState(bool newState)
 {
 	if (device == nullptr) return;
 
-	if (probeEnableButton != nullptr)
-		probeEnableButton->setEnabled(newState);
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(newState);
 
 	for (const auto& probeInterface : probeInterfaces)
 	{
 		probeInterface->setInterfaceEnabledState(newState);
 	}
+}
+
+void NeuropixelsV2eInterface::saveParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Saving NeuropixelsV2e settings.");
+
+	XmlElement* xmlNode = xml->createNewChildElement("NEUROPIXELSV2E");
+
+	xmlNode->setAttribute("idx", (int)device->getDeviceIdx());
+
+	xmlNode->setAttribute("isEnabled", device->isEnabled());
+
+	for (const auto& probeInterface : probeInterfaces)
+	{
+		probeInterface->saveParameters(xmlNode);
+	}
+}
+
+void NeuropixelsV2eInterface::loadParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Loading NeuropixelsV2e settings.");
+
+	XmlElement* xmlNode = nullptr;
+
+	for (auto* node : xml->getChildIterator())
+	{
+		if (node->hasTagName("NEUROPIXELSV2E"))
+		{
+			if (node->getIntAttribute("idx") == device->getDeviceIdx())
+			{
+				xmlNode = node;
+				break;
+			}
+		}
+	}
+
+	if (xmlNode == nullptr)
+	{
+		LOGD("No NeuropixelsV2e element found.");
+		return;
+	}
+
+	device->setEnabled(xmlNode->getBoolAttribute("isEnabled"));
+
+	for (const auto& probeInterface : probeInterfaces)
+	{
+		probeInterface->loadParameters(xmlNode);
+	}
+
+	updateSettings();
 }

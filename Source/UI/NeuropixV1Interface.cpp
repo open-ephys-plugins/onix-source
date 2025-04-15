@@ -998,9 +998,6 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 	probeViewerNode->setAttribute("referenceChannel", referenceComboBox->getText());
 	probeViewerNode->setAttribute("apFilter", filterComboBox->getText());
 
-	probeViewerNode->setAttribute("visualizationMode", (int)mode);
-	probeViewerNode->setAttribute("activityToView", (int)probeBrowser->activityToView);
-
 	XmlElement* channelsNode = xmlNode->createNewChildElement("SELECTED_CHANNELS");
 
 	for (int i = 0; i < settings->selectedElectrode.size(); i++)
@@ -1095,9 +1092,6 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 	else
 		settings->apFilterState = idx == 1 ? true : false;
 
-	mode = (VisualizationMode)probeViewerNode->getIntAttribute("visualizationMode");
-	probeBrowser->activityToView = (ActivityToView)probeViewerNode->getIntAttribute("activityToView");
-
 	XmlElement* channelsNode = xmlNode->getChildByName("SELECTED_CHANNELS");
 
 	if (channelsNode == nullptr)
@@ -1128,7 +1122,7 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 
 	if (selectedChannels.size() != npx->numberOfChannels)
 	{
-		LOGE("Invalid channel map. Some duplicate channels were found. Channel map was not updated");
+		LOGE("Invalid channel map. Wrong number of channels found. Channel map was not updated");
 		return;
 	}
 

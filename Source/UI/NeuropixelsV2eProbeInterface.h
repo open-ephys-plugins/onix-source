@@ -79,32 +79,27 @@ private:
 
 	std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
 	std::unique_ptr<ComboBox> referenceComboBox;
-	std::unique_ptr<ComboBox> activityViewComboBox;
 
 	std::unique_ptr<Label> deviceLabel;
 	std::unique_ptr<Label> infoLabel;
 	std::unique_ptr<Label> electrodesLabel;
 	std::unique_ptr<Label> electrodePresetLabel;
 	std::unique_ptr<Label> referenceLabel;
-	std::unique_ptr<Label> activityViewLabel;
 
 	std::unique_ptr<Label> gainCorrectionFileLabel;
+	std::unique_ptr<UtilityButton> gainCorrectionFileButton;
+	std::unique_ptr<FileChooser> gainCorrectionFileChooser;
+	std::unique_ptr<TextEditor> gainCorrectionFile;
 
-	// BUTTONS
 	std::unique_ptr<UtilityButton> enableButton;
 
 	std::unique_ptr<UtilityButton> enableViewButton;
 	std::unique_ptr<UtilityButton> referenceViewButton;
-	std::unique_ptr<UtilityButton> activityViewButton;
 
 	std::unique_ptr<DrawableRectangle> probeInterfaceRectangle;
 	std::unique_ptr<Label> probeInterfaceLabel;
 	std::unique_ptr<UtilityButton> loadJsonButton;
 	std::unique_ptr<UtilityButton> saveJsonButton;
-
-	std::unique_ptr<UtilityButton> gainCorrectionFileButton;
-	std::unique_ptr<FileChooser> gainCorrectionFileChooser;
-	std::unique_ptr<TextEditor> gainCorrectionFile;
 
 	std::unique_ptr<ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>> probeBrowser;
 
@@ -127,6 +122,8 @@ private:
 	void setInterfaceEnabledState(bool enabledState) override;
 
 	void checkForExistingChannelPreset();
+
+	int getIndexOfComboBoxItem(ComboBox* cb, String item);
 
 	JUCE_LEAK_DETECTOR(NeuropixelsV2eProbeInterface);
 };

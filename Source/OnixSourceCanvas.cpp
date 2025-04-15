@@ -208,7 +208,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	else if (device->type == OnixDeviceType::NEUROPIXELSV2E)
 	{
 		auto npx2Found = std::static_pointer_cast<Neuropixels2e>(device);
-		auto npx2Selected = std::static_pointer_cast<Neuropixels2e>(device);
+		auto npx2Selected = std::static_pointer_cast<Neuropixels2e>(selectedDevice);
 		npx2Found->setSettings(npx2Selected->settings[0].get(), 0);
 		npx2Found->setSettings(npx2Selected->settings[1].get(), 1);
 		npx2Found->setGainCorrectionFile(0, npx2Selected->getGainCorrectionFile(0));
