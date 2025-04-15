@@ -24,7 +24,7 @@
 #include "OnixSource.h"
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_)
-	: VisualizerEditor(parentNode, "Onix Source", 220), source(source_)
+	: VisualizerEditor(parentNode, "Onix Source", 240), source(source_)
 {
 	canvas = nullptr;
 
@@ -44,7 +44,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		addAndMakeVisible(portLabelA.get());
 
 		headstageComboBoxA = std::make_unique<ComboBox>("headstageComboBoxA");
-		headstageComboBoxA->setBounds(portLabelA->getRight() + 2, portLabelA->getY(), 120, portLabelA->getHeight());
+		headstageComboBoxA->setBounds(portLabelA->getRight() + 2, portLabelA->getY(), 140, portLabelA->getHeight());
 		headstageComboBoxA->addListener(this);
 		headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
 		addHeadstageComboBoxOptions(headstageComboBoxA.get());
@@ -83,7 +83,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		headstageComboBoxB->addListener(this);
 		headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
 		addHeadstageComboBoxOptions(headstageComboBoxB.get());
-
 		headstageComboBoxB->setSelectedId(1, dontSendNotification);
 		addAndMakeVisible(headstageComboBoxB.get());
 
@@ -118,6 +117,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
 		connectButton->addListener(this);
 		addAndMakeVisible(connectButton.get());
+
+		liboniVersionLabel = std::make_unique<Label>("liboniVersion", "liboni: v" + source->getLiboniVersion());
+		liboniVersionLabel->setFont(fontOptionSmall);
+		liboniVersionLabel->setBounds(desiredWidth - 100, 110, 95, 22);
+		liboniVersionLabel->setEnabled(false);
+		liboniVersionLabel->setTooltip("Displays the version of liboni running.");
+		addAndMakeVisible(liboniVersionLabel.get());
 	}
 }
 
@@ -126,6 +132,7 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 	comboBox->addItem("Select headstage...", 1);
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
+	comboBox->addItem(NEUROPIXELSV2E_HEADSTAGE_NAME, 3);
 	// TODO: Add list of available devices here
 	// TODO: Create const char* for the headstage names so they are shared across the plugin
 }
@@ -295,6 +302,9 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 
 	canvas->removeTabs(currentPort);
 
+	String passthroughName = isPortA ? "passthroughA" : "passthroughB";
+	bool passthroughValue = false;
+
 	if (currentHeadstageSelected)
 	{
 		String headstage = isPortA ? headstageComboBoxA->getText() : headstageComboBoxB->getText();
@@ -302,17 +312,13 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		source->updateDiscoveryParameters(currentPort, PortController::getHeadstageDiscoveryParameters(headstage));
 		canvas->addHub(headstage, PortController::getPortOffset(currentPort));
 
-		String passthroughName = isPortA ? "passthroughA" : "passthroughB";
-
-		if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
+		if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME)
 		{
-			source->getParameter(passthroughName)->setNextValue(false);
-		}
-		else
-		{
-			source->getParameter(passthroughName)->setNextValue(true);
+			passthroughValue = true;
 		}
 	}
+
+	source->getParameter(passthroughName)->setNextValue(passthroughValue);
 }
 
 void OnixSourceEditor::updateSettings()

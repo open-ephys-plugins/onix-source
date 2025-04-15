@@ -32,3 +32,4 @@
 #include "AnalogIO.h"
 #include "DigitalIO.h"
 #include "PortController.h"
+#include "PolledBno055.h"

@@ -21,38 +21,14 @@
 */
 
 #include "OnixSourceCanvas.h"
-
-CustomTabButton::CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_) :
-	TabBarButton(name, parent->getTabbedButtonBar()),
-	isTopLevel(isTopLevel_)
-{
-}
-
-void CustomTabButton::paintButton(Graphics& g,
-	bool isMouseOver,
-	bool isMouseDown)
-{
-	getTabbedButtonBar().setTabBackgroundColour(getIndex(), Colours::grey);
-
-	getLookAndFeel().drawTabButton(*this, g, isMouseOver, isMouseDown);
-}
-
-CustomTabComponent::CustomTabComponent(OnixSourceEditor* editor_, bool isTopLevel_) :
-	TabbedComponent(TabbedButtonBar::TabsAtTop),
-	editor(editor_),
-	isTopLevel(isTopLevel_)
-{
-	setTabBarDepth(26);
-	setOutline(0);
-	setIndent(0);
-}
+#include "OnixSource.h"
 
 OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEditor* editor_, OnixSource* onixSource_) :
 	Visualizer(processor_),
 	editor(editor_),
 	source(onixSource_)
 {
-	topLevelTabComponent = std::make_unique<CustomTabComponent>(editor, true);
+	topLevelTabComponent = std::make_unique<CustomTabComponent>(true);
 	addAndMakeVisible(topLevelTabComponent.get());
 
 	addHub(BREAKOUT_BOARD_NAME, 0);
@@ -60,7 +36,7 @@ OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEdito
 
 CustomTabComponent* OnixSourceCanvas::addTopLevelTab(String tabName, int index)
 {
-	CustomTabComponent* tab = new CustomTabComponent(editor, false);
+	CustomTabComponent* tab = new CustomTabComponent(false);
 
 	topLevelTabComponent->addTab(tabName, Colours::grey, tab, true, index);
 	tab->setName(tabName);
@@ -68,11 +44,6 @@ CustomTabComponent* OnixSourceCanvas::addTopLevelTab(String tabName, int index)
 	headstageTabs.add(tab);
 
 	return tab;
-}
-
-Parameter* OnixSourceCanvas::getSourceParameter(String name)
-{
-	return source->getParameter(name);
 }
 
 void OnixSourceCanvas::addHub(String hubName, int offset)
@@ -85,9 +56,9 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-A", offset, nullptr));
-		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe-B", offset + 1, nullptr));
-		devices.emplace_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe0", offset, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe1", offset + 1, nullptr));
+		devices.emplace_back(std::make_shared<Bno055>("BNO055", hubName, offset + 2, nullptr));
 	}
 	else if (hubName == BREAKOUT_BOARD_NAME)
 	{
@@ -97,6 +68,15 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 		devices.emplace_back(std::make_shared<AnalogIO>("Analog IO", 6, nullptr));
 		devices.emplace_back(std::make_shared<DigitalIO>("Digital IO", 7, nullptr));
 		devices.emplace_back(std::make_shared<HarpSyncInput>("Harp Sync Input", 12, nullptr));
+	}
+	else if (hubName == NEUROPIXELSV2E_HEADSTAGE_NAME)
+	{
+		const int passthroughIndex = (offset >> 8) + 7;
+
+		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
+
+		devices.emplace_back(std::make_shared<Neuropixels2e>("", passthroughIndex, nullptr));
+		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", hubName, passthroughIndex, nullptr));
 	}
 
 	if (tab != nullptr && devices.size() > 0)
@@ -114,32 +94,42 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 		if (device->type == OnixDeviceType::NEUROPIXELS_1)
 		{
 			auto neuropixInterface = std::make_shared<NeuropixV1Interface>(std::static_pointer_cast<Neuropixels_1>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, neuropixInterface);
+			addInterfaceToTab(device->getName(), tab, neuropixInterface);
 		}
 		else if (device->type == OnixDeviceType::BNO)
 		{
 			auto bno055Interface = std::make_shared<Bno055Interface>(std::static_pointer_cast<Bno055>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, bno055Interface);
+			addInterfaceToTab(device->getName(), tab, bno055Interface);
 		}
 		else if (device->type == OnixDeviceType::OUTPUTCLOCK)
 		{
 			auto outputClockInterface = std::make_shared<OutputClockInterface>(std::static_pointer_cast<OutputClock>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, outputClockInterface);
+			addInterfaceToTab(device->getName(), tab, outputClockInterface);
 		}
 		else if (device->type == OnixDeviceType::HARPSYNCINPUT)
 		{
 			auto harpSyncInputInterface = std::make_shared<HarpSyncInputInterface>(std::static_pointer_cast<HarpSyncInput>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, harpSyncInputInterface);
+			addInterfaceToTab(device->getName(), tab, harpSyncInputInterface);
 		}
 		else if (device->type == OnixDeviceType::ANALOGIO)
 		{
 			auto analogIOInterface = std::make_shared<AnalogIOInterface>(std::static_pointer_cast<AnalogIO>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, analogIOInterface);
+			addInterfaceToTab(device->getName(), tab, analogIOInterface);
 		}
 		else if (device->type == OnixDeviceType::DIGITALIO)
 		{
 			auto digitalIOInterface = std::make_shared<DigitalIOInterface>(std::static_pointer_cast<DigitalIO>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, digitalIOInterface);
+			addInterfaceToTab(device->getName(), tab, digitalIOInterface);
+		}
+		else if (device->type == OnixDeviceType::NEUROPIXELSV2E)
+		{
+			auto npxv2eInterface = std::make_shared<NeuropixelsV2eInterface>(std::static_pointer_cast<Neuropixels2e>(device), editor, this);
+			addInterfaceToTab(device->getHeadstageName(), tab, npxv2eInterface);
+		}
+		else if (device->type == OnixDeviceType::POLLEDBNO)
+		{
+			auto polledBnoInterface = std::make_shared<PolledBno055Interface>(std::static_pointer_cast<PolledBno055>(device), editor, this);
+			addInterfaceToTab(device->getName(), tab, polledBnoInterface);
 		}
 	}
 }
@@ -147,7 +137,19 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 void OnixSourceCanvas::addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_)
 {
 	settingsInterfaces.emplace_back(interface_);
-	tab->addTab(tabName, Colours::darkgrey, createCustomViewport(interface_.get()), true);
+	tab->addTab(tabName, Colours::darkgrey, CustomViewport::createCustomViewport(interface_.get()), true);
+}
+
+bool OnixSourceCanvas::compareDeviceNames(String dev1, String dev2)
+{
+	StringRef charsToTrim = "-ABCD";
+
+	if (dev1 == dev2)
+		return true;
+	else if (dev1.trimCharactersAtEnd(charsToTrim) == dev2.trimCharactersAtEnd(charsToTrim))
+		return true;
+	else
+		return false;
 }
 
 void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice> device)
@@ -157,7 +159,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	for (int j = 0; j < settingsInterfaces.size(); j++)
 	{
 		if (device->getDeviceIdx() == settingsInterfaces[j]->device->getDeviceIdx() &&
-			device->getName() == settingsInterfaces[j]->device->getName())
+			compareDeviceNames(device->getName(), settingsInterfaces[j]->device->getName()))
 		{
 			ind = j;
 			break;
@@ -176,9 +178,10 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	{
 		auto npx1Found = std::static_pointer_cast<Neuropixels_1>(device);
 		auto npx1Selected = std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device);
-		npx1Found->setSettings(npx1Selected->settings.get());
+		npx1Found->setSettings(npx1Selected->settings[0].get());
 		npx1Found->adcCalibrationFilePath = npx1Selected->adcCalibrationFilePath;
 		npx1Found->gainCalibrationFilePath = npx1Selected->gainCalibrationFilePath;
+		npx1Found->setCorrectOffset(npx1Selected->getCorrectOffset());
 	}
 	else if (device->type == OnixDeviceType::OUTPUTCLOCK)
 	{
@@ -198,6 +201,17 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 			analogIOFound->setChannelDirection(i, analogIOSelected->getChannelDirection(i));
 		}
 	}
+	else if (device->type == OnixDeviceType::NEUROPIXELSV2E)
+	{
+		auto npx2Found = std::static_pointer_cast<Neuropixels2e>(device);
+		auto npx2Selected = std::static_pointer_cast<Neuropixels2e>(settingsInterfaces[ind]->device);
+		npx2Found->setSettings(npx2Selected->settings[0].get(), 0);
+		npx2Found->setSettings(npx2Selected->settings[1].get(), 1);
+		npx2Found->setGainCorrectionFile(0, npx2Selected->getGainCorrectionFile(0));
+		npx2Found->setGainCorrectionFile(1, npx2Selected->getGainCorrectionFile(1));
+
+		std::static_pointer_cast<NeuropixelsV2eInterface>(settingsInterfaces[ind])->updateDevice(npx2Found);
+	}
 
 	device->setEnabled(settingsInterfaces[ind]->device->isEnabled());
 	settingsInterfaces[ind]->device.reset();
@@ -207,11 +221,6 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 String OnixSourceCanvas::getTopLevelTabName(PortName port, String headstage)
 {
 	return PortController::getPortName(port) + ": " + headstage;
-}
-
-String OnixSourceCanvas::getDeviceTabName(std::shared_ptr<OnixDevice> device)
-{
-	return String(device->getDeviceIdx()) + ": " + device->getName();
 }
 
 Array<CustomTabComponent*> OnixSourceCanvas::getHeadstageTabs()
@@ -224,13 +233,6 @@ Array<CustomTabComponent*> OnixSourceCanvas::getHeadstageTabs()
 	}
 
 	return tabs;
-}
-
-CustomViewport* OnixSourceCanvas::createCustomViewport(SettingsInterface* settingsInterface)
-{
-	Rectangle bounds = settingsInterface->getBounds();
-
-	return new CustomViewport(settingsInterface, bounds.getWidth(), bounds.getHeight());
 }
 
 void OnixSourceCanvas::refresh()
@@ -330,6 +332,8 @@ void OnixSourceCanvas::askKeepRemove(int offset)
 void OnixSourceCanvas::askKeepUpdate(int offset, String foundHeadstage, OnixDeviceVector devices)
 {
 	String selectedHeadstage = editor->getHeadstageSelected(offset);
+
+	if (selectedHeadstage == foundHeadstage) return;
 
 	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(offset) + ". ";
 	msg += "However, headstage " + foundHeadstage + " was found on " + PortController::getPortName(offset) + ". \n\n";

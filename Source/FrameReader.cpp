@@ -35,7 +35,7 @@ void FrameReader::run()
 	{
 		oni_frame_t* frame = context->readFrame();
 
-		if (context->getLastResult() < ONI_ESUCCESS)
+		if (frame == nullptr)
 		{
 			if (threadShouldExit()) return;
 
@@ -48,7 +48,7 @@ void FrameReader::run()
 
 		for (const auto& source : sources)
 		{
-			if (frame->dev_idx == source->getDeviceIdx())
+			if (frame->dev_idx == source->getDeviceIdx(true))
 			{
 				source->addFrame(frame);
 				destroyFrame = false;

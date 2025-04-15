@@ -20,12 +20,24 @@
 
 */
 
-#include "CustomViewport.h"
-#include "NeuropixV1Interface.h"
-#include "NeuropixelsV2eInterface.h"
-#include "Bno055Interface.h"
-#include "PolledBno055Interface.h"
-#include "OutputClockInterface.h"
-#include "HarpSyncInputInterface.h"
-#include "AnalogIOInterface.h"
-#include "DigitalIOInterface.h"
+#pragma once
+
+#include "../NeuropixComponents.h"
+
+#include "../Devices/Neuropixels_1.h"
+#include "ProbeBrowser.h"
+
+class NeuropixelsV1fProbeBrowser : public ProbeBrowser<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>
+{
+public:
+	NeuropixelsV1fProbeBrowser(SettingsInterface* parent_, int probeIndex_) :
+		ProbeBrowser(parent_, probeIndex_)
+	{
+		setDrawingSettings();
+	}
+
+	ProbeSettings<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>* getSettings() override
+	{
+		return std::static_pointer_cast<Neuropixels_1>(parent->device)->settings[0].get();
+	}
+};

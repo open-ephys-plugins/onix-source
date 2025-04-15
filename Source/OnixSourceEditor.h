@@ -101,6 +101,8 @@ private:
 
     std::unique_ptr<UtilityButton> connectButton;
 
+    std::unique_ptr<Label> liboniVersionLabel;
+
     void setComboBoxSelection(ComboBox* comboBox, String headstage);
     void addHeadstageComboBoxOptions(ComboBox* comboBox);
 

@@ -23,7 +23,7 @@
 #include "PortController.h"
 
 PortController::PortController(PortName port_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(getPortName(port_), OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
+	OnixDevice(getPortName(port_), BREAKOUT_BOARD_NAME, OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
 	port(port_)
 {
 }
@@ -32,9 +32,7 @@ int PortController::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1);
-
-	return deviceContext->getLastResult();
+	return deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1);
 }
 
 void PortController::startAcquisition()
@@ -90,6 +88,10 @@ DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String heads
 	{
 		return DiscoveryParameters(5.0, 7.0, 1.0, 0.2);
 	}
+	else if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME)
+	{
+		return DiscoveryParameters(3.3f, 5.5f, 1.0f, 0.2f);
+	}
 
 	return DiscoveryParameters();
 }
@@ -135,7 +137,8 @@ void PortController::setVoltageOverride(double voltage, bool waitToSettle)
 {
 	if (voltage < 0.0 && voltage > 7.0) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
 
-	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
+	int rc = deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
+	if (rc != ONI_ESUCCESS) return;
 
 	lastVoltageSet = voltage;
 
@@ -146,11 +149,12 @@ void PortController::setVoltage(double voltage)
 {
 	if (voltage < 0.0 && voltage > 7.0) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
 
-	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, 0);
+	int rc = deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, 0);
 	sleep_for(std::chrono::milliseconds(300));
-	if (deviceContext->getLastResult() != ONI_ESUCCESS) return;
+	if (rc != ONI_ESUCCESS) return;
 
-	deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
+	rc = deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
+	if (rc != ONI_ESUCCESS) return;
 
 	lastVoltageSet = voltage;
 
@@ -159,10 +163,11 @@ void PortController::setVoltage(double voltage)
 
 bool PortController::checkLinkState() const
 {
-	oni_reg_val_t linkState = deviceContext->readRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::LINKSTATE);
+	oni_reg_val_t linkState;
+	int rc = deviceContext->readRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::LINKSTATE, &linkState);
 
-	if (deviceContext->getLastResult() != ONI_ESUCCESS) { return false; }
-	else if ((linkState & LINKSTATE_SL) == 0) { LOGE("Unable to acquire communication lock."); return false; }
+	if (rc != ONI_ESUCCESS) { return false; }
+	else if ((linkState & LINKSTATE_SL) == 0) { LOGD("Unable to acquire communication lock."); return false; }
 	else return true;
 }
 

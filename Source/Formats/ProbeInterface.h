@@ -27,7 +27,7 @@
 class ProbeInterfaceJson
 {
 public:
-	static bool writeProbeSettingsToJson(File& file, ProbeSettings* settings)
+	static bool writeProbeSettingsToJson(File& file, ProbeSettings<0, 0>* settings)
 	{
 		DynamicObject output;
 
@@ -49,22 +49,23 @@ public:
 
 		for (int elec = 0; elec < settings->electrodeMetadata.size(); elec++)
 		{
-			ElectrodeMetadata& em = settings->electrodeMetadata.getReference(elec);
-			int channelIndex = settings->selectedElectrode.indexOf(elec);
-			int channel = -1;
-			if (channelIndex > -1)
-				channel = settings->selectedChannel[channelIndex];
+			ElectrodeMetadata& em = settings->electrodeMetadata[elec];
+			int channelIndex = settings->selectedElectrode[elec];
+			// TODO: Fix this section
+			//int channel = -1;
+			//if (channelIndex > -1)
+			//	channel = settings->selectedChannel[channelIndex];
 
 			Array<var> contact_position;
 			contact_position.add(em.xpos + 250 * em.shank);
 			contact_position.add(em.ypos);
 
 			DynamicObject::Ptr contact_shape_param = new DynamicObject;
-			contact_shape_param->setProperty(Identifier("width"), settings->electrodeMetadata.getReference(elec).site_width);
+			contact_shape_param->setProperty(Identifier("width"), settings->electrodeMetadata[elec].site_width);
 
 			contact_positions.add(contact_position);
 			shank_ids.add(String(em.shank));
-			device_channel_indices.add(channel);
+			device_channel_indices.add(0);
 			contact_plane_axes.add(contact_plane_axis);
 			contact_shapes.add("square");
 			contact_shape_params.add(contact_shape_param.get());
@@ -105,7 +106,7 @@ public:
 		return true;
 	}
 
-	static bool readProbeSettingsFromJson(File& file, ProbeSettings* settings)
+	static bool readProbeSettingsFromJson(File& file, ProbeSettings<0,0>* settings)
 	{
 		var result;
 

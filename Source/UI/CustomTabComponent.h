@@ -20,12 +20,31 @@
 
 */
 
-#include "CustomViewport.h"
-#include "NeuropixV1Interface.h"
-#include "NeuropixelsV2eInterface.h"
-#include "Bno055Interface.h"
-#include "PolledBno055Interface.h"
-#include "OutputClockInterface.h"
-#include "HarpSyncInputInterface.h"
-#include "AnalogIOInterface.h"
-#include "DigitalIOInterface.h"
+#pragma once
+
+#include <VisualizerEditorHeaders.h>
+#include "CustomTabButton.h"
+
+/**
+	Adds a callback when tab is changed
+*/
+class CustomTabComponent : public TabbedComponent
+{
+public:
+	CustomTabComponent(bool isTopLevel_) :
+		TabbedComponent(TabbedButtonBar::TabsAtTop),
+		isTopLevel(isTopLevel_)
+	{
+		setTabBarDepth(26);
+		setOutline(0);
+		setIndent(0);
+	}
+
+	TabBarButton* createTabButton(const juce::String& name, int index) override
+	{
+		return new CustomTabButton(name, this, isTopLevel);
+	}
+
+private:
+	bool isTopLevel;
+};

@@ -25,6 +25,7 @@
 #include "ProcessorHeaders.h"
 
 #include "Onix1.h"
+#include "Devices/DS90UB9x.h"
 
 #include <cstddef>
 
@@ -34,11 +35,11 @@ public:
 
 	I2CRegisterContext(uint32_t address, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
-	void WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
+	int WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
 
-	void ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
+	int ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
 
-	int getLastResult() { return i2cContext->getLastResult(); }
+	int set933I2cRate(double);
 
 protected:
 	std::shared_ptr<Onix1> i2cContext;
@@ -47,7 +48,7 @@ private:
 
 	const oni_dev_idx_t deviceIndex;
 
-	const uint32_t i2caddress;
+	const uint32_t i2cAddress;
 
 	JUCE_LEAK_DETECTOR(I2CRegisterContext);
 };

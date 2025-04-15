@@ -23,12 +23,12 @@
 #include "HarpSyncInput.h"
 
 HarpSyncInput::HarpSyncInput(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, OnixDeviceType::HARPSYNCINPUT, deviceIdx_, oni_ctx)
+	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::HARPSYNCINPUT, deviceIdx_, oni_ctx)
 {
 	setEnabled(false);
 
 	StreamInfo harpTimeStream = StreamInfo(
-		name + "-HarpTime",
+		OnixDevice::createStreamName({ getHeadstageName(), getName(), "HarpTime" }),
 		"Harp clock time corresponding to the local acquisition ONIX clock count",
 		"onix-harpsyncinput.data.harptime",
 		1,
@@ -48,16 +48,12 @@ int HarpSyncInput::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)HarpSyncInputRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
-
-	return deviceContext->getLastResult();
+	return deviceContext->writeRegister(deviceIdx, (uint32_t)HarpSyncInputRegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
 }
 
 bool HarpSyncInput::updateSettings()
 {
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HarpSyncInputRegisters::SOURCE, (oni_reg_val_t)HarpSyncSource::Breakout);
-
-	return deviceContext->getLastResult() == ONI_ESUCCESS;
+	return deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HarpSyncInputRegisters::SOURCE, (oni_reg_val_t)HarpSyncSource::Breakout);
 }
 
 void HarpSyncInput::startAcquisition()

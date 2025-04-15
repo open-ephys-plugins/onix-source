@@ -23,7 +23,7 @@
 #include "Heartbeat.h"
 
 Heartbeat::Heartbeat(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, OnixDeviceType::HEARTBEAT, deviceIdx_, oni_ctx)
+	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::HEARTBEAT, deviceIdx_, oni_ctx)
 {
 }
 
@@ -33,17 +33,16 @@ int Heartbeat::configureDevice()
 
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)HeartbeatRegisters::ENABLE, 1);
-
-	return deviceContext->getLastResult();
+	return deviceContext->writeRegister(deviceIdx, (uint32_t)HeartbeatRegisters::ENABLE, 1);
 }
 
 bool Heartbeat::updateSettings()
 {
-	oni_reg_val_t clkHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_HZ);
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_DIV, clkHz / beatsPerSecond);
+	oni_reg_val_t clkHz;
+	int rc = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_HZ, &clkHz);
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_DIV, clkHz / beatsPerSecond);
 
-	if (deviceContext->getLastResult() == ONI_EREADONLY) return true; // NB: Ignore read-only errors
+	if (rc == ONI_EREADONLY) return true; // NB: Ignore read-only errors
 
-	return deviceContext->getLastResult() == ONI_ESUCCESS;
+	return rc == ONI_ESUCCESS;
 }

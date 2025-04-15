@@ -23,10 +23,10 @@
 #include "AnalogIO.h"
 
 AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, OnixDeviceType::ANALOGIO, deviceIdx_, oni_ctx)
+	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::ANALOGIO, deviceIdx_, oni_ctx)
 {
 	StreamInfo analogInputStream = StreamInfo(
-		name + "-AnalogInput",
+		OnixDevice::createStreamName({ getHeadstageName(), name, "AnalogInput" }),
 		"Analog Input data",
 		"onix-analogio.data.input",
 		12,
@@ -54,17 +54,17 @@ int AnalogIO::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)AnalogIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
-
-	return deviceContext->getLastResult();
+	return deviceContext->writeRegister(deviceIdx, (uint32_t)AnalogIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
 }
 
 bool AnalogIO::updateSettings()
 {
+	int rc = 0;
+
 	for (int i = 0; i < numChannels; i += 1)
 	{
-		deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE + i, (oni_reg_val_t)channelVoltageRange[i]); 
-		if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+		rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE + i, (oni_reg_val_t)channelVoltageRange[i]); 
+		if (rc != ONI_ESUCCESS) return false;
 	}
 
 	uint32_t ioReg = 0;
@@ -74,8 +74,8 @@ bool AnalogIO::updateSettings()
 		ioReg = (ioReg & ~((uint32_t)1 << i)) | ((uint32_t)(channelDirection[i]) << i);
 	}
 
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CHDIR, ioReg);
-	if (deviceContext->getLastResult() != ONI_ESUCCESS) return false;
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CHDIR, ioReg);
+	if (rc != ONI_ESUCCESS) return false;
 
 	for (int i = 0; i < numChannels; i += 1)
 	{

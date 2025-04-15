@@ -27,8 +27,6 @@
 static class DS90UB9x
 {
 public:
-    const int ID = 24;
-
     // managed registers
     static const uint32_t ENABLE = 0x8000;
     static const uint32_t READSZ = 0x8001;
@@ -89,6 +87,12 @@ public:
     enum class DS90UB9xDeserializerI2CRegister : uint32_t
     {
         PortMode = 0x6D,
+        PortSel = 0x4C,
+        I2CConfig = 0x58,
+        GpioCtrl0 = 0x6E,
+        GpioCtrl1 = 0x6F,
+
+        SerAlias = 0x5C,
 
         SlaveID1 = 0x5E,
         SlaveID2 = 0x5F,

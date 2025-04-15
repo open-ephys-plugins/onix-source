@@ -27,8 +27,8 @@
 #include "Onix1.h"
 #include "OnixDevice.h"
 #include "OnixSourceEditor.h"
-#include "Devices/DeviceList.h"
 #include "FrameReader.h"
+#include "Devices/PortController.h"
 
 /**
 
@@ -96,6 +96,8 @@ public:
 
 	OnixDeviceVector getDataSources();
 
+	OnixDeviceVector getEnabledDataSources();
+
 	OnixDeviceVector getDataSourcesFromPort(PortName port);
 
 	OnixDeviceVector getDataSourcesFromOffset(int offset);
@@ -107,6 +109,8 @@ public:
 	std::map<int, OnixDeviceType> createDeviceMap(bool filterDevices = false);
 
 	std::map<int, String> getHeadstageMap();
+
+	String getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
 
 	void updateSourceBuffers();
 
@@ -122,6 +126,7 @@ private:
 
 	/** Available data sources */
 	OnixDeviceVector sources;
+	OnixDeviceVector enabledSources;
 
 	/** Available headstages, indexed by their offset value */
 	std::map<int, String> headstages;

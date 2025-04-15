@@ -56,10 +56,10 @@ void MemoryMonitorUsage::stopAcquisition()
 }
 
 MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, OnixDeviceType::MEMORYMONITOR, deviceIdx_, oni_ctx)
+	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::MEMORYMONITOR, deviceIdx_, oni_ctx)
 {
 	StreamInfo percentUsedStream = StreamInfo(
-		name + "-PercentUsed",
+		OnixDevice::createStreamName({ getHeadstageName(), getName(), "PercentUsed" }),
 		"Percent of available memory that is currently used",
 		"onix - memorymonitor.data.percentused",
 		1,
@@ -68,7 +68,7 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::s
 		ContinuousChannel::Type::AUX,
 		1.0f,
 		"%",
-		{""});
+		{ "" });
 	streamInfos.add(percentUsedStream);
 
 	for (int i = 0; i < numFrames; i++)
@@ -81,21 +81,23 @@ int MemoryMonitor::configureDevice()
 
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
 
-	deviceContext->writeRegister(deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, 1);
-	if (deviceContext->getLastResult() != ONI_ESUCCESS) return deviceContext->getLastResult();
+	int rc = deviceContext->writeRegister(deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, 1);
+	if (rc != ONI_ESUCCESS) return rc;
 
-	totalMemory = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::TOTAL_MEM);
+	rc = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::TOTAL_MEM, &totalMemory);
 
-	return deviceContext->getLastResult();
+	return rc;
 }
 
 bool MemoryMonitor::updateSettings()
 {
-	oni_reg_val_t clkHz = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_HZ);
+	oni_reg_val_t clkHz;
+	int rc = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_HZ, &clkHz);
+	if (rc != ONI_ESUCCESS) return rc;
 
-	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_DIV, clkHz / samplesPerSecond);
+	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::CLK_DIV, clkHz / samplesPerSecond);
 
-	return deviceContext->getLastResult() == ONI_ESUCCESS;
+	return rc == ONI_ESUCCESS;
 }
 
 void MemoryMonitor::startAcquisition()

@@ -44,8 +44,9 @@ enum class PortName
 enum class OnixDeviceType {
 	HS64,
 	BNO,
+	POLLEDBNO,
 	NEUROPIXELS_1,
-	NEUROPIXELS_2,
+	NEUROPIXELSV2E,
 	ADC,
 	PORT_CONTROL,
 	MEMORYMONITOR,
@@ -135,7 +136,7 @@ class OnixDevice
 public:
 
 	/** Constructor */
-	OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+	OnixDevice(String name_, String headstageName, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 	/** Destructor */
 	~OnixDevice() { }
@@ -161,15 +162,35 @@ public:
 	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 	virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
 
-	const oni_dev_idx_t getDeviceIdx() const { return deviceIdx; }
+	oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
-	OnixDeviceType type;
+	/** Creates a stream name using the provided inputs, returning a String following the pattern: name[0]-name[1]-name[2]-etc., with all spaces removed */
+	static String createStreamName(std::vector<String> names)
+	{
+		String streamName;
+
+		for (int i = 0; i < names.size(); i++)
+		{
+			streamName += names[i].removeCharacters(" ");
+
+			if (i != names.size() - 1) streamName += "-";
+		}
+
+		return streamName;
+	}
+
+	const OnixDeviceType type;
 
 	Array<StreamInfo> streamInfos;
 
 	const int bufferSizeInSeconds = 10;
 
+	String getHeadstageName() { return m_headstageName; }
+	void setHeadstageName(String headstage) { m_headstageName = headstage; }
+
 protected:
+
+	oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t hubIndex);
 
 	const oni_dev_idx_t deviceIdx;
 	std::shared_ptr<Onix1> deviceContext;
@@ -179,6 +200,9 @@ private:
 	String name;
 
 	bool enabled = true;
+	bool isPassthrough = false;
+
+	String m_headstageName;
 
 	JUCE_LEAK_DETECTOR(OnixDevice);
 };

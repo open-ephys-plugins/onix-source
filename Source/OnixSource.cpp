@@ -59,8 +59,6 @@ OnixSource::OnixSource(SourceNode* sn) :
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 
-	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "connected", "Connect", "Connect to Onix hardware", false, true);
-
 	portA = std::make_shared<PortController>(PortName::PortA, context);
 	portB = std::make_shared<PortController>(PortName::PortB, context);
 
@@ -89,6 +87,9 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 
 	devicesFound = false;
 
+	if (context != nullptr && context->isInitialized())
+		context->setOption(ONIX_OPT_PASSTHROUGH, 0);
+
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 }
 
@@ -105,23 +106,29 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		disconnectDevices(false);
 	}
 
-	// TODO: How to set passthrough for Port A vs. Port B?
-	if (getParameter("passthroughA")->getValue() || getParameter("passthroughB")->getValue())
+	int val = 0;
+
+	if (getParameter("passthroughA")->getValue())
 	{
-		LOGD("Passthrough mode enabled");
-		int val = 1;
-		context->setOption(ONIX_OPT_PASSTHROUGH, val);
+		LOGD("Passthrough mode enabled for Port A");
+		val |= 1 << 0;
 	}
-	else
+
+	if (getParameter("passthroughB")->getValue())
 	{
-		int val = 0;
-		context->setOption(ONIX_OPT_PASSTHROUGH, val);
+		LOGD("Passthrough mode enabled for Port B");
+		val |= 1 << 2;
 	}
+
+	context->setOption(ONIX_OPT_PASSTHROUGH, val);
 
 	context->issueReset();
-	context->updateDeviceTable();
+	int rc = context->updateDeviceTable();
 
-	if (context->getLastResult() != ONI_ESUCCESS) return;
+	if (rc != ONI_ESUCCESS) return;
+
+	if (portA->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port A.");
+	if (portB->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port B.");
 
 	device_map_t deviceMap = context->getDeviceTable();
 
@@ -134,7 +141,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	devicesFound = true;
 
-	static const String probeLetters = "ABCDEFGHI";
 	const int bufferSizeInSeconds = 10;
 	int npxProbeIdx = 0;
 
@@ -142,7 +148,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (device.id == ONIX_NEUROPIX1R0)
 		{
-			auto np1 = std::make_shared<Neuropixels_1>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
+			auto np1 = std::make_shared<Neuropixels_1>("Probe" + String(npxProbeIdx++), index, context);
 
 			int res = np1->configureDevice();
 
@@ -170,12 +176,12 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			sources.emplace_back(np1);
 			headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV1F_HEADSTAGE_NAME });
-
-			npxProbeIdx++;
 		}
 		else if (device.id == ONIX_BNO055)
 		{
-			auto bno = std::make_shared<Bno055>("BNO055", index, context);
+			String headstage = headstages.find(PortController::getOffsetFromIndex(index))->second;
+
+			auto bno = std::make_shared<Bno055>("BNO055", headstage, index, context);
 
 			int result = bno->configureDevice();
 
@@ -198,11 +204,11 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(index, context);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
-			if (hsid == 8) //Npix2.0e headstage, constant needs to be added to onix.h
+			if (hsid == ONIX_HUB_HSNP2E)
 			{
-				auto np2 = std::make_shared<Neuropixels2e>("Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
+				auto np2 = std::make_shared<Neuropixels2e>("", index, context);
 				int res = np2->configureDevice();
-				if (res != 0)
+				if (res != ONI_ESUCCESS)
 				{
 					if (res == -1)
 					{
@@ -211,9 +217,27 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 					//TODO add other errors if needed
 					continue;
 				}
-				npxProbeIdx += np2->getNumProbes();
-
+				
 				sources.emplace_back(np2);
+
+				auto polledBno = std::make_shared<PolledBno055>("BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, index, context);
+
+				if (polledBno->configureDevice() != ONI_ESUCCESS)
+				{
+					if (res == -1)
+					{
+						LOGE("Context is not initialized properly for PolledBno055");
+					}
+					else if (res == -2)
+					{
+						LOGE("Error writing bytes for PolledBno055");
+					}
+					continue;
+				}
+
+				sources.emplace_back(polledBno);
+
+				headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
 		}
 		else if (device.id == ONIX_MEMUSAGE)
@@ -308,15 +332,13 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		}
 	}
 
-	if (portA->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port A.");
-	if (portB->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port B.");
-
 	context->issueReset();
 
-	oni_size_t frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE);
+	oni_size_t frameSize;
+	rc = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE, &frameSize);
 	printf("Max. read frame size: %u bytes\n", frameSize);
 
-	frameSize = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE);
+	rc = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE, &frameSize);
 	printf("Max. write frame size: %u bytes\n", frameSize);
 
 	context->setOption(ONI_OPT_BLOCKREADSIZE, block_read_size);
@@ -333,6 +355,19 @@ OnixDeviceVector OnixSource::getDataSources()
 	for (const auto& source : sources)
 	{
 		devices.emplace_back(source);
+	}
+
+	return devices;
+}
+
+OnixDeviceVector OnixSource::getEnabledDataSources()
+{
+	OnixDeviceVector devices{};
+
+	for (const auto& source : sources)
+	{
+		if (source->isEnabled())
+			devices.emplace_back(source);
 	}
 
 	return devices;
@@ -522,7 +557,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->type == OnixDeviceType::BNO)
+			else if (source->type == OnixDeviceType::BNO || source->type == OnixDeviceType::POLLEDBNO)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -535,7 +570,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				DataStream::Settings dataStreamSettings{
-					"Bno055",
+					OnixDevice::createStreamName({PortController::getPortName(PortController::getPortFromIndex(source->getDeviceIdx())), source->getHeadstageName(), source->getName()}),
 					"Continuous data from a Bno055 9-axis IMU",
 					"onix-bno055.data",
 					source->streamInfos[0].getSampleRate()
@@ -543,7 +578,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addCombinedStreams(dataStreamSettings, source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->type == OnixDeviceType::NEUROPIXELS_2)
+			else if (source->type == OnixDeviceType::NEUROPIXELSV2E)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -712,8 +747,8 @@ bool OnixSource::isReady()
 	}
 
 	uint32_t val = 2;
-	context->setOption(ONI_OPT_RESETACQCOUNTER, val);
-	if (context->getLastResult() != ONI_ESUCCESS) return false;
+	int rc = context->setOption(ONI_OPT_RESETACQCOUNTER, val);
+	if (rc != ONI_ESUCCESS) return false;
 
 	return true;
 }
@@ -722,24 +757,17 @@ bool OnixSource::startAcquisition()
 {
 	frameReader.reset();
 
-	OnixDeviceVector devices;
+	enabledSources = getEnabledDataSources();
 
-	for (const auto& source : sources)
-	{
-		if (!source->isEnabled()) continue;
+	enabledSources.emplace_back(portA);
+	enabledSources.emplace_back(portB);
 
-		devices.emplace_back(source);
-	}
-
-	devices.emplace_back(portA);
-	devices.emplace_back(portB);
-
-	for (const auto& source : devices)
+	for (const auto& source : enabledSources)
 	{
 		source->startAcquisition();
 	}
 
-	frameReader = std::make_unique<FrameReader>(devices, context);
+	frameReader = std::make_unique<FrameReader>(enabledSources, context);
 	frameReader->startThread();
 
 	startThread();
@@ -758,21 +786,18 @@ bool OnixSource::stopAcquisition()
 	if (!portA->getErrorFlag() && !portB->getErrorFlag())
 		waitForThreadToExit(2000);
 
-	if (devicesFound)
-	{
-		oni_size_t reg = 0;
-		context->setOption(ONI_OPT_RUNNING, reg);
-	}
+	auto polledBno055 = getDevice(OnixDeviceType::POLLEDBNO);
 
-	for (const auto& source : sources)
-	{
-		if (!source->isEnabled()) continue;
+	if (polledBno055 != nullptr && polledBno055->isEnabled())
+		polledBno055->stopAcquisition(); // NB: Polled BNO must be stopped before other devices to ensure there are no stream clashes
 
+	for (const auto& source : enabledSources)
+	{
 		source->stopAcquisition();
 	}
 
-	portA->stopAcquisition();
-	portB->stopAcquisition();
+	oni_size_t reg = 0;
+	context->setOption(ONI_OPT_RUNNING, reg);
 
 	for (auto buffers : sourceBuffers)
 		buffers->clear();
@@ -803,11 +828,11 @@ bool OnixSource::stopAcquisition()
 
 bool OnixSource::updateBuffer()
 {
-	for (const auto& source : sources)
+	for (const auto& source : enabledSources)
 	{
-		if (!source->isEnabled()) continue;
-
 		source->processFrames();
+
+		if (threadShouldExit()) return true;
 	}
 
 	portA->processFrames();

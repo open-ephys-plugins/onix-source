@@ -46,8 +46,11 @@ public:
         addAndMakeVisible(viewport.get());
     }
 
-    ~CustomViewport()
+    static CustomViewport* createCustomViewport(SettingsInterface* settingsInterface)
     {
+        Rectangle bounds = settingsInterface->getBounds();
+
+        return new CustomViewport(settingsInterface, bounds.getWidth(), bounds.getHeight());
     }
 
     void resized() override
