@@ -35,9 +35,9 @@ class PolledBno055Interface : public SettingsInterface,
 public:
 	PolledBno055Interface(std::shared_ptr<PolledBno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void saveParameters(XmlElement* xml) override {};
+	void saveParameters(XmlElement* xml) override;
 
-	void loadParameters(XmlElement* xml) override {};
+	void loadParameters(XmlElement* xml) override;
 
 	void updateInfoString() override {};
 

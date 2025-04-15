@@ -88,12 +88,10 @@ void Bno055Interface::saveParameters(XmlElement* xml)
 
 	XmlElement* xmlNode = xml->createNewChildElement("BNO055");
 
-	auto bno055 = std::static_pointer_cast<Bno055>(device);
+	xmlNode->setAttribute("name", device->getName());
+	xmlNode->setAttribute("idx", (int)device->getDeviceIdx());
 
-	xmlNode->setAttribute("name", bno055->getName());
-	xmlNode->setAttribute("idx", (int)bno055->getDeviceIdx());
-
-	xmlNode->setAttribute("isEnabled", bno055->isEnabled());
+	xmlNode->setAttribute("isEnabled", device->isEnabled());
 }
 
 void Bno055Interface::loadParameters(XmlElement* xml)
@@ -102,16 +100,14 @@ void Bno055Interface::loadParameters(XmlElement* xml)
 
 	LOGD("Loading Bno055 settings.");
 
-	auto bno055 = std::static_pointer_cast<Bno055>(device);
-
 	XmlElement* xmlNode = nullptr;
 
 	for (auto* node : xml->getChildIterator())
 	{
 		if (node->hasTagName("BNO055"))
 		{
-			if (node->getStringAttribute("name") == bno055->getName() &&
-				node->getIntAttribute("idx") == bno055->getDeviceIdx())
+			if (node->getStringAttribute("name") == device->getName() &&
+				node->getIntAttribute("idx") == device->getDeviceIdx())
 			{
 				xmlNode = node;
 				break;
