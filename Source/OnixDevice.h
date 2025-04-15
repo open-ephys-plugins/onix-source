@@ -136,7 +136,7 @@ class OnixDevice
 public:
 
 	/** Constructor */
-	OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+	OnixDevice(String name_, String headstageName, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 	/** Destructor */
 	~OnixDevice() { }
@@ -164,13 +164,19 @@ public:
 
 	oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
-	/** Creates a stream name using the provided inputs, returning a String following the pattern: hub/device/data */
-	static String createStreamName(String hub, String device, String data)
+	/** Creates a stream name using the provided inputs, returning a String following the pattern: name[0]-name[1]-name[2]-etc., with all spaces removed */
+	static String createStreamName(std::vector<String> names)
 	{
-		if (data.isEmpty())
-			return hub + "/" + device;
-		else
-			return hub + "/" + device + "/" + data;
+		String streamName;
+
+		for (int i = 0; i < names.size(); i++)
+		{
+			streamName += names[i].removeCharacters(" ");
+
+			if (i != names.size() - 1) streamName += "-";
+		}
+
+		return streamName;
 	}
 
 	const OnixDeviceType type;
@@ -178,6 +184,9 @@ public:
 	Array<StreamInfo> streamInfos;
 
 	const int bufferSizeInSeconds = 10;
+
+	String getHeadstageName() { return m_headstageName; }
+	void setHeadstageName(String headstage) { m_headstageName = headstage; }
 
 protected:
 
@@ -192,6 +201,8 @@ private:
 
 	bool enabled = true;
 	bool isPassthrough = false;
+
+	String m_headstageName;
 
 	JUCE_LEAK_DETECTOR(OnixDevice);
 };

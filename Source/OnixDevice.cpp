@@ -22,11 +22,12 @@
 
 #include "OnixDevice.h"
 
-OnixDevice::OnixDevice(String name_, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
+OnixDevice::OnixDevice(String name_, String headstageName, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
 	: type(type_), deviceIdx(deviceIdx_)
 {
 	deviceContext = ctx;
 	name = name_;
+	m_headstageName = headstageName;
 
 	if (type == OnixDeviceType::NEUROPIXELSV2E || type == OnixDeviceType::POLLEDBNO)
 		isPassthrough = true;

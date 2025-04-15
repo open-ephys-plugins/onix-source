@@ -23,10 +23,10 @@
 #include "AnalogIO.h"
 
 AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, OnixDeviceType::ANALOGIO, deviceIdx_, oni_ctx)
+	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::ANALOGIO, deviceIdx_, oni_ctx)
 {
 	StreamInfo analogInputStream = StreamInfo(
-		OnixDevice::createStreamName(BREAKOUT_BOARD_NAME, name, "AnalogInput"),
+		OnixDevice::createStreamName({ getHeadstageName(), name, "AnalogInput" }),
 		"Analog Input data",
 		"onix-analogio.data.input",
 		12,

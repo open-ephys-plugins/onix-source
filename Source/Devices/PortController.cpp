@@ -23,7 +23,7 @@
 #include "PortController.h"
 
 PortController::PortController(PortName port_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(getPortName(port_), OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
+	OnixDevice(getPortName(port_), BREAKOUT_BOARD_NAME, OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
 	port(port_)
 {
 }

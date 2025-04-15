@@ -56,10 +56,10 @@ void MemoryMonitorUsage::stopAcquisition()
 }
 
 MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, OnixDeviceType::MEMORYMONITOR, deviceIdx_, oni_ctx)
+	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::MEMORYMONITOR, deviceIdx_, oni_ctx)
 {
 	StreamInfo percentUsedStream = StreamInfo(
-		OnixDevice::createStreamName(BREAKOUT_BOARD_NAME, getName(), "PercentUsed"),
+		OnixDevice::createStreamName({ getHeadstageName(), getName(), "PercentUsed" }),
 		"Percent of available memory that is currently used",
 		"onix - memorymonitor.data.percentused",
 		1,
@@ -68,7 +68,7 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::s
 		ContinuousChannel::Type::AUX,
 		1.0f,
 		"%",
-		{""});
+		{ "" });
 	streamInfos.add(percentUsedStream);
 
 	for (int i = 0; i < numFrames; i++)

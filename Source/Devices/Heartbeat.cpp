@@ -23,7 +23,7 @@
 #include "Heartbeat.h"
 
 Heartbeat::Heartbeat(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, OnixDeviceType::HEARTBEAT, deviceIdx_, oni_ctx)
+	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::HEARTBEAT, deviceIdx_, oni_ctx)
 {
 }
 

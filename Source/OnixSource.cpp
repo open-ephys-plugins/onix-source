@@ -141,7 +141,6 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	devicesFound = true;
 
-	static const String probeLetters = "ABCDEFGHI";
 	const int bufferSizeInSeconds = 10;
 	int npxProbeIdx = 0;
 
@@ -149,7 +148,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (device.id == ONIX_NEUROPIX1R0)
 		{
-			auto np1 = std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe-" + String::charToString(probeLetters[npxProbeIdx]), index, context);
+			auto np1 = std::make_shared<Neuropixels_1>("Probe" + String(npxProbeIdx++), index, context);
 
 			int res = np1->configureDevice();
 
@@ -177,12 +176,12 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			sources.emplace_back(np1);
 			headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV1F_HEADSTAGE_NAME });
-
-			npxProbeIdx++;
 		}
 		else if (device.id == ONIX_BNO055)
 		{
-			auto bno = std::make_shared<Bno055>("BNO055", index, context);
+			String headstage = headstages.find(PortController::getOffsetFromIndex(index))->second;
+
+			auto bno = std::make_shared<Bno055>("BNO055", headstage, index, context);
 
 			int result = bno->configureDevice();
 
@@ -207,7 +206,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			LOGD("Detected headstage ", hsid);
 			if (hsid == ONIX_HUB_HSNP2E)
 			{
-				auto np2 = std::make_shared<Neuropixels2e>("Neuropixels 2.0", index, context);
+				auto np2 = std::make_shared<Neuropixels2e>("", index, context);
 				int res = np2->configureDevice();
 				if (res != ONI_ESUCCESS)
 				{
@@ -221,7 +220,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				
 				sources.emplace_back(np2);
 
-				auto polledBno = std::make_shared<PolledBno055>("BNO055", index, context);
+				auto polledBno = std::make_shared<PolledBno055>("BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, index, context);
 
 				if (polledBno->configureDevice() != ONI_ESUCCESS)
 				{
@@ -571,7 +570,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				DataStream::Settings dataStreamSettings{
-					OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(source->getDeviceIdx())), source->getName(), ""),
+					OnixDevice::createStreamName({PortController::getPortName(PortController::getPortFromIndex(source->getDeviceIdx())), source->getHeadstageName(), source->getName()}),
 					"Continuous data from a Bno055 9-axis IMU",
 					"onix-bno055.data",
 					source->streamInfos[0].getSampleRate()

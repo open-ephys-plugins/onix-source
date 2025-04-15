@@ -23,7 +23,7 @@
 #include "DigitalIO.h"
 
 DigitalIO::DigitalIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, OnixDeviceType::DIGITALIO, deviceIdx_, oni_ctx)
+	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::DIGITALIO, deviceIdx_, oni_ctx)
 {
 }
 
@@ -57,7 +57,7 @@ EventChannel::Settings DigitalIO::getEventChannelSettings()
 	// NB: The stream must be assigned before adding the channel
 	EventChannel::Settings settings{
 		EventChannel::Type::TTL,
-		OnixDevice::createStreamName(BREAKOUT_BOARD_NAME, getName(), "Events"),
+		OnixDevice::createStreamName({getHeadstageName(), getName(), "Events"}),
 		"Digital inputs and breakout button states coming from a DigitalIO device",
 		"onix-digitalio.events",
 		nullptr,

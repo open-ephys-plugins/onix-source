@@ -23,7 +23,7 @@
 #include "Neuropixels2e.h"
 
 Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(name, OnixDeviceType::NEUROPIXELSV2E, deviceIdx_, ctx_),
+	OnixDevice(name, NEUROPIXELSV2E_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELSV2E, deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	INeuropixel(NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
 {
@@ -41,10 +41,8 @@ Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, std::s
 
 void Neuropixels2e::createDataStream(int n)
 {
-	const char* capitalA = "A";
-
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "Probe-" + String(capitalA + n)),
+		OnixDevice::createStreamName({ PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getHeadstageName(), "Probe" + String(n) }),
 		"Neuropixels 2.0 data stream",
 		"onix-neuropixels2.data",
 		numberOfChannels,

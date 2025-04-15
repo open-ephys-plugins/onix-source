@@ -169,12 +169,13 @@ void BackgroundUpdaterWithProgressWindow::run()
 }
 
 Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(name, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
+	OnixDevice(name, NEUROPIXELSV1F_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	INeuropixel(NeuropixelsV1fValues::numberOfSettings, NeuropixelsV1fValues::numberOfShanks)
 {
+	String port = PortController::getPortName(PortController::getPortFromIndex(deviceIdx));
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "AP"),
+		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "AP" }),
 		"Neuropixels 1.0 AP band data stream",
 		"onix-neuropixels1.data.ap",
 		numberOfChannels,
@@ -187,7 +188,7 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 	streamInfos.add(apStream);
 
 	StreamInfo lfpStream = StreamInfo(
-		OnixDevice::createStreamName(PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getName(), "LFP"),
+		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "LFP" }),
 		"Neuropixels 1.0 LFP band data stream",
 		"onix-neuropixels1.data.lfp",
 		numberOfChannels,

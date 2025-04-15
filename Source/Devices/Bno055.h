@@ -38,7 +38,7 @@ class Bno055 : public OnixDevice
 public:
 
 	/** Constructor */
-	Bno055(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
+	Bno055(String name, String headstageName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
 
 	int configureDevice() override;
 

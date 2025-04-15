@@ -24,7 +24,7 @@
 #include "OnixSource.h"
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_)
-	: VisualizerEditor(parentNode, "Onix Source", 220), source(source_)
+	: VisualizerEditor(parentNode, "Onix Source", 240), source(source_)
 {
 	canvas = nullptr;
 
@@ -44,7 +44,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		addAndMakeVisible(portLabelA.get());
 
 		headstageComboBoxA = std::make_unique<ComboBox>("headstageComboBoxA");
-		headstageComboBoxA->setBounds(portLabelA->getRight() + 2, portLabelA->getY(), 120, portLabelA->getHeight());
+		headstageComboBoxA->setBounds(portLabelA->getRight() + 2, portLabelA->getY(), 140, portLabelA->getHeight());
 		headstageComboBoxA->addListener(this);
 		headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
 		addHeadstageComboBoxOptions(headstageComboBoxA.get());
@@ -120,7 +120,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 		liboniVersionLabel = std::make_unique<Label>("liboniVersion", "liboni: v" + source->getLiboniVersion());
 		liboniVersionLabel->setFont(fontOptionSmall);
-		liboniVersionLabel->setBounds(desiredWidth - 85, 110, 90, 22);
+		liboniVersionLabel->setBounds(desiredWidth - 100, 110, 95, 22);
 		liboniVersionLabel->setEnabled(false);
 		liboniVersionLabel->setTooltip("Displays the version of liboni running.");
 		addAndMakeVisible(liboniVersionLabel.get());

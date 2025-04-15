@@ -56,9 +56,9 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.emplace_back(std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe-A", offset, nullptr));
-		devices.emplace_back(std::make_shared<Neuropixels_1>("Neuropixels 1.0 Probe-B", offset + 1, nullptr));
-		devices.emplace_back(std::make_shared<Bno055>("BNO055", offset + 2, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe0", offset, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe1", offset + 1, nullptr));
+		devices.emplace_back(std::make_shared<Bno055>("BNO055", hubName, offset + 2, nullptr));
 	}
 	else if (hubName == BREAKOUT_BOARD_NAME)
 	{
@@ -75,8 +75,8 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.emplace_back(std::make_shared<Neuropixels2e>("Neuropixels 2.0", passthroughIndex, nullptr));
-		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", passthroughIndex, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels2e>("", passthroughIndex, nullptr));
+		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", hubName, passthroughIndex, nullptr));
 	}
 
 	if (tab != nullptr && devices.size() > 0)
@@ -94,42 +94,42 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 		if (device->type == OnixDeviceType::NEUROPIXELS_1)
 		{
 			auto neuropixInterface = std::make_shared<NeuropixV1Interface>(std::static_pointer_cast<Neuropixels_1>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, neuropixInterface);
+			addInterfaceToTab(device->getName(), tab, neuropixInterface);
 		}
 		else if (device->type == OnixDeviceType::BNO)
 		{
 			auto bno055Interface = std::make_shared<Bno055Interface>(std::static_pointer_cast<Bno055>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, bno055Interface);
+			addInterfaceToTab(device->getName(), tab, bno055Interface);
 		}
 		else if (device->type == OnixDeviceType::OUTPUTCLOCK)
 		{
 			auto outputClockInterface = std::make_shared<OutputClockInterface>(std::static_pointer_cast<OutputClock>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, outputClockInterface);
+			addInterfaceToTab(device->getName(), tab, outputClockInterface);
 		}
 		else if (device->type == OnixDeviceType::HARPSYNCINPUT)
 		{
 			auto harpSyncInputInterface = std::make_shared<HarpSyncInputInterface>(std::static_pointer_cast<HarpSyncInput>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, harpSyncInputInterface);
+			addInterfaceToTab(device->getName(), tab, harpSyncInputInterface);
 		}
 		else if (device->type == OnixDeviceType::ANALOGIO)
 		{
 			auto analogIOInterface = std::make_shared<AnalogIOInterface>(std::static_pointer_cast<AnalogIO>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, analogIOInterface);
+			addInterfaceToTab(device->getName(), tab, analogIOInterface);
 		}
 		else if (device->type == OnixDeviceType::DIGITALIO)
 		{
 			auto digitalIOInterface = std::make_shared<DigitalIOInterface>(std::static_pointer_cast<DigitalIO>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, digitalIOInterface);
+			addInterfaceToTab(device->getName(), tab, digitalIOInterface);
 		}
 		else if (device->type == OnixDeviceType::NEUROPIXELSV2E)
 		{
 			auto npxv2eInterface = std::make_shared<NeuropixelsV2eInterface>(std::static_pointer_cast<Neuropixels2e>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, npxv2eInterface);
+			addInterfaceToTab(device->getHeadstageName(), tab, npxv2eInterface);
 		}
 		else if (device->type == OnixDeviceType::POLLEDBNO)
 		{
 			auto polledBnoInterface = std::make_shared<PolledBno055Interface>(std::static_pointer_cast<PolledBno055>(device), editor, this);
-			addInterfaceToTab(getDeviceTabName(device), tab, polledBnoInterface);
+			addInterfaceToTab(device->getName(), tab, polledBnoInterface);
 		}
 	}
 }
@@ -221,11 +221,6 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 String OnixSourceCanvas::getTopLevelTabName(PortName port, String headstage)
 {
 	return PortController::getPortName(port) + ": " + headstage;
-}
-
-String OnixSourceCanvas::getDeviceTabName(std::shared_ptr<OnixDevice> device)
-{
-	return device->getName();
 }
 
 Array<CustomTabComponent*> OnixSourceCanvas::getHeadstageTabs()

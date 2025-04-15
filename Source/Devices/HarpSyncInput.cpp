@@ -23,12 +23,12 @@
 #include "HarpSyncInput.h"
 
 HarpSyncInput::HarpSyncInput(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, OnixDeviceType::HARPSYNCINPUT, deviceIdx_, oni_ctx)
+	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::HARPSYNCINPUT, deviceIdx_, oni_ctx)
 {
 	setEnabled(false);
 
 	StreamInfo harpTimeStream = StreamInfo(
-		OnixDevice::createStreamName(BREAKOUT_BOARD_NAME, getName(), "HarpTime"),
+		OnixDevice::createStreamName({ getHeadstageName(), getName(), "HarpTime" }),
 		"Harp clock time corresponding to the local acquisition ONIX clock count",
 		"onix-harpsyncinput.data.harptime",
 		1,

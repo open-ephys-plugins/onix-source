@@ -116,8 +116,6 @@ private:
 
 	String getTopLevelTabName(PortName port, String headstage);
 
-	String getDeviceTabName(std::shared_ptr<OnixDevice> device);
-
 	/**
 		Create an alert window that asks whether to keep the selected headstage on the given port,
 		or to remove it since the hardware was not found

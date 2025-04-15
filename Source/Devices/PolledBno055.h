@@ -36,7 +36,7 @@ class PolledBno055 : public OnixDevice,
 public:
 
 	/** Constructor */
-	PolledBno055(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
+	PolledBno055(String name, String headstageName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
 
 	~PolledBno055()
 	{
