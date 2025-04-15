@@ -319,6 +319,43 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 	}
 
 	source->getParameter(passthroughName)->setNextValue(passthroughValue);
+
+	String voltage = isPortA ? portVoltageValueA->getText() : portVoltageValueB->getText();
+
+	if (voltage != "Auto")
+	{
+		if (!currentHeadstageSelected)
+		{
+			if (isPortA)
+				portVoltageValueA->setText("", sendNotification);
+			else
+				portVoltageValueB->setText("", sendNotification);
+		}
+		else
+		{
+			int result = AlertWindow::show(MessageBoxOptions()
+				.withIconType(MessageBoxIconType::InfoIcon)
+				.withTitle("Voltage Override")
+				.withMessage(String("There is currently a voltage override selected for this port. Would you like to keep this voltage [Keep Voltage] ") +
+					"or allow the automated voltage discovery algorithm [Automated Discovery] to determine the best voltage for the new headstage selected?")
+				.withButton("Keep Voltage")
+				.withButton("Automated Discovery"));
+
+			switch (result)
+			{
+			case 1: // Keep Voltage
+				break;
+			case 0: // Automated Discovery
+				if (isPortA)
+					portVoltageValueA->setText("", sendNotification);
+				else
+					portVoltageValueB->setText("", sendNotification);
+				break;
+			default:
+				break;
+			}
+		}
+	}
 }
 
 void OnixSourceEditor::updateSettings()
