@@ -97,7 +97,7 @@ void HarpSyncInput::processFrames()
 
 		uint32_t* dataPtr = (uint32_t*)frame->data;
 
-		timestamps[currentFrame] = frame->time;
+		timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
 
 		harpTimeSamples[currentFrame] = *(dataPtr + 2) + 1;
 

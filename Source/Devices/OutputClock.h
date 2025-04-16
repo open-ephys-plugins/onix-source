@@ -62,17 +62,17 @@ public:
 
 	void processFrames() override {};
 
-	float getFrequencyHz() const { return frequencyHz; }
+	double getFrequencyHz() const { return frequencyHz; }
 
-	void setFrequencyHz(float frequency) { frequencyHz = frequency; }
+	void setFrequencyHz(double frequency) { frequencyHz = frequency; }
 
-	uint32_t getDutyCycle() const { return dutyCycle; }
+	int32_t getDutyCycle() const { return dutyCycle; }
 
-	void setDutyCycle(uint32_t dutyCycle_) { dutyCycle = dutyCycle_; }
+	void setDutyCycle(int32_t dutyCycle_) { dutyCycle = dutyCycle_; }
 
-	uint32_t getDelay() const { return delay; }
+	int32_t getDelay() const { return delay; }
 
-	void setDelay(uint32_t delay_) { delay = delay_; }
+	void setDelay(int32_t delay_) { delay = delay_; }
 
 	bool getGateRun() const { return gateRun; }
 
@@ -85,8 +85,8 @@ public:
 private:
 
 	double frequencyHz = 1e6;
-	uint32_t dutyCycle = 50;
-	uint32_t delay = 0;
+	int32_t dutyCycle = 50;
+	int32_t delay = 0;
 
 	bool gateRun = true;
 

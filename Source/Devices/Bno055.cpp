@@ -151,7 +151,7 @@ void Bno055::processFrames()
 
 		int16_t* dataPtr = (int16_t*)frame->data;
 
-		bnoTimestamps[currentFrame] = frame->time;
+		bnoTimestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
 
 		int dataOffset = 4;
 

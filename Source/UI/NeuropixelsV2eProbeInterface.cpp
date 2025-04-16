@@ -183,40 +183,7 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 
 			currentHeight += 55;
 		}
-
-		currentHeight += 55;
-
-		activityViewButton = std::make_unique<UtilityButton>("VIEW");
-		activityViewButton->setFont(fontRegularButton);
-		activityViewButton->setRadius(3.0f);
-
-		activityViewButton->addListener(this);
-		activityViewButton->setTooltip("View peak-to-peak amplitudes for each channel");
-		addAndMakeVisible(activityViewButton.get());
-
-		activityViewComboBox = std::make_unique<ComboBox>("ActivityView Combo Box");
-
-		if (settings->availableLfpGains.size() > 0)
-		{
-			activityViewComboBox->setBounds(450, currentHeight, 65, 22);
-			activityViewComboBox->addListener(this);
-			activityViewComboBox->addItem("AP", 1);
-			activityViewComboBox->addItem("LFP", 2);
-			activityViewComboBox->setSelectedId(1, dontSendNotification);
-			addAndMakeVisible(activityViewComboBox.get());
-			activityViewButton->setBounds(530, currentHeight + 2, 45, 18);
-		}
-		else
-		{
-			activityViewButton->setBounds(450, currentHeight + 2, 45, 18);
-		}
-
-		activityViewLabel = std::make_unique<Label>("PROBE SIGNAL", "PROBE SIGNAL");
-		activityViewLabel->setFont(fontRegularLabel);
-		activityViewLabel->setBounds(446, currentHeight - 20, 180, 20);
-		addAndMakeVisible(activityViewLabel.get());
-
-		/// Draw Legends
+#pragma region Draw Legends
 
 		// ENABLE View
 		Colour colour = Colour(55, 55, 55);
@@ -336,10 +303,8 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		}
 
 		addAndMakeVisible(activityViewComponent.get());
-	}
-	else
-	{
-		type = SettingsInterface::Type::UNKNOWN_SETTINGS_INTERFACE;
+
+#pragma endregion
 	}
 
 	drawLegend();
@@ -370,64 +335,22 @@ void NeuropixelsV2eProbeInterface::updateInfoString()
 
 void NeuropixelsV2eProbeInterface::comboBoxChanged(ComboBox* comboBox)
 {
-	if (!editor->acquisitionIsActive)
+	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+
+	if (comboBox == electrodeConfigurationComboBox.get())
 	{
-		auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+		String preset = electrodeConfigurationComboBox->getText();
 
-		if (comboBox == electrodeConfigurationComboBox.get())
-		{
-			String preset = electrodeConfigurationComboBox->getText();
+		auto selection = npx->selectElectrodeConfiguration(preset);
 
-			auto selection = npx->selectElectrodeConfiguration(preset);
-
-			selectElectrodes(selection);
-		}
-		else if (comboBox == referenceComboBox.get())
-		{
-			npx->settings[probeIndex]->referenceIndex = referenceComboBox->getSelectedItemIndex();
-		}
-		else if (comboBox == activityViewComboBox.get())
-		{
-			if (comboBox->getSelectedId() == 1)
-			{
-				probeBrowser->activityToView = ActivityToView::APVIEW;
-				ColourScheme::setColourScheme(ColourSchemeId::PLASMA);
-				probeBrowser->maxPeakToPeakAmplitude = 250.0f;
-			}
-			else
-			{
-				probeBrowser->activityToView = ActivityToView::LFPVIEW;
-				ColourScheme::setColourScheme(ColourSchemeId::VIRIDIS);
-				probeBrowser->maxPeakToPeakAmplitude = 500.0f;
-			}
-		}
-
-		repaint();
+		selectElectrodes(selection);
 	}
-	else
+	else if (comboBox == referenceComboBox.get())
 	{
-		if (comboBox == activityViewComboBox.get())
-		{
-			if (comboBox->getSelectedId() == 1)
-			{
-				probeBrowser->activityToView = ActivityToView::APVIEW;
-				ColourScheme::setColourScheme(ColourSchemeId::PLASMA);
-				probeBrowser->maxPeakToPeakAmplitude = 250.0f;
-			}
-			else
-			{
-				probeBrowser->activityToView = ActivityToView::LFPVIEW;
-				ColourScheme::setColourScheme(ColourSchemeId::VIRIDIS);
-				probeBrowser->maxPeakToPeakAmplitude = 500.0f;
-			}
-
-			repaint();
-		}
-		else
-		{
-			CoreServices::sendStatusMessage("Cannot update parameters while acquisition is active"); // no parameter change while acquisition is active
-		}
+		npx->settings[probeIndex]->referenceIndex = referenceComboBox->getSelectedItemIndex();
 	}
+
+	repaint();
 }
 
 void NeuropixelsV2eProbeInterface::checkForExistingChannelPreset()
@@ -445,7 +368,7 @@ void NeuropixelsV2eProbeInterface::checkForExistingChannelPreset()
 
 		for (int j = 0; j < selection.size(); j++)
 		{
-			channelMap[settings->electrodeMetadata[j].channel] = selection[j];
+			channelMap[settings->electrodeMetadata[selection[j]].channel] = selection[j];
 		}
 
 		if (std::equal(channelMap.cbegin(), channelMap.cend(), settings->selectedElectrode.cbegin(), settings->selectedElectrode.cend()))
@@ -473,16 +396,6 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 	{
 		mode = VisualizationMode::REFERENCE_VIEW;
 		probeBrowser->stopTimer();
-		drawLegend();
-		repaint();
-	}
-	else if (button == activityViewButton.get())
-	{
-		mode = VisualizationMode::ACTIVITY_VIEW;
-
-		if (acquisitionIsActive)
-			probeBrowser->startTimer(100);
-
 		drawLegend();
 		repaint();
 	}
@@ -586,6 +499,12 @@ void NeuropixelsV2eProbeInterface::setInterfaceEnabledState(bool enabledState)
 
 	if (loadJsonButton != nullptr)
 		loadJsonButton->setEnabled(enabledState);
+
+	if (saveJsonButton != nullptr)
+		saveJsonButton->setEnabled(enabledState);
+
+	if (gainCorrectionFileButton != nullptr)
+		gainCorrectionFileButton->setEnabled(enabledState);
 }
 
 void NeuropixelsV2eProbeInterface::startAcquisition()
@@ -625,6 +544,18 @@ void NeuropixelsV2eProbeInterface::drawLegend()
 	default:
 		break;
 	}
+}
+
+void NeuropixelsV2eProbeInterface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+
+	applyProbeSettings(npx->settings[probeIndex].get());
+	checkForExistingChannelPreset();
+
+	gainCorrectionFile->setText(npx->getGainCorrectionFile(probeIndex) == "None" ? "" : npx->getGainCorrectionFile(probeIndex), dontSendNotification);
 }
 
 bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe)
@@ -669,83 +600,137 @@ bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2
 	return true;
 }
 
+int NeuropixelsV2eProbeInterface::getIndexOfComboBoxItem(ComboBox* cb, String item)
+{
+	for (int i = 0; i < cb->getNumItems(); i++)
+	{
+		if (item == cb->getItemText(i))
+			return i;
+	}
+
+	return -1;
+}
+
 void NeuropixelsV2eProbeInterface::saveParameters(XmlElement* xml)
 {
-	/*if (device != nullptr)
+	if (device == nullptr) return;
+
+	LOGD("Saving Neuropixels 2.0e settings.");
+
+	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+	auto settings = npx->settings[probeIndex].get();
+
+	XmlElement* xmlNode = xml->createNewChildElement("PROBE" + String(probeIndex));
+
+	xmlNode->setAttribute("probeSerialNumber", String(npx->getProbeSerialNumber(probeIndex)));
+
+	xmlNode->setAttribute("gainCorrectionFile", npx->getGainCorrectionFile(probeIndex));
+
+	XmlElement* probeViewerNode = xmlNode->createNewChildElement("PROBE_VIEWER");
+
+	probeViewerNode->setAttribute("zoomHeight", probeBrowser->getZoomHeight());
+	probeViewerNode->setAttribute("zoomOffset", probeBrowser->getZoomOffset());
+
+	probeViewerNode->setAttribute("referenceChannel", referenceComboBox->getText());
+
+	XmlElement* channelsNode = xmlNode->createNewChildElement("SELECTED_CHANNELS");
+
+	for (int i = 0; i < settings->selectedElectrode.size(); i++)
 	{
-		auto npx = std::static_pointer_cast<Neuropixels2e>(device);
-		auto settings = npx->settings[probeIndex].get();
+		int globalIndex = settings->selectedElectrode[i];
 
-		LOGD("Saving Neuropix display.");
-
-		XmlElement* xmlNode = xml->createNewChildElement("NP_PROBE");
-
-		xmlNode->setAttribute("probe_serial_number", String(npx->getProbeSerialNumber(probeIndex)));
-		xmlNode->setAttribute("probe_name", npx->getName());
-		xmlNode->setAttribute("num_adcs", settings->probeMetadata.num_adcs);
-
-		xmlNode->setAttribute("ZoomHeight", probeBrowser->getZoomHeight());
-		xmlNode->setAttribute("ZoomOffset", probeBrowser->getZoomOffset());
-
-		if (electrodeConfigurationComboBox != nullptr)
-		{
-			if (electrodeConfigurationComboBox->getSelectedId() > 1)
-			{
-				xmlNode->setAttribute("electrodeConfigurationPreset", electrodeConfigurationComboBox->getText());
-			}
-			else
-			{
-				xmlNode->setAttribute("electrodeConfigurationPreset", "NONE");
-			}
-		}
-
-		if (referenceComboBox != nullptr)
-		{
-			if (referenceComboBox->getSelectedId() > 0)
-			{
-				xmlNode->setAttribute("referenceChannel", referenceComboBox->getText());
-				xmlNode->setAttribute("referenceChannelIndex", referenceComboBox->getSelectedId() - 1);
-			}
-			else
-			{
-				xmlNode->setAttribute("referenceChannel", "Ext");
-				xmlNode->setAttribute("referenceChannelIndex", 0);
-			}
-		}
-
-		XmlElement* channelNode = xmlNode->createNewChildElement("CHANNELS");
-		XmlElement* xposNode = xmlNode->createNewChildElement("ELECTRODE_XPOS");
-		XmlElement* yposNode = xmlNode->createNewChildElement("ELECTRODE_YPOS");
-
-		for (int i = 0; i < settings->selectedElectrode.size(); i++)
-		{
-			int bank = int(settings->selectedBank[i]);
-			int shank = settings->selectedShank[i];
-			int elec = settings->selectedElectrode[i];
-
-			String chString = String(bank);
-
-			String chId = "CH" + String(i);
-
-			channelNode->setAttribute(chId, chString);
-			xposNode->setAttribute(chId, String(settings->electrodeMetadata[elec].xpos + 250 * shank));
-			yposNode->setAttribute(chId, String(settings->electrodeMetadata[elec].ypos));
-		}
-
-		xmlNode->setAttribute("visualizationMode", (double)mode);
-		xmlNode->setAttribute("activityToView", (double)probeBrowser->activityToView);
-
-		xmlNode->setAttribute("isEnabled", bool(device->isEnabled()));
-	}*/
+		channelsNode->setAttribute("CH" + String(i), String(globalIndex));
+	}
 }
 
 void NeuropixelsV2eProbeInterface::loadParameters(XmlElement* xml)
 {
-	if (device != nullptr)
-	{
-		//auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+	if (device == nullptr) return;
 
-		// TODO: load parameters, put them into device->settings, and then update the interface
-		//applyProbeSettings(device->settings.get(), false);
+	LOGD("Loading Neuropixels 2.0e settings.");
+
+	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+	auto settings = npx->settings[probeIndex].get();
+
+	XmlElement* xmlNode = nullptr;
+
+	for (auto* node : xml->getChildIterator())
+	{
+		if (node->hasTagName("PROBE" + String(probeIndex)))
+		{
+			xmlNode = node;
+			break;
+		}
 	}
+
+	if (xmlNode == nullptr)
+	{
+		LOGD("No PROBE" + String(probeIndex) + " element found");
+		return;
+	}
+
+	if (npx->getProbeSerialNumber(probeIndex) != 0 && xmlNode->getIntAttribute("probeSerialNumber") != npx->getProbeSerialNumber(probeIndex))
+	{
+		LOGC("Different serial numbers found. Current serial number is " + String(npx->getProbeSerialNumber(probeIndex)) + ", while the saved serial number is " + String(xmlNode->getIntAttribute("probeSerialNumber")) + ". Updating settings...");
+	}
+
+	npx->setGainCorrectionFile(probeIndex, xmlNode->getStringAttribute("gainCorrectionFile"));
+
+	XmlElement* probeViewerNode = xmlNode->getChildByName("PROBE_VIEWER");
+
+	if (probeViewerNode == nullptr)
+	{
+		LOGE("No PROBE_VIEWER element found.");
+		return;
+	}
+
+	probeBrowser->setZoomHeightAndOffset(probeViewerNode->getIntAttribute("zoomHeight"), probeViewerNode->getIntAttribute("zoomOffset"));
+
+	int idx = -1;
+
+	idx = getIndexOfComboBoxItem(referenceComboBox.get(), probeViewerNode->getStringAttribute("referenceChannel"));
+	if (idx == -1)
+	{
+		LOGE("No reference channel variable found.");
+	}
+	else
+		settings->referenceIndex = idx;
+
+	XmlElement* channelsNode = xmlNode->getChildByName("SELECTED_CHANNELS");
+
+	if (channelsNode == nullptr)
+	{
+		LOGE("No SELECTED_CHANNELS element found.");
+		return;
+	}
+
+	std::vector<int> selectedChannels{};
+	selectedChannels.reserve(npx->numberOfChannels);
+
+	for (int i = 0; i < npx->numberOfChannels; i++)
+	{
+		String chIdx = channelsNode->getStringAttribute("CH" + String(i), "");
+
+		if (chIdx == "")
+		{
+			LOGE("Channel #" + String(i) + " not found. Channel map will not be updated.");
+			return;
+		}
+
+		selectedChannels.emplace_back(std::stoi(chIdx.toStdString()));
+	}
+
+	std::sort(selectedChannels.begin(), selectedChannels.end());
+	auto last = std::unique(selectedChannels.begin(), selectedChannels.end());
+	selectedChannels.erase(last, selectedChannels.end());
+
+	if (selectedChannels.size() != npx->numberOfChannels)
+	{
+		LOGE("Invalid channel map. Wrong number of channels found. Channel map was not updated");
+		return;
+	}
+
+	selectElectrodes(selectedChannels);
+
+	updateSettings();
 }

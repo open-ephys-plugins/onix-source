@@ -42,6 +42,19 @@ Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e,
 	type = SettingsInterface::Type::BNO055_SETTINGS_INTERFACE;
 }
 
+void Bno055Interface::setInterfaceEnabledState(bool newState)
+{
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(newState);
+}
+
+void Bno055Interface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
+}
+
 void Bno055Interface::buttonClicked(Button* button)
 {
 	if (button == deviceEnableButton.get())
@@ -65,4 +78,50 @@ void Bno055Interface::buttonClicked(Button* button)
 
 		CoreServices::updateSignalChain(editor);
 	}
+}
+
+void Bno055Interface::saveParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Saving Bno055 settings.");
+
+	XmlElement* xmlNode = xml->createNewChildElement("BNO055");
+
+	xmlNode->setAttribute("name", device->getName());
+	xmlNode->setAttribute("idx", (int)device->getDeviceIdx());
+
+	xmlNode->setAttribute("isEnabled", device->isEnabled());
+}
+
+void Bno055Interface::loadParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Loading Bno055 settings.");
+
+	XmlElement* xmlNode = nullptr;
+
+	for (auto* node : xml->getChildIterator())
+	{
+		if (node->hasTagName("BNO055"))
+		{
+			if (node->getStringAttribute("name") == device->getName() &&
+				node->getIntAttribute("idx") == device->getDeviceIdx())
+			{
+				xmlNode = node;
+				break;
+			}
+		}
+	}
+
+	if (xmlNode == nullptr)
+	{
+		LOGD("No Bno055 element found.");
+		return;
+	}
+
+	device->setEnabled(xmlNode->getBoolAttribute("isEnabled"));
+
+	updateSettings();
 }

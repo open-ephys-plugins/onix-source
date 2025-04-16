@@ -34,29 +34,22 @@ class AnalogIOInterface : public SettingsInterface,
 	public ComboBox::Listener
 {
 public:
-	/** Constructor */
 	AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	/** Disables buttons and starts animation if necessary */
-	void startAcquisition() override {};
+	void saveParameters(XmlElement* xml) override;
 
-	/** Enables buttons and start animation if necessary */
-	void stopAcquisition() override {};
+	void loadParameters(XmlElement* xml) override;
 
-	/** Save parameters to XML */
-	void saveParameters(XmlElement* xml) override {};
-
-	/** Load parameters from XML */
-	void loadParameters(XmlElement* xml) override {};
-
-	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override {};
 
-	/** Listener methods*/
+	void updateSettings() override;
+
 	void buttonClicked(Button*) override;
 	void comboBoxChanged(ComboBox* cb) override;
 
 private:
+
+	void setInterfaceEnabledState(bool newState) override;
 
 	static const int numChannels = 12;
 
@@ -68,6 +61,7 @@ private:
 	static int getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber);
 	static int getChannelVoltageRangeId(std::shared_ptr<AnalogIO> device, int channelNumber);
 	static int getDataTypeId(std::shared_ptr<AnalogIO> device);
+	static AnalogIODirection getChannelDirectionFromString(String direction);
 
 	JUCE_LEAK_DETECTOR(AnalogIOInterface);
 };

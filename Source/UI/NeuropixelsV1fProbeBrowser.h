@@ -38,6 +38,6 @@ public:
 
 	ProbeSettings<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>* getSettings() override
 	{
-		return std::static_pointer_cast<Neuropixels_1>(parent->device)->settings[0].get();
+		return std::static_pointer_cast<Neuropixels_1>(parent->getDevice())->settings[0].get();
 	}
 };

@@ -35,6 +35,10 @@ Onix1::Onix1(int hostIndex)
 		throw error_t(rc);
 
 	oni_version(&major, &minor, &patch);
+
+	rc = getOption(ONI_OPT_ACQCLKHZ, &ACQ_CLK_HZ);
+	if (rc != ONI_ESUCCESS)
+		throw error_t(rc);
 }
 
 Onix1::~Onix1()

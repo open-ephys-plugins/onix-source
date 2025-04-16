@@ -37,26 +37,20 @@ public:
 
 	OutputClockInterface(std::shared_ptr<OutputClock> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	/** Disables buttons and starts animation if necessary */
-	void startAcquisition() override {};
+	void saveParameters(XmlElement* xml) override;
 
-	/** Enables buttons and start animation if necessary */
-	void stopAcquisition() override {};
+	void loadParameters(XmlElement* xml) override;
 
-	/** Save parameters to XML */
-	void saveParameters(XmlElement* xml) override {};
-
-	/** Load parameters from XML */
-	void loadParameters(XmlElement* xml) override {};
-
-	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override {};
 
-	/** Listener methods*/
+	void updateSettings() override;
+
 	void buttonClicked(Button*) override;
 	void labelTextChanged(Label* l) override;
 
 private:
+
+	void setInterfaceEnabledState(bool newState) override;
 
 	std::unique_ptr<Label> frequencyHzLabel;
 	std::unique_ptr<Label> frequencyHzValue;

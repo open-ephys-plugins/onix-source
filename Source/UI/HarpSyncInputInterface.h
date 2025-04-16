@@ -36,24 +36,19 @@ public:
 
 	HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	/** Disables buttons and starts animation if necessary */
-	void startAcquisition() override {};
+	void saveParameters(XmlElement* xml) override;
 
-	/** Enables buttons and start animation if necessary */
-	void stopAcquisition() override {};
-
-	/** Save parameters to XML */
-	void saveParameters(XmlElement* xml) override {};
-
-	/** Load parameters from XML */
-	void loadParameters(XmlElement* xml) override {};
+	void loadParameters(XmlElement* xml) override;
 
 	void updateInfoString() override {};
 
-	/** Listener methods*/
+	void updateSettings() override;
+
 	void buttonClicked(Button*) override;
 
 private:
+
+	void setInterfaceEnabledState(bool newState) override;
 
 	std::unique_ptr<UtilityButton> deviceEnableButton;
 

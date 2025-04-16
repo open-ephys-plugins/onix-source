@@ -261,7 +261,7 @@ void PolledBno055::hiResTimerCallback()
 	rc = (uint64_t)deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CH, &timestampH);
 	if (rc != ONI_ESUCCESS) return;
 
-	bnoTimestamps[currentFrame] = (uint64_t(timestampH) << 32) | uint64_t(timestampL);
+	bnoTimestamps[currentFrame] = deviceContext->convertTimestampToSeconds((uint64_t(timestampH) << 32) | uint64_t(timestampL));
 
 	sampleNumbers[currentFrame] = sampleNumber++;
 

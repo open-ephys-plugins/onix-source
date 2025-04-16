@@ -82,7 +82,7 @@ void DigitalIO::processFrames()
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint16_t* dataPtr = (uint16_t*)frame->data;
-		uint64_t timestamp = frame->time;
+		uint64_t timestamp = deviceContext->convertTimestampToSeconds(frame->time);
 
 		int dataOffset = 4;
 

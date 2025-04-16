@@ -99,6 +99,19 @@ public:
 		return channelDirection[channelNumber];
 	}
 
+	static String getChannelDirection(AnalogIODirection direction)
+	{
+		switch (direction)
+		{
+		case AnalogIODirection::Input:
+			return "Input";
+		case AnalogIODirection::Output:
+			return "Output";
+		default:
+			return "";
+		}
+	}
+
 	void setChannelDirection(int channelNumber, AnalogIODirection direction)
 	{
 		if (channelNumber > numChannels || channelNumber < 0)
@@ -121,20 +134,7 @@ public:
 		return channelVoltageRange[channelNumber];
 	}
 
-	void setChannelVoltageRange(int channelNumber, AnalogIOVoltageRange direction)
-	{
-		if (channelNumber > numChannels || channelNumber < 0)
-		{
-			LOGE("Channel number must be between 0 and " + String(channelNumber));
-			return;
-		}
-
-		channelVoltageRange[channelNumber] = direction;
-	}
-
 	AnalogIODataType getDataType() const { return dataType; }
-
-	void setDataType(AnalogIODataType type) { dataType = type; }
 
 	int getNumChannels() { return numChannels; }
 
@@ -173,6 +173,19 @@ private:
 	std::array<float, numChannels> voltsPerDivision;
 
 	static float getVoltsPerDivision(AnalogIOVoltageRange voltageRange);
+
+	void setChannelVoltageRange(int channelNumber, AnalogIOVoltageRange direction)
+	{
+		if (channelNumber > numChannels || channelNumber < 0)
+		{
+			LOGE("Channel number must be between 0 and " + String(channelNumber));
+			return;
+		}
+
+		channelVoltageRange[channelNumber] = direction;
+	}
+
+	void setDataType(AnalogIODataType type) { dataType = type; }
 
 	JUCE_LEAK_DETECTOR(AnalogIO);
 };
