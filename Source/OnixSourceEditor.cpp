@@ -24,7 +24,7 @@
 #include "OnixSource.h"
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_)
-	: VisualizerEditor(parentNode, "Onix Source", 240), source(source_)
+	: VisualizerEditor(parentNode, "Onix Source", 250), source(source_)
 {
 	canvas = nullptr;
 
@@ -38,8 +38,16 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 	if (source->isContextInitialized())
 	{
+		portStatusA = std::make_unique<DrawableRectangle>();
+		portStatusA->setRectangle(Rectangle<float>(memoryUsage->getRight() + 4, memoryUsage->getY(), 10, 10));
+		portStatusA->setCornerSize(Point<float>(5,5));
+		portStatusA->setFill(fillDisconnected);
+		portStatusA->setStrokeFill(statusIndicatorStrokeColor);
+		portStatusA->setStrokeThickness(statusIndicatorStrokeThickness);
+		addAndMakeVisible(portStatusA.get());
+
 		portLabelA = std::make_unique<Label>("portLabelA", "Port A:");
-		portLabelA->setBounds(memoryUsage->getRight() + 5, memoryUsage->getY(), 60, 16);
+		portLabelA->setBounds(portStatusA->getRight(), portStatusA->getY(), 60, 16);
 		portLabelA->setFont(fontOptionTitle);
 		addAndMakeVisible(portLabelA.get());
 
@@ -73,8 +81,16 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		lastVoltageSetA->setTooltip("Records the last voltage set for Port A. Useful for displaying what the automated voltage discovery algorithm settled on.");
 		addAndMakeVisible(lastVoltageSetA.get());
 
+		portStatusB = std::make_unique<DrawableRectangle>();
+		portStatusB->setRectangle(Rectangle<float>(portStatusA->getX(), portVoltageOverrideLabelA->getBottom() + 3, 10, 10));
+		portStatusB->setCornerSize(portStatusA->getCornerSize());
+		portStatusB->setFill(portStatusA->getFill());
+		portStatusB->setStrokeFill(portStatusA->getStrokeFill());
+		portStatusB->setStrokeThickness(statusIndicatorStrokeThickness);
+		addAndMakeVisible(portStatusB.get());
+
 		portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
-		portLabelB->setBounds(portLabelA->getX(), portVoltageOverrideLabelA->getBottom() + 3, portLabelA->getWidth(), portLabelA->getHeight());
+		portLabelB->setBounds(portStatusB->getRight(), portStatusB->getY(), portLabelA->getWidth(), portLabelA->getHeight());
 		portLabelB->setFont(fontOptionTitle);
 		addAndMakeVisible(portLabelB.get());
 
@@ -133,13 +149,10 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
 	comboBox->addItem(NEUROPIXELSV2E_HEADSTAGE_NAME, 3);
-	// TODO: Add list of available devices here
-	// TODO: Create const char* for the headstage names so they are shared across the plugin
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)
 {
-	// TODO: Add headstage specific parameters to limit voltage within safe levels
 	if (l == portVoltageValueA.get())
 	{
 		if (l->getText() == "" || l->getText() == "Auto")
@@ -199,14 +212,22 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
 		if (isHeadstageSelected(PortName::PortA) || portVoltageValueA->getText() != "Auto")
 		{
+			portStatusA->setFill(fillSearching);
+
 			if (!source->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
 			{
 				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port A.");
+				portStatusA->setFill(fillDisconnected);
+			}
+			else
+			{
+				portStatusA->setFill(fillConnected);
 			}
 		}
 		else
 		{
 			source->setPortVoltage(PortName::PortA, 0);
+			portStatusA->setFill(fillDisconnected);
 		}
 
 		lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
@@ -215,14 +236,22 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		if (isHeadstageSelected(PortName::PortB) || portVoltageValueB->getText() != "Auto")
 		{
+			portStatusB->setFill(fillSearching);
+
 			if (!source->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
 			{
 				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port B.");
+				portStatusB->setFill(fillDisconnected);
+			}
+			else
+			{
+				portStatusB->setFill(fillConnected);
 			}
 		}
 		else
 		{
 			source->setPortVoltage(PortName::PortB, 0);
+			portStatusB->setFill(fillDisconnected);
 		}
 
 		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
@@ -248,6 +277,9 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
 		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
+
+		portStatusA->setFill(fillDisconnected);
+		portStatusB->setFill(fillDisconnected);
 
 		source->disconnectDevices(true);
 		connectButton->setLabel("CONNECT");

@@ -89,6 +89,17 @@ private:
     OnixSourceCanvas* canvas;
     OnixSource* source;
 
+    const FillType fillDisconnected = FillType(Colours::transparentBlack);
+    const FillType fillSearching = FillType(Colours::green);    // OR: use FillType(Colour::fromFloatRGBA(0.5f, 0.5f, 0.5f, 1.0f));
+    const FillType fillConnected = FillType(Colours::purple);
+
+    const Colour statusIndicatorStrokeColor = Colours::black;
+
+    const float statusIndicatorStrokeThickness = 1.0f;
+
+    std::unique_ptr<DrawableRectangle> portStatusA;
+    std::unique_ptr<DrawableRectangle> portStatusB;
+
     std::unique_ptr<Label> portLabelA;
     std::unique_ptr<Label> portLabelB;
 
