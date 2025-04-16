@@ -90,6 +90,8 @@ public:
 
 	String getVersion() { return String(major) + "." + String(minor) + "." + String(patch); }
 
+	double convertTimestampToSeconds(uint32_t timestamp) const { return static_cast<double>(timestamp) / ACQ_CLK_HZ; }
+
 private:
 
 	/** The ONI ctx object */
@@ -98,6 +100,8 @@ private:
 	int major;
 	int minor;
 	int patch;
+
+	uint32_t ACQ_CLK_HZ;
 
 	device_map_t deviceTable;
 
