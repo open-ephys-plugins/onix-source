@@ -27,17 +27,20 @@
 #include "OnixDevice.h"
 #include "oni.h"
 
-class FrameReader : public Thread
+namespace OnixSourcePlugin
 {
-public:
-	FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1>);
+	class FrameReader : public Thread
+	{
+	public:
+		FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1>);
 
-	void run() override;
+		void run() override;
 
-private:
+	private:
 
-	OnixDeviceVector sources;
-	std::shared_ptr<Onix1> context;
+		OnixDeviceVector sources;
+		std::shared_ptr<Onix1> context;
 
-	JUCE_LEAK_DETECTOR(FrameReader);
-};
+		JUCE_LEAK_DETECTOR(FrameReader);
+	};
+}

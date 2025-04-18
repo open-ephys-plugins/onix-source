@@ -22,6 +22,8 @@
 
 #include "OnixDevice.h"
 
+using namespace OnixSourcePlugin;
+
 OnixDevice::OnixDevice(String name_, String headstageName, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
 	: type(type_), deviceIdx(deviceIdx_)
 {
@@ -105,4 +107,68 @@ String OnixDevice::getStreamIdentifier()
 	}
 
 	return streamIdentifier;
+}
+
+int OnixDevice::getPortOffset(PortName port)
+{
+	return (uint32_t)port << 8;
+}
+
+String OnixDevice::getPortName(int offset)
+{
+	switch (offset)
+	{
+	case 0:
+		return "";
+	case HubAddressPortA:
+		return "Port A";
+	case HubAddressPortB:
+		return "Port B";
+	default:
+		return "";
+	}
+}
+
+String OnixDevice::getPortName(PortName port)
+{
+	return getPortName(getPortOffset(port));
+}
+
+String OnixDevice::getPortNameFromIndex(oni_dev_idx_t index)
+{
+	return getPortName(getOffsetFromIndex(index));
+}
+
+PortName OnixDevice::getPortFromIndex(oni_dev_idx_t index)
+{
+	return index & (1 << 8) ? PortName::PortA : PortName::PortB;
+}
+
+int OnixDevice::getOffsetFromIndex(oni_dev_idx_t index)
+{
+	return index & 0b1100000000;
+}
+
+Array<int> OnixDevice::getUniqueOffsetsFromIndices(std::vector<int> indices)
+{
+	Array<int> offsets;
+
+	for (auto index : indices)
+	{
+		offsets.addIfNotAlreadyThere(getOffsetFromIndex(index));
+	}
+
+	return offsets;
+}
+
+Array<PortName> OnixDevice::getUniquePortsFromIndices(std::vector<int> indices)
+{
+	Array<PortName> ports;
+
+	for (auto index : indices)
+	{
+		ports.addIfNotAlreadyThere(getPortFromIndex(index));
+	}
+
+	return ports;
 }

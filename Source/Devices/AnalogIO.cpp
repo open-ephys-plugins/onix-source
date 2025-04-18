@@ -22,6 +22,8 @@
 
 #include "AnalogIO.h"
 
+using namespace OnixSourcePlugin;
+
 AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
 	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::ANALOGIO, deviceIdx_, oni_ctx)
 {

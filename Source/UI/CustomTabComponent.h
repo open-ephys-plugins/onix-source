@@ -25,26 +25,29 @@
 #include <VisualizerEditorHeaders.h>
 #include "CustomTabButton.h"
 
-/**
-	Adds a callback when tab is changed
-*/
-class CustomTabComponent : public TabbedComponent
+namespace OnixSourcePlugin
 {
-public:
-	CustomTabComponent(bool isTopLevel_) :
-		TabbedComponent(TabbedButtonBar::TabsAtTop),
-		isTopLevel(isTopLevel_)
+	/**
+		Adds a callback when tab is changed
+	*/
+	class CustomTabComponent : public TabbedComponent
 	{
-		setTabBarDepth(26);
-		setOutline(0);
-		setIndent(0);
-	}
+	public:
+		CustomTabComponent(bool isTopLevel_) :
+			TabbedComponent(TabbedButtonBar::TabsAtTop),
+			isTopLevel(isTopLevel_)
+		{
+			setTabBarDepth(26);
+			setOutline(0);
+			setIndent(0);
+		}
 
-	TabBarButton* createTabButton(const juce::String& name, int index) override
-	{
-		return new CustomTabButton(name, this, isTopLevel);
-	}
+		TabBarButton* createTabButton(const juce::String& name, int index) override
+		{
+			return new CustomTabButton(name, this, isTopLevel);
+		}
 
-private:
-	bool isTopLevel;
-};
+	private:
+		bool isTopLevel;
+	};
+}

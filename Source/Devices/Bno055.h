@@ -23,65 +23,67 @@
 #pragma once
 
 #include "../OnixDevice.h"
-#include "PortController.h"
 
-enum class Bno055Registers
+namespace OnixSourcePlugin
 {
-	ENABLE = 0x00
-};
+	enum class Bno055Registers
+	{
+		ENABLE = 0x00
+	};
 
-/*
-	Configures and streams data from a BNO055 device
-*/
-class Bno055 : public OnixDevice
-{
-public:
+	/*
+		Configures and streams data from a BNO055 device
+	*/
+	class Bno055 : public OnixDevice
+	{
+	public:
 
-	/** Constructor */
-	Bno055(String name, String headstageName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
+		/** Constructor */
+		Bno055(String name, String headstageName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
 
-	int configureDevice() override;
+		int configureDevice() override;
 
-	/** Update the settings of the device */
-	bool updateSettings() override;
+		/** Update the settings of the device */
+		bool updateSettings() override;
 
-	/** Starts probe data streaming */
-	void startAcquisition() override;
+		/** Starts probe data streaming */
+		void startAcquisition() override;
 
-	/** Stops probe data streaming*/
-	void stopAcquisition() override;
+		/** Stops probe data streaming*/
+		void stopAcquisition() override;
 
-	void addFrame(oni_frame_t*) override;
+		void addFrame(oni_frame_t*) override;
 
-	void processFrames() override;
+		void processFrames() override;
 
-	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
-private:
+	private:
 
-	DataBuffer* bnoBuffer;
+		DataBuffer* bnoBuffer;
 
-	const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
-	const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
-	const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
+		const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
+		const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
+		const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
 
-	static const int numFrames = 2;
+		static const int numFrames = 2;
 
-	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
+		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
-	bool shouldAddToBuffer = false;
+		bool shouldAddToBuffer = false;
 
-	static const int numberOfChannels = 3 + 3 + 4 + 3 + 1;
-	static constexpr float sampleRate = 100.0f;
+		static const int numberOfChannels = 3 + 3 + 4 + 3 + 1;
+		static constexpr float sampleRate = 100.0f;
 
-	float bnoSamples[numberOfChannels * numFrames];
+		float bnoSamples[numberOfChannels * numFrames];
 
-	double bnoTimestamps[numFrames];
-	int64 sampleNumbers[numFrames];
-	uint64 eventCodes[numFrames];
+		double bnoTimestamps[numFrames];
+		int64 sampleNumbers[numFrames];
+		uint64 eventCodes[numFrames];
 
-	unsigned short currentFrame = 0;
-	int sampleNumber = 0;
+		unsigned short currentFrame = 0;
+		int sampleNumber = 0;
 
-	JUCE_LEAK_DETECTOR(Bno055);
-};
+		JUCE_LEAK_DETECTOR(Bno055);
+	};
+}

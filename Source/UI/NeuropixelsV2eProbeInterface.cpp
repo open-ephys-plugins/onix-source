@@ -25,6 +25,9 @@
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
 
+using namespace OnixSourcePlugin;
+using namespace ColourScheme;
+
 NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuropixels2e> d, int ind, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c),
 	neuropix_info("INFO"),

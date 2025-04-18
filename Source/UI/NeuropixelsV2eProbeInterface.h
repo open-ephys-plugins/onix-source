@@ -29,101 +29,104 @@
 #include "NeuropixelsV2eProbeBrowser.h"
 #include "CustomTabComponent.h"
 
-class OnixSourceCanvas;
-class OnixSourceEditor;
-
-/**
-
-	Extended graphical interface for updating probe settings
-
-*/
-class NeuropixelsV2eProbeInterface : public SettingsInterface,
-	public Button::Listener,
-	public ComboBox::Listener,
-	public TextEditor::Listener
+namespace OnixSourcePlugin
 {
-public:
-	friend class ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>;
-	friend class NeuropixelsV2eInterface;
+	class OnixSourceCanvas;
+	class OnixSourceEditor;
 
-	NeuropixelsV2eProbeInterface(std::shared_ptr<Neuropixels2e> d, int ind, OnixSourceEditor* e, OnixSourceCanvas* c);
+	/**
 
-	void buttonClicked(Button*) override;
-	void comboBoxChanged(ComboBox*) override;
+		Extended graphical interface for updating probe settings
 
-	void startAcquisition() override;
+	*/
+	class NeuropixelsV2eProbeInterface : public SettingsInterface,
+		public Button::Listener,
+		public ComboBox::Listener,
+		public TextEditor::Listener
+	{
+	public:
+		friend class ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>;
+		friend class NeuropixelsV2eInterface;
 
-	void stopAcquisition() override;
+		NeuropixelsV2eProbeInterface(std::shared_ptr<Neuropixels2e> d, int ind, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	bool applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe = true);
+		void buttonClicked(Button*) override;
+		void comboBoxChanged(ComboBox*) override;
 
-	void saveParameters(XmlElement* xml) override;
+		void startAcquisition() override;
 
-	void loadParameters(XmlElement* xml) override;
+		void stopAcquisition() override;
 
-	void updateInfoString() override;
+		bool applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe = true);
 
-	void updateSettings() override;
+		void saveParameters(XmlElement* xml) override;
 
-	void setReference(int index);
-	void selectElectrodes(std::vector<int> electrodes);
+		void loadParameters(XmlElement* xml) override;
 
-	String getReferenceText() override { return referenceComboBox->getText(); }
+		void updateInfoString() override;
 
-private:
-	XmlElement neuropix_info;
+		void updateSettings() override;
 
-	bool acquisitionIsActive = false;
+		void setReference(int index);
+		void selectElectrodes(std::vector<int> electrodes);
 
-	const int probeIndex;
+		String getReferenceText() override { return referenceComboBox->getText(); }
 
-	std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
-	std::unique_ptr<ComboBox> referenceComboBox;
+	private:
+		XmlElement neuropix_info;
 
-	std::unique_ptr<Label> deviceLabel;
-	std::unique_ptr<Label> infoLabel;
-	std::unique_ptr<Label> electrodesLabel;
-	std::unique_ptr<Label> electrodePresetLabel;
-	std::unique_ptr<Label> referenceLabel;
+		bool acquisitionIsActive = false;
 
-	std::unique_ptr<Label> gainCorrectionFileLabel;
-	std::unique_ptr<UtilityButton> gainCorrectionFileButton;
-	std::unique_ptr<FileChooser> gainCorrectionFileChooser;
-	std::unique_ptr<TextEditor> gainCorrectionFile;
+		const int probeIndex;
 
-	std::unique_ptr<UtilityButton> enableButton;
+		std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
+		std::unique_ptr<ComboBox> referenceComboBox;
 
-	std::unique_ptr<UtilityButton> enableViewButton;
-	std::unique_ptr<UtilityButton> referenceViewButton;
+		std::unique_ptr<Label> deviceLabel;
+		std::unique_ptr<Label> infoLabel;
+		std::unique_ptr<Label> electrodesLabel;
+		std::unique_ptr<Label> electrodePresetLabel;
+		std::unique_ptr<Label> referenceLabel;
 
-	std::unique_ptr<DrawableRectangle> probeInterfaceRectangle;
-	std::unique_ptr<Label> probeInterfaceLabel;
-	std::unique_ptr<UtilityButton> loadJsonButton;
-	std::unique_ptr<UtilityButton> saveJsonButton;
+		std::unique_ptr<Label> gainCorrectionFileLabel;
+		std::unique_ptr<UtilityButton> gainCorrectionFileButton;
+		std::unique_ptr<FileChooser> gainCorrectionFileChooser;
+		std::unique_ptr<TextEditor> gainCorrectionFile;
 
-	std::unique_ptr<ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>> probeBrowser;
+		std::unique_ptr<UtilityButton> enableButton;
 
-	std::unique_ptr<Component> enableViewComponent;
-	std::unique_ptr<Component> referenceViewComponent;
-	std::unique_ptr<Component> activityViewComponent;
+		std::unique_ptr<UtilityButton> enableViewButton;
+		std::unique_ptr<UtilityButton> referenceViewButton;
 
-	std::vector<std::unique_ptr<Label>> enableViewLabels;
-	std::vector<std::unique_ptr<Label>> referenceViewLabels;
-	std::vector<std::unique_ptr<Label>> activityViewLabels;
+		std::unique_ptr<DrawableRectangle> probeInterfaceRectangle;
+		std::unique_ptr<Label> probeInterfaceLabel;
+		std::unique_ptr<UtilityButton> loadJsonButton;
+		std::unique_ptr<UtilityButton> saveJsonButton;
 
-	std::vector<std::unique_ptr<DrawableRectangle>> enableViewRectangles;
-	std::vector<std::unique_ptr<DrawableRectangle>> referenceViewRectangles;
-	std::vector<std::unique_ptr<DrawableRectangle>> activityViewRectangles;
+		std::unique_ptr<ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>> probeBrowser;
 
-	void drawLegend();
+		std::unique_ptr<Component> enableViewComponent;
+		std::unique_ptr<Component> referenceViewComponent;
+		std::unique_ptr<Component> activityViewComponent;
 
-	std::vector<int> getSelectedElectrodes();
+		std::vector<std::unique_ptr<Label>> enableViewLabels;
+		std::vector<std::unique_ptr<Label>> referenceViewLabels;
+		std::vector<std::unique_ptr<Label>> activityViewLabels;
 
-	void setInterfaceEnabledState(bool enabledState) override;
+		std::vector<std::unique_ptr<DrawableRectangle>> enableViewRectangles;
+		std::vector<std::unique_ptr<DrawableRectangle>> referenceViewRectangles;
+		std::vector<std::unique_ptr<DrawableRectangle>> activityViewRectangles;
 
-	void checkForExistingChannelPreset();
+		void drawLegend();
 
-	int getIndexOfComboBoxItem(ComboBox* cb, String item);
+		std::vector<int> getSelectedElectrodes();
 
-	JUCE_LEAK_DETECTOR(NeuropixelsV2eProbeInterface);
-};
+		void setInterfaceEnabledState(bool enabledState) override;
+
+		void checkForExistingChannelPreset();
+
+		int getIndexOfComboBoxItem(ComboBox* cb, String item);
+
+		JUCE_LEAK_DETECTOR(NeuropixelsV2eProbeInterface);
+	};
+}

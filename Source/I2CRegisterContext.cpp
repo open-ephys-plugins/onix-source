@@ -22,6 +22,8 @@
 
 #include "I2CRegisterContext.h"
 
+using namespace OnixSourcePlugin;
+
 I2CRegisterContext::I2CRegisterContext(uint32_t address_, const oni_dev_idx_t devIdx_, std::shared_ptr<Onix1> ctx_)
 	: deviceIndex(devIdx_), i2cAddress(address_)
 {

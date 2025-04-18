@@ -29,39 +29,42 @@
 
 #include "../Devices/AnalogIO.h"
 
-class AnalogIOInterface : public SettingsInterface,
-	public Button::Listener,
-	public ComboBox::Listener
+namespace OnixSourcePlugin
 {
-public:
-	AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	class AnalogIOInterface : public SettingsInterface,
+		public Button::Listener,
+		public ComboBox::Listener
+	{
+	public:
+		AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void saveParameters(XmlElement* xml) override;
+		void saveParameters(XmlElement* xml) override;
 
-	void loadParameters(XmlElement* xml) override;
+		void loadParameters(XmlElement* xml) override;
 
-	void updateInfoString() override {};
+		void updateInfoString() override {};
 
-	void updateSettings() override;
+		void updateSettings() override;
 
-	void buttonClicked(Button*) override;
-	void comboBoxChanged(ComboBox* cb) override;
+		void buttonClicked(Button*) override;
+		void comboBoxChanged(ComboBox* cb) override;
 
-private:
+	private:
 
-	void setInterfaceEnabledState(bool newState) override;
+		void setInterfaceEnabledState(bool newState) override;
 
-	static const int numChannels = 12;
+		static const int numChannels = 12;
 
-	std::array<std::unique_ptr<Label>, numChannels> channelDirectionLabels;
-	std::array<std::unique_ptr<ComboBox>, numChannels> channelDirectionComboBoxes;
+		std::array<std::unique_ptr<Label>, numChannels> channelDirectionLabels;
+		std::array<std::unique_ptr<ComboBox>, numChannels> channelDirectionComboBoxes;
 
-	std::unique_ptr<UtilityButton> deviceEnableButton;
+		std::unique_ptr<UtilityButton> deviceEnableButton;
 
-	static int getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber);
-	static int getChannelVoltageRangeId(std::shared_ptr<AnalogIO> device, int channelNumber);
-	static int getDataTypeId(std::shared_ptr<AnalogIO> device);
-	static AnalogIODirection getChannelDirectionFromString(String direction);
+		static int getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber);
+		static int getChannelVoltageRangeId(std::shared_ptr<AnalogIO> device, int channelNumber);
+		static int getDataTypeId(std::shared_ptr<AnalogIO> device);
+		static AnalogIODirection getChannelDirectionFromString(String direction);
 
-	JUCE_LEAK_DETECTOR(AnalogIOInterface);
-};
+		JUCE_LEAK_DETECTOR(AnalogIOInterface);
+	};
+}

@@ -22,6 +22,9 @@
 
 #include "OnixSourceCanvas.h"
 #include "OnixSource.h"
+#include "OnixSourceEditor.h"
+
+using namespace OnixSourcePlugin;
 
 OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEditor* editor_, OnixSource* onixSource_) :
 	Visualizer(processor_),
@@ -223,7 +226,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 
 String OnixSourceCanvas::getTopLevelTabName(PortName port, String headstage)
 {
-	return PortController::getPortName(port) + ": " + headstage;
+	return OnixDevice::getPortName(port) + ": " + headstage;
 }
 
 Array<CustomTabComponent*> OnixSourceCanvas::getHeadstageTabs()
@@ -254,7 +257,7 @@ void OnixSourceCanvas::removeTabs(PortName port)
 
 	for (int i = headstageTabs.size() - 1; i >= 0; i -= 1)
 	{
-		if (headstageTabs[i]->getName().contains(PortController::getPortName(port)))
+		if (headstageTabs[i]->getName().contains(OnixDevice::getPortName(port)))
 		{
 			headstageTabs.remove(i, true);
 			tabExists = true;
@@ -310,7 +313,7 @@ void OnixSourceCanvas::askKeepRemove(int offset)
 {
 	String selectedHeadstage = editor->getHeadstageSelected(offset);
 
-	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(offset) + ", but was not discovered there.\n\n";
+	String msg = "Headstage " + selectedHeadstage + " is selected on " + OnixDevice::getPortName(offset) + ", but was not discovered there.\n\n";
 	msg += "Select one of the options below to continue:\n";
 	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
 	msg += " [Remove] to remove " + selectedHeadstage + ".\n - Note: this will delete any settings that were modified.";
@@ -342,8 +345,8 @@ void OnixSourceCanvas::askKeepUpdate(int offset, String foundHeadstage, OnixDevi
 
 	if (selectedHeadstage == foundHeadstage) return;
 
-	String msg = "Headstage " + selectedHeadstage + " is selected on " + PortController::getPortName(offset) + ". ";
-	msg += "However, headstage " + foundHeadstage + " was found on " + PortController::getPortName(offset) + ". \n\n";
+	String msg = "Headstage " + selectedHeadstage + " is selected on " + OnixDevice::getPortName(offset) + ". ";
+	msg += "However, headstage " + foundHeadstage + " was found on " + OnixDevice::getPortName(offset) + ". \n\n";
 	msg += "Select one of the options below to continue:\n";
 	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
 	msg += " [Update] to change the selected headstage to " + foundHeadstage + ".\n - Note: this will delete any settings that were modified.";

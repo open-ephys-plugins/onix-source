@@ -22,6 +22,8 @@
 
 #include "Neuropixels_1.h"
 
+using namespace OnixSourcePlugin;
+
 BackgroundUpdaterWithProgressWindow::BackgroundUpdaterWithProgressWindow(Neuropixels_1* d)
 	: ThreadWithProgressWindow("Writing calibration files to Neuropixels Probe: " + d->getName(), true, false)
 {
@@ -173,7 +175,7 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	INeuropixel(NeuropixelsV1fValues::numberOfSettings, NeuropixelsV1fValues::numberOfShanks)
 {
-	String port = PortController::getPortName(PortController::getPortFromIndex(deviceIdx));
+	String port = getPortNameFromIndex(deviceIdx);
 	auto streamIdentifier = getStreamIdentifier();
 
 	StreamInfo apStream = StreamInfo(

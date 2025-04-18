@@ -27,17 +27,20 @@
 #include "../Devices/Neuropixels2e.h"
 #include "ProbeBrowser.h"
 
-class NeuropixelsV2eProbeBrowser : public ProbeBrowser<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>
+namespace OnixSourcePlugin
 {
-public:
-	NeuropixelsV2eProbeBrowser(SettingsInterface* parent_, int probeIndex_) :
-		ProbeBrowser(parent_, probeIndex_)
+	class NeuropixelsV2eProbeBrowser : public ProbeBrowser<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>
 	{
-		setDrawingSettings();
-	}
+	public:
+		NeuropixelsV2eProbeBrowser(SettingsInterface* parent_, int probeIndex_) :
+			ProbeBrowser(parent_, probeIndex_)
+		{
+			setDrawingSettings();
+		}
 
-	ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>* getSettings() override
-	{
-		return std::static_pointer_cast<Neuropixels2e>(parent->getDevice())->settings[probeIndex].get();
-	}
-};
+		ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>* getSettings() override
+		{
+			return std::static_pointer_cast<Neuropixels2e>(parent->getDevice())->settings[probeIndex].get();
+		}
+	};
+}

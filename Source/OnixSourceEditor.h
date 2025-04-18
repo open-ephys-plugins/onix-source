@@ -1,22 +1,22 @@
 /*
-    ------------------------------------------------------------------
+	------------------------------------------------------------------
 
-    Copyright (C) Open Ephys
+	Copyright (C) Open Ephys
 
-    ------------------------------------------------------------------
+	------------------------------------------------------------------
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -24,105 +24,108 @@
 
 #include <VisualizerEditorHeaders.h>
 
-#include "OnixSourceCanvas.h"
 #include "NeuropixComponents.h"
 #include "Devices/MemoryMonitor.h"
 
-class OnixSource;
-
-/** 
-
-	Used to change the number of data streams, and the
-	number of channels per stream.
-
-*/
-class OnixSourceEditor : public VisualizerEditor,
-    public Label::Listener,
-    public Button::Listener,
-    public TextEditor::Listener,
-    public ComboBox::Listener
+namespace OnixSourcePlugin
 {
-public:
+	class OnixSource;
+	class OnixSourceCanvas;
 
-    OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_);
+	/**
 
-    void labelTextChanged(Label* l) override;
+		Used to change the number of data streams, and the
+		number of channels per stream.
 
-    void buttonClicked(Button* b) override;
+	*/
+	class OnixSourceEditor : public VisualizerEditor,
+		public Label::Listener,
+		public Button::Listener,
+		public TextEditor::Listener,
+		public ComboBox::Listener
+	{
+	public:
 
-    void comboBoxChanged(ComboBox* cb) override;
+		OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_);
 
-    void updateComboBox(ComboBox* cb);
+		void labelTextChanged(Label* l) override;
 
-    void updateSettings() override;
+		void buttonClicked(Button* b) override;
 
-    void setInterfaceEnabledState(bool newState);
+		void comboBoxChanged(ComboBox* cb) override;
 
-    void startAcquisition() override;
+		void updateComboBox(ComboBox* cb);
 
-    void stopAcquisition() override;
+		void updateSettings() override;
 
-    Visualizer* createNewCanvas(void) override;
+		void setInterfaceEnabledState(bool newState);
 
-    void saveVisualizerEditorParameters(XmlElement* xml) override;
+		void startAcquisition() override;
 
-    void loadVisualizerEditorParameters(XmlElement* xml) override;
+		void stopAcquisition() override;
 
-    void checkCanvas() { checkForCanvas(); };
+		Visualizer* createNewCanvas(void) override;
 
-    void resetCanvas();
+		void saveVisualizerEditorParameters(XmlElement* xml) override;
 
-    bool isHeadstageSelected(PortName port);
+		void loadVisualizerEditorParameters(XmlElement* xml) override;
 
-    String getHeadstageSelected(int offset);
+		void checkCanvas() { checkForCanvas(); };
 
-    String getHeadstageSelected(PortName port);
+		void resetCanvas();
 
-    void refreshComboBoxSelection();
+		bool isHeadstageSelected(PortName port);
 
-    std::map<int, OnixDeviceType> createTabMapFromCanvas();
+		String getHeadstageSelected(int offset);
 
-    void setConnectedStatus(bool);
+		String getHeadstageSelected(PortName port);
 
-private:
+		void refreshComboBoxSelection();
 
-    OnixSourceCanvas* canvas;
-    OnixSource* source;
+		std::map<int, OnixDeviceType> createTabMapFromCanvas();
+
+		void setConnectedStatus(bool);
+
+	private:
+
+		OnixSourceCanvas* canvas;
+		OnixSource* source;
 
     const FillType fillDisconnected = FillType(Colours::transparentBlack);
     const FillType fillSearching = FillType(Colour::fromFloatRGBA(0.0f, 1.0f, 87.0f / 255, 1.0f));
     const FillType fillConnected = FillType(Colour::fromFloatRGBA(184.0f / 255, 0.0f, 252.0f / 255, 1.0f));
 
-    const Colour statusIndicatorStrokeColor = Colours::black;
+		const Colour statusIndicatorStrokeColor = Colours::black;
 
-    const float statusIndicatorStrokeThickness = 1.0f;
+		const float statusIndicatorStrokeThickness = 1.0f;
 
-    std::unique_ptr<DrawableRectangle> portStatusA;
-    std::unique_ptr<DrawableRectangle> portStatusB;
+		std::unique_ptr<DrawableRectangle> portStatusA;
+		std::unique_ptr<DrawableRectangle> portStatusB;
 
-    std::unique_ptr<Label> portLabelA;
-    std::unique_ptr<Label> portLabelB;
+		std::unique_ptr<Label> portLabelA;
+		std::unique_ptr<Label> portLabelB;
 
-    std::unique_ptr<ComboBox> headstageComboBoxA;
-    std::unique_ptr<ComboBox> headstageComboBoxB;
+		std::unique_ptr<ComboBox> headstageComboBoxA;
+		std::unique_ptr<ComboBox> headstageComboBoxB;
 
-    std::unique_ptr<Label> portVoltageOverrideLabelA;
-    std::unique_ptr<Label> portVoltageOverrideLabelB;
+		std::unique_ptr<Label> portVoltageOverrideLabelA;
+		std::unique_ptr<Label> portVoltageOverrideLabelB;
 
-    std::unique_ptr<Label> portVoltageValueA;
-    std::unique_ptr<Label> portVoltageValueB;
+		std::unique_ptr<Label> portVoltageValueA;
+		std::unique_ptr<Label> portVoltageValueB;
 
-    std::unique_ptr<Label> lastVoltageSetA;
-    std::unique_ptr<Label> lastVoltageSetB;
+		std::unique_ptr<Label> lastVoltageSetA;
+		std::unique_ptr<Label> lastVoltageSetB;
 
-    std::unique_ptr<UtilityButton> connectButton;
+		std::unique_ptr<UtilityButton> connectButton;
 
-    std::unique_ptr<Label> liboniVersionLabel;
+		std::unique_ptr<Label> liboniVersionLabel;
 
-    void setComboBoxSelection(ComboBox* comboBox, String headstage);
-    void addHeadstageComboBoxOptions(ComboBox* comboBox);
+		void setComboBoxSelection(ComboBox* comboBox, String headstage);
+		void addHeadstageComboBoxOptions(ComboBox* comboBox);
 
-    std::unique_ptr<MemoryMonitorUsage> memoryUsage;
+		std::unique_ptr<MemoryMonitorUsage> memoryUsage;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
-};
+		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
+	};
+}

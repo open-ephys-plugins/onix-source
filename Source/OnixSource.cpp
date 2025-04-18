@@ -23,6 +23,8 @@
 #include "OnixSource.h"
 #include "Devices/DeviceList.h"
 
+using namespace OnixSourcePlugin;
+
 OnixSource::OnixSource(SourceNode* sn) :
 	DataThread(sn),
 	devicesFound(false),
@@ -573,7 +575,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				DataStream::Settings dataStreamSettings{
-					OnixDevice::createStreamName({PortController::getPortName(PortController::getPortFromIndex(source->getDeviceIdx())), source->getHeadstageName(), source->getName()}),
+					OnixDevice::createStreamName({OnixDevice::getPortNameFromIndex(source->getDeviceIdx()), source->getHeadstageName(), source->getName()}),
 					"Continuous data from a Bno055 9-axis IMU",
 					source->getStreamIdentifier(),
 					source->streamInfos[0].getSampleRate()

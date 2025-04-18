@@ -22,13 +22,15 @@
 
 #include "PolledBno055.h"
 
+using namespace OnixSourcePlugin;
+
 PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
 	: OnixDevice(name, headstageName, OnixDeviceType::POLLEDBNO, deviceIdx_, ctx),
 	I2CRegisterContext(Bno055Address, deviceIdx_, ctx)
 {
 	auto streamIdentifier = getStreamIdentifier();
 
-	String port = PortController::getPortName(PortController::getPortFromIndex(deviceIdx));
+	String port = getPortNameFromIndex(deviceIdx);
 	StreamInfo eulerAngleStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Euler" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",

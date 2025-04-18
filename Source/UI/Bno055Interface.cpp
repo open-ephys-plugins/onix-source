@@ -22,6 +22,8 @@
 
 #include "Bno055Interface.h"
 
+using namespace OnixSourcePlugin;
+
 Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {

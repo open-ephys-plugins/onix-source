@@ -22,6 +22,9 @@
 
 #include "NeuropixV1Interface.h"
 
+using namespace OnixSourcePlugin;
+using namespace ColourScheme;
+
 NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c),
 	neuropix_info("INFO")

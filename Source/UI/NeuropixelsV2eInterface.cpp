@@ -25,6 +25,8 @@
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
 
+using namespace OnixSourcePlugin;
+
 NeuropixelsV2eInterface::NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {

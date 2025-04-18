@@ -22,6 +22,8 @@
 
 #include "DigitalIOInterface.h"
 
+using namespace OnixSourcePlugin;
+
 DigitalIOInterface::DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {
