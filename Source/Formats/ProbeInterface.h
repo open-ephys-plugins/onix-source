@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../NeuropixComponents.h"
+#include "../NeuropixelsComponents.h"
 
 namespace OnixSourcePlugin
 {

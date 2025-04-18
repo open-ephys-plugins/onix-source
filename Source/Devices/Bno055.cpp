@@ -81,7 +81,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 	StreamInfo gravityStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Gravity" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Gravity",
-		streamIdentifier + ".gravity",
+		streamIdentifier,
 		3,
 		sampleRate,
 		"Grav",
@@ -109,7 +109,20 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 	);
 	streamInfos.add(temperatureStream);
 
-	// TODO: Add calibration stream here?
+	StreamInfo calibrationStatusStream = StreamInfo(
+		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Calibration" }),
+		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration",
+		streamIdentifier,
+		1,
+		sampleRate,
+		"Cal",
+		ContinuousChannel::Type::AUX,
+		1.0f,
+		"",
+		{ "" },
+		"calibration"
+	);
+	streamInfos.add(calibrationStatusStream);
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
@@ -165,48 +178,45 @@ void Bno055::processFrames()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
-		int16_t* dataPtr = (int16_t*)frame->data;
+		int16_t* dataPtr = ((int16_t*)frame->data) + 4;
 
 		bnoTimestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
 
-		int dataOffset = 4;
-
-		int channelOffset = 0;
+		int offset = 0;
 
 		// Euler
 		for (int i = 0; i < 3; i++)
 		{
-			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * eulerAngleScale;
-			dataOffset++;
-			channelOffset++;
+			bnoSamples[currentFrame + offset * numFrames] = float(*(dataPtr + offset)) * eulerAngleScale;
+			offset++;
 		}
 
 		// Quaternion
 		for (int i = 0; i < 4; i++)
 		{
-			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * quaternionScale;
-			dataOffset++;
-			channelOffset++;
+			bnoSamples[currentFrame + offset * numFrames] = float(*(dataPtr + offset)) * quaternionScale;
+			offset++;
 		}
 
 		// Acceleration
 		for (int i = 0; i < 3; i++)
 		{
-			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
-			dataOffset++;
-			channelOffset++;
+			bnoSamples[currentFrame + offset * numFrames] = float(*(dataPtr + offset)) * accelerationScale;
+			offset++;
 		}
 
 		// Gravity
 		for (int i = 0; i < 3; i++)
 		{
-			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
-			dataOffset++;
-			channelOffset++;
+			bnoSamples[currentFrame + offset * numFrames] = float(*(dataPtr + offset)) * accelerationScale;
+			offset++;
 		}
 
 		// Temperature
-		bnoSamples[currentFrame + channelOffset * numFrames] = float(*((uint8_t*)(dataPtr + dataOffset)));
+		bnoSamples[currentFrame + offset * numFrames] = *((uint8_t*)(dataPtr + offset));
+
+		// Calibration
+		bnoSamples[currentFrame + (offset + 1) * numFrames] = *((uint8_t*)(dataPtr + offset) + 1);
 
 		oni_destroy_frame(frame);
 
@@ -223,7 +233,7 @@ void Bno055::processFrames()
 		if (shouldAddToBuffer)
 		{
 			shouldAddToBuffer = false;
-			bnoBuffer->addToBuffer(bnoSamples, sampleNumbers, bnoTimestamps, eventCodes, numFrames);
+			bnoBuffer->addToBuffer(bnoSamples.data(), sampleNumbers, bnoTimestamps, eventCodes, numFrames);
 		}
 	}
 }

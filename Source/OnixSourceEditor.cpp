@@ -523,7 +523,7 @@ void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage
 	{
 		if (headstage.contains(comboBox->getItemText(i)))
 		{
-			comboBox->setSelectedItemIndex(i, dontSendNotification); // TODO: double check this indexing
+			comboBox->setSelectedItemIndex(i, dontSendNotification);
 			return;
 		}
 	}

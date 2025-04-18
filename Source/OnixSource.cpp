@@ -216,7 +216,10 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 					{
 						LOGE("Device Idx: ", index, " Unable to read probe serial number. Device not found.");
 					}
-					//TODO add other errors if needed
+					else if (res == -2)
+					{
+						LOGE("No probes found for device ", index);
+					}
 					continue;
 				}
 				

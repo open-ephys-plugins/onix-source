@@ -72,10 +72,10 @@ namespace OnixSourcePlugin
 
 		bool shouldAddToBuffer = false;
 
-		static const int numberOfChannels = 3 + 3 + 4 + 3 + 1;
+		static const int numberOfChannels = 3 + 3 + 4 + 3 + 1 + 1;
 		static constexpr float sampleRate = 100.0f;
 
-		float bnoSamples[numberOfChannels * numFrames];
+		std::array<float, numberOfChannels * numFrames> bnoSamples;
 
 		double bnoTimestamps[numFrames];
 		int64 sampleNumbers[numFrames];
