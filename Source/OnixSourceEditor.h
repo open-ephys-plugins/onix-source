@@ -24,7 +24,6 @@
 
 #include <VisualizerEditorHeaders.h>
 
-#include "NeuropixComponents.h"
 #include "Devices/MemoryMonitor.h"
 
 namespace OnixSourcePlugin

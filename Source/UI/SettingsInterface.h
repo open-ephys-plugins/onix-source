@@ -24,7 +24,7 @@
 
 #include <VisualizerEditorHeaders.h>
 
-#include "../NeuropixComponents.h"
+#include "../NeuropixelsComponents.h"
 #include "../OnixDevice.h"
 
 namespace OnixSourcePlugin

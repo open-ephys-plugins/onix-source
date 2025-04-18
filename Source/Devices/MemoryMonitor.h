@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <VisualizerEditorHeaders.h>
 #include "../OnixDevice.h"
 
 namespace OnixSourcePlugin

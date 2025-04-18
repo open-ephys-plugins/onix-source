@@ -22,9 +22,7 @@
 
 #pragma once
 
-#include "../NeuropixComponents.h"
-
-#include "../Devices/Neuropixels_1.h"
+#include "../Devices/Neuropixels1f.h"
 #include "ProbeBrowser.h"
 
 namespace OnixSourcePlugin
@@ -40,7 +38,7 @@ namespace OnixSourcePlugin
 
 		ProbeSettings<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>* getSettings() override
 		{
-			return std::static_pointer_cast<Neuropixels_1>(parent->getDevice())->settings[0].get();
+			return std::static_pointer_cast<Neuropixels1f>(parent->getDevice())->settings[0].get();
 		}
 	};
 }

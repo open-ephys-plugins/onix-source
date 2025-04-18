@@ -150,7 +150,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (device.id == ONIX_NEUROPIX1R0)
 		{
-			auto np1 = std::make_shared<Neuropixels_1>("Probe" + String(npxProbeIdx++), index, context);
+			auto np1 = std::make_shared<Neuropixels1f>("Probe" + String(npxProbeIdx++), index, context);
 
 			int res = np1->configureDevice();
 
@@ -548,7 +548,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 		{
 			if (!source->isEnabled()) continue;
 
-			if (source->getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
+			if (source->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),

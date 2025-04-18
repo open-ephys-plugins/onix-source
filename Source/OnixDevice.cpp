@@ -43,7 +43,7 @@ oni_dev_idx_t OnixDevice::getDeviceIdx(bool getPassthroughIndex)
 		return deviceIdx;
 }
 
-oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex)
+oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex) const
 {
 	oni_dev_idx_t idx = (passthroughIndex - 7) << 8;
 
@@ -60,50 +60,58 @@ OnixDeviceType OnixDevice::getDeviceType() const
 
 String OnixDevice::getStreamIdentifier()
 {
-	String streamIdentifier = "onix.";
+	String streamIdentifier = "onix";
 
 	// Insert the headstage or breakout board
 	if (getHeadstageName() == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
-		streamIdentifier += "npx1f.";
+		streamIdentifier += ".npx1f";
 	}
 	else if (getHeadstageName() == NEUROPIXELSV2E_HEADSTAGE_NAME)
 	{
-		streamIdentifier += "npx2e.";
+		streamIdentifier += ".npx2e";
 	}
 	else if (getHeadstageName() == BREAKOUT_BOARD_NAME)
 	{
-		streamIdentifier += "breakout.";
+		streamIdentifier += ".breakout";
+	}
+	else
+	{
+		streamIdentifier += ".headstage";
 	}
 
 	// Insert the device
 	if (getDeviceType() == OnixDeviceType::ANALOGIO)
 	{
-		streamIdentifier += "analogio";
+		streamIdentifier += ".analogio";
 	}
 	else if (getDeviceType() == OnixDeviceType::BNO || getDeviceType() == OnixDeviceType::POLLEDBNO)
 	{
-		streamIdentifier += "9dof";
+		streamIdentifier += ".9dof";
 	}
 	else if (getDeviceType() == OnixDeviceType::DIGITALIO)
 	{
-		streamIdentifier += "digitalio";
+		streamIdentifier += ".digitalio";
 	}
 	else if (getDeviceType() == OnixDeviceType::HARPSYNCINPUT)
 	{
-		streamIdentifier += "harp";
+		streamIdentifier += ".harp";
 	}
 	else if (getDeviceType() == OnixDeviceType::MEMORYMONITOR)
 	{
-		streamIdentifier += "memory";
+		streamIdentifier += ".memory";
 	}
-	else if (getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
+	else if (getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 	{
-		streamIdentifier += "npx1f";
+		streamIdentifier += ".npx1f";
 	}
 	else if (getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
 	{
-		streamIdentifier += "npx2e";
+		streamIdentifier += ".npx2e";
+	}
+	else
+	{
+		streamIdentifier += ".device";
 	}
 
 	return streamIdentifier;

@@ -59,8 +59,8 @@ void OnixSourceCanvas::addHub(String hubName, int offset)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe0", offset, nullptr));
-		devices.emplace_back(std::make_shared<Neuropixels_1>("Probe1", offset + 1, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels1f>("Probe0", offset, nullptr));
+		devices.emplace_back(std::make_shared<Neuropixels1f>("Probe1", offset + 1, nullptr));
 		devices.emplace_back(std::make_shared<Bno055>("BNO055", hubName, offset + 2, nullptr));
 	}
 	else if (hubName == BREAKOUT_BOARD_NAME)
@@ -94,9 +94,9 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 
 	for (const auto& device : devices)
 	{
-		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
+		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 		{
-			auto neuropixInterface = std::make_shared<NeuropixV1Interface>(std::static_pointer_cast<Neuropixels_1>(device), editor, this);
+			auto neuropixInterface = std::make_shared<NeuropixelsV1fInterface>(std::static_pointer_cast<Neuropixels1f>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, neuropixInterface);
 		}
 		else if (device->getDeviceType() == OnixDeviceType::BNO)
@@ -127,7 +127,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 		else if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
 		{
 			auto npxv2eInterface = std::make_shared<NeuropixelsV2eInterface>(std::static_pointer_cast<Neuropixels2e>(device), editor, this);
-			addInterfaceToTab(device->getHeadstageName(), tab, npxv2eInterface);
+			addInterfaceToTab(device->getHeadstageName().replace(" Headstage", ""), tab, npxv2eInterface);
 		}
 		else if (device->getDeviceType() == OnixDeviceType::POLLEDBNO)
 		{
@@ -181,10 +181,10 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 
 	auto selectedDevice = settingsInterfaces[ind]->getDevice();
 
-	if (device->getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
+	if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 	{
-		auto npx1Found = std::static_pointer_cast<Neuropixels_1>(device);
-		auto npx1Selected = std::static_pointer_cast<Neuropixels_1>(selectedDevice);
+		auto npx1Found = std::static_pointer_cast<Neuropixels1f>(device);
+		auto npx1Selected = std::static_pointer_cast<Neuropixels1f>(selectedDevice);
 		npx1Found->setSettings(npx1Selected->settings[0].get());
 		npx1Found->adcCalibrationFilePath = npx1Selected->adcCalibrationFilePath;
 		npx1Found->gainCalibrationFilePath = npx1Selected->gainCalibrationFilePath;

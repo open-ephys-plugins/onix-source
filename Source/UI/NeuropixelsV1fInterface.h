@@ -38,15 +38,15 @@ namespace OnixSourcePlugin
 		Extended graphical interface for updating probe settings
 
 	*/
-	class NeuropixV1Interface : public SettingsInterface,
+	class NeuropixelsV1fInterface : public SettingsInterface,
 		public Button::Listener,
 		public ComboBox::Listener,
 		public TextEditor::Listener
 	{
 	public:
-		friend class ProbeBrowser<Neuropixels_1::numberOfChannels, Neuropixels_1::numberOfElectrodes>;
+		friend class ProbeBrowser<Neuropixels1f::numberOfChannels, Neuropixels1f::numberOfElectrodes>;
 
-		NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+		NeuropixelsV1fInterface(std::shared_ptr<Neuropixels1f> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 		void buttonClicked(Button*) override;
 		void comboBoxChanged(ComboBox*) override;
@@ -56,7 +56,7 @@ namespace OnixSourcePlugin
 		void stopAcquisition() override;
 
 		/** Settings-related functions*/
-		bool applyProbeSettings(ProbeSettings<Neuropixels_1::numberOfChannels, Neuropixels_1::numberOfElectrodes>* p);
+		bool applyProbeSettings(ProbeSettings<Neuropixels1f::numberOfChannels, Neuropixels1f::numberOfElectrodes>* p);
 
 		void saveParameters(XmlElement* xml) override;
 
@@ -152,6 +152,6 @@ namespace OnixSourcePlugin
 
 		int getIndexOfComboBoxItem(ComboBox* cb, String item);
 
-		JUCE_LEAK_DETECTOR(NeuropixV1Interface);
+		JUCE_LEAK_DETECTOR(NeuropixelsV1fInterface);
 	};
 }

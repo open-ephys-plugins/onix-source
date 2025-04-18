@@ -20,11 +20,11 @@
 
 */
 
-#include "Neuropixels_1.h"
+#include "Neuropixels1f.h"
 
 using namespace OnixSourcePlugin;
 
-BackgroundUpdaterWithProgressWindow::BackgroundUpdaterWithProgressWindow(Neuropixels_1* d)
+BackgroundUpdaterWithProgressWindow::BackgroundUpdaterWithProgressWindow(Neuropixels1f* d)
 	: ThreadWithProgressWindow("Writing calibration files to Neuropixels Probe: " + d->getName(), true, false)
 {
 	device = d;
@@ -138,14 +138,14 @@ void BackgroundUpdaterWithProgressWindow::run()
 		return;
 	}
 
-	Array<NeuropixelsV1Adc> adcs;
+	Array<NeuropixelsV1fAdc> adcs;
 
 	for (int i = 1; i < adcFileLines.size() - 1; i++)
 	{
 		auto adcLine = StringArray::fromTokens(adcFileLines[i], breakCharacters, noQuote);
 
 		adcs.add(
-			NeuropixelsV1Adc(
+			NeuropixelsV1fAdc(
 				std::stoi(adcLine[1].toStdString()),
 				std::stoi(adcLine[2].toStdString()),
 				std::stoi(adcLine[3].toStdString()),
@@ -170,8 +170,8 @@ void BackgroundUpdaterWithProgressWindow::run()
 	result = true;
 }
 
-Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(name, NEUROPIXELSV1F_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELS_1, deviceIdx_, ctx_),
+Neuropixels1f::Neuropixels1f(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
+	OnixDevice(name, NEUROPIXELSV1F_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELSV1F, deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	INeuropixel(NeuropixelsV1fValues::numberOfSettings, NeuropixelsV1fValues::numberOfShanks)
 {
@@ -220,7 +220,7 @@ Neuropixels_1::Neuropixels_1(String name, const oni_dev_idx_t deviceIdx_, std::s
 	}
 }
 
-NeuropixelsGain Neuropixels_1::getGainEnum(int index)
+NeuropixelsGain Neuropixels1f::getGainEnum(int index)
 {
 	switch (index)
 	{
@@ -248,7 +248,7 @@ NeuropixelsGain Neuropixels_1::getGainEnum(int index)
 	return NeuropixelsGain::Gain50;
 }
 
-int Neuropixels_1::getGainValue(NeuropixelsGain gain)
+int Neuropixels1f::getGainValue(NeuropixelsGain gain)
 {
 	switch (gain)
 	{
@@ -274,22 +274,22 @@ int Neuropixels_1::getGainValue(NeuropixelsGain gain)
 	}
 }
 
-NeuropixelsV1Reference Neuropixels_1::getReference(int index)
+NeuropixelsV1fReference Neuropixels1f::getReference(int index)
 {
 	switch (index)
 	{
 	case 0:
-		return NeuropixelsV1Reference::External;
+		return NeuropixelsV1fReference::External;
 	case 1:
-		return NeuropixelsV1Reference::Tip;
+		return NeuropixelsV1fReference::Tip;
 	default:
 		break;
 	}
 
-	return NeuropixelsV1Reference::External;
+	return NeuropixelsV1fReference::External;
 }
 
-int Neuropixels_1::configureDevice()
+int Neuropixels1f::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;
 
@@ -342,14 +342,14 @@ int Neuropixels_1::configureDevice()
 	return rc;
 }
 
-bool Neuropixels_1::updateSettings()
+bool Neuropixels1f::updateSettings()
 {
 	BackgroundUpdaterWithProgressWindow updater = BackgroundUpdaterWithProgressWindow(this);
 
 	return updater.updateSettings();
 }
 
-void Neuropixels_1::setSettings(ProbeSettings<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>* settings_, int index)
+void Neuropixels1f::setSettings(ProbeSettings<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>* settings_, int index)
 {
 	if (index >= settings.size())
 	{
@@ -360,7 +360,7 @@ void Neuropixels_1::setSettings(ProbeSettings<NeuropixelsV1fValues::numberOfChan
 	settings[index]->updateProbeSettings(settings_);
 }
 
-std::vector<int> Neuropixels_1::selectElectrodeConfiguration(String config)
+std::vector<int> Neuropixels1f::selectElectrodeConfiguration(String config)
 {
 	std::vector<int> selection;
 
@@ -407,7 +407,7 @@ std::vector<int> Neuropixels_1::selectElectrodeConfiguration(String config)
 	return selection;
 }
 
-void Neuropixels_1::startAcquisition()
+void Neuropixels1f::startAcquisition()
 {
 	apGain = getGainValue(getGainEnum(settings[0]->apGainIndex));
 	lfpGain = getGainValue(getGainEnum(settings[0]->lfpGainIndex));
@@ -438,7 +438,7 @@ void Neuropixels_1::startAcquisition()
 	lfpSampleNumber = 0;
 }
 
-void Neuropixels_1::stopAcquisition()
+void Neuropixels1f::stopAcquisition()
 {
 	WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::RESET_ALL);
 
@@ -449,7 +449,7 @@ void Neuropixels_1::stopAcquisition()
 	}
 }
 
-void Neuropixels_1::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+void Neuropixels1f::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	for (StreamInfo streamInfo : streamInfos)
 	{
@@ -462,13 +462,13 @@ void Neuropixels_1::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	}
 }
 
-void Neuropixels_1::addFrame(oni_frame_t* frame)
+void Neuropixels1f::addFrame(oni_frame_t* frame)
 {
 	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
-void Neuropixels_1::processFrames()
+void Neuropixels1f::processFrames()
 {
 	const float apConversion = (1171.875 / apGain) * -1.0f;
 	const float lfpConversion = (1171.875 / lfpGain) * -1.0f;
@@ -541,7 +541,7 @@ void Neuropixels_1::processFrames()
 	}
 }
 
-void Neuropixels_1::updateApOffsets(std::array<float, numApSamples>& samples, int64 sampleNumber)
+void Neuropixels1f::updateApOffsets(std::array<float, numApSamples>& samples, int64 sampleNumber)
 {
 	if (sampleNumber > apSampleRate * secondsToSettle)
 	{
@@ -572,7 +572,7 @@ void Neuropixels_1::updateApOffsets(std::array<float, numApSamples>& samples, in
 	}
 }
 
-void Neuropixels_1::updateLfpOffsets(std::array<float, numLfpSamples>& samples, int64 sampleNumber)
+void Neuropixels1f::updateLfpOffsets(std::array<float, numLfpSamples>& samples, int64 sampleNumber)
 {
 	if (sampleNumber > lfpSampleRate * secondsToSettle)
 	{
@@ -603,7 +603,7 @@ void Neuropixels_1::updateLfpOffsets(std::array<float, numLfpSamples>& samples, 
 	}
 }
 
-Neuropixels_1::ShankBitset Neuropixels_1::makeShankBits(NeuropixelsV1Reference reference, std::array<int, numberOfChannels> channelMap)
+Neuropixels1f::ShankBitset Neuropixels1f::makeShankBits(NeuropixelsV1fReference reference, std::array<int, numberOfChannels> channelMap)
 {
 	const int shankBitExt1 = 965;
 	const int shankBitExt2 = 2;
@@ -626,11 +626,11 @@ Neuropixels_1::ShankBitset Neuropixels_1::makeShankBits(NeuropixelsV1Reference r
 
 	switch (reference)
 	{
-	case NeuropixelsV1Reference::External:
+	case NeuropixelsV1fReference::External:
 		shankBits[shankBitExt1] = true;
 		shankBits[shankBitExt2] = true;
 		break;
-	case NeuropixelsV1Reference::Tip:
+	case NeuropixelsV1fReference::Tip:
 		shankBits[shankBitTip1] = true;
 		shankBits[shankBitTip2] = true;
 		break;
@@ -646,7 +646,7 @@ Neuropixels_1::ShankBitset Neuropixels_1::makeShankBits(NeuropixelsV1Reference r
 	return shankBits;
 }
 
-Neuropixels_1::CongigBitsArray Neuropixels_1::makeConfigBits(NeuropixelsV1Reference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs)
+Neuropixels1f::CongigBitsArray Neuropixels1f::makeConfigBits(NeuropixelsV1fReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1fAdc> adcs)
 {
 	const int BaseConfigurationConfigOffset = 576;
 
@@ -726,7 +726,7 @@ Neuropixels_1::CongigBitsArray Neuropixels_1::makeConfigBits(NeuropixelsV1Refere
 	return baseConfigs;
 }
 
-void Neuropixels_1::writeShiftRegisters(ShankBitset shankBits, CongigBitsArray configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection)
+void Neuropixels1f::writeShiftRegisters(ShankBitset shankBits, CongigBitsArray configBits, Array<NeuropixelsV1fAdc> adcs, double lfpGainCorrection, double apGainCorrection)
 {
 	auto shankBytes = toBitReversedBytes<shankConfigurationBitCount>(shankBits);
 
@@ -813,7 +813,7 @@ void Neuropixels_1::writeShiftRegisters(ShankBitset shankBits, CongigBitsArray c
 	}
 }
 
-void Neuropixels_1::defineMetadata(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
+void Neuropixels1f::defineMetadata(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
 {
 	settings->probeType = ProbeType::NPX_V1E;
 	settings->probeMetadata.name = "Neuropixels 1.0f";

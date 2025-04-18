@@ -29,8 +29,6 @@
 #include <chrono>
 #include <thread>
 
-#include "I2CRegisterContext.h"
-#include "NeuropixComponents.h"
 #include "Onix1.h"
 
 using namespace std::chrono;
@@ -46,7 +44,7 @@ namespace OnixSourcePlugin
 	enum class OnixDeviceType {
 		BNO,
 		POLLEDBNO,
-		NEUROPIXELS_1,
+		NEUROPIXELSV1F,
 		NEUROPIXELSV2E,
 		PORT_CONTROL,
 		MEMORYMONITOR,
@@ -222,7 +220,7 @@ namespace OnixSourcePlugin
 
 	protected:
 
-		oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t hubIndex);
+		oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t hubIndex) const;
 
 		const oni_dev_idx_t deviceIdx;
 		std::shared_ptr<Onix1> deviceContext;

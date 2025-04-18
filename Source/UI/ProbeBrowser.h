@@ -25,7 +25,6 @@
 #include <VisualizerEditorHeaders.h>
 
 #include "SettingsInterface.h"
-#include "../NeuropixComponents.h"
 
 namespace OnixSourcePlugin
 {

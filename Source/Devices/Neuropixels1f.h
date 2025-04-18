@@ -23,8 +23,8 @@
 #pragma once
 
 #include "../OnixDevice.h"
-#include "../NeuropixComponents.h"
-#include "PortController.h"
+#include "../NeuropixelsComponents.h"
+#include "../I2CRegisterContext.h"
 
 namespace OnixSourcePlugin
 {
@@ -74,7 +74,7 @@ namespace OnixSourcePlugin
 		ACTIVE = DIG_NRESET | CH_NRESET
 	};
 
-	enum class NeuropixelsV1Reference : unsigned char
+	enum class NeuropixelsV1fReference : unsigned char
 	{
 		External = 0b001,
 		Tip = 0b010
@@ -121,7 +121,7 @@ namespace OnixSourcePlugin
 		312, 313, 336, 337, 360, 361
 	};
 
-	struct NeuropixelsV1Adc
+	struct NeuropixelsV1fAdc
 	{
 	public:
 		const int compP;
@@ -133,7 +133,7 @@ namespace OnixSourcePlugin
 		const int offset;
 		const int threshold;
 
-		NeuropixelsV1Adc(int compP_ = 16, int compN_ = 16, int slope_ = 0, int coarse_ = 0, int fine_ = 0, int cfix_ = 0, int offset_ = 0, int threshold_ = 512)
+		NeuropixelsV1fAdc(int compP_ = 16, int compN_ = 16, int slope_ = 0, int coarse_ = 0, int fine_ = 0, int cfix_ = 0, int offset_ = 0, int threshold_ = 512)
 			: compP(compP_), compN(compN_), slope(slope_), coarse(coarse_), fine(fine_), cfix(cfix_), offset(offset_), threshold(threshold_)
 		{
 		}
@@ -144,13 +144,13 @@ namespace OnixSourcePlugin
 		Configures and streams data from a Neuropixels 1.0f device
 
 	*/
-	class Neuropixels_1 : public INeuropixel<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>,
+	class Neuropixels1f : public INeuropixel<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>,
 		public OnixDevice,
 		public I2CRegisterContext
 	{
 	public:
 		/** Constructor */
-		Neuropixels_1(String name, const oni_dev_idx_t, std::shared_ptr<Onix1>);
+		Neuropixels1f(String name, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
@@ -175,7 +175,7 @@ namespace OnixSourcePlugin
 
 		int getGainValue(NeuropixelsGain);
 
-		NeuropixelsV1Reference getReference(int index);
+		NeuropixelsV1fReference getReference(int index);
 
 		static const int shankConfigurationBitCount = 968;
 		static const int BaseConfigurationBitCount = 2448;
@@ -190,11 +190,11 @@ namespace OnixSourcePlugin
 
 		void setCorrectOffset(bool value) { correctOffset = value; }
 
-		ShankBitset static makeShankBits(NeuropixelsV1Reference reference, std::array<int, numberOfChannels> channelMap);
+		ShankBitset static makeShankBits(NeuropixelsV1fReference reference, std::array<int, numberOfChannels> channelMap);
 
-		CongigBitsArray static makeConfigBits(NeuropixelsV1Reference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs);
+		CongigBitsArray static makeConfigBits(NeuropixelsV1fReference reference, NeuropixelsGain spikeAmplifierGain, NeuropixelsGain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1fAdc> adcs);
 
-		void writeShiftRegisters(ShankBitset shankBits, CongigBitsArray configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
+		void writeShiftRegisters(ShankBitset shankBits, CongigBitsArray configBits, Array<NeuropixelsV1fAdc> adcs, double lfpGainCorrection, double apGainCorrection);
 
 		// INeuropixels methods
 		void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index = 0) override;
@@ -269,7 +269,7 @@ namespace OnixSourcePlugin
 		int apGain = 1000;
 		int lfpGain = 50;
 
-		JUCE_LEAK_DETECTOR(Neuropixels_1);
+		JUCE_LEAK_DETECTOR(Neuropixels1f);
 	};
 
 	/*
@@ -280,7 +280,7 @@ namespace OnixSourcePlugin
 	class BackgroundUpdaterWithProgressWindow : public ThreadWithProgressWindow
 	{
 	public:
-		BackgroundUpdaterWithProgressWindow(Neuropixels_1* d);
+		BackgroundUpdaterWithProgressWindow(Neuropixels1f* d);
 
 		void run() override;
 
@@ -288,7 +288,7 @@ namespace OnixSourcePlugin
 
 	private:
 
-		Neuropixels_1* device;
+		Neuropixels1f* device;
 
 		std::atomic<bool> result = false;
 

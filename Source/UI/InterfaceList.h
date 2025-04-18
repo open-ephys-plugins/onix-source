@@ -21,7 +21,7 @@
 */
 
 #include "CustomViewport.h"
-#include "NeuropixV1Interface.h"
+#include "NeuropixelsV1fInterface.h"
 #include "NeuropixelsV2eInterface.h"
 #include "Bno055Interface.h"
 #include "PolledBno055Interface.h"

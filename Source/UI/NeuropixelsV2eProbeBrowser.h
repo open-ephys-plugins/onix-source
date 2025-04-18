@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include "../NeuropixComponents.h"
-
 #include "../Devices/Neuropixels2e.h"
 #include "ProbeBrowser.h"
 

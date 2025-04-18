@@ -24,9 +24,8 @@
 
 #include "../OnixDevice.h"
 #include "../I2CRegisterContext.h"
-#include "../NeuropixComponents.h"
+#include "../NeuropixelsComponents.h"
 #include "DS90UB9x.h"
-#include "PortController.h"
 
 namespace OnixSourcePlugin
 {
