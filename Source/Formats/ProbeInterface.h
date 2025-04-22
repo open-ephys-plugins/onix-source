@@ -29,7 +29,8 @@ namespace OnixSourcePlugin
 	class ProbeInterfaceJson
 	{
 	public:
-		static bool writeProbeSettingsToJson(File& file, ProbeSettings<0, 0>* settings)
+		template <int numChannels, int numElectrodes>
+		static bool writeProbeSettingsToJson(File& file, ProbeSettings<numChannels, numElectrodes>* settings)
 		{
 			DynamicObject output;
 
@@ -52,31 +53,35 @@ namespace OnixSourcePlugin
 			for (int elec = 0; elec < settings->electrodeMetadata.size(); elec++)
 			{
 				ElectrodeMetadata& em = settings->electrodeMetadata[elec];
-				int channelIndex = settings->selectedElectrode[elec];
-				// TODO: Fix this section
-				//int channel = -1;
-				//if (channelIndex > -1)
-				//	channel = settings->selectedChannel[channelIndex];
 
 				Array<var> contact_position;
-				contact_position.add(em.xpos + 250 * em.shank);
+				contact_position.add(em.xpos);
 				contact_position.add(em.ypos);
 
 				DynamicObject::Ptr contact_shape_param = new DynamicObject;
-				contact_shape_param->setProperty(Identifier("width"), settings->electrodeMetadata[elec].site_width);
+				contact_shape_param->setProperty(Identifier("width"), em.site_width);
 
 				contact_positions.add(contact_position);
 				shank_ids.add(String(em.shank));
-				device_channel_indices.add(0);
+				device_channel_indices.add(em.status == ElectrodeStatus::CONNECTED ? em.channel : -1);
 				contact_plane_axes.add(contact_plane_axis);
 				contact_shapes.add("square");
 				contact_shape_params.add(contact_shape_param.get());
 			}
 
+			Array<var> probe_planar_contours;
+			auto& probeContour = settings->probeMetadata.probeContour;
+
+			for (int i = 0; i < probeContour.size(); i++)
+			{
+				probe_planar_contours.add(Array<var> { probeContour[i][0], probeContour[i][1] });
+			}
+
 			DynamicObject::Ptr probe = new DynamicObject();
 			DynamicObject::Ptr annotations = new DynamicObject();
-			//annotations->setProperty(Identifier("name"), settings->probe->name);
 			annotations->setProperty(Identifier("manufacturer"), "imec");
+			auto probeName = getProbeName(settings->probeType);
+			annotations->setProperty(Identifier("name"), String(probeName));
 
 			probe->setProperty(Identifier("ndim"), 2);
 			probe->setProperty(Identifier("si_units"), "um");
@@ -85,6 +90,7 @@ namespace OnixSourcePlugin
 			probe->setProperty(Identifier("contact_plane_axes"), contact_plane_axes);
 			probe->setProperty(Identifier("contact_shapes"), contact_shapes);
 			probe->setProperty(Identifier("contact_shape_params"), contact_shape_params);
+			probe->setProperty(Identifier("probe_planar_contour"), probe_planar_contours);
 			probe->setProperty(Identifier("device_channel_indices"), device_channel_indices);
 			probe->setProperty(Identifier("shank_ids"), shank_ids);
 
@@ -108,15 +114,16 @@ namespace OnixSourcePlugin
 			return true;
 		}
 
-		static bool readProbeSettingsFromJson(File& file, ProbeSettings<0, 0>* settings)
+		template <int numChannels, int numElectrodes>
+		static bool readProbeSettingsFromJson(File& file, ProbeSettings<numChannels, numElectrodes>* settings)
 		{
-			var result;
+			auto json = JSON::parse(file);
 
-			static Result r = JSON::parse(file.loadFileAsString(), result);
+			if (json == var())
+				return false;
 
-			DynamicObject::Ptr obj = result.getDynamicObject();
+			DynamicObject::Ptr obj = json.getDynamicObject();
 
-			// check that specification == 'probeinterface'
 			if (obj->hasProperty(Identifier("specification")))
 			{
 				String specification = obj->getProperty(Identifier("specification")).toString();
@@ -124,52 +131,139 @@ namespace OnixSourcePlugin
 				if (specification.compare("probeinterface") != 0)
 					return false;
 			}
+			else
+				return false;
 
 			if (obj->hasProperty(Identifier("probes")))
 			{
 				Array<var>* probes = obj->getProperty(Identifier("probes")).getArray();
 
-				// check that this file contains only one probe
 				if (probes->size() != 1)
 					return false;
 
 				DynamicObject::Ptr probe = probes->getReference(0).getDynamicObject();
 
-				if (probe->hasProperty(Identifier("device_channel_indices")))
+				if (probe->hasProperty(Identifier("ndim")))
 				{
-					Array<var>* device_channel_indices = probe->getProperty(Identifier("device_channel_indices")).getArray();
-
-					for (int ch = 0; ch < device_channel_indices->size(); ch++)
+					if (!probe->getProperty(Identifier("ndim")).equalsWithSameType(2))
 					{
-						int index = int(device_channel_indices->getReference(ch));
+						return false;
 					}
 				}
+				else
+					return false;
 
-				if (probe->hasProperty(Identifier("shank_ids")))
+				if (probe->hasProperty(Identifier("si_units")))
 				{
-					Array<var>* shank_ids = probe->getProperty(Identifier("shank_ids")).getArray();
-
-					for (int ch = 0; ch < shank_ids->size(); ch++)
+					if (!probe->getProperty(Identifier("si_units")).equalsWithSameType("um"))
 					{
-						int shank_id = int(shank_ids->getReference(ch));
+						return false;
 					}
 				}
+				else
+					return false;
+
+				Array<var>* contact_positions = nullptr;
 
 				if (probe->hasProperty(Identifier("contact_positions")))
 				{
-					Array<var>* contact_positions = probe->getProperty(Identifier("contact_positions")).getArray();
+					contact_positions = probe->getProperty(Identifier("contact_positions")).getArray();
 
-					for (int ch = 0; ch < contact_positions->size(); ch++)
+					if (contact_positions->size() != settings->electrodeMetadata.size())
+						return false;
+				}
+				else
+					return false;
+
+				Array<var>* probe_planar_contour = nullptr;
+
+				if (probe->hasProperty(Identifier("probe_planar_contour")))
+				{
+					probe_planar_contour = probe->getProperty(Identifier("probe_planar_contour")).getArray();
+				}
+				else
+					return false;
+
+				Array<var>* device_channel_indices = nullptr;
+
+				if (probe->hasProperty(Identifier("device_channel_indices")))
+				{
+					device_channel_indices = probe->getProperty(Identifier("device_channel_indices")).getArray();
+
+					if (device_channel_indices->size() != settings->electrodeMetadata.size())
+						return false;
+				}
+				else
+					return false;
+
+				Array<var>* shank_ids = nullptr;
+
+				if (probe->hasProperty(Identifier("shank_ids")))
+				{
+					shank_ids = probe->getProperty(Identifier("shank_ids")).getArray();
+
+					if (shank_ids->size() != settings->electrodeMetadata.size())
+						return false;
+				}
+				else
+					return false;
+
+				for (int ch = 0; ch < contact_positions->size(); ch++)
+				{
+					Array<var>* contact_position = contact_positions->getReference(ch).getArray();
+
+					settings->electrodeMetadata[ch].xpos = int(contact_position->getReference(0));
+					settings->electrodeMetadata[ch].ypos = int(contact_position->getReference(1));
+				}
+
+				settings->probeMetadata.probeContour.clear();
+
+				for (int i = 0; i < probe_planar_contour->size(); i++)
+				{
+					Array<var>* point = probe_planar_contour->getReference(i).getArray();
+
+					settings->probeMetadata.probeContour.emplace_back(std::array<float, 2>{float(point->getReference(0)), float(point->getReference(1))});
+				}
+
+				for (int ch = 0; ch < shank_ids->size(); ch++)
+				{
+					settings->electrodeMetadata[ch].shank = int(shank_ids->getReference(ch));
+				}
+
+				settings->clearElectrodeSelection();
+				std::vector<int> selectedChannels{};
+
+				for (int ch = 0; ch < device_channel_indices->size(); ch++)
+				{
+					if (int(device_channel_indices->getReference(ch)) >= 0)
 					{
-						Array<var>* contact_position = contact_positions->getReference(ch).getArray();
-
-						int xpos = int(contact_position->getReference(0));
-						int ypos = int(contact_position->getReference(1));
+						selectedChannels.emplace_back(ch);
 					}
 				}
+
+				settings->selectElectrodes(selectedChannels);
 			}
+			else
+				return false;
 
 			return true;
+		}
+
+		static std::string getProbeName(ProbeType type)
+		{
+			switch (type)
+			{
+			case OnixSourcePlugin::ProbeType::NONE:
+				return "";
+			case OnixSourcePlugin::ProbeType::NPX_V1E:
+				return "Neuropixels 1.0";
+			case OnixSourcePlugin::ProbeType::NPX_V2E:
+				return "Neuropixels 2.0";
+			case OnixSourcePlugin::ProbeType::NPX_V2E_BETA:
+				return "Neuropixels 2.0";
+			default:
+				return "";
+			}
 		}
 	};
 }

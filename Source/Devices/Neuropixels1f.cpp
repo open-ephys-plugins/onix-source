@@ -818,19 +818,29 @@ void Neuropixels1f::defineMetadata(ProbeSettings<numberOfChannels, numberOfElect
 	settings->probeType = ProbeType::NPX_V1E;
 	settings->probeMetadata.name = "Neuropixels 1.0f";
 
-	Path path;
-	path.startNewSubPath(27, 31);
-	path.lineTo(27, 514);
-	path.lineTo(27 + 5, 522);
-	path.lineTo(27 + 10, 514);
-	path.lineTo(27 + 10, 31);
-	path.closeSubPath();
+	std::vector<std::array<float, 2>> shankOutline{
+		{27, 31},
+		{27, 514},
+		{27 + 5, 522},
+		{27 + 10, 514},
+		{27 + 10, 31}
+	};
+
+	std::vector<std::array<float, 2>> probeContour{
+		{0, 155},
+		{35, 0},
+		{70, 155},
+		{70, 9770},
+		{0, 9770},
+		{0, 155}
+	};
 
 	settings->probeMetadata.shank_count = 1;
 	settings->probeMetadata.electrodes_per_shank = numberOfElectrodes;
 	settings->probeMetadata.rows_per_shank = numberOfElectrodes / 2;
 	settings->probeMetadata.columns_per_shank = 2;
-	settings->probeMetadata.shankOutline = path;
+	settings->probeMetadata.shankOutline = shankOutline;
+	settings->probeMetadata.probeContour = probeContour;
 	settings->probeMetadata.num_adcs = 32; // NB: Is this right for 1.0e?
 	settings->probeMetadata.adc_bits = 10; // NB: Is this right for 1.0e?
 

@@ -25,6 +25,8 @@
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
 
+#include "../Formats/ProbeInterface.h"
+
 using namespace OnixSourcePlugin;
 using namespace ColourScheme;
 
@@ -421,12 +423,11 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 		{
 			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
-			//bool success = ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings[probeIndex].get());
-
-			//if (success)
-			//{
-			//	applyProbeSettings(npx->settings[probeIndex].get());
-			//}
+			if (ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings[probeIndex].get()))
+			{
+				applyProbeSettings(npx->settings[probeIndex].get());
+				checkForExistingChannelPreset();
+			}
 		}
 	}
 	else if (button == saveJsonButton.get())
@@ -437,12 +438,10 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 		{
 			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
-			//bool success = ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings[probeIndex].get());
-
-			//if (!success)
-			//	CoreServices::sendStatusMessage("Failed to write probe channel map.");
-			//else
-			//	CoreServices::sendStatusMessage("Successfully wrote probe channel map.");
+			if (!ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings[probeIndex].get()))
+				CoreServices::sendStatusMessage("Failed to write probe channel map.");
+			else
+				CoreServices::sendStatusMessage("Successfully wrote probe channel map.");
 		}
 	}
 	else if (button == gainCorrectionFileButton.get())

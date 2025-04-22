@@ -844,19 +844,46 @@ void Neuropixels2e::defineMetadata(ProbeSettings<numberOfChannels, numberOfElect
 	settings->probeType = ProbeType::NPX_V2E;
 	settings->probeMetadata.name = "Neuropixels 2.0e" + String(shankCount == 1 ? " - Single Shank" : " - Quad Shank");
 
-	Path path;
-	path.startNewSubPath(27, 31);
-	path.lineTo(27, 514);
-	path.lineTo(27 + 5, 522);
-	path.lineTo(27 + 10, 514);
-	path.lineTo(27 + 10, 31);
-	path.closeSubPath();
+	constexpr float shankTipY = 0.0f;
+	constexpr float shankBaseY = 155.0f;
+	constexpr float shankLengthY = 10000.0f;
+	constexpr float probeLengthY = 10155.0f;
+	constexpr float shankOffsetX = 200.0f;
+	constexpr float shankWidthX = 70.0f;
+	constexpr float shankPitchX = 250.0f;
+
+	std::vector<std::array<float, 2>> probeContour{
+		{0, probeLengthY},
+		{0, shankLengthY},
+	};
+
+	for (int i = 0; i < shankCount; i++)
+	{
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i, shankLengthY });
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i, shankBaseY });
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i + shankWidthX / 2, shankTipY });
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i + shankWidthX, shankBaseY });
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i + shankWidthX, shankLengthY });
+	}
+
+	probeContour.emplace_back(std::array<float, 2>{shankOffsetX * 2 + (shankWidthX + shankPitchX) * (numberOfShanks - 1) + shankWidthX, shankLengthY});
+	probeContour.emplace_back(std::array<float, 2>{shankOffsetX * 2 + (shankWidthX + shankPitchX) * (numberOfShanks - 1) + shankWidthX, probeLengthY});
+	probeContour.emplace_back(std::array<float, 2>{0.0f, probeLengthY});
+
+	std::vector<std::array<float, 2>> shankOutline{
+		{27, 31},
+		{27, 514},
+		{27 + 5, 522},
+		{27 + 10, 514},
+		{27 + 10, 31}
+	};
 
 	settings->probeMetadata.shank_count = shankCount;
 	settings->probeMetadata.electrodes_per_shank = NeuropixelsV2eValues::electrodesPerShank;
 	settings->probeMetadata.rows_per_shank = NeuropixelsV2eValues::electrodesPerShank / 2;
 	settings->probeMetadata.columns_per_shank = 2;
-	settings->probeMetadata.shankOutline = path;
+	settings->probeMetadata.shankOutline = shankOutline;
+	settings->probeMetadata.probeContour = probeContour;
 	settings->probeMetadata.num_adcs = 24;
 	settings->probeMetadata.adc_bits = 12;
 
@@ -877,8 +904,9 @@ void Neuropixels2e::defineMetadata(ProbeSettings<numberOfChannels, numberOfElect
 		metadata.shank = i / settings->probeMetadata.electrodes_per_shank;
 		metadata.shank_local_index = i % settings->probeMetadata.electrodes_per_shank;
 
-		metadata.xpos = i % 2 * 32.0f + 8.0f;
-		metadata.ypos = (metadata.shank_local_index - (metadata.shank_local_index % 2)) * 7.5f;
+		auto offset = shankOffsetX + (shankWidthX + shankPitchX) * metadata.shank + 11.0f;
+		metadata.xpos = offset + (i % 2) * 32.0f + 8.0f;
+		metadata.ypos = std::floor((i % settings->probeMetadata.electrodes_per_shank) / 2.0f) * 15 + 170;
 		metadata.site_width = 12;
 
 		metadata.column_index = i % 2;

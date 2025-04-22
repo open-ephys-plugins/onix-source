@@ -22,6 +22,8 @@
 
 #include "NeuropixelsV1fInterface.h"
 
+#include "../Formats/ProbeInterface.h"
+
 using namespace OnixSourcePlugin;
 using namespace ColourScheme;
 
@@ -655,8 +657,15 @@ void NeuropixelsV1fInterface::checkForExistingChannelPreset()
 	for (int i = 0; i < settings->availableElectrodeConfigurations.size(); i++)
 	{
 		auto selection = npx->selectElectrodeConfiguration(settings->availableElectrodeConfigurations[i]);
+		std::vector<int> channelMap;
+		channelMap.assign(NeuropixelsV2eValues::numberOfChannels, 0);
 
-		if (std::equal(selection.cbegin(), selection.cend(), settings->selectedElectrode.cbegin(), settings->selectedElectrode.cend()))
+		for (int j = 0; j < selection.size(); j++)
+		{
+			channelMap[settings->electrodeMetadata[selection[j]].channel] = selection[j];
+		}
+
+		if (std::equal(channelMap.cbegin(), channelMap.cend(), settings->selectedElectrode.cbegin(), settings->selectedElectrode.cend()))
 		{
 			settings->electrodeConfigurationIndex = i;
 			break;
@@ -748,12 +757,11 @@ void NeuropixelsV1fInterface::buttonClicked(Button* button)
 		{
 			auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 
-			//bool success = ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings.get());
-
-			//if (success)
-			//{
-			//	applyProbeSettings(npx->settings.get());
-			//}
+			if (ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings[0].get()))
+			{
+				applyProbeSettings(npx->settings[0].get());
+				checkForExistingChannelPreset();
+			}
 		}
 	}
 	else if (button == saveJsonButton.get())
@@ -764,12 +772,10 @@ void NeuropixelsV1fInterface::buttonClicked(Button* button)
 		{
 			auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 
-			/*bool success = ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings.get());
-
-			if (!success)
+			if (!ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings[0].get()))
 				CoreServices::sendStatusMessage("Failed to write probe channel map.");
 			else
-				CoreServices::sendStatusMessage("Successfully wrote probe channel map.");*/
+				CoreServices::sendStatusMessage("Successfully wrote probe channel map.");
 		}
 	}
 	else if (button == adcCalibrationFileButton.get())
@@ -928,7 +934,6 @@ bool NeuropixelsV1fInterface::applyProbeSettings(ProbeSettings<Neuropixels1f::nu
 	if (electrodeConfigurationComboBox != 0)
 		electrodeConfigurationComboBox->setSelectedId(p->electrodeConfigurationIndex + 2, dontSendNotification);
 
-	// update display
 	if (apGainComboBox != 0)
 		apGainComboBox->setSelectedId(p->apGainIndex + 1, dontSendNotification);
 
@@ -954,7 +959,6 @@ bool NeuropixelsV1fInterface::applyProbeSettings(ProbeSettings<Neuropixels1f::nu
 			settings->electrodeMetadata[i].status = ElectrodeStatus::DISCONNECTED;
 	}
 
-	// update selection state
 	for (auto electrode : p->selectedElectrode)
 	{
 		settings->electrodeMetadata[electrode].status = ElectrodeStatus::CONNECTED;

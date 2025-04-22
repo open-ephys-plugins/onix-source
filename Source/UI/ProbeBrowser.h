@@ -465,7 +465,7 @@ namespace OnixSourcePlugin
 
 			for (int i = 0; i < settings->probeMetadata.shank_count; i++)
 			{
-				Path shankPath = settings->probeMetadata.shankOutline;
+				Path shankPath = convertVectorToPath(settings->probeMetadata.shankOutline);
 				shankPath.applyTransform(AffineTransform::translation(INTERSHANK_DISTANCE * i, 0.0f));
 				g.strokePath(shankPath, PathStrokeType(1.0));
 			}
@@ -833,6 +833,19 @@ namespace OnixSourcePlugin
 			}
 
 			return a;
+		}
+
+		Path convertVectorToPath(std::vector<std::array<float, 2>> vectorPath)
+		{
+			Path path;
+			path.startNewSubPath(Point(vectorPath[0][0], vectorPath[0][1]));
+
+			for (int i = 1; i < vectorPath.size(); i++)
+			{
+				path.lineTo(Point(vectorPath[i][0], vectorPath[i][1]));
+			}
+
+			return path;
 		}
 
 		JUCE_LEAK_DETECTOR(ProbeBrowser);

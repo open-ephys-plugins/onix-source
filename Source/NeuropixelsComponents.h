@@ -102,7 +102,8 @@ namespace OnixSourcePlugin
 		int electrodes_per_shank;
 		int num_adcs;
 		int adc_bits;
-		Path shankOutline;
+		std::vector<std::array<float, 2>> shankOutline;
+		std::vector<std::array<float, 2>> probeContour;
 		int columns_per_shank;
 		int rows_per_shank;
 		String name;
@@ -155,9 +156,9 @@ namespace OnixSourcePlugin
 
 		void clearElectrodeSelection()
 		{
-			selectedBank.clear();
-			selectedShank.clear();
-			selectedElectrode.clear();
+			selectedBank.fill(Bank::A);
+			selectedShank.fill(0);
+			selectedElectrode.fill(-1);
 		}
 
 		void selectElectrodes(std::vector<int> electrodes)
