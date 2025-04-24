@@ -91,42 +91,42 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 
 	for (const auto& device : devices)
 	{
-		if (device->type == OnixDeviceType::NEUROPIXELS_1)
+		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
 		{
 			auto neuropixInterface = std::make_shared<NeuropixV1Interface>(std::static_pointer_cast<Neuropixels_1>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, neuropixInterface);
 		}
-		else if (device->type == OnixDeviceType::BNO)
+		else if (device->getDeviceType() == OnixDeviceType::BNO)
 		{
 			auto bno055Interface = std::make_shared<Bno055Interface>(std::static_pointer_cast<Bno055>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, bno055Interface);
 		}
-		else if (device->type == OnixDeviceType::OUTPUTCLOCK)
+		else if (device->getDeviceType() == OnixDeviceType::OUTPUTCLOCK)
 		{
 			auto outputClockInterface = std::make_shared<OutputClockInterface>(std::static_pointer_cast<OutputClock>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, outputClockInterface);
 		}
-		else if (device->type == OnixDeviceType::HARPSYNCINPUT)
+		else if (device->getDeviceType() == OnixDeviceType::HARPSYNCINPUT)
 		{
 			auto harpSyncInputInterface = std::make_shared<HarpSyncInputInterface>(std::static_pointer_cast<HarpSyncInput>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, harpSyncInputInterface);
 		}
-		else if (device->type == OnixDeviceType::ANALOGIO)
+		else if (device->getDeviceType() == OnixDeviceType::ANALOGIO)
 		{
 			auto analogIOInterface = std::make_shared<AnalogIOInterface>(std::static_pointer_cast<AnalogIO>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, analogIOInterface);
 		}
-		else if (device->type == OnixDeviceType::DIGITALIO)
+		else if (device->getDeviceType() == OnixDeviceType::DIGITALIO)
 		{
 			auto digitalIOInterface = std::make_shared<DigitalIOInterface>(std::static_pointer_cast<DigitalIO>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, digitalIOInterface);
 		}
-		else if (device->type == OnixDeviceType::NEUROPIXELSV2E)
+		else if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
 		{
 			auto npxv2eInterface = std::make_shared<NeuropixelsV2eInterface>(std::static_pointer_cast<Neuropixels2e>(device), editor, this);
 			addInterfaceToTab(device->getHeadstageName(), tab, npxv2eInterface);
 		}
-		else if (device->type == OnixDeviceType::POLLEDBNO)
+		else if (device->getDeviceType() == OnixDeviceType::POLLEDBNO)
 		{
 			auto polledBnoInterface = std::make_shared<PolledBno055Interface>(std::static_pointer_cast<PolledBno055>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, polledBnoInterface);
@@ -168,13 +168,13 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 
 	if (ind == -1)
 	{
-		if (device->type != OnixDeviceType::MEMORYMONITOR && device->type != OnixDeviceType::HEARTBEAT)
+		if (device->getDeviceType() != OnixDeviceType::MEMORYMONITOR && device->getDeviceType() != OnixDeviceType::HEARTBEAT)
 			LOGD("Unable to match " + device->getName() + " to an open tab.");
 
 		return;
 	}
 
-	if (device->type == OnixDeviceType::NEUROPIXELS_1)
+	if (device->getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
 	{
 		auto npx1Found = std::static_pointer_cast<Neuropixels_1>(device);
 		auto npx1Selected = std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device);
@@ -183,7 +183,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 		npx1Found->gainCalibrationFilePath = npx1Selected->gainCalibrationFilePath;
 		npx1Found->setCorrectOffset(npx1Selected->getCorrectOffset());
 	}
-	else if (device->type == OnixDeviceType::OUTPUTCLOCK)
+	else if (device->getDeviceType() == OnixDeviceType::OUTPUTCLOCK)
 	{
 		auto outputClockFound = std::static_pointer_cast<OutputClock>(device);
 		auto outputClockSelected = std::static_pointer_cast<OutputClock>(settingsInterfaces[ind]->device);
@@ -192,7 +192,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 		outputClockFound->setFrequencyHz(outputClockSelected->getFrequencyHz());
 		outputClockFound->setGateRun(outputClockSelected->getGateRun());
 	}
-	else if (device->type == OnixDeviceType::ANALOGIO)
+	else if (device->getDeviceType() == OnixDeviceType::ANALOGIO)
 	{
 		auto analogIOFound = std::static_pointer_cast<AnalogIO>(device);
 		auto analogIOSelected = std::static_pointer_cast<AnalogIO>(settingsInterfaces[ind]->device);
@@ -201,7 +201,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 			analogIOFound->setChannelDirection(i, analogIOSelected->getChannelDirection(i));
 		}
 	}
-	else if (device->type == OnixDeviceType::NEUROPIXELSV2E)
+	else if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
 	{
 		auto npx2Found = std::static_pointer_cast<Neuropixels2e>(device);
 		auto npx2Selected = std::static_pointer_cast<Neuropixels2e>(settingsInterfaces[ind]->device);
@@ -293,7 +293,7 @@ std::map<int, OnixDeviceType> OnixSourceCanvas::createSelectedMap(std::vector<st
 
 	for (const auto& settings : interfaces)
 	{
-		tabMap.insert({ settings->device->getDeviceIdx(), settings->device->type });
+		tabMap.insert({ settings->device->getDeviceIdx(), settings->device->getDeviceType() });
 	}
 
 	return tabMap;

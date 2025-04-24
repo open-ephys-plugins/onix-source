@@ -334,7 +334,7 @@ void OnixSourceEditor::startAcquisition()
 
 	for (const auto& source : source->getDataSources())
 	{
-		if (source->type == OnixDeviceType::MEMORYMONITOR)
+		if (source->getDeviceType() == OnixDeviceType::MEMORYMONITOR)
 		{
 			memoryUsage->setMemoryMonitor(std::static_pointer_cast<MemoryMonitor>(source));
 			memoryUsage->startAcquisition();
@@ -350,7 +350,7 @@ void OnixSourceEditor::stopAcquisition()
 
 	for (const auto& source : source->getDataSources())
 	{
-		if (source->type == OnixDeviceType::MEMORYMONITOR)
+		if (source->getDeviceType() == OnixDeviceType::MEMORYMONITOR)
 		{
 			memoryUsage->stopAcquisition();
 			break;

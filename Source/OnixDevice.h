@@ -42,12 +42,10 @@ enum class PortName
 };
 
 enum class OnixDeviceType {
-	HS64,
 	BNO,
 	POLLEDBNO,
 	NEUROPIXELS_1,
 	NEUROPIXELSV2E,
-	ADC,
 	PORT_CONTROL,
 	MEMORYMONITOR,
 	OUTPUTCLOCK,
@@ -59,71 +57,88 @@ enum class OnixDeviceType {
 
 struct StreamInfo {
 public:
-	StreamInfo()
-	{
-		name_ = "name";
-		description_ = "description";
-		identifier_ = "identifier";
-		numChannels_ = 0;
-		sampleRate_ = 0;
-		channelPrefix_ = "channelPrefix";
-		channelType_ = ContinuousChannel::Type::INVALID;
-		bitVolts_ = 1.0f;
-		units_ = "units";
-		suffixes_ = { "suffixes" };
-	}
+	StreamInfo() {}
 
-	StreamInfo(String name, String description, String identifier, int numChannels, float sampleRate, String channelPrefix, ContinuousChannel::Type channelType,
-		float bitVolts, String units, StringArray suffixes)
+	StreamInfo(String name, String description, String streamIdentifier, int numChannels, float sampleRate, String channelPrefix, ContinuousChannel::Type channelType,
+		float bitVolts, String units, StringArray channelNameSuffixes, String channelIdentifierDataType, StringArray channelIdentifierSubTypes = {})
 	{
-		name_ = name;
-		description_ = description;
-		identifier_ = identifier;
-		numChannels_ = numChannels;
-		sampleRate_ = sampleRate;
-		channelPrefix_ = channelPrefix;
-		channelType_ = channelType;
-		bitVolts_ = bitVolts;
-		units_ = units;
-		suffixes_ = suffixes;
+		m_name = name;
+		m_description = description;
+		m_streamIdentifier = streamIdentifier;
+		m_numChannels = numChannels;
+		m_sampleRate = sampleRate;
+		m_channelPrefix = channelPrefix;
+		m_channelType = channelType;
+		m_bitVolts = bitVolts;
+		m_units = units;
+		m_channelNameSuffixes = channelNameSuffixes;
+		m_channelIdentifierDataType = channelIdentifierDataType;
+		m_channelIdentifierSubTypes = channelIdentifierSubTypes;
 
-		if (numChannels_ != suffixes_.size())
+		if (m_numChannels != m_channelNameSuffixes.size())
 		{
-			if (suffixes_.size() != 0)
-				LOGE("Difference between number of channels and suffixes. Generating default suffixes instead.");
+			if (m_channelNameSuffixes.size() != 0)
+				LOGE("Difference between number of channels and channel name suffixes. Generating default suffixes instead.");
 
-			suffixes_.clear();
-			suffixes_.ensureStorageAllocated(numChannels);
-			
-			for (int i = 0; i < numChannels_; i += 1)
+			m_channelNameSuffixes.clear();
+			m_channelNameSuffixes.ensureStorageAllocated(numChannels);
+
+			for (int i = 0; i < m_numChannels; i += 1)
 			{
-				suffixes_.add(String(i + 1));
+				m_channelNameSuffixes.add(String(i + 1));
+			}
+		}
+
+		if (m_channelIdentifierSubTypes.size() > 0 && m_numChannels != m_channelIdentifierSubTypes.size())
+		{
+			if (m_channelIdentifierSubTypes.size() == 1)
+			{
+				for (int i = 1; i < m_numChannels; i++)
+				{
+					m_channelIdentifierSubTypes.add(m_channelIdentifierSubTypes[0]);
+				}
+			}
+			else
+			{
+				LOGE("Difference between number of channels and channel identifier subtypes. Generating default subtypes instead.");
+
+				m_channelIdentifierSubTypes.clear();
+				m_channelIdentifierSubTypes.ensureStorageAllocated(numChannels);
+
+				for (int i = 0; i < m_numChannels; i += 1)
+				{
+					m_channelIdentifierSubTypes.add(String(i + 1));
+				}
 			}
 		}
 	};
 
-	String getName() const { return name_; }
-	String getDescription() const { return description_; }
-	String getIdentifier() const { return identifier_; }
-	int getNumChannels() const { return numChannels_; }
-	float getSampleRate() const { return sampleRate_; }
-	String getChannelPrefix() const { return channelPrefix_; }
-	ContinuousChannel::Type getChannelType() const { return channelType_; }
-	float getBitVolts() const { return bitVolts_; }
-	String getUnits() const { return units_; }
-	StringArray getSuffixes() const { return suffixes_; }
+	String getName() const { return m_name; }
+	String getDescription() const { return m_description; }
+	String getStreamIdentifier() const { return m_streamIdentifier; }
+	int getNumChannels() const { return m_numChannels; }
+	float getSampleRate() const { return m_sampleRate; }
+	String getChannelPrefix() const { return m_channelPrefix; }
+	ContinuousChannel::Type getChannelType() const { return m_channelType; }
+	float getBitVolts() const { return m_bitVolts; }
+	String getUnits() const { return m_units; }
+	StringArray getChannelNameSuffixes() const { return m_channelNameSuffixes; }
+	String getChannelIdentifierDataType() const { return m_channelIdentifierDataType; }
+	StringArray getChannelIdentifierSubTypes() const { return m_channelIdentifierSubTypes; }
 
 private:
-	String name_;
-	String description_;
-	String identifier_;
-	int numChannels_;
-	float sampleRate_;
-	String channelPrefix_;
-	ContinuousChannel::Type channelType_;
-	float bitVolts_;
-	String units_;
-	StringArray suffixes_;
+	String m_name = "name";
+	String m_description = "description";
+	String m_streamIdentifier = "identifier";
+	int m_numChannels = 0;
+	float m_sampleRate = 0;
+	String m_channelPrefix = "channelPrefix";
+	ContinuousChannel::Type m_channelType = ContinuousChannel::Type::INVALID;
+	float m_bitVolts = 1.0f;
+	String m_units = "units";
+	StringArray m_channelNameSuffixes = { "suffixes" };
+	String m_channelIdentifierDataType = "datatype";
+	StringArray m_channelIdentifierSubTypes = { "subtypes" };
 };
 
 /**
@@ -179,14 +194,17 @@ public:
 		return streamName;
 	}
 
-	const OnixDeviceType type;
-
 	Array<StreamInfo> streamInfos;
 
 	const int bufferSizeInSeconds = 10;
 
 	String getHeadstageName() { return m_headstageName; }
 	void setHeadstageName(String headstage) { m_headstageName = headstage; }
+
+	OnixDeviceType getDeviceType() const;
+
+	/** Returns a string for this device that follows the pattern: onix.[headstage|breakout].[device] */
+	String getStreamIdentifier();
 
 protected:
 
@@ -203,6 +221,8 @@ private:
 	bool isPassthrough = false;
 
 	String m_headstageName;
+
+	const OnixDeviceType type;
 
 	JUCE_LEAK_DETECTOR(OnixDevice);
 };

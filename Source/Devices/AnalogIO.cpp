@@ -28,14 +28,15 @@ AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<
 	StreamInfo analogInputStream = StreamInfo(
 		OnixDevice::createStreamName({ getHeadstageName(), name, "AnalogInput" }),
 		"Analog Input data",
-		"onix-analogio.data.input",
-		12,
+		getStreamIdentifier(),
+		getNumChannels(),
 		std::floor(AnalogIOFrequencyHz / framesToAverage),
 		"AnalogInput",
 		ContinuousChannel::Type::ADC,
 		20.0f / numberOfDivisions, // NB: +/- 10 Volts
 		"V",
-		{});
+		{},
+		{ "input" });
 	streamInfos.add(analogInputStream);
 
 	for (int i = 0; i < numFrames; i++)
@@ -63,7 +64,7 @@ bool AnalogIO::updateSettings()
 
 	for (int i = 0; i < numChannels; i += 1)
 	{
-		rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE + i, (oni_reg_val_t)channelVoltageRange[i]); 
+		rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE + i, (oni_reg_val_t)channelVoltageRange[i]);
 		if (rc != ONI_ESUCCESS) return false;
 	}
 
