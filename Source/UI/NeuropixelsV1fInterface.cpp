@@ -545,8 +545,8 @@ void NeuropixelsV1fInterface::updateSettings()
 
 	deviceEnableButton->setToggleState(npx1->isEnabled(), sendNotification);
 
-	gainCalibrationFile->setText(npx1->gainCalibrationFilePath == "None" ? "" : npx1->gainCalibrationFilePath, dontSendNotification);
-	adcCalibrationFile->setText(npx1->adcCalibrationFilePath == "None" ? "" : npx1->adcCalibrationFilePath, dontSendNotification);
+	gainCalibrationFile->setText(npx1->getGainCalibrationFilePath() == "None" ? "" : npx1->getGainCalibrationFilePath(), dontSendNotification);
+	adcCalibrationFile->setText(npx1->getAdcCalibrationFilePath() == "None" ? "" : npx1->getAdcCalibrationFilePath(), dontSendNotification);
 }
 
 void NeuropixelsV1fInterface::updateInfoString()
@@ -801,7 +801,7 @@ void NeuropixelsV1fInterface::buttonClicked(Button* button)
 			adcCalibrationFile->setText("");
 		}
 
-		std::static_pointer_cast<Neuropixels1f>(device)->adcCalibrationFilePath = adcCalibrationFile->getText();
+		std::static_pointer_cast<Neuropixels1f>(device)->getAdcCalibrationFilePath() = adcCalibrationFile->getText();
 	}
 	else if (button == gainCalibrationFileButton.get())
 	{
@@ -814,7 +814,7 @@ void NeuropixelsV1fInterface::buttonClicked(Button* button)
 			gainCalibrationFile->setText("");
 		}
 
-		std::static_pointer_cast<Neuropixels1f>(device)->gainCalibrationFilePath = gainCalibrationFile->getText();
+		std::static_pointer_cast<Neuropixels1f>(device)->getGainCalibrationFilePath() = gainCalibrationFile->getText();
 	}
 }
 
@@ -1004,8 +1004,8 @@ void NeuropixelsV1fInterface::saveParameters(XmlElement* xml)
 
 	xmlNode->setAttribute("isEnabled", bool(device->isEnabled()));
 
-	xmlNode->setAttribute("adcCalibrationFile", npx->adcCalibrationFilePath);
-	xmlNode->setAttribute("gainCalibrationFile", npx->gainCalibrationFilePath);
+	xmlNode->setAttribute("adcCalibrationFile", npx->getAdcCalibrationFilePath());
+	xmlNode->setAttribute("gainCalibrationFile", npx->getGainCalibrationFilePath());
 
 	XmlElement* probeViewerNode = xmlNode->createNewChildElement("PROBE_VIEWER");
 
@@ -1064,8 +1064,8 @@ void NeuropixelsV1fInterface::loadParameters(XmlElement* xml)
 
 	npx->setEnabled(xmlNode->getBoolAttribute("isEnabled"));
 
-	npx->adcCalibrationFilePath = xmlNode->getStringAttribute("adcCalibrationFile");
-	npx->gainCalibrationFilePath = xmlNode->getStringAttribute("gainCalibrationFile");
+	npx->setAdcCalibrationFilePath(xmlNode->getStringAttribute("adcCalibrationFile"));
+	npx->setGainCalibrationFilePath(xmlNode->getStringAttribute("gainCalibrationFile"));
 
 	XmlElement* probeViewerNode = xmlNode->getChildByName("PROBE_VIEWER");
 

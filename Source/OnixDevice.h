@@ -44,6 +44,7 @@ namespace OnixSourcePlugin
 	enum class OnixDeviceType {
 		BNO,
 		POLLEDBNO,
+		NEUROPIXELSV1E,
 		NEUROPIXELSV1F,
 		NEUROPIXELSV2E,
 		PORT_CONTROL,

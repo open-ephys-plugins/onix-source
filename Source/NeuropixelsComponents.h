@@ -110,7 +110,108 @@ namespace OnixSourcePlugin
 		bool switchable;
 	};
 
-	struct NeuropixelsV1fValues
+	enum class NeuropixelsV1Registers : uint32_t
+	{
+		OP_MODE = 0x00,
+		REC_MOD = 0x01,
+		CAL_MOD = 0x02,
+		TEST_CONFIG1 = 0x03,
+		TEST_CONFIG2 = 0x04,
+		TEST_CONFIG3 = 0x05,
+		TEST_CONFIG4 = 0x06,
+		TEST_CONFIG5 = 0x07,
+		STATUS = 0X08,
+		SYNC = 0X09
+	};
+
+	enum class NeuropixelsV1ShiftRegisters : uint32_t
+	{
+		SR_CHAIN1 = 0X0E,
+		SR_CHAIN3 = 0X0C,
+		SR_CHAIN2 = 0X0D,
+		SR_LENGTH2 = 0X0F,
+		SR_LENGTH1 = 0X10,
+		SOFT_RESET = 0X11
+	};
+
+	enum class NeuropixelsV1CalibrationRegisterValues : uint32_t
+	{
+		CAL_OFF = 0,
+		OSC_ACTIVE = 1 << 4, // 0 = external osc inactive, 1 = activate the external calibration oscillator
+		ADC_CAL = 1 << 5, // Enable ADC calibration
+		CH_CAL = 1 << 6, // Enable channel gain calibration
+		PIX_CAL = 1 << 7, // Enable pixel + channel gain calibration
+
+		// Useful combinations
+		OSC_ACTIVE_AND_ADC_CAL = OSC_ACTIVE | ADC_CAL,
+		OSC_ACTIVE_AND_CH_CAL = OSC_ACTIVE | CH_CAL,
+		OSC_ACTIVE_AND_PIX_CAL = OSC_ACTIVE | PIX_CAL,
+	};
+
+	enum class NeuropixelsV1OperationRegisterValues : uint32_t
+	{
+		TEST = 1 << 3, // Enable Test mode
+		DIG_TEST = 1 << 4, // Enable Digital Test mode
+		CALIBRATE = 1 << 5, // Enable calibration mode
+		RECORD = 1 << 6, // Enable recording mode
+		POWER_DOWN = 1 << 7, // Enable power down mode
+
+		// Useful combinations
+		RECORD_AND_DIG_TEST = RECORD | DIG_TEST,
+		RECORD_AND_CALIBRATE = RECORD | CALIBRATE,
+	};
+
+	enum class NeuropixelsV1RecordRegisterValues : uint32_t
+	{
+		DIG_AND_CH_RESET = 0,
+		RESET_ALL = 1 << 5, // 1 = Set analog SR chains to default values
+		DIG_NRESET = 1 << 6, // 0 = Reset the MUX, ADC, and PSB counter, 1 = Disable reset
+		CH_NRESET = 1 << 7, // 0 = Reset channel pseudo-registers, 1 = Disable reset
+
+		// Useful combinations
+		SR_RESET = RESET_ALL | CH_NRESET | DIG_NRESET,
+		DIG_RESET = CH_NRESET, // Yes, this is actually correct
+		CH_RESET = DIG_NRESET, // Yes, this is actually correct
+		ACTIVE = DIG_NRESET | CH_NRESET
+	};
+
+	enum class NeuropixelsV1Reference : unsigned char
+	{
+		External = 0b001,
+		Tip = 0b010
+	};
+
+	enum class NeuropixelsV1Gain : unsigned char
+	{
+		Gain50 = 0b000,
+		Gain125 = 0b001,
+		Gain250 = 0b010,
+		Gain500 = 0b011,
+		Gain1000 = 0b100,
+		Gain1500 = 0b101,
+		Gain2000 = 0b110,
+		Gain3000 = 0b111
+	};
+
+	struct NeuropixelsV1Adc
+	{
+	public:
+		const int compP;
+		const int compN;
+		const int slope;
+		const int coarse;
+		const int fine;
+		const int cfix;
+		const int offset;
+		const int threshold;
+
+		NeuropixelsV1Adc(int compP_ = 16, int compN_ = 16, int slope_ = 0, int coarse_ = 0, int fine_ = 0, int cfix_ = 0, int offset_ = 0, int threshold_ = 512)
+			: compP(compP_), compN(compN_), slope(slope_), coarse(coarse_), fine(fine_), cfix(cfix_), offset(offset_), threshold(threshold_)
+		{
+		}
+	};
+
+	struct NeuropixelsV1Values
 	{
 		static const int numberOfChannels = 384;
 		static const int numberOfElectrodes = 960;
@@ -267,5 +368,139 @@ namespace OnixSourcePlugin
 		virtual uint64_t getProbeSerialNumber(int index) { return 0; }
 
 		virtual std::vector<int> selectElectrodeConfiguration(String config) { return {}; }
+	};
+
+	static constexpr int shankConfigurationBitCount = 968;
+	static constexpr int BaseConfigurationBitCount = 2448;
+
+	using ShankBitset = std::bitset<shankConfigurationBitCount>;
+	using ConfigBitsArray = std::array<std::bitset<BaseConfigurationBitCount>, 2>;
+
+	static class NeuropixelsV1
+	{
+	public:
+
+		ShankBitset static makeShankBits(NeuropixelsV1Reference reference, std::array<int, NeuropixelsV1Values::numberOfChannels> channelMap)
+		{
+			constexpr int shankBitExt1 = 965;
+			constexpr int shankBitExt2 = 2;
+			constexpr int shankBitTip1 = 484;
+			constexpr int shankBitTip2 = 483;
+			constexpr int internalReferenceChannel = 191;
+
+			std::bitset<shankConfigurationBitCount> shankBits;
+
+			for (auto e : channelMap)
+			{
+				if (e == internalReferenceChannel) continue;
+
+				int bitIndex = e % 2 == 0
+					? 485 + (e / 2)
+					: 482 - (e / 2);
+
+				shankBits[bitIndex] = true;
+			}
+
+			switch (reference)
+			{
+			case NeuropixelsV1Reference::External:
+				shankBits[shankBitExt1] = true;
+				shankBits[shankBitExt2] = true;
+				break;
+			case NeuropixelsV1Reference::Tip:
+				shankBits[shankBitTip1] = true;
+				shankBits[shankBitTip2] = true;
+				break;
+			default:
+				break;
+			}
+
+			if (channelMap.size() != NeuropixelsV1Values::numberOfChannels)
+			{
+				LOGE("Invalid number of channels connected for Neuropixels 1.0, configuration might be invalid.");
+			}
+
+			return shankBits;
+		}
+
+		ConfigBitsArray static makeConfigBits(NeuropixelsV1Reference reference, NeuropixelsV1Gain spikeAmplifierGain, NeuropixelsV1Gain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs)
+		{
+			const int BaseConfigurationConfigOffset = 576;
+
+			ConfigBitsArray baseConfigs;
+
+			for (int i = 0; i < NeuropixelsV1Values::numberOfChannels; i++)
+			{
+				size_t configIdx = i % 2;
+
+				size_t refIdx = configIdx == 0 ?
+					(382 - i) / 2 * 3 :
+					(383 - i) / 2 * 3;
+
+				baseConfigs[configIdx][refIdx + 0] = ((unsigned char)reference >> 0 & 0x1) == 1;
+				baseConfigs[configIdx][refIdx + 1] = ((unsigned char)reference >> 1 & 0x1) == 1;
+				baseConfigs[configIdx][refIdx + 2] = ((unsigned char)reference >> 2 & 0x1) == 1;
+
+				size_t chanOptsIdx = BaseConfigurationConfigOffset + ((i - configIdx) * 4);
+
+				baseConfigs[configIdx][chanOptsIdx + 0] = ((unsigned char)spikeAmplifierGain >> 0 & 0x1) == 1;
+				baseConfigs[configIdx][chanOptsIdx + 1] = ((unsigned char)spikeAmplifierGain >> 1 & 0x1) == 1;
+				baseConfigs[configIdx][chanOptsIdx + 2] = ((unsigned char)spikeAmplifierGain >> 2 & 0x1) == 1;
+
+				baseConfigs[configIdx][chanOptsIdx + 3] = ((unsigned char)lfpAmplifierGain >> 0 & 0x1) == 1;
+				baseConfigs[configIdx][chanOptsIdx + 4] = ((unsigned char)lfpAmplifierGain >> 1 & 0x1) == 1;
+				baseConfigs[configIdx][chanOptsIdx + 5] = ((unsigned char)lfpAmplifierGain >> 2 & 0x1) == 1;
+
+				baseConfigs[configIdx][chanOptsIdx + 6] = false;
+				baseConfigs[configIdx][chanOptsIdx + 7] = !spikeFilterEnabled;
+			}
+
+			int k = 0;
+
+			for (const auto& adc : adcs)
+			{
+				auto configIdx = k % 2;
+				int d = k++ / 2;
+
+				size_t compOffset = 2406 - 42 * (d / 2) + (d % 2) * 10;
+				size_t slopeOffset = compOffset + 20 + (d % 2);
+
+				auto compP = std::bitset<8>{ (unsigned char)(adc.compP) };
+				auto compN = std::bitset<8>{ (unsigned char)(adc.compN) };
+				auto cfix = std::bitset<8>{ (unsigned char)(adc.cfix) };
+				auto slope = std::bitset<8>{ (unsigned char)(adc.slope) };
+				auto coarse = std::bitset<8>{ (unsigned char)(adc.coarse) };
+				auto fine = std::bitset<8>{ (unsigned char)(adc.fine) };
+
+				baseConfigs[configIdx][compOffset + 0] = compP[0];
+				baseConfigs[configIdx][compOffset + 1] = compP[1];
+				baseConfigs[configIdx][compOffset + 2] = compP[2];
+				baseConfigs[configIdx][compOffset + 3] = compP[3];
+				baseConfigs[configIdx][compOffset + 4] = compP[4];
+
+				baseConfigs[configIdx][compOffset + 5] = compN[0];
+				baseConfigs[configIdx][compOffset + 6] = compN[1];
+				baseConfigs[configIdx][compOffset + 7] = compN[2];
+				baseConfigs[configIdx][compOffset + 8] = compN[3];
+				baseConfigs[configIdx][compOffset + 9] = compN[4];
+
+				baseConfigs[configIdx][slopeOffset + 0] = slope[0];
+				baseConfigs[configIdx][slopeOffset + 1] = slope[1];
+				baseConfigs[configIdx][slopeOffset + 2] = slope[2];
+
+				baseConfigs[configIdx][slopeOffset + 3] = fine[0];
+				baseConfigs[configIdx][slopeOffset + 4] = fine[1];
+
+				baseConfigs[configIdx][slopeOffset + 5] = coarse[0];
+				baseConfigs[configIdx][slopeOffset + 6] = coarse[1];
+
+				baseConfigs[configIdx][slopeOffset + 7] = cfix[0];
+				baseConfigs[configIdx][slopeOffset + 8] = cfix[1];
+				baseConfigs[configIdx][slopeOffset + 9] = cfix[2];
+				baseConfigs[configIdx][slopeOffset + 10] = cfix[3];
+			}
+
+			return baseConfigs;
+		}
 	};
 }
