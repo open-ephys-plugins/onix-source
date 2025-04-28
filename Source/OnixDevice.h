@@ -83,7 +83,7 @@ public:
 			m_channelNameSuffixes.clear();
 			m_channelNameSuffixes.ensureStorageAllocated(numChannels);
 
-			for (int i = 0; i < m_numChannels; i += 1)
+			for (int i = 0; i < m_numChannels; i++)
 			{
 				m_channelNameSuffixes.add(String(i + 1));
 			}
@@ -105,7 +105,7 @@ public:
 				m_channelIdentifierSubTypes.clear();
 				m_channelIdentifierSubTypes.ensureStorageAllocated(numChannels);
 
-				for (int i = 0; i < m_numChannels; i += 1)
+				for (int i = 0; i < m_numChannels; i++)
 				{
 					m_channelIdentifierSubTypes.add(String(i + 1));
 				}

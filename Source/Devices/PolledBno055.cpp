@@ -26,8 +26,6 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 	: OnixDevice(name, headstageName, OnixDeviceType::POLLEDBNO, deviceIdx_, ctx),
 	I2CRegisterContext(Bno055Address, deviceIdx_, ctx)
 {
-	const float bitVolts = 1.0;
-
 	auto streamIdentifier = getStreamIdentifier();
 
 	String port = PortController::getPortName(PortController::getPortFromIndex(deviceIdx));
@@ -39,7 +37,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		sampleRate,
 		"Euler",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		eulerAngleScale,
 		"Degrees",
 		{ "Yaw", "Roll", "Pitch" },
 		"euler",
@@ -55,7 +53,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		sampleRate,
 		"Quaternion",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		quaternionScale,
 		"",
 		{ "W", "X", "Y", "Z" },
 		"quaternion",
@@ -71,7 +69,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		sampleRate,
 		"Acceleration",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		accelerationScale,
 		"m / s ^ 2",
 		{ "X", "Y", "Z" },
 		"acceleration",
@@ -87,7 +85,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		sampleRate,
 		"Gravity",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		accelerationScale,
 		"m/s^2",
 		{ "X", "Y", "Z" },
 		"gravity",
@@ -103,7 +101,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		sampleRate,
 		"Temperature",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		1.0f,
 		"Celsius",
 		{ "" },
 		"temperature"
@@ -118,7 +116,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		sampleRate,
 		"Calibration",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		1.0f,
 		"",
 		{ "" },
 		"calibration"

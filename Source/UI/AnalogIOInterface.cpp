@@ -55,7 +55,7 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 		voltageRangeList.add("+/- 5.0 V");
 		voltageRangeList.add("+/- 10.0 V");
 
-		for (int i = 0; i < numChannels; i += 1)
+		for (int i = 0; i < numChannels; i++)
 		{
 			channelDirectionLabels[i] = std::make_unique<Label>("channelDirectionLabel" + String(i), "Channel " + String(i) + String(": Direction"));
 			channelDirectionLabels[i]->setBounds(prevLabelRectangle.getX(), prevLabelRectangle.getBottom() + 4, prevLabelRectangle.getWidth(), prevLabelRectangle.getHeight());
@@ -103,7 +103,7 @@ void AnalogIOInterface::buttonClicked(Button* button)
 
 void AnalogIOInterface::comboBoxChanged(ComboBox* cb)
 {
-	for (int i = 0; i < numChannels; i += 1)
+	for (int i = 0; i < numChannels; i++)
 	{
 		if (cb == channelDirectionComboBoxes[i].get())
 		{

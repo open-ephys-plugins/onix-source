@@ -25,8 +25,6 @@
 Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
 	: OnixDevice(name, headstageName, OnixDeviceType::BNO, deviceIdx_, ctx)
 {
-	const float bitVolts = 1.0;
-
 	auto streamIdentifier = getStreamIdentifier();
 
 	String port = PortController::getPortName(PortController::getPortFromIndex(deviceIdx));
@@ -38,7 +36,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		sampleRate,
 		"Euler",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		eulerAngleScale,
 		"Degrees",
 		{ "Yaw", "Roll", "Pitch" },
 		"euler",
@@ -54,8 +52,8 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		sampleRate,
 		"Quaternion",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
-		"u",
+		quaternionScale,
+		"u", // NB: Quaternion data is unitless by definition
 		{ "W", "X", "Y", "Z" },
 		"quaternion",
 		{ "w", "x", "y", "z" }
@@ -70,8 +68,8 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		sampleRate,
 		"Acceleration",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
-		"m / s ^ 2",
+		accelerationScale,
+		"m/s^2",
 		{ "X", "Y", "Z" },
 		"acceleration",
 		{ "x","y","z" }
@@ -86,7 +84,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		sampleRate,
 		"Gravity",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		accelerationScale,
 		"m/s^2",
 		{ "X", "Y", "Z" },
 		"gravity",
@@ -102,7 +100,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		sampleRate,
 		"Temperature",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		1.0f,
 		"Celsius",
 		{ "" },
 		"temperature"
@@ -178,7 +176,7 @@ void Bno055::processFrames()
 		{
 			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * eulerAngleScale;
 			dataOffset++;
-			channelOffset += 1;
+			channelOffset++;
 		}
 
 		// Quaternion
@@ -186,7 +184,7 @@ void Bno055::processFrames()
 		{
 			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * quaternionScale;
 			dataOffset++;
-			channelOffset += 1;
+			channelOffset++;
 		}
 
 		// Acceleration
@@ -194,7 +192,7 @@ void Bno055::processFrames()
 		{
 			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
 			dataOffset++;
-			channelOffset += 1;
+			channelOffset++;
 		}
 
 		// Gravity
@@ -202,7 +200,7 @@ void Bno055::processFrames()
 		{
 			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
 			dataOffset++;
-			channelOffset += 1;
+			channelOffset++;
 		}
 
 		// Temperature
