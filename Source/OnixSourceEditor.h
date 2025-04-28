@@ -90,8 +90,8 @@ private:
     OnixSource* source;
 
     const FillType fillDisconnected = FillType(Colours::transparentBlack);
-    const FillType fillSearching = FillType(Colours::green);    // OR: use FillType(Colour::fromFloatRGBA(0.5f, 0.5f, 0.5f, 1.0f));
-    const FillType fillConnected = FillType(Colours::purple);
+    const FillType fillSearching = FillType(Colour::fromFloatRGBA(0.0f, 1.0f, 87.0f / 255, 1.0f));
+    const FillType fillConnected = FillType(Colour::fromFloatRGBA(184.0f / 255, 0.0f, 252.0f / 255, 1.0f));
 
     const Colour statusIndicatorStrokeColor = Colours::black;
 

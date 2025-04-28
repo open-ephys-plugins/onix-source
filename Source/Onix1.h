@@ -88,7 +88,7 @@ public:
 
 	int issueReset() { int val = 1; int rc = setOption(ONI_OPT_RESET, val); return rc; }
 
-	String getVersion() { return String(major) + "." + String(minor) + "." + String(patch); }
+	std::string getVersion() const { return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch); }
 
 	double convertTimestampToSeconds(uint32_t timestamp) const { return static_cast<double>(timestamp) / ACQ_CLK_HZ; }
 
