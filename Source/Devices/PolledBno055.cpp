@@ -288,5 +288,14 @@ void PolledBno055::hiResTimerCallback()
 		bnoBuffer->addToBuffer(bnoSamples.data(), sampleNumbers, bnoTimestamps, eventCodes, numFrames);
 		currentFrame = 0;
 	}
+}
 
+void PolledBno055::setBnoAxisMap(Bno055AxisMap map)
+{
+	axisMap = map;
+}
+
+void PolledBno055::setBnoAxisSign(Bno055AxisSign sign)
+{
+	axisSign = sign;
 }

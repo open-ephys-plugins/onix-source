@@ -235,6 +235,9 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 					continue;
 				}
 
+				polledBno->setBnoAxisMap(PolledBno055::Bno055AxisMap::YZX);
+				polledBno->setBnoAxisSign(PolledBno055::Bno055AxisSign::MirrorXAndY);
+
 				sources.emplace_back(polledBno);
 
 				headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV2E_HEADSTAGE_NAME });
