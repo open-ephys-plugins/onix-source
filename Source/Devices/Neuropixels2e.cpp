@@ -44,14 +44,16 @@ void Neuropixels2e::createDataStream(int n)
 	StreamInfo apStream = StreamInfo(
 		OnixDevice::createStreamName({ PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getHeadstageName(), "Probe" + String(n) }),
 		"Neuropixels 2.0 data stream",
-		"onix-neuropixels2.data",
+		getStreamIdentifier(),
 		numberOfChannels,
 		sampleRate,
 		"CH",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
 		CharPointer_UTF8("\xc2\xb5V"),
-		{});
+		{},
+		"ap"
+	);
 	streamInfos.add(apStream);
 }
 

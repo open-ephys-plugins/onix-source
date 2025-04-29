@@ -61,14 +61,16 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::s
 	StreamInfo percentUsedStream = StreamInfo(
 		OnixDevice::createStreamName({ getHeadstageName(), getName(), "PercentUsed" }),
 		"Percent of available memory that is currently used",
-		"onix - memorymonitor.data.percentused",
+		getStreamIdentifier(),
 		1,
 		samplesPerSecond,
 		"Percent",
 		ContinuousChannel::Type::AUX,
 		1.0f,
 		"%",
-		{ "" });
+		{ "" },
+		"percent"
+	);
 	streamInfos.add(percentUsedStream);
 
 	for (int i = 0; i < numFrames; i++)

@@ -25,72 +25,86 @@
 Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
 	: OnixDevice(name, headstageName, OnixDeviceType::BNO, deviceIdx_, ctx)
 {
-	const float bitVolts = 1.0;
+	auto streamIdentifier = getStreamIdentifier();
 
 	String port = PortController::getPortName(PortController::getPortFromIndex(deviceIdx));
 	StreamInfo eulerAngleStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Euler" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",
-		"onix-bno055.data.euler",
+		streamIdentifier,
 		3,
 		sampleRate,
-		"Euler",
+		"Eul",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		eulerAngleScale,
 		"Degrees",
-		{ "Yaw", "Roll", "Pitch" });
+		{ "Y", "R", "P" },
+		"euler",
+		{ "y", "r", "p" }
+	);
 	streamInfos.add(eulerAngleStream);
 
 	StreamInfo quaternionStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Quaternion" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Quaternion",
-		"onix-bno055.data.quat",
+		streamIdentifier,
 		4,
 		sampleRate,
-		"Quaternion",
+		"Quat",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
-		"u",
-		{ "W", "X", "Y", "Z" });
+		quaternionScale,
+		"u", // NB: Quaternion data is unitless by definition
+		{ "W", "X", "Y", "Z" },
+		"quaternion",
+		{ "w", "x", "y", "z" }
+	);
 	streamInfos.add(quaternionStream);
 
 	StreamInfo accelerationStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Acceleration" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Acceleration",
-		"onix-bno055.data.acc",
+		streamIdentifier,
 		3,
 		sampleRate,
-		"Acceleration",
+		"Acc",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
-		"m / s ^ 2",
-		{ "X", "Y", "Z" });
+		accelerationScale,
+		"m/s^2",
+		{ "X", "Y", "Z" },
+		"acceleration",
+		{ "x","y","z" }
+	);
 	streamInfos.add(accelerationStream);
 
 	StreamInfo gravityStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Gravity" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Gravity",
-		"onix-bno055.data.grav",
+		streamIdentifier + ".gravity",
 		3,
 		sampleRate,
-		"Gravity",
+		"Grav",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		accelerationScale,
 		"m/s^2",
-		{ "X", "Y", "Z" });
+		{ "X", "Y", "Z" },
+		"gravity",
+		{ "x", "y", "z" }
+	);
 	streamInfos.add(gravityStream);
 
 	StreamInfo temperatureStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Temperature" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Temperature",
-		"onix-bno055.data.temp",
+		streamIdentifier,
 		1,
 		sampleRate,
-		"Temperature",
+		"Temp",
 		ContinuousChannel::Type::AUX,
-		bitVolts,
+		1.0f,
 		"Celsius",
-		{ "" });
+		{ "" },
+		"temperature"
+	);
 	streamInfos.add(temperatureStream);
 
 	// TODO: Add calibration stream here?
@@ -162,7 +176,7 @@ void Bno055::processFrames()
 		{
 			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * eulerAngleScale;
 			dataOffset++;
-			channelOffset += 1;
+			channelOffset++;
 		}
 
 		// Quaternion
@@ -170,7 +184,7 @@ void Bno055::processFrames()
 		{
 			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * quaternionScale;
 			dataOffset++;
-			channelOffset += 1;
+			channelOffset++;
 		}
 
 		// Acceleration
@@ -178,7 +192,7 @@ void Bno055::processFrames()
 		{
 			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
 			dataOffset++;
-			channelOffset += 1;
+			channelOffset++;
 		}
 
 		// Gravity
@@ -186,7 +200,7 @@ void Bno055::processFrames()
 		{
 			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
 			dataOffset++;
-			channelOffset += 1;
+			channelOffset++;
 		}
 
 		// Temperature

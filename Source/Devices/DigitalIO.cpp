@@ -59,7 +59,7 @@ EventChannel::Settings DigitalIO::getEventChannelSettings()
 		EventChannel::Type::TTL,
 		OnixDevice::createStreamName({getHeadstageName(), getName(), "Events"}),
 		"Digital inputs and breakout button states coming from a DigitalIO device",
-		"onix-digitalio.events",
+		getStreamIdentifier() + ".event.digital",
 		nullptr,
 		numButtons + numDigitalInputs
 	};

@@ -28,20 +28,21 @@ AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<
 	StreamInfo analogInputStream = StreamInfo(
 		OnixDevice::createStreamName({ getHeadstageName(), name, "AnalogInput" }),
 		"Analog Input data",
-		"onix-analogio.data.input",
-		12,
+		getStreamIdentifier(),
+		getNumChannels(),
 		std::floor(AnalogIOFrequencyHz / framesToAverage),
 		"AnalogInput",
 		ContinuousChannel::Type::ADC,
-		20.0f / numberOfDivisions, // NB: +/- 10 Volts
+		getVoltsPerDivision(AnalogIOVoltageRange::TenVolts), // NB: +/- 10 Volts
 		"V",
-		{});
+		{},
+		{ "input" });
 	streamInfos.add(analogInputStream);
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
 
-	for (int i = 0; i < numChannels; i += 1)
+	for (int i = 0; i < numChannels; i++)
 	{
 		channelDirection[i] = AnalogIODirection::Input;
 		channelVoltageRange[i] = AnalogIOVoltageRange::TenVolts;
@@ -61,15 +62,15 @@ bool AnalogIO::updateSettings()
 {
 	int rc = 0;
 
-	for (int i = 0; i < numChannels; i += 1)
+	for (int i = 0; i < numChannels; i++)
 	{
-		rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE + i, (oni_reg_val_t)channelVoltageRange[i]); 
+		rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CH00_IN_RANGE + i, (oni_reg_val_t)channelVoltageRange[i]);
 		if (rc != ONI_ESUCCESS) return false;
 	}
 
 	uint32_t ioReg = 0;
 
-	for (int i = 0; i < numChannels; i += 1)
+	for (int i = 0; i < numChannels; i++)
 	{
 		ioReg = (ioReg & ~((uint32_t)1 << i)) | ((uint32_t)(channelDirection[i]) << i);
 	}
@@ -77,7 +78,7 @@ bool AnalogIO::updateSettings()
 	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)AnalogIORegisters::CHDIR, ioReg);
 	if (rc != ONI_ESUCCESS) return false;
 
-	for (int i = 0; i < numChannels; i += 1)
+	for (int i = 0; i < numChannels; i++)
 	{
 		voltsPerDivision[i] = getVoltsPerDivision(channelVoltageRange[i]);
 	}
@@ -146,7 +147,7 @@ void AnalogIO::processFrames()
 
 		int dataOffset = 4;
 
-		for (int i = 0; i < numChannels; i += 1)
+		for (int i = 0; i < numChannels; i++)
 		{
 			if (dataType == AnalogIODataType::S16)
 				analogInputSamples[currentFrame + i * numFrames] += *(dataPtr + dataOffset + i);
@@ -154,11 +155,11 @@ void AnalogIO::processFrames()
 				analogInputSamples[currentFrame + i * numFrames] += *(dataPtr + dataOffset + i) * voltsPerDivision[i];
 		}
 
-		currentAverageFrame += 1;
+		currentAverageFrame++;
 
 		if (currentAverageFrame >= framesToAverage)
 		{
-			for (int i = 0; i < numChannels; i += 1)
+			for (int i = 0; i < numChannels; i++)
 			{
 				analogInputSamples[currentFrame + i * numFrames] /= framesToAverage;
 			}

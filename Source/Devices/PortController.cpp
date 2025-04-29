@@ -66,8 +66,8 @@ void PortController::processFrames()
 
 		int dataOffset = 8;
 
-		uint32_t code = (uint32_t) *(dataPtr + dataOffset);
-		uint32_t data = (uint32_t) *(dataPtr + dataOffset + 1);
+		uint32_t code = (uint32_t) * (dataPtr + dataOffset);
+		uint32_t data = (uint32_t) * (dataPtr + dataOffset + 1);
 
 		errorFlag = errorFlag || ((uint32_t)data & LINKSTATE_SL) == 0;
 
@@ -115,19 +115,29 @@ bool PortController::configureVoltage(double voltage)
 {
 	if (voltage == defaultVoltage)
 	{
-		if (discoveryParameters == DiscoveryParameters() || discoveryParameters.voltageIncrement <= 0) 
+		if (discoveryParameters == DiscoveryParameters() || discoveryParameters.voltageIncrement <= 0)
 			return false;
 
 		ConfigureVoltageWithProgressBar progressBar = ConfigureVoltageWithProgressBar(discoveryParameters, this);
 		progressBar.runThread();
 
-		return progressBar.getResult();
+		bool result = progressBar.getResult();
+
+		if (!result)
+			setVoltageOverride(0, false);
+
+		return result;
 	}
 	else if (voltage >= 0.0 && voltage <= 7.0)
 	{
 		setVoltage(voltage);
 
-		return checkLinkState();
+		bool result = checkLinkState();
+
+		if (!result)
+			setVoltageOverride(0, false);
+
+		return result;
 	}
 
 	return false;

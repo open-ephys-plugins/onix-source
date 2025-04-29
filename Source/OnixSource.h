@@ -150,5 +150,7 @@ private:
 
 	void addCombinedStreams(DataStream::Settings, Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
 
+	String createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber);
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 };
