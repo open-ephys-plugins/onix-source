@@ -33,13 +33,9 @@ class NeuropixelsV2eInterface : public SettingsInterface,
 public:
 	NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void startAcquisition() override {};
+	void saveParameters(XmlElement* xml) override;
 
-	void stopAcquisition() override {};
-
-	void saveParameters(XmlElement* xml) override {};
-
-	void loadParameters(XmlElement* xml) override {};
+	void loadParameters(XmlElement* xml) override;
 
 	void updateInfoString() override;
 
@@ -47,13 +43,17 @@ public:
 
 	void buttonClicked(Button* b) override;
 
+	void updateSettings() override;
+
 	void updateDevice(std::shared_ptr<Neuropixels2e> d);
 
 private:
 
+	void setInterfaceEnabledState(bool newState) override;
+
 	std::unique_ptr<CustomTabComponent> topLevelTabComponent;
 
-	std::unique_ptr<UtilityButton> probeEnableButton;
+	std::unique_ptr<UtilityButton> deviceEnableButton;
 	std::unique_ptr<Component> deviceComponent;
 
 	static const int numProbes = 2;

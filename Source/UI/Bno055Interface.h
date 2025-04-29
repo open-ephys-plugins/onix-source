@@ -33,25 +33,18 @@ class Bno055Interface : public SettingsInterface,
 	public Button::Listener
 {
 public:
-	/** Constructor */
 	Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	/** Disables buttons and starts animation if necessary */
-	void startAcquisition() override {};
+	void setInterfaceEnabledState(bool newState) override;
 
-	/** Enables buttons and start animation if necessary */
-	void stopAcquisition() override {};
+	void saveParameters(XmlElement* xml) override;
 
-	/** Save parameters to XML */
-	void saveParameters(XmlElement* xml) override {};
+	void loadParameters(XmlElement* xml) override;
 
-	/** Load parameters from XML */
-	void loadParameters(XmlElement* xml) override {};
-
-	/** Updates the info string on the right-hand side of the component */
 	void updateInfoString() override {};
 
-	/** Listener methods*/
+	void updateSettings() override;
+
 	void buttonClicked(Button*) override;
 
 private:

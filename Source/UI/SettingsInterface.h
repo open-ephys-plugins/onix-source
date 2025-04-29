@@ -69,10 +69,10 @@ public:
     }
 
     /** Called when acquisition begins */
-    virtual void startAcquisition() = 0;
+    virtual void startAcquisition() { setInterfaceEnabledState(false); }
 
     /** Called when acquisition ends */
-    virtual void stopAcquisition() = 0;
+    virtual void stopAcquisition() { setInterfaceEnabledState(true); }
 
     /** Saves settings */
     virtual void saveParameters (XmlElement* xml) = 0;
@@ -83,19 +83,32 @@ public:
     /** Updates the string with info about the underlying data source*/
     virtual void updateInfoString() = 0;
 
+    /** Updates the UI elements based on the current device settings */
+    virtual void updateSettings() = 0;
+
+    std::shared_ptr<OnixDevice> getDevice() { return device; }
+
+    void setDevice(std::shared_ptr<OnixDevice> dev) { device.reset(); device = dev; }
+
+    VisualizationMode getMode() const { return mode; }
+
     virtual String getReferenceText() { return ""; }
 
-    /** Default type */
-    Type type = Type::UNKNOWN_SETTINGS_INTERFACE;
+protected:
 
     /** Pointer to the data source*/
     std::shared_ptr<OnixDevice> device = nullptr;
 
-    VisualizationMode getMode() const { return mode; }
+    Type type = Type::UNKNOWN_SETTINGS_INTERFACE;
 
-protected:
     OnixSourceEditor* editor;
     OnixSourceCanvas* canvas;
 
     VisualizationMode mode = VisualizationMode::ENABLE_VIEW;
+
+private:
+
+    /** Enables or disables all UI elements that should not be changed during acquisition */
+    virtual void setInterfaceEnabledState(bool newState) = 0;
+
 };

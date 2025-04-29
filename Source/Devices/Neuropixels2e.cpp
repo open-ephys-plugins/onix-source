@@ -623,7 +623,7 @@ void Neuropixels2e::processFrames()
 		uint16_t* amplifierData = dataPtr + 9;
 
 		sampleNumbers[frameCount] = sampleNumber;
-		timestamps[frameCount] = frame->time;
+		timestamps[frameCount] = deviceContext->convertTimestampToSeconds(frame->time);
 
 		for (int i = 0; i < FramesPerSuperFrame; i++)
 		{

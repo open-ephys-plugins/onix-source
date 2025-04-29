@@ -42,6 +42,19 @@ DigitalIOInterface::DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceE
 	type = SettingsInterface::Type::DIGITALIO_SETTINGS_INTERFACE;
 }
 
+void DigitalIOInterface::setInterfaceEnabledState(bool newState)
+{
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(newState);
+}
+
+void DigitalIOInterface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
+}
+
 void DigitalIOInterface::buttonClicked(Button* button)
 {
 	if (button == deviceEnableButton.get())
@@ -60,4 +73,34 @@ void DigitalIOInterface::buttonClicked(Button* button)
 
 		CoreServices::updateSignalChain(editor);
 	}
+}
+
+void DigitalIOInterface::saveParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Saving DigitalIO settings.");
+
+	XmlElement* xmlNode = xml->createNewChildElement("DIGITALIO");
+
+	xmlNode->setAttribute("isEnabled", device->isEnabled());
+}
+
+void DigitalIOInterface::loadParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Loading DigitalIO settings.");
+
+	auto xmlNode = xml->getChildByName("DIGITALIO");
+
+	if (xmlNode == nullptr)
+	{
+		LOGE("No DIGITALIO element found.");
+		return;
+	}
+
+	device->setEnabled(xmlNode->getBoolAttribute("isEnabled"));
+
+	updateSettings();
 }

@@ -35,11 +35,11 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		streamIdentifier,
 		3,
 		sampleRate,
-		"Euler",
+		"Eul",
 		ContinuousChannel::Type::AUX,
 		eulerAngleScale,
 		"Degrees",
-		{ "Yaw", "Roll", "Pitch" },
+		{ "Y", "R", "P" },
 		"euler",
 		{ "y", "r", "p" }
 	);
@@ -51,7 +51,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		streamIdentifier,
 		4,
 		sampleRate,
-		"Quaternion",
+		"Quat",
 		ContinuousChannel::Type::AUX,
 		quaternionScale,
 		"",
@@ -67,7 +67,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		streamIdentifier,
 		3,
 		sampleRate,
-		"Acceleration",
+		"Acc",
 		ContinuousChannel::Type::AUX,
 		accelerationScale,
 		"m / s ^ 2",
@@ -83,7 +83,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		streamIdentifier,
 		3,
 		sampleRate,
-		"Gravity",
+		"Grav",
 		ContinuousChannel::Type::AUX,
 		accelerationScale,
 		"m/s^2",
@@ -99,7 +99,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		streamIdentifier,
 		1,
 		sampleRate,
-		"Temperature",
+		"Temp",
 		ContinuousChannel::Type::AUX,
 		1.0f,
 		"Celsius",
@@ -114,7 +114,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		streamIdentifier,
 		1,
 		sampleRate,
-		"Calibration",
+		"Cal",
 		ContinuousChannel::Type::AUX,
 		1.0f,
 		"",
@@ -277,7 +277,7 @@ void PolledBno055::hiResTimerCallback()
 	rc = (uint64_t)deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CH, &timestampH);
 	if (rc != ONI_ESUCCESS) return;
 
-	bnoTimestamps[currentFrame] = (uint64_t(timestampH) << 32) | uint64_t(timestampL);
+	bnoTimestamps[currentFrame] = deviceContext->convertTimestampToSeconds((uint64_t(timestampH) << 32) | uint64_t(timestampL));
 
 	sampleNumbers[currentFrame] = sampleNumber++;
 

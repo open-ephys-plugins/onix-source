@@ -158,8 +158,10 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 
 	for (int j = 0; j < settingsInterfaces.size(); j++)
 	{
-		if (device->getDeviceIdx() == settingsInterfaces[j]->device->getDeviceIdx() &&
-			compareDeviceNames(device->getName(), settingsInterfaces[j]->device->getName()))
+		auto selectedDevice = settingsInterfaces[j]->getDevice();
+
+		if (device->getDeviceIdx() == selectedDevice->getDeviceIdx() &&
+			compareDeviceNames(device->getName(), selectedDevice->getName()))
 		{
 			ind = j;
 			break;
@@ -174,10 +176,12 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 		return;
 	}
 
+	auto selectedDevice = settingsInterfaces[ind]->getDevice();
+
 	if (device->getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
 	{
 		auto npx1Found = std::static_pointer_cast<Neuropixels_1>(device);
-		auto npx1Selected = std::static_pointer_cast<Neuropixels_1>(settingsInterfaces[ind]->device);
+		auto npx1Selected = std::static_pointer_cast<Neuropixels_1>(selectedDevice);
 		npx1Found->setSettings(npx1Selected->settings[0].get());
 		npx1Found->adcCalibrationFilePath = npx1Selected->adcCalibrationFilePath;
 		npx1Found->gainCalibrationFilePath = npx1Selected->gainCalibrationFilePath;
@@ -186,7 +190,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	else if (device->getDeviceType() == OnixDeviceType::OUTPUTCLOCK)
 	{
 		auto outputClockFound = std::static_pointer_cast<OutputClock>(device);
-		auto outputClockSelected = std::static_pointer_cast<OutputClock>(settingsInterfaces[ind]->device);
+		auto outputClockSelected = std::static_pointer_cast<OutputClock>(selectedDevice);
 		outputClockFound->setDelay(outputClockSelected->getDelay());
 		outputClockFound->setDutyCycle(outputClockSelected->getDutyCycle());
 		outputClockFound->setFrequencyHz(outputClockSelected->getFrequencyHz());
@@ -195,7 +199,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	else if (device->getDeviceType() == OnixDeviceType::ANALOGIO)
 	{
 		auto analogIOFound = std::static_pointer_cast<AnalogIO>(device);
-		auto analogIOSelected = std::static_pointer_cast<AnalogIO>(settingsInterfaces[ind]->device);
+		auto analogIOSelected = std::static_pointer_cast<AnalogIO>(selectedDevice);
 		for (int i = 0; i < analogIOFound->getNumChannels(); i++)
 		{
 			analogIOFound->setChannelDirection(i, analogIOSelected->getChannelDirection(i));
@@ -204,7 +208,7 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 	else if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
 	{
 		auto npx2Found = std::static_pointer_cast<Neuropixels2e>(device);
-		auto npx2Selected = std::static_pointer_cast<Neuropixels2e>(settingsInterfaces[ind]->device);
+		auto npx2Selected = std::static_pointer_cast<Neuropixels2e>(selectedDevice);
 		npx2Found->setSettings(npx2Selected->settings[0].get(), 0);
 		npx2Found->setSettings(npx2Selected->settings[1].get(), 1);
 		npx2Found->setGainCorrectionFile(0, npx2Selected->getGainCorrectionFile(0));
@@ -213,9 +217,8 @@ void OnixSourceCanvas::updateSettingsInterfaceDataSource(std::shared_ptr<OnixDev
 		std::static_pointer_cast<NeuropixelsV2eInterface>(settingsInterfaces[ind])->updateDevice(npx2Found);
 	}
 
-	device->setEnabled(settingsInterfaces[ind]->device->isEnabled());
-	settingsInterfaces[ind]->device.reset();
-	settingsInterfaces[ind]->device = device;
+	device->setEnabled(selectedDevice->isEnabled());
+	settingsInterfaces[ind]->setDevice(device);
 }
 
 String OnixSourceCanvas::getTopLevelTabName(PortName port, String headstage)
@@ -263,7 +266,9 @@ void OnixSourceCanvas::removeTabs(PortName port)
 
 	for (int i = settingsInterfaces.size() - 1; i >= 0; i -= 1)
 	{
-		if ((settingsInterfaces[i]->device->getDeviceIdx() & offset) > 0)
+		auto selectedDevice = settingsInterfaces[i]->getDevice();
+
+		if ((selectedDevice->getDeviceIdx() & offset) > 0)
 		{
 			settingsInterfaces.erase(settingsInterfaces.begin() + i);
 			tabExists = true;
@@ -293,7 +298,9 @@ std::map<int, OnixDeviceType> OnixSourceCanvas::createSelectedMap(std::vector<st
 
 	for (const auto& settings : interfaces)
 	{
-		tabMap.insert({ settings->device->getDeviceIdx(), settings->device->getDeviceType() });
+		auto device = settings->getDevice();
+
+		tabMap.insert({ device->getDeviceIdx(), device->getDeviceType() });
 	}
 
 	return tabMap;
@@ -512,10 +519,7 @@ void OnixSourceCanvas::startAcquisition()
 {
 	for (const auto& settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->device != nullptr && settingsInterface->device->isEnabled())
-		{
-			settingsInterface->startAcquisition();
-		}
+		settingsInterface->startAcquisition();
 	}
 }
 
@@ -523,21 +527,18 @@ void OnixSourceCanvas::stopAcquisition()
 {
 	for (const auto& settingsInterface : settingsInterfaces)
 	{
-		if (settingsInterface->device != nullptr && settingsInterface->device->isEnabled())
-		{
-			settingsInterface->stopAcquisition();
-		}
+		settingsInterface->stopAcquisition();
 	}
 }
 
 void OnixSourceCanvas::saveCustomParametersToXml(XmlElement* xml)
 {
-	//for (int i = 0; i < settingsInterfaces.size(); i++)
-	//	settingsInterfaces[i]->saveParameters(xml);
+	for (int i = 0; i < settingsInterfaces.size(); i++)
+		settingsInterfaces[i]->saveParameters(xml);
 }
 
 void OnixSourceCanvas::loadCustomParametersFromXml(XmlElement* xml)
 {
-	//for (int i = 0; i < settingsInterfaces.size(); i++)
-	//	settingsInterfaces[i]->loadParameters(xml);
+	for (int i = 0; i < settingsInterfaces.size(); i++)
+		settingsInterfaces[i]->loadParameters(xml);
 }

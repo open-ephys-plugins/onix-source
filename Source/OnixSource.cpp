@@ -662,11 +662,18 @@ void OnixSource::addCombinedStreams(DataStream::Settings dataStreamSettings,
 
 	for (const auto& streamInfo : streamInfos)
 	{
+		auto suffixes = streamInfo.getChannelNameSuffixes();
+
 		for (int chan = 0; chan < streamInfo.getNumChannels(); chan++)
 		{
+			auto prefix = streamInfo.getChannelPrefix();
+
+			if (suffixes[chan] != "")
+				prefix += "-" + suffixes[chan];
+
 			ContinuousChannel::Settings channelSettings{
 				streamInfo.getChannelType(),
-				streamInfo.getChannelPrefix() + streamInfo.getChannelNameSuffixes()[chan],
+				prefix,
 				streamInfo.getDescription(),
 				createContinuousChannelIdentifier(streamInfo, chan),
 				streamInfo.getBitVolts(),

@@ -34,11 +34,11 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		streamIdentifier,
 		3,
 		sampleRate,
-		"Euler",
+		"Eul",
 		ContinuousChannel::Type::AUX,
 		eulerAngleScale,
 		"Degrees",
-		{ "Yaw", "Roll", "Pitch" },
+		{ "Y", "R", "P" },
 		"euler",
 		{ "y", "r", "p" }
 	);
@@ -50,7 +50,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		streamIdentifier,
 		4,
 		sampleRate,
-		"Quaternion",
+		"Quat",
 		ContinuousChannel::Type::AUX,
 		quaternionScale,
 		"u", // NB: Quaternion data is unitless by definition
@@ -66,7 +66,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		streamIdentifier,
 		3,
 		sampleRate,
-		"Acceleration",
+		"Acc",
 		ContinuousChannel::Type::AUX,
 		accelerationScale,
 		"m/s^2",
@@ -82,7 +82,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		streamIdentifier + ".gravity",
 		3,
 		sampleRate,
-		"Gravity",
+		"Grav",
 		ContinuousChannel::Type::AUX,
 		accelerationScale,
 		"m/s^2",
@@ -98,7 +98,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		streamIdentifier,
 		1,
 		sampleRate,
-		"Temperature",
+		"Temp",
 		ContinuousChannel::Type::AUX,
 		1.0f,
 		"Celsius",
@@ -165,7 +165,7 @@ void Bno055::processFrames()
 
 		int16_t* dataPtr = (int16_t*)frame->data;
 
-		bnoTimestamps[currentFrame] = frame->time;
+		bnoTimestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
 
 		int dataOffset = 4;
 

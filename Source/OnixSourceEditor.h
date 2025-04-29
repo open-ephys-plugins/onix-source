@@ -56,11 +56,17 @@ public:
 
     void updateSettings() override;
 
+    void setInterfaceEnabledState(bool newState);
+
     void startAcquisition() override;
 
     void stopAcquisition() override;
 
     Visualizer* createNewCanvas(void) override;
+
+    void saveVisualizerEditorParameters(XmlElement* xml) override;
+
+    void loadVisualizerEditorParameters(XmlElement* xml) override;
 
     void checkCanvas() { checkForCanvas(); };
 
@@ -72,7 +78,6 @@ public:
 
     String getHeadstageSelected(PortName port);
 
-    /** Updates the combo boxes based on the headstages found in the canvas tabs */
     void refreshComboBoxSelection();
 
     std::map<int, OnixDeviceType> createTabMapFromCanvas();
@@ -83,6 +88,17 @@ private:
 
     OnixSourceCanvas* canvas;
     OnixSource* source;
+
+    const FillType fillDisconnected = FillType(Colours::transparentBlack);
+    const FillType fillSearching = FillType(Colour::fromFloatRGBA(0.0f, 1.0f, 87.0f / 255, 1.0f));
+    const FillType fillConnected = FillType(Colour::fromFloatRGBA(184.0f / 255, 0.0f, 252.0f / 255, 1.0f));
+
+    const Colour statusIndicatorStrokeColor = Colours::black;
+
+    const float statusIndicatorStrokeThickness = 1.0f;
+
+    std::unique_ptr<DrawableRectangle> portStatusA;
+    std::unique_ptr<DrawableRectangle> portStatusB;
 
     std::unique_ptr<Label> portLabelA;
     std::unique_ptr<Label> portLabelB;
