@@ -24,7 +24,7 @@
 #include "OnixSource.h"
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_)
-	: VisualizerEditor(parentNode, "Onix Source", 240), source(source_)
+	: VisualizerEditor(parentNode, "Onix Source", 250), source(source_)
 {
 	canvas = nullptr;
 
@@ -38,8 +38,16 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 	if (source->isContextInitialized())
 	{
+		portStatusA = std::make_unique<DrawableRectangle>();
+		portStatusA->setRectangle(Rectangle<float>(memoryUsage->getRight() + 4, memoryUsage->getY(), 10, 10));
+		portStatusA->setCornerSize(Point<float>(5,5));
+		portStatusA->setFill(fillDisconnected);
+		portStatusA->setStrokeFill(statusIndicatorStrokeColor);
+		portStatusA->setStrokeThickness(statusIndicatorStrokeThickness);
+		addAndMakeVisible(portStatusA.get());
+
 		portLabelA = std::make_unique<Label>("portLabelA", "Port A:");
-		portLabelA->setBounds(memoryUsage->getRight() + 5, memoryUsage->getY(), 60, 16);
+		portLabelA->setBounds(portStatusA->getRight(), portStatusA->getY(), 60, 16);
 		portLabelA->setFont(fontOptionTitle);
 		addAndMakeVisible(portLabelA.get());
 
@@ -73,8 +81,16 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		lastVoltageSetA->setTooltip("Records the last voltage set for Port A. Useful for displaying what the automated voltage discovery algorithm settled on.");
 		addAndMakeVisible(lastVoltageSetA.get());
 
+		portStatusB = std::make_unique<DrawableRectangle>();
+		portStatusB->setRectangle(Rectangle<float>(portStatusA->getX(), portVoltageOverrideLabelA->getBottom() + 3, 10, 10));
+		portStatusB->setCornerSize(portStatusA->getCornerSize());
+		portStatusB->setFill(portStatusA->getFill());
+		portStatusB->setStrokeFill(portStatusA->getStrokeFill());
+		portStatusB->setStrokeThickness(statusIndicatorStrokeThickness);
+		addAndMakeVisible(portStatusB.get());
+
 		portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
-		portLabelB->setBounds(portLabelA->getX(), portVoltageOverrideLabelA->getBottom() + 3, portLabelA->getWidth(), portLabelA->getHeight());
+		portLabelB->setBounds(portStatusB->getRight(), portStatusB->getY(), portLabelA->getWidth(), portLabelA->getHeight());
 		portLabelB->setFont(fontOptionTitle);
 		addAndMakeVisible(portLabelB.get());
 
@@ -133,16 +149,13 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
 	comboBox->addItem(NEUROPIXELSV2E_HEADSTAGE_NAME, 3);
-	// TODO: Add list of available devices here
-	// TODO: Create const char* for the headstage names so they are shared across the plugin
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)
 {
-	// TODO: Add headstage specific parameters to limit voltage within safe levels
 	if (l == portVoltageValueA.get())
 	{
-		if (l->getText() == "")
+		if (l->getText() == "" || l->getText() == "Auto")
 		{
 			l->setText("Auto", dontSendNotification);
 			return;
@@ -161,7 +174,7 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 	}
 	else if (l == portVoltageValueB.get())
 	{
-		if (l->getText() == "")
+		if (l->getText() == "" || l->getText() == "Auto")
 		{
 			l->setText("Auto", dontSendNotification);
 			return;
@@ -199,14 +212,22 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
 		if (isHeadstageSelected(PortName::PortA) || portVoltageValueA->getText() != "Auto")
 		{
+			portStatusA->setFill(fillSearching);
+
 			if (!source->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
 			{
 				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port A.");
+				portStatusA->setFill(fillDisconnected);
+			}
+			else
+			{
+				portStatusA->setFill(fillConnected);
 			}
 		}
 		else
 		{
 			source->setPortVoltage(PortName::PortA, 0);
+			portStatusA->setFill(fillDisconnected);
 		}
 
 		lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
@@ -215,14 +236,22 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		if (isHeadstageSelected(PortName::PortB) || portVoltageValueB->getText() != "Auto")
 		{
+			portStatusB->setFill(fillSearching);
+
 			if (!source->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
 			{
 				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port B.");
+				portStatusB->setFill(fillDisconnected);
+			}
+			else
+			{
+				portStatusB->setFill(fillConnected);
 			}
 		}
 		else
 		{
 			source->setPortVoltage(PortName::PortB, 0);
+			portStatusB->setFill(fillDisconnected);
 		}
 
 		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
@@ -248,6 +277,9 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
 		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
+
+		portStatusA->setFill(fillDisconnected);
+		portStatusB->setFill(fillDisconnected);
 
 		source->disconnectDevices(true);
 		connectButton->setLabel("CONNECT");
@@ -319,6 +351,43 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 	}
 
 	source->getParameter(passthroughName)->setNextValue(passthroughValue);
+
+	String voltage = isPortA ? portVoltageValueA->getText() : portVoltageValueB->getText();
+
+	if (voltage != "Auto")
+	{
+		if (!currentHeadstageSelected)
+		{
+			if (isPortA)
+				portVoltageValueA->setText("", sendNotification);
+			else
+				portVoltageValueB->setText("", sendNotification);
+		}
+		else
+		{
+			int result = AlertWindow::show(MessageBoxOptions()
+				.withIconType(MessageBoxIconType::InfoIcon)
+				.withTitle("Voltage Override")
+				.withMessage(String("There is currently a voltage override selected for this port. Would you like to keep this voltage [Keep Voltage] ") +
+					"or allow the automated voltage discovery algorithm [Automated Discovery] to determine the best voltage for the new headstage selected?")
+				.withButton("Keep Voltage")
+				.withButton("Automated Discovery"));
+
+			switch (result)
+			{
+			case 1: // Keep Voltage
+				break;
+			case 0: // Automated Discovery
+				if (isPortA)
+					portVoltageValueA->setText("", sendNotification);
+				else
+					portVoltageValueB->setText("", sendNotification);
+				break;
+			default:
+				break;
+			}
+		}
+	}
 }
 
 void OnixSourceEditor::updateSettings()
@@ -327,10 +396,17 @@ void OnixSourceEditor::updateSettings()
 		canvas->update();
 }
 
+void OnixSourceEditor::setInterfaceEnabledState(bool newState)
+{
+	connectButton->setEnabled(newState);
+
+	portVoltageValueA->setEnabled(newState);
+	portVoltageValueB->setEnabled(newState);
+}
+
 void OnixSourceEditor::startAcquisition()
 {
-	// TODO: Disable all UI elements that should not be changed during acquisition...
-	connectButton->setEnabled(false);
+	setInterfaceEnabledState(false);
 
 	for (const auto& source : source->getDataSources())
 	{
@@ -341,12 +417,14 @@ void OnixSourceEditor::startAcquisition()
 			break;
 		}
 	}
+
+	if (canvas != nullptr)
+		canvas->startAcquisition();
 }
 
 void OnixSourceEditor::stopAcquisition()
 {
-	// TODO: Re-enable all of the UI elements 
-	connectButton->setEnabled(true);
+	setInterfaceEnabledState(true);
 
 	for (const auto& source : source->getDataSources())
 	{
@@ -356,6 +434,9 @@ void OnixSourceEditor::stopAcquisition()
 			break;
 		}
 	}
+
+	if (canvas != nullptr)
+		canvas->stopAcquisition();
 }
 
 Visualizer* OnixSourceEditor::createNewCanvas(void)
@@ -439,9 +520,12 @@ void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage
 	{
 		if (headstage.contains(comboBox->getItemText(i)))
 		{
-			comboBox->setSelectedItemIndex(i, dontSendNotification);
+			comboBox->setSelectedItemIndex(i, dontSendNotification); // TODO: double check this indexing
+			return;
 		}
 	}
+
+	comboBox->setSelectedItemIndex(0, dontSendNotification);
 }
 
 void OnixSourceEditor::refreshComboBoxSelection()
@@ -473,4 +557,29 @@ void OnixSourceEditor::refreshComboBoxSelection()
 std::map<int, OnixDeviceType> OnixSourceEditor::createTabMapFromCanvas()
 {
 	return canvas->createSelectedMap(canvas->settingsInterfaces);
+}
+
+void OnixSourceEditor::saveVisualizerEditorParameters(XmlElement* xml)
+{
+	LOGD("Saving OnixSourceEditor settings.");
+
+	xml->setAttribute("headstagePortA", headstageComboBoxA->getText());
+	xml->setAttribute("headstagePortB", headstageComboBoxB->getText());
+
+	xml->setAttribute("portVoltageA", portVoltageValueA->getText());
+	xml->setAttribute("portVoltageB", portVoltageValueB->getText());
+}
+
+void OnixSourceEditor::loadVisualizerEditorParameters(XmlElement* xml)
+{
+	LOGD("Loading OnixSourceEditor settings.");
+
+	setComboBoxSelection(headstageComboBoxA.get(), xml->getStringAttribute("headstagePortA"));
+	updateComboBox(headstageComboBoxA.get());
+
+	setComboBoxSelection(headstageComboBoxB.get(), xml->getStringAttribute("headstagePortB"));
+	updateComboBox(headstageComboBoxB.get());
+
+	portVoltageValueA->setText(xml->getStringAttribute("portVoltageA"), sendNotification);
+	portVoltageValueB->setText(xml->getStringAttribute("portVoltageB"), sendNotification);
 }

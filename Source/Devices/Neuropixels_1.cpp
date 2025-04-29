@@ -472,7 +472,7 @@ void Neuropixels_1::processFrames()
 
 		uint16_t* dataPtr = (uint16_t*)frame->data;
 
-		apTimestamps[superFrameCount] = frame->time;
+		apTimestamps[superFrameCount] = deviceContext->convertTimestampToSeconds(frame->time);
 		apSampleNumbers[superFrameCount] = apSampleNumber++;
 
 		for (int i = 0; i < framesPerSuperFrame; i++)

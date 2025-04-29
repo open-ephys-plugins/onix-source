@@ -165,7 +165,7 @@ void AnalogIO::processFrames()
 
 			currentAverageFrame = 0;
 
-			timestamps[currentFrame] = frame->time;
+			timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
 			sampleNumbers[currentFrame] = sampleNumber++;
 
 			currentFrame++;

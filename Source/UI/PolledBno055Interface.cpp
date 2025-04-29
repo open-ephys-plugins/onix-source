@@ -67,3 +67,62 @@ void PolledBno055Interface::buttonClicked(Button* button)
 		CoreServices::updateSignalChain(editor);
 	}
 }
+
+void PolledBno055Interface::updateSettings()
+{
+	if (device == nullptr) return;
+
+	deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
+}
+
+void PolledBno055Interface::setInterfaceEnabledState(bool newState)
+{
+	if (deviceEnableButton != nullptr)
+		deviceEnableButton->setEnabled(newState);
+}
+
+void PolledBno055Interface::saveParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Saving PolledBno055 settings.");
+
+	XmlElement* xmlNode = xml->createNewChildElement("POLLEDBNO055");
+
+	xmlNode->setAttribute("name", device->getName());
+	xmlNode->setAttribute("idx", (int)device->getDeviceIdx());
+
+	xmlNode->setAttribute("isEnabled", device->isEnabled());
+}
+
+void PolledBno055Interface::loadParameters(XmlElement* xml)
+{
+	if (device == nullptr) return;
+
+	LOGD("Loading PolledBno055 settings.");
+
+	XmlElement* xmlNode = nullptr;
+
+	for (auto* node : xml->getChildIterator())
+	{
+		if (node->hasTagName("POLLEDBNO055"))
+		{
+			if (node->getStringAttribute("name") == device->getName() &&
+				node->getIntAttribute("idx") == device->getDeviceIdx())
+			{
+				xmlNode = node;
+				break;
+			}
+		}
+	}
+
+	if (xmlNode == nullptr)
+	{
+		LOGD("No PolledBno055 element found.");
+		return;
+	}
+
+	device->setEnabled(xmlNode->getBoolAttribute("isEnabled"));
+
+	updateSettings();
+}
