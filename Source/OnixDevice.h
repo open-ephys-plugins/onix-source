@@ -198,6 +198,7 @@ namespace OnixSourcePlugin
 
 		const int bufferSizeInSeconds = 10;
 
+		static constexpr int HubAddressBreakoutBoard = 0;
 		static constexpr int HubAddressPortA = 256;
 		static constexpr int HubAddressPortB = 512;
 
@@ -210,7 +211,7 @@ namespace OnixSourcePlugin
 		static String getPortNameFromIndex(oni_dev_idx_t index);
 		static PortName getPortFromIndex(oni_dev_idx_t index);
 		static int getOffsetFromIndex(oni_dev_idx_t index);
-		static Array<int> getUniqueOffsetsFromIndices(std::vector<int> indices);
+		static std::vector<int> getUniqueOffsetsFromIndices(std::vector<int> indices, bool ignoreBreakoutBoard = true);
 		static Array<PortName> getUniquePortsFromIndices(std::vector<int> indices);
 
 		OnixDeviceType getDeviceType() const;

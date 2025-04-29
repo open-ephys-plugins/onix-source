@@ -245,7 +245,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 				sources.emplace_back(polledBno);
 
-				headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV2E_HEADSTAGE_NAME });
+				headstages.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
 		}
 		else if (device.id == ONIX_MEMUSAGE)

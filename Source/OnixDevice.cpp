@@ -157,16 +157,20 @@ int OnixDevice::getOffsetFromIndex(oni_dev_idx_t index)
 	return index & 0b1100000000;
 }
 
-Array<int> OnixDevice::getUniqueOffsetsFromIndices(std::vector<int> indices)
+std::vector<int> OnixDevice::getUniqueOffsetsFromIndices(std::vector<int> indices, bool ignoreBreakoutBoard)
 {
-	Array<int> offsets;
+	std::set<int> offsets;
 
 	for (auto index : indices)
 	{
-		offsets.addIfNotAlreadyThere(getOffsetFromIndex(index));
+		auto offset = getOffsetFromIndex(index);
+
+		if (offset == HubAddressBreakoutBoard && ignoreBreakoutBoard) continue;
+
+		offsets.emplace(offset);
 	}
 
-	return offsets;
+	return std::vector<int>(offsets.begin(), offsets.end());
 }
 
 Array<PortName> OnixDevice::getUniquePortsFromIndices(std::vector<int> indices)

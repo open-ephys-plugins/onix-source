@@ -262,6 +262,21 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		source->initializeDevices(false);
 		canvas->refreshTabs();
 
+		// NB: Check if headstages were not discovered, and then removed
+		if (!isHeadstageSelected(PortName::PortA) && source->getLastVoltageSet(PortName::PortA) > 0)
+		{
+			source->setPortVoltage(PortName::PortA, 0);
+			portStatusA->setFill(fillDisconnected);
+			lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
+		}
+
+		if (!isHeadstageSelected(PortName::PortB) && source->getLastVoltageSet(PortName::PortB) > 0)
+		{
+			source->setPortVoltage(PortName::PortB, 0);
+			portStatusB->setFill(fillDisconnected);
+			lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
+		}
+
 		connectButton->setLabel("DISCONNECT");
 
 		headstageComboBoxA->setEnabled(false);

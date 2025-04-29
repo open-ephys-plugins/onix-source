@@ -390,8 +390,8 @@ void OnixSourceCanvas::refreshTabs()
 		for (const auto& [key, _] : selectedMap) { selectedIndices.emplace_back(key); }
 		for (const auto& [key, _] : foundMap) { foundIndices.emplace_back(key); }
 
-		auto selectedOffsets = PortController::getUniqueOffsetsFromIndices(selectedIndices);
-		auto foundOffsets = PortController::getUniqueOffsetsFromIndices(foundIndices);
+		auto selectedOffsets = OnixDevice::getUniqueOffsetsFromIndices(selectedIndices);
+		auto foundOffsets = OnixDevice::getUniqueOffsetsFromIndices(foundIndices);
 
 		if (foundIndices.size() == 0) // NB: No devices found, inform the user if they were expecting to find something
 		{
@@ -438,7 +438,7 @@ void OnixSourceCanvas::refreshTabs()
 			}
 			else // NB: Two headstages are selected on different ports, and at least one of those headstages does not match the found headstages
 			{
-				for (auto offset : foundOffsets)
+				for (const auto& offset : foundOffsets)
 				{
 					if (headstages[offset] != editor->getHeadstageSelected(offset))
 					{
@@ -453,7 +453,7 @@ void OnixSourceCanvas::refreshTabs()
 
 			if (selectedOffsets.size() > foundOffsets.size()) // NB: More headstages selected than found
 			{
-				for (auto offset : selectedOffsets)
+				for (const auto& offset : selectedOffsets)
 				{
 					if (offset == foundOffsets[0])
 					{
@@ -470,7 +470,7 @@ void OnixSourceCanvas::refreshTabs()
 			}
 			else // NB: More headstages found than selected
 			{
-				for (auto offset : foundOffsets)
+				for (const auto& offset : foundOffsets)
 				{
 					if (offset == selectedOffsets[0])
 					{
