@@ -222,7 +222,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 					}
 					continue;
 				}
-				
+
 				sources.emplace_back(np2);
 
 				auto polledBno = std::make_shared<PolledBno055>("BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, index, context);

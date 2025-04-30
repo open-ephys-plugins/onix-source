@@ -120,7 +120,8 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		1.0f,
 		"",
 		{ "Mag", "Acc", "Gyr", "Sys" },
-		"calibration"
+		"calibration",
+		{ "magnetometer", "acceleration", "gyroscope", "system" }
 	);
 	streamInfos.add(calibrationStatusStream);
 
