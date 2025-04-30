@@ -112,15 +112,15 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 
 	StreamInfo calibrationStatusStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Calibration" }),
-		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration",
+		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration status",
 		streamIdentifier,
-		1,
+		4,
 		sampleRate,
 		"Cal",
 		ContinuousChannel::Type::AUX,
 		1.0f,
 		"",
-		{ "" },
+		{ "Mag", "Acc", "Gyr", "Sys" },
 		"calibration"
 	);
 	streamInfos.add(calibrationStatusStream);
@@ -213,65 +213,47 @@ int16_t PolledBno055::readInt16(uint32_t startAddress)
 
 void PolledBno055::hiResTimerCallback()
 {
-	int offset = 0;
+	size_t offset = 0;
 
 	// Euler
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress) * eulerAngleScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 2) * eulerAngleScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 4) * eulerAngleScale;
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress) * eulerAngleScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 2) * eulerAngleScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 4) * eulerAngleScale;
 
 	// Quaternion
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 6) * quaternionScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 8) * quaternionScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 10) * quaternionScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 12) * quaternionScale;
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 6) * quaternionScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 8) * quaternionScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 10) * quaternionScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 12) * quaternionScale;
 
 	// Acceleration
 
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 14) * accelerationScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 16) * accelerationScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 18) * accelerationScale;
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 14) * accelerationScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 16) * accelerationScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 18) * accelerationScale;
 
 	// Gravity
 
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 20) * accelerationScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 22) * accelerationScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 24) * accelerationScale;
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 20) * accelerationScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 22) * accelerationScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 24) * accelerationScale;
 
 	// Temperature
 
 	oni_reg_val_t byte;
 	ReadByte(EulerHeadingLsbAddress + 26, &byte);
-	bnoSamples[offset * numFrames + currentFrame] = static_cast<uint8_t>(byte);
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = static_cast<uint8_t>(byte);
 
 	// Calibration Status
 
 	ReadByte(EulerHeadingLsbAddress + 27, &byte);
-	bnoSamples[offset * numFrames + currentFrame] = byte;
-	offset++;
+	
+	constexpr uint8_t statusMask = 0b11;
+
+	for (int i = 0; i < 4; i++)
+	{
+		bnoSamples[currentFrame + (offset + i) * numFrames] = (byte & (statusMask << (2 * i))) >> (2 * i);
+	}
 
 	oni_reg_val_t timestampL = 0, timestampH = 0;
 	int rc = deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CL, &timestampL);

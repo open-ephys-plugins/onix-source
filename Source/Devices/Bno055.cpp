@@ -111,15 +111,15 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 
 	StreamInfo calibrationStatusStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Calibration" }),
-		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration",
+		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration status",
 		streamIdentifier,
-		1,
+		4,
 		sampleRate,
 		"Cal",
 		ContinuousChannel::Type::AUX,
 		1.0f,
 		"",
-		{ "" },
+		{ "Mag", "Acc", "Gyr", "Sys" },
 		"calibration"
 	);
 	streamInfos.add(calibrationStatusStream);
@@ -182,7 +182,7 @@ void Bno055::processFrames()
 
 		bnoTimestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
 
-		int offset = 0;
+		size_t offset = 0;
 
 		// Euler
 		for (int i = 0; i < 3; i++)
@@ -216,7 +216,14 @@ void Bno055::processFrames()
 		bnoSamples[currentFrame + offset * numFrames] = *((uint8_t*)(dataPtr + offset));
 
 		// Calibration
-		bnoSamples[currentFrame + (offset + 1) * numFrames] = *((uint8_t*)(dataPtr + offset) + 1);
+		auto calibrationStatus = *((uint8_t*)(dataPtr + offset) + 1);
+
+		constexpr uint8_t statusMask = 0b11;
+
+		for (int i = 0; i < 4; i++)
+		{
+			bnoSamples[currentFrame + (offset + i + 1) * numFrames] = (calibrationStatus & (statusMask << (2 * i))) >> (2 * i);
+		}
 
 		oni_destroy_frame(frame);
 
