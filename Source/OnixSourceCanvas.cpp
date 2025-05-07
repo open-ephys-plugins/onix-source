@@ -303,6 +303,9 @@ std::map<int, OnixDeviceType> OnixSourceCanvas::createSelectedMap(std::vector<st
 	{
 		auto device = settings->getDevice();
 
+		if (!device->isEnabled())
+			continue;
+
 		tabMap.insert({ device->getDeviceIdx(), device->getDeviceType() });
 	}
 

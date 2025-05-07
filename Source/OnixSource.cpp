@@ -434,7 +434,7 @@ std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devic
 
 std::map<int, OnixDeviceType> OnixSource::createDeviceMap(bool filterDevices)
 {
-	return createDeviceMap(getDataSources(), filterDevices);
+	return createDeviceMap(getEnabledDataSources(), filterDevices);
 }
 
 std::map<int, String> OnixSource::getHeadstageMap()
