@@ -22,6 +22,8 @@
 
 #include "OutputClock.h"
 
+using namespace OnixSourcePlugin;
+
 OutputClock::OutputClock(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
 	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::OUTPUTCLOCK, deviceIdx_, oni_ctx)
 {

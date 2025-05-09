@@ -22,6 +22,8 @@
 
 #include "HarpSyncInputInterface.h"
 
+using namespace OnixSourcePlugin;
+
 HarpSyncInputInterface::HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {

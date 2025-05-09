@@ -22,6 +22,8 @@
 
 #include "AnalogIOInterface.h"
 
+using namespace OnixSourcePlugin;
+
 AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {

@@ -24,168 +24,171 @@
 
 #include "../OnixDevice.h"
 
-enum class AnalogIORegisters : uint32_t
+namespace OnixSourcePlugin
 {
-	ENABLE = 0,
-	CHDIR = 1,
-	CH00_IN_RANGE = 2,
-	CH01_IN_RANGE = 3,
-	CH02_IN_RANGE = 4,
-	CH03_IN_RANGE = 5,
-	CH04_IN_RANGE = 6,
-	CH05_IN_RANGE = 7,
-	CH06_IN_RANGE = 8,
-	CH07_IN_RANGE = 9,
-	CH08_IN_RANGE = 10,
-	CH09_IN_RANGE = 11,
-	CH10_IN_RANGE = 12,
-	CH11_IN_RANGE = 13,
-};
-
-enum class AnalogIOVoltageRange : uint32_t
-{
-	TenVolts = 0,
-	TwoPointFiveVolts = 1,
-	FiveVolts = 2
-};
-
-enum class AnalogIODirection : uint32_t
-{
-	Input = 0,
-	Output = 1
-};
-
-enum class AnalogIODataType : uint32_t
-{
-	S16 = 0,
-	Volts = 1
-};
-
-/*
-	Configures and streams data from an AnalogIO device on a Breakout Board
-*/
-class AnalogIO : public OnixDevice
-{
-public:
-	AnalogIO(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
-
-	/** Configures the device so that it is ready to stream with default settings */
-	int configureDevice() override;
-
-	/** Update the settings of the device */
-	bool updateSettings() override;
-
-	/** Starts probe data streaming */
-	void startAcquisition() override;
-
-	/** Stops probe data streaming*/
-	void stopAcquisition() override;
-
-	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
-	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
-
-	void addFrame(oni_frame_t*) override;
-
-	void processFrames() override;
-
-	AnalogIODirection getChannelDirection(int channelNumber)
+	enum class AnalogIORegisters : uint32_t
 	{
-		if (channelNumber > numChannels || channelNumber < 0)
+		ENABLE = 0,
+		CHDIR = 1,
+		CH00_IN_RANGE = 2,
+		CH01_IN_RANGE = 3,
+		CH02_IN_RANGE = 4,
+		CH03_IN_RANGE = 5,
+		CH04_IN_RANGE = 6,
+		CH05_IN_RANGE = 7,
+		CH06_IN_RANGE = 8,
+		CH07_IN_RANGE = 9,
+		CH08_IN_RANGE = 10,
+		CH09_IN_RANGE = 11,
+		CH10_IN_RANGE = 12,
+		CH11_IN_RANGE = 13,
+	};
+
+	enum class AnalogIOVoltageRange : uint32_t
+	{
+		TenVolts = 0,
+		TwoPointFiveVolts = 1,
+		FiveVolts = 2
+	};
+
+	enum class AnalogIODirection : uint32_t
+	{
+		Input = 0,
+		Output = 1
+	};
+
+	enum class AnalogIODataType : uint32_t
+	{
+		S16 = 0,
+		Volts = 1
+	};
+
+	/*
+		Configures and streams data from an AnalogIO device on a Breakout Board
+	*/
+	class AnalogIO : public OnixDevice
+	{
+	public:
+		AnalogIO(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+
+		/** Configures the device so that it is ready to stream with default settings */
+		int configureDevice() override;
+
+		/** Update the settings of the device */
+		bool updateSettings() override;
+
+		/** Starts probe data streaming */
+		void startAcquisition() override;
+
+		/** Stops probe data streaming*/
+		void stopAcquisition() override;
+
+		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+
+		void addFrame(oni_frame_t*) override;
+
+		void processFrames() override;
+
+		AnalogIODirection getChannelDirection(int channelNumber)
 		{
-			LOGE("Channel number must be between 0 and " + String(channelNumber));
-			return AnalogIODirection::Input;
+			if (channelNumber > numChannels || channelNumber < 0)
+			{
+				LOGE("Channel number must be between 0 and " + String(channelNumber));
+				return AnalogIODirection::Input;
+			}
+
+			return channelDirection[channelNumber];
 		}
 
-		return channelDirection[channelNumber];
-	}
-
-	static String getChannelDirection(AnalogIODirection direction)
-	{
-		switch (direction)
+		static String getChannelDirection(AnalogIODirection direction)
 		{
-		case AnalogIODirection::Input:
-			return "Input";
-		case AnalogIODirection::Output:
-			return "Output";
-		default:
-			return "";
-		}
-	}
-
-	void setChannelDirection(int channelNumber, AnalogIODirection direction)
-	{
-		if (channelNumber > numChannels || channelNumber < 0)
-		{
-			LOGE("Channel number must be between 0 and " + String(channelNumber));
-			return;
+			switch (direction)
+			{
+			case AnalogIODirection::Input:
+				return "Input";
+			case AnalogIODirection::Output:
+				return "Output";
+			default:
+				return "";
+			}
 		}
 
-		channelDirection[channelNumber] = direction;
-	}
-
-	AnalogIOVoltageRange getChannelVoltageRange(int channelNumber)
-	{
-		if (channelNumber > numChannels || channelNumber < 0)
+		void setChannelDirection(int channelNumber, AnalogIODirection direction)
 		{
-			LOGE("Channel number must be between 0 and " + String(channelNumber));
-			return AnalogIOVoltageRange::FiveVolts;
+			if (channelNumber > numChannels || channelNumber < 0)
+			{
+				LOGE("Channel number must be between 0 and " + String(channelNumber));
+				return;
+			}
+
+			channelDirection[channelNumber] = direction;
 		}
 
-		return channelVoltageRange[channelNumber];
-	}
-
-	AnalogIODataType getDataType() const { return dataType; }
-
-	int getNumChannels() { return numChannels; }
-
-private:
-
-	DataBuffer* analogInputBuffer = nullptr;
-
-	static const int AnalogIOFrequencyHz = 100000;
-
-	static const int numFrames = 25;
-	static const int framesToAverage = 4; // NB: Downsampling from 100 kHz to 25 kHz
-	static const int numChannels = 12;
-
-	static const int numberOfDivisions = 1 << 16;
-	const int dacMidScale = 1 << 15;
-
-	std::array<AnalogIODirection, numChannels> channelDirection;
-	std::array<AnalogIOVoltageRange, numChannels> channelVoltageRange;
-
-	AnalogIODataType dataType = AnalogIODataType::Volts;
-
-	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
-
-	unsigned short currentFrame = 0;
-	unsigned short currentAverageFrame = 0;
-	int sampleNumber = 0;
-
-	bool shouldAddToBuffer = false;
-
-	std::array<float, numFrames* numChannels> analogInputSamples;
-
-	double timestamps[numFrames];
-	int64 sampleNumbers[numFrames];
-	uint64 eventCodes[numFrames];
-
-	std::array<float, numChannels> voltsPerDivision;
-
-	static float getVoltsPerDivision(AnalogIOVoltageRange voltageRange);
-
-	void setChannelVoltageRange(int channelNumber, AnalogIOVoltageRange direction)
-	{
-		if (channelNumber > numChannels || channelNumber < 0)
+		AnalogIOVoltageRange getChannelVoltageRange(int channelNumber)
 		{
-			LOGE("Channel number must be between 0 and " + String(channelNumber));
-			return;
+			if (channelNumber > numChannels || channelNumber < 0)
+			{
+				LOGE("Channel number must be between 0 and " + String(channelNumber));
+				return AnalogIOVoltageRange::FiveVolts;
+			}
+
+			return channelVoltageRange[channelNumber];
 		}
 
-		channelVoltageRange[channelNumber] = direction;
-	}
+		void setChannelVoltageRange(int channelNumber, AnalogIOVoltageRange direction)
+		{
+			if (channelNumber > numChannels || channelNumber < 0)
+			{
+				LOGE("Channel number must be between 0 and " + String(channelNumber));
+				return;
+			}
 
-	void setDataType(AnalogIODataType type) { dataType = type; }
+			channelVoltageRange[channelNumber] = direction;
+		}
 
-	JUCE_LEAK_DETECTOR(AnalogIO);
-};
+		AnalogIODataType getDataType() const { return dataType; }
+
+		void setDataType(AnalogIODataType type) { dataType = type; }
+
+		int getNumChannels() { return numChannels; }
+
+	private:
+
+		DataBuffer* analogInputBuffer = nullptr;
+
+		static const int AnalogIOFrequencyHz = 100000;
+
+		static const int numFrames = 25;
+		static const int framesToAverage = 4; // NB: Downsampling from 100 kHz to 25 kHz
+		static const int numChannels = 12;
+
+		static const int numberOfDivisions = 1 << 16;
+		const int dacMidScale = 1 << 15;
+
+		std::array<AnalogIODirection, numChannels> channelDirection;
+		std::array<AnalogIOVoltageRange, numChannels> channelVoltageRange;
+
+		AnalogIODataType dataType = AnalogIODataType::Volts;
+
+		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
+
+		unsigned short currentFrame = 0;
+		unsigned short currentAverageFrame = 0;
+		int sampleNumber = 0;
+
+		bool shouldAddToBuffer = false;
+
+		std::array<float, numFrames* numChannels> analogInputSamples;
+
+		double timestamps[numFrames];
+		int64 sampleNumbers[numFrames];
+		uint64 eventCodes[numFrames];
+
+		std::array<float, numChannels> voltsPerDivision;
+
+		static float getVoltsPerDivision(AnalogIOVoltageRange voltageRange);
+
+		JUCE_LEAK_DETECTOR(AnalogIO);
+	};
+}

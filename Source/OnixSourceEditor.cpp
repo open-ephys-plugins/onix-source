@@ -22,6 +22,9 @@
 
 #include "OnixSourceEditor.h"
 #include "OnixSource.h"
+#include "OnixSourceCanvas.h"
+
+using namespace OnixSourcePlugin;
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_)
 	: VisualizerEditor(parentNode, "Onix Source", 250), source(source_)
@@ -259,6 +262,21 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		source->initializeDevices(false);
 		canvas->refreshTabs();
 
+		// NB: Check if headstages were not discovered, and then removed
+		if (!isHeadstageSelected(PortName::PortA) && source->getLastVoltageSet(PortName::PortA) > 0)
+		{
+			source->setPortVoltage(PortName::PortA, 0);
+			portStatusA->setFill(fillDisconnected);
+			lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
+		}
+
+		if (!isHeadstageSelected(PortName::PortB) && source->getLastVoltageSet(PortName::PortB) > 0)
+		{
+			source->setPortVoltage(PortName::PortB, 0);
+			portStatusB->setFill(fillDisconnected);
+			lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
+		}
+
 		connectButton->setLabel("DISCONNECT");
 
 		headstageComboBoxA->setEnabled(false);
@@ -311,7 +329,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 	for (auto& [key, _] : deviceMap) { deviceIndices.emplace_back(key); }
 	for (auto& [key, _] : tabMap) { tabIndices.emplace_back(key); }
 
-	auto devicePorts = PortController::getUniquePortsFromIndices(deviceIndices);
+	auto devicePorts = OnixDevice::getUniquePortsFromIndices(deviceIndices);
 	auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
 
 	bool isPortA = cb == headstageComboBoxA.get();
@@ -323,7 +341,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		AlertWindow::showMessageBox(
 			MessageBoxIconType::WarningIcon,
 			"Devices Connected",
-			"Cannot select a different headstage on " + PortController::getPortName(currentPort) + " when connected. \n\nPress disconnect before changing the selected headstage.");
+			"Cannot select a different headstage on " + OnixDevice::getPortName(currentPort) + " when connected. \n\nPress disconnect before changing the selected headstage.");
 
 		refreshComboBoxSelection();
 		return;
@@ -492,9 +510,9 @@ String OnixSourceEditor::getHeadstageSelected(int offset)
 	{
 	case 0:
 		return "Breakout Board";
-	case PortController::HubAddressPortA:
+	case OnixDevice::HubAddressPortA:
 		return headstageComboBoxA->getText();
-	case PortController::HubAddressPortB:
+	case OnixDevice::HubAddressPortB:
 		return headstageComboBoxB->getText();
 	default:
 		return "";
@@ -520,7 +538,7 @@ void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage
 	{
 		if (headstage.contains(comboBox->getItemText(i)))
 		{
-			comboBox->setSelectedItemIndex(i, dontSendNotification); // TODO: double check this indexing
+			comboBox->setSelectedItemIndex(i, dontSendNotification);
 			return;
 		}
 	}
@@ -536,13 +554,13 @@ void OnixSourceEditor::refreshComboBoxSelection()
 
 	for (const auto tab : headstageTabs)
 	{
-		if (tab->getName().contains(PortController::getPortName(PortName::PortA)))
+		if (tab->getName().contains(OnixDevice::getPortName(PortName::PortA)))
 		{
 			setComboBoxSelection(headstageComboBoxA.get(), tab->getName());
 			source->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstageComboBoxA->getText()));
 			resetPortA = false;
 		}
-		else if (tab->getName().contains(PortController::getPortName(PortName::PortB)))
+		else if (tab->getName().contains(OnixDevice::getPortName(PortName::PortB)))
 		{
 			setComboBoxSelection(headstageComboBoxB.get(), tab->getName());
 			source->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstageComboBoxB->getText()));

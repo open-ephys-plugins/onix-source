@@ -22,6 +22,8 @@
 
 #include "PolledBno055Interface.h"
 
+using namespace OnixSourcePlugin;
+
 PolledBno055Interface::PolledBno055Interface(std::shared_ptr<PolledBno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {

@@ -22,6 +22,8 @@
 
 #include "OutputClockInterface.h"
 
+using namespace OnixSourcePlugin;
+
 OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {

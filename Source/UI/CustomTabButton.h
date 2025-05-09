@@ -24,26 +24,29 @@
 
 #include <VisualizerEditorHeaders.h>
 
-/**
-	TabBarButton with custom appearance
-*/
-class CustomTabButton : public TabBarButton
+namespace OnixSourcePlugin
 {
-public:
-	/** Constructor */
-	CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_) :
-		TabBarButton(name, parent->getTabbedButtonBar()),
-		isTopLevel(isTopLevel_)
+	/**
+		TabBarButton with custom appearance
+	*/
+	class CustomTabButton : public TabBarButton
 	{
-	}
+	public:
+		/** Constructor */
+		CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_) :
+			TabBarButton(name, parent->getTabbedButtonBar()),
+			isTopLevel(isTopLevel_)
+		{
+		}
 
-	/** Paints the button */
-	void paintButton(Graphics& g, bool isMouseOver, bool isMouseDown) override
-	{
-		getTabbedButtonBar().setTabBackgroundColour(getIndex(), Colours::grey);
-		getLookAndFeel().drawTabButton(*this, g, isMouseOver, isMouseDown);
-	}
+		/** Paints the button */
+		void paintButton(Graphics& g, bool isMouseOver, bool isMouseDown) override
+		{
+			getTabbedButtonBar().setTabBackgroundColour(getIndex(), Colours::grey);
+			getLookAndFeel().drawTabButton(*this, g, isMouseOver, isMouseDown);
+		}
 
-private:
-	bool isTopLevel;
-};
+	private:
+		bool isTopLevel;
+	};
+}

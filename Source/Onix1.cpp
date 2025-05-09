@@ -22,6 +22,8 @@
 
 #include "Onix1.h"
 
+using namespace OnixSourcePlugin;
+
 Onix1::Onix1(int hostIndex)
 {
 	ctx_ = oni_create_ctx("riffa");

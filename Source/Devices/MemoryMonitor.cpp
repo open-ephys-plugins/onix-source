@@ -23,6 +23,8 @@
 #include "MemoryMonitor.h"
 #include "DigitalIO.h"
 
+using namespace OnixSourcePlugin;
+
 MemoryMonitorUsage::MemoryMonitorUsage(GenericProcessor* p)
 	: LevelMonitor(p)
 {

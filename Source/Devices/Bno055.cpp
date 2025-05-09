@@ -22,12 +22,14 @@
 
 #include "Bno055.h"
 
+using namespace OnixSourcePlugin;
+
 Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
 	: OnixDevice(name, headstageName, OnixDeviceType::BNO, deviceIdx_, ctx)
 {
 	auto streamIdentifier = getStreamIdentifier();
 
-	String port = PortController::getPortName(PortController::getPortFromIndex(deviceIdx));
+	String port = getPortNameFromIndex(deviceIdx);
 	StreamInfo eulerAngleStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Euler" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",
@@ -79,7 +81,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 	StreamInfo gravityStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Gravity" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Gravity",
-		streamIdentifier + ".gravity",
+		streamIdentifier,
 		3,
 		sampleRate,
 		"Grav",
@@ -107,7 +109,21 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 	);
 	streamInfos.add(temperatureStream);
 
-	// TODO: Add calibration stream here?
+	StreamInfo calibrationStatusStream = StreamInfo(
+		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Calibration" }),
+		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration status",
+		streamIdentifier,
+		4,
+		sampleRate,
+		"Cal",
+		ContinuousChannel::Type::AUX,
+		1.0f,
+		"",
+		{ "Mag", "Acc", "Gyr", "Sys" },
+		"calibration",
+		{ "magnetometer", "acceleration", "gyroscope", "system" }
+	);
+	streamInfos.add(calibrationStatusStream);
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
@@ -163,48 +179,52 @@ void Bno055::processFrames()
 		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
-		int16_t* dataPtr = (int16_t*)frame->data;
+		int16_t* dataPtr = ((int16_t*)frame->data) + 4;
 
 		bnoTimestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
 
-		int dataOffset = 4;
-
-		int channelOffset = 0;
+		size_t offset = 0;
 
 		// Euler
 		for (int i = 0; i < 3; i++)
 		{
-			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * eulerAngleScale;
-			dataOffset++;
-			channelOffset++;
+			bnoSamples[currentFrame + offset * numFrames] = float(*(dataPtr + offset)) * eulerAngleScale;
+			offset++;
 		}
 
 		// Quaternion
 		for (int i = 0; i < 4; i++)
 		{
-			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * quaternionScale;
-			dataOffset++;
-			channelOffset++;
+			bnoSamples[currentFrame + offset * numFrames] = float(*(dataPtr + offset)) * quaternionScale;
+			offset++;
 		}
 
 		// Acceleration
 		for (int i = 0; i < 3; i++)
 		{
-			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
-			dataOffset++;
-			channelOffset++;
+			bnoSamples[currentFrame + offset * numFrames] = float(*(dataPtr + offset)) * accelerationScale;
+			offset++;
 		}
 
 		// Gravity
 		for (int i = 0; i < 3; i++)
 		{
-			bnoSamples[currentFrame + channelOffset * numFrames] = float(*(dataPtr + dataOffset)) * accelerationScale;
-			dataOffset++;
-			channelOffset++;
+			bnoSamples[currentFrame + offset * numFrames] = float(*(dataPtr + offset)) * accelerationScale;
+			offset++;
 		}
 
 		// Temperature
-		bnoSamples[currentFrame + channelOffset * numFrames] = float(*((uint8_t*)(dataPtr + dataOffset)));
+		bnoSamples[currentFrame + offset * numFrames] = *((uint8_t*)(dataPtr + offset));
+
+		// Calibration
+		auto calibrationStatus = *((uint8_t*)(dataPtr + offset) + 1);
+
+		constexpr uint8_t statusMask = 0b11;
+
+		for (int i = 0; i < 4; i++)
+		{
+			bnoSamples[currentFrame + (offset + i + 1) * numFrames] = (calibrationStatus & (statusMask << (2 * i))) >> (2 * i);
+		}
 
 		oni_destroy_frame(frame);
 
@@ -221,7 +241,7 @@ void Bno055::processFrames()
 		if (shouldAddToBuffer)
 		{
 			shouldAddToBuffer = false;
-			bnoBuffer->addToBuffer(bnoSamples, sampleNumbers, bnoTimestamps, eventCodes, numFrames);
+			bnoBuffer->addToBuffer(bnoSamples.data(), sampleNumbers, bnoTimestamps, eventCodes, numFrames);
 		}
 	}
 }

@@ -30,127 +30,130 @@
 #include "FrameReader.h"
 #include "Devices/PortController.h"
 
-/**
-
-	@see DataThread, SourceNode
-
-*/
-class OnixSource : public DataThread
+namespace OnixSourcePlugin
 {
-public:
+	/**
 
-	/** Constructor */
-	OnixSource(SourceNode* sn);
+		@see DataThread, SourceNode
 
-	/** Destructor */
-	~OnixSource()
+	*/
+	class OnixSource : public DataThread
 	{
-		if (context != nullptr && context->isInitialized())
+	public:
+
+		/** Constructor */
+		OnixSource(SourceNode* sn);
+
+		/** Destructor */
+		~OnixSource()
 		{
-			portA->setVoltageOverride(0.0f, false);
-			portB->setVoltageOverride(0.0f, false);
+			if (context != nullptr && context->isInitialized())
+			{
+				portA->setVoltageOverride(0.0f, false);
+				portB->setVoltageOverride(0.0f, false);
+			}
 		}
-	}
 
-	/** Static method to create DataThread */
-	static DataThread* createDataThread(SourceNode* sn);
+		/** Static method to create DataThread */
+		static DataThread* createDataThread(SourceNode* sn);
 
-	/** Creates the custom editor */
-	std::unique_ptr<GenericEditor> createEditor(SourceNode* sn) override;
+		/** Creates the custom editor */
+		std::unique_ptr<GenericEditor> createEditor(SourceNode* sn) override;
 
-	/** Reads frames and adds them to the appropriate device */
-	bool updateBuffer() override;
+		/** Reads frames and adds them to the appropriate device */
+		bool updateBuffer() override;
 
-	/** Returns true if the processor is ready to stream data, including all hardware initialization. Returns false if not ready. */
-	bool isReady() override;
+		/** Returns true if the processor is ready to stream data, including all hardware initialization. Returns false if not ready. */
+		bool isReady() override;
 
-	/** Returns true if the hardware is connected, false otherwise.*/
-	bool foundInputSource() override;
+		/** Returns true if the hardware is connected, false otherwise.*/
+		bool foundInputSource() override;
 
-	/** Returns true if the deviceMap matches the settings tabs that are open */
-	bool isDevicesReady();
+		/** Returns true if the deviceMap matches the settings tabs that are open */
+		bool isDevicesReady();
 
-	/** Initializes data transfer.*/
-	bool startAcquisition() override;
+		/** Initializes data transfer.*/
+		bool startAcquisition() override;
 
-	/** Stops data transfer.*/
-	bool stopAcquisition() override;
+		/** Stops data transfer.*/
+		bool stopAcquisition() override;
 
-	void updateDiscoveryParameters(PortName port, DiscoveryParameters parameters);
+		void updateDiscoveryParameters(PortName port, DiscoveryParameters parameters);
 
-	/** Takes a string from the editor. Can be an empty string to allow for automated discovery */
-	bool configurePortVoltage(PortName port, String voltage) const;
+		/** Takes a string from the editor. Can be an empty string to allow for automated discovery */
+		bool configurePortVoltage(PortName port, String voltage) const;
 
-	/** Sets the port voltage */
-	void setPortVoltage(PortName port, double voltage) const;
+		/** Sets the port voltage */
+		void setPortVoltage(PortName port, double voltage) const;
 
-	double getLastVoltageSet(PortName port);
+		double getLastVoltageSet(PortName port);
 
-	void resetContext() { if (context != nullptr && context->isInitialized()) context->issueReset(); }
+		void resetContext() { if (context != nullptr && context->isInitialized()) context->issueReset(); }
 
-	bool isContextInitialized() { return context != nullptr && context->isInitialized(); }
+		bool isContextInitialized() { return context != nullptr && context->isInitialized(); }
 
-	void initializeDevices(bool updateStreamInfo = false);
+		void initializeDevices(bool updateStreamInfo = false);
 
-	void disconnectDevices(bool updateStreamInfo = false);
+		void disconnectDevices(bool updateStreamInfo = false);
 
-	OnixDeviceVector getDataSources();
+		OnixDeviceVector getDataSources();
 
-	OnixDeviceVector getEnabledDataSources();
+		OnixDeviceVector getEnabledDataSources();
 
-	OnixDeviceVector getDataSourcesFromPort(PortName port);
+		OnixDeviceVector getDataSourcesFromPort(PortName port);
 
-	OnixDeviceVector getDataSourcesFromOffset(int offset);
+		OnixDeviceVector getDataSourcesFromOffset(int offset);
 
-	std::shared_ptr<OnixDevice> getDevice(OnixDeviceType type);
+		std::shared_ptr<OnixDevice> getDevice(OnixDeviceType type);
 
-	static std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector, bool filterDevices = false);
+		static std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector, bool filterDevices = false);
 
-	std::map<int, OnixDeviceType> createDeviceMap(bool filterDevices = false);
+		std::map<int, OnixDeviceType> createDeviceMap(bool filterDevices = false);
 
-	std::map<int, String> getHeadstageMap();
+		std::map<int, String> getHeadstageMap();
 
-	String getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
+		String getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
 
-	void updateSourceBuffers();
+		void updateSourceBuffers();
 
-	// DataThread Methods
-	void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
-		OwnedArray<EventChannel>* eventChannels,
-		OwnedArray<SpikeChannel>* spikeChannels,
-		OwnedArray<DataStream>* sourceStreams,
-		OwnedArray<DeviceInfo>* devices,
-		OwnedArray<ConfigurationObject>* configurationObjects);
+		// DataThread Methods
+		void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
+			OwnedArray<EventChannel>* eventChannels,
+			OwnedArray<SpikeChannel>* spikeChannels,
+			OwnedArray<DataStream>* sourceStreams,
+			OwnedArray<DeviceInfo>* devices,
+			OwnedArray<ConfigurationObject>* configurationObjects);
 
-private:
+	private:
 
-	/** Available data sources */
-	OnixDeviceVector sources;
-	OnixDeviceVector enabledSources;
+		/** Available data sources */
+		OnixDeviceVector sources;
+		OnixDeviceVector enabledSources;
 
-	/** Available headstages, indexed by their offset value */
-	std::map<int, String> headstages;
+		/** Available headstages, indexed by their offset value */
+		std::map<int, String> headstages;
 
-	/** Pointer to the editor */
-	OnixSourceEditor* editor;
+		/** Pointer to the editor */
+		OnixSourceEditor* editor;
 
-	/** Thread that reads frames */
-	std::unique_ptr<FrameReader> frameReader;
+		/** Thread that reads frames */
+		std::unique_ptr<FrameReader> frameReader;
 
-	std::shared_ptr<Onix1> context = nullptr;
+		std::shared_ptr<Onix1> context = nullptr;
 
-	std::shared_ptr<PortController> portA;
-	std::shared_ptr<PortController> portB;
+		std::shared_ptr<PortController> portA;
+		std::shared_ptr<PortController> portB;
 
-	const oni_size_t block_read_size = 2048;
+		const oni_size_t block_read_size = 2048;
 
-	bool devicesFound = false;
+		bool devicesFound = false;
 
-	void addIndividualStreams(Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
+		void addIndividualStreams(Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
 
-	void addCombinedStreams(DataStream::Settings, Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
+		void addCombinedStreams(DataStream::Settings, Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
 
 	String createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber);
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
-};
+		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
+	};
+}

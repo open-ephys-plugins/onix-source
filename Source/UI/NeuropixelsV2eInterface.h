@@ -24,39 +24,42 @@
 
 #include "NeuropixelsV2eProbeInterface.h"
 
-class OnixSourceCanvas;
-class OnixSourceEditor;
-
-class NeuropixelsV2eInterface : public SettingsInterface,
-	public Button::Listener
+namespace OnixSourcePlugin
 {
-public:
-	NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	class OnixSourceCanvas;
+	class OnixSourceEditor;
 
-	void saveParameters(XmlElement* xml) override;
+	class NeuropixelsV2eInterface : public SettingsInterface,
+		public Button::Listener
+	{
+	public:
+		NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void loadParameters(XmlElement* xml) override;
+		void saveParameters(XmlElement* xml) override;
 
-	void updateInfoString() override;
+		void loadParameters(XmlElement* xml) override;
 
-	void resized() override;
+		void updateInfoString() override;
 
-	void buttonClicked(Button* b) override;
+		void resized() override;
 
-	void updateSettings() override;
+		void buttonClicked(Button* b) override;
 
-	void updateDevice(std::shared_ptr<Neuropixels2e> d);
+		void updateSettings() override;
 
-private:
+		void updateDevice(std::shared_ptr<Neuropixels2e> d);
 
-	void setInterfaceEnabledState(bool newState) override;
+	private:
 
-	std::unique_ptr<CustomTabComponent> topLevelTabComponent;
+		void setInterfaceEnabledState(bool newState) override;
 
-	std::unique_ptr<UtilityButton> deviceEnableButton;
-	std::unique_ptr<Component> deviceComponent;
+		std::unique_ptr<CustomTabComponent> topLevelTabComponent;
 
-	static const int numProbes = 2;
+		std::unique_ptr<UtilityButton> deviceEnableButton;
+		std::unique_ptr<Component> deviceComponent;
 
-	std::array<std::unique_ptr<NeuropixelsV2eProbeInterface>, numProbes> probeInterfaces;
-};
+		static const int numProbes = 2;
+
+		std::array<std::unique_ptr<NeuropixelsV2eProbeInterface>, numProbes> probeInterfaces;
+	};
+}

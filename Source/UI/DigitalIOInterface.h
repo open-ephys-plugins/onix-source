@@ -29,27 +29,30 @@
 
 #include "../Devices/DigitalIO.h"
 
-class DigitalIOInterface : public SettingsInterface,
-	public Button::Listener
+namespace OnixSourcePlugin
 {
-public:
-	DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	class DigitalIOInterface : public SettingsInterface,
+		public Button::Listener
+	{
+	public:
+		DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void saveParameters(XmlElement* xml) override;
+		void saveParameters(XmlElement* xml) override;
 
-	void loadParameters(XmlElement* xml) override;
+		void loadParameters(XmlElement* xml) override;
 
-	void updateInfoString() override {};
+		void updateInfoString() override {};
 
-	void updateSettings() override;
+		void updateSettings() override;
 
-	void buttonClicked(Button*) override;
+		void buttonClicked(Button*) override;
 
-private:
+	private:
 
-	void setInterfaceEnabledState(bool newState) override;
+		void setInterfaceEnabledState(bool newState) override;
 
-	std::unique_ptr<UtilityButton> deviceEnableButton;
+		std::unique_ptr<UtilityButton> deviceEnableButton;
 
-	JUCE_LEAK_DETECTOR(DigitalIOInterface);
-};
+		JUCE_LEAK_DETECTOR(DigitalIOInterface);
+	};
+}

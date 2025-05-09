@@ -22,6 +22,8 @@
 
 #include "FrameReader.h"
 
+using namespace OnixSourcePlugin;
+
 FrameReader::FrameReader(OnixDeviceVector sources_, std::shared_ptr<Onix1> ctx_)
 	: Thread("FrameReader")
 {

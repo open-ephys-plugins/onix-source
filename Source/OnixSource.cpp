@@ -23,6 +23,8 @@
 #include "OnixSource.h"
 #include "Devices/DeviceList.h"
 
+using namespace OnixSourcePlugin;
+
 OnixSource::OnixSource(SourceNode* sn) :
 	DataThread(sn),
 	devicesFound(false),
@@ -148,7 +150,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (device.id == ONIX_NEUROPIX1R0)
 		{
-			auto np1 = std::make_shared<Neuropixels_1>("Probe" + String(npxProbeIdx++), index, context);
+			auto np1 = std::make_shared<Neuropixels1f>("Probe" + String(npxProbeIdx++), index, context);
 
 			int res = np1->configureDevice();
 
@@ -214,10 +216,13 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 					{
 						LOGE("Device Idx: ", index, " Unable to read probe serial number. Device not found.");
 					}
-					//TODO add other errors if needed
+					else if (res == -2)
+					{
+						LOGE("No probes found for device ", index);
+					}
 					continue;
 				}
-				
+
 				sources.emplace_back(np2);
 
 				auto polledBno = std::make_shared<PolledBno055>("BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, index, context);
@@ -240,7 +245,7 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 				sources.emplace_back(polledBno);
 
-				headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV2E_HEADSTAGE_NAME });
+				headstages.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
 		}
 		else if (device.id == ONIX_MEMUSAGE)
@@ -429,7 +434,7 @@ std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devic
 
 std::map<int, OnixDeviceType> OnixSource::createDeviceMap(bool filterDevices)
 {
-	return createDeviceMap(getDataSources(), filterDevices);
+	return createDeviceMap(getEnabledDataSources(), filterDevices);
 }
 
 std::map<int, String> OnixSource::getHeadstageMap()
@@ -546,7 +551,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 		{
 			if (!source->isEnabled()) continue;
 
-			if (source->getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
+			if (source->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -573,7 +578,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				DataStream::Settings dataStreamSettings{
-					OnixDevice::createStreamName({PortController::getPortName(PortController::getPortFromIndex(source->getDeviceIdx())), source->getHeadstageName(), source->getName()}),
+					OnixDevice::createStreamName({OnixDevice::getPortNameFromIndex(source->getDeviceIdx()), source->getHeadstageName(), source->getName()}),
 					"Continuous data from a Bno055 9-axis IMU",
 					source->getStreamIdentifier(),
 					source->streamInfos[0].getSampleRate()
