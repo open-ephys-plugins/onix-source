@@ -396,17 +396,14 @@ void OnixSourceCanvas::refreshTabs()
 		auto selectedOffsets = OnixDevice::getUniqueOffsetsFromIndices(selectedIndices);
 		auto foundOffsets = OnixDevice::getUniqueOffsetsFromIndices(foundIndices);
 
-		if (foundIndices.size() == 0) // NB: No devices found, inform the user if they were expecting to find something
+		if (foundIndices.size() == 0 || foundOffsets.size() == 0) // NB: No devices found
 		{
 			if (selectedMap.size() != 0)
 			{
-				AlertWindow::showMessageBox(
-					MessageBoxIconType::WarningIcon,
-					"No Headstages Found",
-					"No headstages were found when connecting. Double check that the correct headstage is selected. " +
-					String("If the correct headstage is selected, try pressing disconnect / connect again.\n\n") +
-					String("If the port voltage is manually set, try clearing the value and letting the automated voltage discovery algorithm run.")
-				);
+				for (const auto& offset : selectedOffsets)
+				{
+					askKeepRemove(offset);
+				}
 			}
 		}
 		else if (selectedIndices.size() == 0) // NB: No headstages selected, add all found headstages
