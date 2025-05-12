@@ -39,7 +39,7 @@ namespace OnixSourcePlugin
 	public:
 
 		/** Constructor */
-		Bno055(String name, String headstageName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
+		Bno055(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
 
 		int configureDevice() override;
 
@@ -57,6 +57,8 @@ namespace OnixSourcePlugin
 		void processFrames() override;
 
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+
+		static OnixDeviceType getDeviceType();
 
 	private:
 

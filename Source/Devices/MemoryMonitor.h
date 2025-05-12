@@ -43,7 +43,7 @@ namespace OnixSourcePlugin
 	class MemoryMonitor : public OnixDevice
 	{
 	public:
-		MemoryMonitor(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+		MemoryMonitor(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
@@ -67,6 +67,8 @@ namespace OnixSourcePlugin
 		float getLastPercentUsedValue();
 
 		void setDigitalIO(std::shared_ptr<DigitalIO> digitalIO) { m_digitalIO = digitalIO; }
+
+		static OnixDeviceType getDeviceType();
 
 	private:
 

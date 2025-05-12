@@ -69,7 +69,7 @@ namespace OnixSourcePlugin
 	class AnalogIO : public OnixDevice
 	{
 	public:
-		AnalogIO(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+		AnalogIO(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
@@ -152,6 +152,8 @@ namespace OnixSourcePlugin
 		void setDataType(AnalogIODataType type) { dataType = type; }
 
 		int getNumChannels() { return numChannels; }
+
+		static OnixDeviceType getDeviceType();
 
 	private:
 

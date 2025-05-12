@@ -51,15 +51,15 @@ namespace OnixSourcePlugin
 		public I2CRegisterContext
 	{
 	public:
-		Neuropixels2e(String name, const oni_dev_idx_t, std::shared_ptr<Onix1>);
+		Neuropixels2e(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 		~Neuropixels2e()
 		{
 			if (serializer != nullptr)
-				serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10, DefaultGPO10Config);
-
-			if (i2cContext != nullptr)
+			{
 				selectProbe(NoProbeSelected);
+				serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10, DefaultGPO10Config);
+			}
 
 			if (deviceContext != nullptr && deviceContext->isInitialized())
 				deviceContext->setOption(ONIX_OPT_PASSTHROUGH, 0);
@@ -113,6 +113,8 @@ namespace OnixSourcePlugin
 		void defineMetadata(ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>*, int);
 
 		void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index) override;
+
+		static OnixDeviceType getDeviceType();
 
 	private:
 		DataBuffer* amplifierBuffer[2];

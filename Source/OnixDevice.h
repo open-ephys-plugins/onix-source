@@ -151,7 +151,7 @@ namespace OnixSourcePlugin
 	public:
 
 		/** Constructor */
-		OnixDevice(String name_, String headstageName, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+		OnixDevice(std::string name_, std::string hubName, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx, bool passthrough = false);
 
 		/** Destructor */
 		~OnixDevice() { }
@@ -160,7 +160,7 @@ namespace OnixSourcePlugin
 
 		virtual void processFrames() {};
 
-		const String getName() { return name; }
+		const std::string getName() { return name; }
 
 		bool isEnabled() const { return enabled; }
 
@@ -202,13 +202,13 @@ namespace OnixSourcePlugin
 		static constexpr int HubAddressPortA = 256;
 		static constexpr int HubAddressPortB = 512;
 
-		String getHeadstageName() { return m_headstageName; }
-		void setHeadstageName(String headstage) { m_headstageName = headstage; }
+		std::string getHubName() { return m_hubName; }
+		void setHubName(std::string hubName) { m_hubName = hubName; }
 
 		static int getPortOffset(PortName port);
-		static String getPortName(int offset);
-		static String getPortName(PortName port);
-		static String getPortNameFromIndex(oni_dev_idx_t index);
+		static std::string getPortName(int offset);
+		static std::string getPortName(PortName port);
+		static std::string getPortNameFromIndex(oni_dev_idx_t index);
 		static PortName getPortFromIndex(oni_dev_idx_t index);
 		static int getOffsetFromIndex(oni_dev_idx_t index);
 		static std::vector<int> getUniqueOffsetsFromIndices(std::vector<int> indices, bool ignoreBreakoutBoard = true);
@@ -216,7 +216,7 @@ namespace OnixSourcePlugin
 
 		OnixDeviceType getDeviceType() const;
 
-		/** Returns a string for this device that follows the pattern: onix.[headstage|breakout].[device] */
+		/** Returns a string for this device that follows the pattern: onix.[hub].[device] */
 		String getStreamIdentifier();
 
 	protected:
@@ -228,12 +228,12 @@ namespace OnixSourcePlugin
 
 	private:
 
-		String name;
+		std::string name;
 
 		bool enabled = true;
 		bool isPassthrough = false;
 
-		String m_headstageName;
+		std::string m_hubName;
 
 		const OnixDeviceType type;
 

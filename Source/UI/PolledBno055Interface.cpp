@@ -53,7 +53,17 @@ void PolledBno055Interface::buttonClicked(Button* button)
 
 		if (canvas->foundInputSource())
 		{
-			device->configureDevice();
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				LOGE(e.what());
+				button->setToggleState(!button->getToggleState(), dontSendNotification);
+				return;
+			}
+
 			canvas->resetContext();
 		}
 
@@ -109,7 +119,7 @@ void PolledBno055Interface::loadParameters(XmlElement* xml)
 	{
 		if (node->hasTagName("POLLEDBNO055"))
 		{
-			if (node->getStringAttribute("name") == device->getName() &&
+			if (node->getStringAttribute("name").toStdString() == device->getName() &&
 				node->getIntAttribute("idx") == device->getDeviceIdx())
 			{
 				xmlNode = node;

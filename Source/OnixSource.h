@@ -88,9 +88,11 @@ namespace OnixSourcePlugin
 
 		double getLastVoltageSet(PortName port);
 
-		void resetContext() { if (context != nullptr && context->isInitialized()) context->issueReset(); }
+		void resetContext();
 
-		bool isContextInitialized() { return context != nullptr && context->isInitialized(); }
+		bool isContextInitialized();
+
+		std::shared_ptr<Onix1> getContext();
 
 		void initializeDevices(bool updateStreamInfo = false);
 
@@ -110,7 +112,7 @@ namespace OnixSourcePlugin
 
 		std::map<int, OnixDeviceType> createDeviceMap(bool filterDevices = false);
 
-		std::map<int, String> getHeadstageMap();
+		std::map<int, std::string> getHubNames();
 
 		String getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
 
@@ -131,7 +133,7 @@ namespace OnixSourcePlugin
 		OnixDeviceVector enabledSources;
 
 		/** Available headstages, indexed by their offset value */
-		std::map<int, String> headstages;
+		std::map<int, std::string> hubNames;
 
 		/** Pointer to the editor */
 		OnixSourceEditor* editor;
@@ -152,7 +154,11 @@ namespace OnixSourcePlugin
 
 		void addCombinedStreams(DataStream::Settings, Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
 
-	String createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber);
+		String createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber);
+
+		/** Template method to initialize an OnixDevice and add it to the currently active OnixDeviceVector variable */
+		template <class Device>
+		static bool configureDevice(OnixDeviceVector& sources, OnixSourceCanvas* canvas, std::string deviceName, std::string hubName, OnixDeviceType deviceType, const oni_dev_idx_t deviceIdx, std::shared_ptr<Onix1> ctx);
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 	};

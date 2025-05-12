@@ -170,8 +170,8 @@ void BackgroundUpdaterWithProgressWindow::run()
 	result = true;
 }
 
-Neuropixels1f::Neuropixels1f(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(name, NEUROPIXELSV1F_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELSV1F, deviceIdx_, ctx_),
+Neuropixels1f::Neuropixels1f(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
+	OnixDevice(name, hubName, Neuropixels1f::getDeviceType(), deviceIdx_, ctx_),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	INeuropixel(NeuropixelsV1fValues::numberOfSettings, NeuropixelsV1fValues::numberOfShanks)
 {
@@ -179,7 +179,7 @@ Neuropixels1f::Neuropixels1f(String name, const oni_dev_idx_t deviceIdx_, std::s
 	auto streamIdentifier = getStreamIdentifier();
 
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "AP" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "AP" }),
 		"Neuropixels 1.0 AP band data stream",
 		streamIdentifier,
 		numberOfChannels,
@@ -194,7 +194,7 @@ Neuropixels1f::Neuropixels1f(String name, const oni_dev_idx_t deviceIdx_, std::s
 	streamInfos.add(apStream);
 
 	StreamInfo lfpStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "LFP" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "LFP" }),
 		"Neuropixels 1.0 LFP band data stream",
 		streamIdentifier,
 		numberOfChannels,
@@ -289,17 +289,29 @@ NeuropixelsV1fReference Neuropixels1f::getReference(int index)
 	return NeuropixelsV1fReference::External;
 }
 
+OnixDeviceType Neuropixels1f::getDeviceType()
+{
+	return OnixDeviceType::NEUROPIXELSV1F;
+}
+
 int Neuropixels1f::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;
+	if (deviceContext == nullptr || !deviceContext->isInitialized())
+		throw error_str("Device context is not initialized properly for " + getName());
 
-	deviceContext->writeRegister(deviceIdx, ENABLE, isEnabled() ? 1 : 0);
+	int rc = deviceContext->writeRegister(deviceIdx, ENABLE, isEnabled() ? 1 : 0);
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Unable to enable " + getName());
+
+	if (!isEnabled())
+	{
+		return ONI_ESUCCESS;
+	}
 
 	// Get Probe SN
 	uint32_t eepromOffset = 0;
 	uint32_t i2cAddr = 0x50;
 	int errorCode = 0;
-	int rc;
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -308,7 +320,11 @@ int Neuropixels1f::configureDevice()
 		oni_reg_val_t reg_val;
 		rc = deviceContext->readRegister(deviceIdx, reg_addr, &reg_val);
 
-		if (rc != ONI_ESUCCESS) return -1;
+		if (rc != ONI_ESUCCESS)
+		{
+			LOGE(oni_error_str(rc));
+			throw error_str("Could not communicate with " + getName() + " on " + getHubName() + ". Ensure that the flex connection is properly seated, or disable the device if it is not connected.");
+		}
 
 		if (reg_val <= 0xFF)
 		{
@@ -318,26 +334,26 @@ int Neuropixels1f::configureDevice()
 
 	LOGD("Probe SN: ", probeNumber);
 
-	if (!isEnabled())
-	{
-		return 0;
-	}
-
 	// Enable device streaming
 	rc = deviceContext->writeRegister(deviceIdx, 0x8000, 1);
-	if (rc != ONI_ESUCCESS) return -2;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Unable to activate streaming for device at address " + std::to_string(deviceIdx));
 
 	rc = WriteByte((uint32_t)NeuropixelsRegisters::CAL_MOD, (uint32_t)CalMode::CAL_OFF);
-	if (rc != ONI_ESUCCESS) return -3;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
 	rc = WriteByte((uint32_t)NeuropixelsRegisters::SYNC, (uint32_t)0);
-	if (rc != ONI_ESUCCESS) return -3;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
 	rc = WriteByte((uint32_t)NeuropixelsRegisters::REC_MOD, (uint32_t)RecMod::DIG_AND_CH_RESET);
-	if (rc != ONI_ESUCCESS) return -3;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
 	rc = WriteByte((uint32_t)NeuropixelsRegisters::OP_MODE, (uint32_t)OpMode::RECORD);
-	if (rc != ONI_ESUCCESS) return -3;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
 	return rc;
 }

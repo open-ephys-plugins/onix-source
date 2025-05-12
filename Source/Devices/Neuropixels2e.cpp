@@ -24,8 +24,8 @@
 
 using namespace OnixSourcePlugin;
 
-Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(name, NEUROPIXELSV2E_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELSV2E, deviceIdx_, ctx_),
+Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
+	OnixDevice(name, hubName, Neuropixels2e::getDeviceType(), deviceIdx_, ctx_, true),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	INeuropixel(NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
 {
@@ -44,7 +44,7 @@ Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, std::s
 void Neuropixels2e::createDataStream(int n)
 {
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ getPortNameFromIndex(getDeviceIdx()), getHeadstageName(), "Probe" + String(n) }),
+		OnixDevice::createStreamName({ getPortNameFromIndex(getDeviceIdx()), getHubName(), "Probe" + String(n) }),
 		"Neuropixels 2.0 data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
@@ -342,17 +342,25 @@ uint64_t Neuropixels2e::getProbeSerialNumber(int index)
 	}
 }
 
+OnixDeviceType Neuropixels2e::getDeviceType()
+{
+	return OnixDeviceType::NEUROPIXELSV2E;
+}
+
 int Neuropixels2e::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) 
+		throw error_str("Device context is not initialized properly for " + getName());
 
 	int rc = deviceContext->writeRegister(deviceIdx, DS90UB9x::ENABLE, isEnabled() ? 1 : 0);
-	if (rc != ONI_ESUCCESS) return rc;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Unable to enable " + getName());
 
 	configureSerDes();
 	setProbeSupply(true);
 	rc = serializer->set933I2cRate(400e3);
-	if (rc != ONI_ESUCCESS) return rc;
+	if (rc != ONI_ESUCCESS) 
+		throw error_str("Unable to set I2C rate for " + getName());
 	probeSN[0] = getProbeSN(ProbeASelected);
 	probeSN[1] = getProbeSN(ProbeBSelected);
 	setProbeSupply(false);
@@ -362,7 +370,7 @@ int Neuropixels2e::configureDevice()
 	if (probeSN[0] == 0 && probeSN[1] == 0)
 	{
 		m_numProbes = 0;
-		return -2;
+		throw error_str("No probes were found connected at address " + std::to_string(getDeviceIdx()));
 	}
 	else if (probeSN[0] != 0 && probeSN[1] != 0)
 	{
@@ -380,7 +388,7 @@ int Neuropixels2e::configureDevice()
 		createDataStream(i);
 	}
 
-	return 0;
+	return ONI_ESUCCESS;
 }
 
 bool Neuropixels2e::updateSettings()

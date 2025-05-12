@@ -685,7 +685,17 @@ void NeuropixelsV1fInterface::buttonClicked(Button* button)
 
 		if (canvas->foundInputSource())
 		{
-			device->configureDevice();
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				LOGE(e.what());
+				button->setToggleState(!button->getToggleState(), dontSendNotification);
+				return;
+			}
+
 			canvas->resetContext();
 		}
 
@@ -1030,7 +1040,7 @@ void NeuropixelsV1fInterface::loadParameters(XmlElement* xml)
 	{
 		if (node->hasTagName("NEUROPIXELSV1F"))
 		{
-			if (node->getStringAttribute("name") == npx->getName() &&
+			if (node->getStringAttribute("name").toStdString() == npx->getName() &&
 				node->getIntAttribute("idx") == npx->getDeviceIdx())
 			{
 				xmlNode = node;

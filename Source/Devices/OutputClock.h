@@ -43,10 +43,10 @@ namespace OnixSourcePlugin
 	class OutputClock : public OnixDevice
 	{
 	public:
-		OutputClock(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+		OutputClock(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 		/** Device is always enabled */
-		int configureDevice() override { setEnabled(true); return 0; };
+		int configureDevice() override;
 
 		/** Update the settings of the device */
 		bool updateSettings() override;
@@ -83,6 +83,8 @@ namespace OnixSourcePlugin
 			gateRun = gate;
 			if (writeToRegister) writeGateRunRegister();
 		}
+
+		static OnixDeviceType getDeviceType();
 
 	private:
 

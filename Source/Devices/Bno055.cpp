@@ -24,14 +24,14 @@
 
 using namespace OnixSourcePlugin;
 
-Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
-	: OnixDevice(name, headstageName, OnixDeviceType::BNO, deviceIdx_, ctx)
+Bno055::Bno055(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
+	: OnixDevice(name, hubName, Bno055::getDeviceType(), deviceIdx_, ctx)
 {
 	auto streamIdentifier = getStreamIdentifier();
 
 	String port = getPortNameFromIndex(deviceIdx);
 	StreamInfo eulerAngleStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Euler" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Euler" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",
 		streamIdentifier,
 		3,
@@ -47,7 +47,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 	streamInfos.add(eulerAngleStream);
 
 	StreamInfo quaternionStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Quaternion" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Quaternion" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Quaternion",
 		streamIdentifier,
 		4,
@@ -63,7 +63,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 	streamInfos.add(quaternionStream);
 
 	StreamInfo accelerationStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Acceleration" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Acceleration" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Acceleration",
 		streamIdentifier,
 		3,
@@ -79,7 +79,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 	streamInfos.add(accelerationStream);
 
 	StreamInfo gravityStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Gravity" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Gravity" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Gravity",
 		streamIdentifier,
 		3,
@@ -95,7 +95,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 	streamInfos.add(gravityStream);
 
 	StreamInfo temperatureStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Temperature" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Temperature" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Temperature",
 		streamIdentifier,
 		1,
@@ -110,7 +110,7 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 	streamInfos.add(temperatureStream);
 
 	StreamInfo calibrationStatusStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Calibration" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Calibration" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration status",
 		streamIdentifier,
 		4,
@@ -129,9 +129,15 @@ Bno055::Bno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_
 		eventCodes[i] = 0;
 }
 
+OnixDeviceType Bno055::getDeviceType()
+{
+	return OnixDeviceType::BNO;
+}
+
 int Bno055::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) 
+		throw error_str("Device context is not initialized properly for	" + getName());
 
 	return deviceContext->writeRegister(deviceIdx, (uint32_t)Bno055Registers::ENABLE, isEnabled() ? 1 : 0);
 }

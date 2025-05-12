@@ -260,7 +260,9 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
 
 		source->initializeDevices(false);
-		canvas->refreshTabs();
+
+		if (source->foundInputSource())
+			canvas->refreshTabs();
 
 		// NB: Check if headstages were not discovered, and then removed
 		if (!isHeadstageSelected(PortName::PortA) && source->getLastVoltageSet(PortName::PortA) > 0)
@@ -284,7 +286,7 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		if (!source->foundInputSource())
 		{
-			CoreServices::sendStatusMessage("No Onix hardware found.");
+			CoreServices::sendStatusMessage("Error configuring hardware. Check logs for more details.");
 			connectButton->setToggleState(false, sendNotification);
 		}
 	}
@@ -357,7 +359,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 
 	if (currentHeadstageSelected)
 	{
-		String headstage = isPortA ? headstageComboBoxA->getText() : headstageComboBoxB->getText();
+		std::string headstage = isPortA ? headstageComboBoxA->getText().toStdString() : headstageComboBoxB->getText().toStdString();
 
 		source->updateDiscoveryParameters(currentPort, PortController::getHeadstageDiscoveryParameters(headstage));
 		canvas->addHub(headstage, PortController::getPortOffset(currentPort));
@@ -470,6 +472,11 @@ Visualizer* OnixSourceEditor::createNewCanvas(void)
 	return canvas;
 }
 
+OnixSourceCanvas* OnixSourceEditor::getCanvas()
+{
+	return canvas;
+}
+
 void OnixSourceEditor::resetCanvas()
 {
 	if (canvas != nullptr)
@@ -504,22 +511,22 @@ bool OnixSourceEditor::isHeadstageSelected(PortName port)
 	}
 }
 
-String OnixSourceEditor::getHeadstageSelected(int offset)
+std::string OnixSourceEditor::getHeadstageSelected(int offset)
 {
 	switch (offset)
 	{
 	case 0:
 		return "Breakout Board";
 	case OnixDevice::HubAddressPortA:
-		return headstageComboBoxA->getText();
+		return headstageComboBoxA->getText().toStdString();
 	case OnixDevice::HubAddressPortB:
-		return headstageComboBoxB->getText();
+		return headstageComboBoxB->getText().toStdString();
 	default:
 		return "";
 	}
 }
 
-String OnixSourceEditor::getHeadstageSelected(PortName port)
+std::string OnixSourceEditor::getHeadstageSelected(PortName port)
 {
 	switch (port)
 	{
@@ -548,11 +555,11 @@ void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage
 
 void OnixSourceEditor::refreshComboBoxSelection()
 {
-	Array<CustomTabComponent*> headstageTabs = canvas->getHeadstageTabs();
+	Array<CustomTabComponent*> hubTabs = canvas->getHubTabs();
 
 	bool resetPortA = true, resetPortB = true;
 
-	for (const auto tab : headstageTabs)
+	for (const auto tab : hubTabs)
 	{
 		if (tab->getName().contains(OnixDevice::getPortName(PortName::PortA)))
 		{

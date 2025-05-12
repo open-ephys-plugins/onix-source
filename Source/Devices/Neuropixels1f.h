@@ -150,7 +150,7 @@ namespace OnixSourcePlugin
 	{
 	public:
 		/** Constructor */
-		Neuropixels1f(String name, const oni_dev_idx_t, std::shared_ptr<Onix1>);
+		Neuropixels1f(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
@@ -205,6 +205,8 @@ namespace OnixSourcePlugin
 
 		/** Select a preset electrode configuration */
 		std::vector<int> selectElectrodeConfiguration(String config) override;
+
+		static OnixDeviceType getDeviceType();
 
 	private:
 

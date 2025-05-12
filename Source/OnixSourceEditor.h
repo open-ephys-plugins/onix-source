@@ -73,11 +73,13 @@ namespace OnixSourcePlugin
 
 		void resetCanvas();
 
+		OnixSourceCanvas* getCanvas();
+
 		bool isHeadstageSelected(PortName port);
 
-		String getHeadstageSelected(int offset);
+		std::string getHeadstageSelected(int offset);
 
-		String getHeadstageSelected(PortName port);
+		std::string getHeadstageSelected(PortName port);
 
 		void refreshComboBoxSelection();
 
@@ -90,9 +92,9 @@ namespace OnixSourcePlugin
 		OnixSourceCanvas* canvas;
 		OnixSource* source;
 
-    const FillType fillDisconnected = FillType(Colours::transparentBlack);
-    const FillType fillSearching = FillType(Colour::fromFloatRGBA(0.0f, 1.0f, 87.0f / 255, 1.0f));
-    const FillType fillConnected = FillType(Colour::fromFloatRGBA(184.0f / 255, 0.0f, 252.0f / 255, 1.0f));
+		const FillType fillDisconnected = FillType(Colours::transparentBlack);
+		const FillType fillSearching = FillType(Colour::fromFloatRGBA(0.0f, 1.0f, 87.0f / 255, 1.0f));
+		const FillType fillConnected = FillType(Colour::fromFloatRGBA(184.0f / 255, 0.0f, 252.0f / 255, 1.0f));
 
 		const Colour statusIndicatorStrokeColor = Colours::black;
 

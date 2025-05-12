@@ -57,11 +57,11 @@ void MemoryMonitorUsage::stopAcquisition()
 	repaint();
 }
 
-MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::MEMORYMONITOR, deviceIdx_, oni_ctx)
+MemoryMonitor::MemoryMonitor(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name, hubName, MemoryMonitor::getDeviceType(), deviceIdx_, oni_ctx)
 {
 	StreamInfo percentUsedStream = StreamInfo(
-		OnixDevice::createStreamName({ getHeadstageName(), getName(), "PercentUsed" }),
+		OnixDevice::createStreamName({ getHubName(), getName(), "PercentUsed" }),
 		"Percent of available memory that is currently used",
 		getStreamIdentifier(),
 		1,
@@ -79,16 +79,26 @@ MemoryMonitor::MemoryMonitor(String name, const oni_dev_idx_t deviceIdx_, std::s
 		eventCodes[i] = 0;
 }
 
+OnixDeviceType MemoryMonitor::getDeviceType()
+{
+	return OnixDeviceType::MEMORYMONITOR;
+}
+
 int MemoryMonitor::configureDevice()
 {
+	if (deviceContext == nullptr || !deviceContext->isInitialized())
+		throw error_str("Device context is not initialized properly for	" + getName());
+
 	setEnabled(true);
 
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
-
 	int rc = deviceContext->writeRegister(deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, 1);
-	if (rc != ONI_ESUCCESS) return rc;
+	if (rc != ONI_ESUCCESS) 
+		throw error_str("Unable to enable " + getName());
 
 	rc = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::TOTAL_MEM, &totalMemory);
+
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Unable to find the total memory used for " + getName());
 
 	return rc;
 }

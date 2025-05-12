@@ -24,15 +24,13 @@
 
 using namespace OnixSourcePlugin;
 
-OnixDevice::OnixDevice(String name_, String headstageName, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
+OnixDevice::OnixDevice(std::string name_, std::string hubName, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx, bool passthrough)
 	: type(type_), deviceIdx(deviceIdx_)
 {
 	deviceContext = ctx;
 	name = name_;
-	m_headstageName = headstageName;
-
-	if (type == OnixDeviceType::NEUROPIXELSV2E || type == OnixDeviceType::POLLEDBNO)
-		isPassthrough = true;
+	m_hubName = hubName;
+	isPassthrough = passthrough;
 }
 
 oni_dev_idx_t OnixDevice::getDeviceIdx(bool getPassthroughIndex)
@@ -63,15 +61,15 @@ String OnixDevice::getStreamIdentifier()
 	String streamIdentifier = "onix";
 
 	// Insert the headstage or breakout board
-	if (getHeadstageName() == NEUROPIXELSV1F_HEADSTAGE_NAME)
+	if (getHubName() == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
 		streamIdentifier += ".npx1f";
 	}
-	else if (getHeadstageName() == NEUROPIXELSV2E_HEADSTAGE_NAME)
+	else if (getHubName() == NEUROPIXELSV2E_HEADSTAGE_NAME)
 	{
 		streamIdentifier += ".npx2e";
 	}
-	else if (getHeadstageName() == BREAKOUT_BOARD_NAME)
+	else if (getHubName() == BREAKOUT_BOARD_NAME)
 	{
 		streamIdentifier += ".breakout";
 	}
@@ -122,7 +120,7 @@ int OnixDevice::getPortOffset(PortName port)
 	return (uint32_t)port << 8;
 }
 
-String OnixDevice::getPortName(int offset)
+std::string OnixDevice::getPortName(int offset)
 {
 	switch (offset)
 	{
@@ -137,12 +135,12 @@ String OnixDevice::getPortName(int offset)
 	}
 }
 
-String OnixDevice::getPortName(PortName port)
+std::string OnixDevice::getPortName(PortName port)
 {
 	return getPortName(getPortOffset(port));
 }
 
-String OnixDevice::getPortNameFromIndex(oni_dev_idx_t index)
+std::string OnixDevice::getPortNameFromIndex(oni_dev_idx_t index)
 {
 	return getPortName(getOffsetFromIndex(index));
 }
@@ -154,7 +152,7 @@ PortName OnixDevice::getPortFromIndex(oni_dev_idx_t index)
 
 int OnixDevice::getOffsetFromIndex(oni_dev_idx_t index)
 {
-	return index & 0b1100000000;
+	return index & 0x0000FF00;
 }
 
 std::vector<int> OnixDevice::getUniqueOffsetsFromIndices(std::vector<int> indices, bool ignoreBreakoutBoard)

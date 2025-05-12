@@ -51,7 +51,23 @@ namespace OnixSourcePlugin
 		int errorNum_;
 	};
 
-	using device_map_t = std::unordered_map<oni_dev_idx_t, oni_device_t>;
+	class error_str : public std::exception
+	{
+	public:
+		explicit error_str(std::string errorStr) : m_errorStr(errorStr) {}
+
+		const char* what() const noexcept override
+		{
+			return m_errorStr.c_str();
+		}
+
+		std::string str() const { return m_errorStr; }
+
+	private:
+		std::string m_errorStr;
+	};
+
+	using device_map_t = std::map<oni_dev_idx_t, oni_device_t>;
 
 	class Onix1
 	{
@@ -90,9 +106,15 @@ namespace OnixSourcePlugin
 
 		int issueReset() { int val = 1; int rc = setOption(ONI_OPT_RESET, val); return rc; }
 
-	std::string getVersion() const { return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch); }
+		std::string getVersion() const { return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch); }
 
 		double convertTimestampToSeconds(uint32_t timestamp) const { return static_cast<double>(timestamp) / ACQ_CLK_HZ; }
+
+		/** Gets a map of all hubs connected, where the index of the map is the hub address, and the value is the hub ID */
+		std::map<int, int> getHubIds();
+
+		/** Gets a vector of device indices from a device_map_t object, optionally filtered by a specific hub */
+		static std::vector<int> getDeviceIndices(device_map_t deviceMap, int hubIndex = -1);
 
 	private:
 

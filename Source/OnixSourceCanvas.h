@@ -73,7 +73,7 @@ namespace OnixSourcePlugin
 		void stopAcquisition();
 
 		/** Add the hub and all of its devices to the canvas */
-		void addHub(String, int);
+		void addHub(std::string, int);
 
 		/** Called when the basestation is created or refreshed */
 		void populateSourceTabs(CustomTabComponent*, OnixDeviceVector);
@@ -87,7 +87,7 @@ namespace OnixSourcePlugin
 		/** Sets bounds of sub-components*/
 		void resized();
 
-		Array<CustomTabComponent*> getHeadstageTabs();
+		Array<CustomTabComponent*> getHubTabs();
 
 		std::map<int, OnixDeviceType> createSelectedMap(std::vector<std::shared_ptr<SettingsInterface>>);
 
@@ -97,6 +97,10 @@ namespace OnixSourcePlugin
 
 		bool foundInputSource();
 
+		bool containsDevice(OnixDeviceType, int);
+
+		std::shared_ptr<OnixDevice> getDevicePtr(OnixDeviceType, int);
+
 	private:
 
 		OnixSourceEditor* editor;
@@ -104,18 +108,13 @@ namespace OnixSourcePlugin
 		OnixSource* source;
 
 		std::unique_ptr<CustomTabComponent> topLevelTabComponent;
-		OwnedArray<CustomTabComponent> headstageTabs;
+		OwnedArray<CustomTabComponent> hubTabs;
 
 		CustomTabComponent* addTopLevelTab(String tabName, int index = -1);
 
 		void addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_);
 
-		void updateSettingsInterfaceDataSource(std::shared_ptr<OnixDevice>);
-
-		// Compare two device names, ignoring the "-X" if it exists
-		bool compareDeviceNames(String dev1, String dev2);
-
-		String getTopLevelTabName(PortName port, String headstage);
+		std::string getTopLevelTabName(PortName port, std::string headstage);
 
 		/**
 			Create an alert window that asks whether to keep the selected headstage on the given port,
@@ -127,7 +126,7 @@ namespace OnixSourcePlugin
 			Create an alert window that asks whether to keep the selected headstage on the given port,
 			or to update to the headstage that was found
 		*/
-		void askKeepUpdate(int offset, String foundHeadstage, OnixDeviceVector devices);
+		void askKeepUpdate(int offset, std::string foundHeadstage, OnixDeviceVector devices);
 
 		JUCE_LEAK_DETECTOR(OnixSourceCanvas);
 	};

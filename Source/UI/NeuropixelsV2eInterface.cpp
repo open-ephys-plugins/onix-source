@@ -59,16 +59,6 @@ NeuropixelsV2eInterface::NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> 
 	type = Type::NEUROPIXELS2E_SETTINGS_INTERFACE;
 }
 
-void NeuropixelsV2eInterface::updateDevice(std::shared_ptr<Neuropixels2e> d)
-{
-	device = d;
-
-	for (const auto& probeInterface : probeInterfaces)
-	{
-		probeInterface->setDevice(device);
-	}
-}
-
 void NeuropixelsV2eInterface::resized()
 {
 	topLevelTabComponent->setBounds(0, 50, canvas->getWidth() * 0.99, canvas->getHeight() - 50);
@@ -82,15 +72,25 @@ void NeuropixelsV2eInterface::updateInfoString()
 	}
 }
 
-void NeuropixelsV2eInterface::buttonClicked(Button* b)
+void NeuropixelsV2eInterface::buttonClicked(Button* button)
 {
-	if (b == deviceEnableButton.get())
+	if (button == deviceEnableButton.get())
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
 
 		if (canvas->foundInputSource())
 		{
-			device->configureDevice();
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				LOGE(e.what());
+				button->setToggleState(!button->getToggleState(), dontSendNotification);
+				return;
+			}
+
 			canvas->resetContext();
 		}
 

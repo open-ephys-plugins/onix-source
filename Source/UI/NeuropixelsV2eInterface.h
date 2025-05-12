@@ -47,8 +47,6 @@ namespace OnixSourcePlugin
 
 		void updateSettings() override;
 
-		void updateDevice(std::shared_ptr<Neuropixels2e> d);
-
 	private:
 
 		void setInterfaceEnabledState(bool newState) override;

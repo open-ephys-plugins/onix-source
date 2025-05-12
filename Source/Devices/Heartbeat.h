@@ -39,7 +39,7 @@ namespace OnixSourcePlugin
 	class Heartbeat : public OnixDevice
 	{
 	public:
-		Heartbeat(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+		Heartbeat(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
@@ -59,6 +59,8 @@ namespace OnixSourcePlugin
 		void addFrame(oni_frame_t* frame) override { oni_destroy_frame(frame); }
 
 		void processFrames() override {};
+
+		static OnixDeviceType getDeviceType();
 
 	private:
 

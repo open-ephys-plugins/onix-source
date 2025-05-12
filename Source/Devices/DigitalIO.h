@@ -65,7 +65,7 @@ namespace OnixSourcePlugin
 	class DigitalIO : public OnixDevice
 	{
 	public:
-		DigitalIO(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+		DigitalIO(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
@@ -91,6 +91,8 @@ namespace OnixSourcePlugin
 		uint64_t getEventWord();
 
 		bool hasEventWord();
+
+		static OnixDeviceType getDeviceType();
 
 	private:
 

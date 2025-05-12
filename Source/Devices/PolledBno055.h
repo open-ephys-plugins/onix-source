@@ -38,7 +38,7 @@ namespace OnixSourcePlugin
 	public:
 
 		/** Constructor */
-		PolledBno055(String name, String headstageName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
+		PolledBno055(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
 
 		~PolledBno055()
 		{
@@ -64,44 +64,46 @@ namespace OnixSourcePlugin
 
 		void hiResTimerCallback() override;
 
-	enum class Bno055AxisMap : uint32_t
-	{
-		XYZ = 0b00100100, // Specifies that X->X', Y->Y', Z->Z' (chip default). 
-		XZY = 0b00011000, // Specifies that X->X', Z->Y', Y->Z'
-		YXZ = 0b00100001, // Specifies that Y->X', X->Y', Z->Z'
-		YZX = 0b00001001, // Specifies that Y->X', Z->Y', X->Z'
-		ZXY = 0b00010010, // Specifies that Z->X', X->Y', Y->Z'
-		ZYX = 0b00000110, // Specifies that Z->X', Y->Y', X->Z'
-	};
+		enum class Bno055AxisMap : uint32_t
+		{
+			XYZ = 0b00100100, // Specifies that X->X', Y->Y', Z->Z' (chip default). 
+			XZY = 0b00011000, // Specifies that X->X', Z->Y', Y->Z'
+			YXZ = 0b00100001, // Specifies that Y->X', X->Y', Z->Z'
+			YZX = 0b00001001, // Specifies that Y->X', Z->Y', X->Z'
+			ZXY = 0b00010010, // Specifies that Z->X', X->Y', Y->Z'
+			ZYX = 0b00000110, // Specifies that Z->X', Y->Y', X->Z'
+		};
 
-	enum class Bno055AxisSign : uint32_t
-	{
-		Default = 0b00000000, // Specifies that all axes are positive (chip default).
-		MirrorZ = 0b00000001, // Specifies that Z' axis should be mirrored.
-		MirrorY = 0b00000010, // Specifies that Y' axis should be mirrored.
-		MirrorX = 0b00000100, // Specifies that X' axis should be mirrored.
-		MirrorXAndY = 0b00000110, // X' and Y' are mirrored
-	};
+		enum class Bno055AxisSign : uint32_t
+		{
+			Default = 0b00000000, // Specifies that all axes are positive (chip default).
+			MirrorZ = 0b00000001, // Specifies that Z' axis should be mirrored.
+			MirrorY = 0b00000010, // Specifies that Y' axis should be mirrored.
+			MirrorX = 0b00000100, // Specifies that X' axis should be mirrored.
+			MirrorXAndY = 0b00000110, // X' and Y' are mirrored
+		};
 
-	void setBnoAxisMap(Bno055AxisMap map);
-	void setBnoAxisSign(Bno055AxisSign sign);
+		void setBnoAxisMap(Bno055AxisMap map);
+		void setBnoAxisSign(Bno055AxisSign sign);
 
-private:
+		static OnixDeviceType getDeviceType();
 
-	DataBuffer* bnoBuffer;
+	private:
 
-	static const int Bno055Address = 0x28;
-	static const int EulerHeadingLsbAddress = 0x1A;
+		DataBuffer* bnoBuffer;
 
-	const double i2cRate = 400e3;
+		static const int Bno055Address = 0x28;
+		static const int EulerHeadingLsbAddress = 0x1A;
 
-	static const int numberOfBytes = 28;
+		const double i2cRate = 400e3;
 
-	const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
-	const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
-	const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
+		static const int numberOfBytes = 28;
 
-	std::unique_ptr<I2CRegisterContext> deserializer;
+		const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
+		const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
+		const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
+
+		std::unique_ptr<I2CRegisterContext> deserializer;
 
 		enum class PolledBno055Registers : int32_t
 		{

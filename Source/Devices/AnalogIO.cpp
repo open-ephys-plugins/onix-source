@@ -24,11 +24,11 @@
 
 using namespace OnixSourcePlugin;
 
-AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::ANALOGIO, deviceIdx_, oni_ctx)
+AnalogIO::AnalogIO(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name, hubName, AnalogIO::getDeviceType(), deviceIdx_, oni_ctx)
 {
 	StreamInfo analogInputStream = StreamInfo(
-		OnixDevice::createStreamName({ getHeadstageName(), name, "AnalogInput" }),
+		OnixDevice::createStreamName({ getHubName(), name, "AnalogInput" }),
 		"Analog Input data",
 		getStreamIdentifier(),
 		getNumChannels(),
@@ -53,10 +53,16 @@ AnalogIO::AnalogIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<
 	dataType = AnalogIODataType::Volts;
 }
 
+OnixDeviceType AnalogIO::getDeviceType()
+{
+	return OnixDeviceType::ANALOGIO;
+}
+
 int AnalogIO::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
-
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) 
+		throw error_str("Device context is not initialized properly for	" + getName());
+	
 	return deviceContext->writeRegister(deviceIdx, (uint32_t)AnalogIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
 }
 
