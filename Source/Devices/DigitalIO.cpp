@@ -22,14 +22,22 @@
 
 #include "DigitalIO.h"
 
-DigitalIO::DigitalIO(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::DIGITALIO, deviceIdx_, oni_ctx)
+using namespace OnixSourcePlugin;
+
+DigitalIO::DigitalIO(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name, hubName, DigitalIO::getDeviceType(), deviceIdx_, oni_ctx)
 {
+}
+
+OnixDeviceType DigitalIO::getDeviceType()
+{
+	return OnixDeviceType::DIGITALIO;
 }
 
 int DigitalIO::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
+	if (deviceContext == nullptr || !deviceContext->isInitialized())
+		throw error_str("Device context is not initialized properly for	" + getName());
 
 	return deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
 }
@@ -57,7 +65,7 @@ EventChannel::Settings DigitalIO::getEventChannelSettings()
 	// NB: The stream must be assigned before adding the channel
 	EventChannel::Settings settings{
 		EventChannel::Type::TTL,
-		OnixDevice::createStreamName({getHeadstageName(), getName(), "Events"}),
+		OnixDevice::createStreamName({getHubName(), getName(), "Events"}),
 		"Digital inputs and breakout button states coming from a DigitalIO device",
 		getStreamIdentifier() + ".event.digital",
 		nullptr,

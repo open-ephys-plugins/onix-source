@@ -22,16 +22,24 @@
 
 #include "Heartbeat.h"
 
-Heartbeat::Heartbeat(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, BREAKOUT_BOARD_NAME, OnixDeviceType::HEARTBEAT, deviceIdx_, oni_ctx)
+using namespace OnixSourcePlugin;
+
+Heartbeat::Heartbeat(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name, hubName, Heartbeat::getDeviceType(), deviceIdx_, oni_ctx)
 {
+}
+
+OnixDeviceType Heartbeat::getDeviceType()
+{
+	return OnixDeviceType::HEARTBEAT;
 }
 
 int Heartbeat::configureDevice()
 {
-	setEnabled(true);
+	if (deviceContext == nullptr || !deviceContext->isInitialized())
+		throw error_str("Device context is not initialized properly for	" + getName());
 
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
+	setEnabled(true);
 
 	return deviceContext->writeRegister(deviceIdx, (uint32_t)HeartbeatRegisters::ENABLE, 1);
 }

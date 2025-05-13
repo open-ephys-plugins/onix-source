@@ -22,109 +22,115 @@
 
 #pragma once
 
+#include <VisualizerEditorHeaders.h>
 #include "../OnixDevice.h"
 
-class DigitalIO;
-
-enum class MemoryMonitorRegisters : uint32_t
+namespace OnixSourcePlugin
 {
-	ENABLE = 0,
-	CLK_DIV = 1,
-	CLK_HZ = 2,
-	TOTAL_MEM = 3
-};
+	class DigitalIO;
 
-/*
-	Configures and streams data from a MemoryMonitor device on a Breakout Board
-*/
-class MemoryMonitor : public OnixDevice
-{
-public:
-	MemoryMonitor(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+	enum class MemoryMonitorRegisters : uint32_t
+	{
+		ENABLE = 0,
+		CLK_DIV = 1,
+		CLK_HZ = 2,
+		TOTAL_MEM = 3
+	};
 
-	/** Configures the device so that it is ready to stream with default settings */
-	int configureDevice() override;
+	/*
+		Configures and streams data from a MemoryMonitor device on a Breakout Board
+	*/
+	class MemoryMonitor : public OnixDevice
+	{
+	public:
+		MemoryMonitor(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
-	/** Update the settings of the device */
-	bool updateSettings() override;
+		/** Configures the device so that it is ready to stream with default settings */
+		int configureDevice() override;
 
-	/** Starts probe data streaming */
-	void startAcquisition() override;
+		/** Update the settings of the device */
+		bool updateSettings() override;
 
-	/** Stops probe data streaming*/
-	void stopAcquisition() override;
+		/** Starts probe data streaming */
+		void startAcquisition() override;
 
-	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
-	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+		/** Stops probe data streaming*/
+		void stopAcquisition() override;
 
-	void addFrame(oni_frame_t*) override;
+		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
-	void processFrames() override;
+		void addFrame(oni_frame_t*) override;
 
-	float getLastPercentUsedValue();
+		void processFrames() override;
 
-	void setDigitalIO(std::shared_ptr<DigitalIO> digitalIO) { m_digitalIO = digitalIO; }
+		float getLastPercentUsedValue();
 
-private:
+		void setDigitalIO(std::shared_ptr<DigitalIO> digitalIO) { m_digitalIO = digitalIO; }
 
-	DataBuffer* percentUsedBuffer;
+		static OnixDeviceType getDeviceType();
 
-	std::shared_ptr<DigitalIO> m_digitalIO;
+	private:
 
-	uint64_t prevWord = 0;
+		DataBuffer* percentUsedBuffer;
 
-	static const int numFrames = 10;
+		std::shared_ptr<DigitalIO> m_digitalIO;
 
-	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
+		uint64_t prevWord = 0;
 
-	unsigned short currentFrame = 0;
-	int sampleNumber = 0;
+		static const int numFrames = 10;
 
-	/** The frequency at which memory use is recorded in Hz. */
-	const uint32_t samplesPerSecond = 100;
+		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
-	bool shouldAddToBuffer = false;
+		unsigned short currentFrame = 0;
+		int sampleNumber = 0;
 
-	float percentUsedSamples[numFrames];
-	float bytesUsedSamples[numFrames];
+		/** The frequency at which memory use is recorded in Hz. */
+		const uint32_t samplesPerSecond = 100;
 
-	double timestamps[numFrames];
-	int64_t sampleNumbers[numFrames];
-	uint64_t eventCodes[numFrames];
+		bool shouldAddToBuffer = false;
 
-	/** The total amount of memory, in 32-bit words, on the hardware that is available for data buffering*/
-	uint32_t totalMemory;
+		float percentUsedSamples[numFrames];
+		float bytesUsedSamples[numFrames];
 
-	std::atomic<float> lastPercentUsedValue = 0.0f;
+		double timestamps[numFrames];
+		int64_t sampleNumbers[numFrames];
+		uint64_t eventCodes[numFrames];
 
-	JUCE_LEAK_DETECTOR(MemoryMonitor);
-};
+		/** The total amount of memory, in 32-bit words, on the hardware that is available for data buffering*/
+		uint32_t totalMemory;
 
-/*
-	Tracks the MemoryMonitor usage while data acquisition is running
-*/
-class MemoryMonitorUsage : public LevelMonitor
-{
-public:
-	MemoryMonitorUsage(GenericProcessor*);
+		std::atomic<float> lastPercentUsedValue = 0.0f;
 
-	void timerCallback() override;
+		JUCE_LEAK_DETECTOR(MemoryMonitor);
+	};
 
-	void setMemoryMonitor(std::shared_ptr<MemoryMonitor> memoryMonitor);
+	/*
+		Tracks the MemoryMonitor usage while data acquisition is running
+	*/
+	class MemoryMonitorUsage : public LevelMonitor
+	{
+	public:
+		MemoryMonitorUsage(GenericProcessor*);
 
-	void startAcquisition();
+		void timerCallback() override;
 
-	void stopAcquisition();
+		void setMemoryMonitor(std::shared_ptr<MemoryMonitor> memoryMonitor);
 
-private:
+		void startAcquisition();
 
-	std::shared_ptr<MemoryMonitor> device;
+		void stopAcquisition();
 
-	// NB: Calculate the maximum logarithmic value to convert from linear scale (x: 0-100) to logarithmic scale (y: 0-1)
-	//	   using the following equation: y = log_e(x + 1) / log_e(x_max + 1);
-	const float maxLogarithmicValue = std::log(101);
+	private:
 
-	const int TimerFrequencyHz = 10;
+		std::shared_ptr<MemoryMonitor> device;
 
-	JUCE_LEAK_DETECTOR(MemoryMonitorUsage);
-};
+		// NB: Calculate the maximum logarithmic value to convert from linear scale (x: 0-100) to logarithmic scale (y: 0-1)
+		//	   using the following equation: y = log_e(x + 1) / log_e(x_max + 1);
+		const float maxLogarithmicValue = std::log(101);
+
+		const int TimerFrequencyHz = 10;
+
+		JUCE_LEAK_DETECTOR(MemoryMonitorUsage);
+	};
+}

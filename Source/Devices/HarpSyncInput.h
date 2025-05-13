@@ -24,63 +24,68 @@
 
 #include "../OnixDevice.h"
 
-enum class HarpSyncInputRegisters : uint32_t
+namespace OnixSourcePlugin
 {
-	ENABLE = 0,
-	SOURCE = 1
-};
+	enum class HarpSyncInputRegisters : uint32_t
+	{
+		ENABLE = 0,
+		SOURCE = 1
+	};
 
-enum class HarpSyncSource : uint32_t
-{
-	Breakout = 0,
-	ClockAdapter = 1
-};
+	enum class HarpSyncSource : uint32_t
+	{
+		Breakout = 0,
+		ClockAdapter = 1
+	};
 
-/*
-	Configures and streams data from a HarpSyncInput device on a Breakout Board
-*/
-class HarpSyncInput : public OnixDevice
-{
-public:
-	HarpSyncInput(String name, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+	/*
+		Configures and streams data from a HarpSyncInput device on a Breakout Board
+	*/
+	class HarpSyncInput : public OnixDevice
+	{
+	public:
+		HarpSyncInput(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
-	/** Configures the device so that it is ready to stream with default settings */
-	int configureDevice() override;
+		/** Configures the device so that it is ready to stream with default settings */
+		int configureDevice() override;
 
-	/** Update the settings of the device */
-	bool updateSettings() override;
+		/** Update the settings of the device */
+		bool updateSettings() override;
 
-	/** Starts probe data streaming */
-	void startAcquisition() override;
+		/** Starts probe data streaming */
+		void startAcquisition() override;
 
-	/** Stops probe data streaming*/
-	void stopAcquisition() override;
+		/** Stops probe data streaming*/
+		void stopAcquisition() override;
 
-	/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
-	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
-	void addFrame(oni_frame_t* frame) override;
+		void addFrame(oni_frame_t* frame) override;
 
-	void processFrames() override;
+		void processFrames() override;
 
-private:
+		static OnixDeviceType getDeviceType();
 
-	DataBuffer* harpTimeBuffer;
+	private:
 
-	static const int numFrames = 2;
+		DataBuffer* harpTimeBuffer;
 
-	Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
+		static const int numFrames = 2;
 
-	unsigned short currentFrame = 0;
-	int sampleNumber = 0;
+		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
-	bool shouldAddToBuffer = false;
+		unsigned short currentFrame = 0;
+		int sampleNumber = 0;
 
-	float harpTimeSamples[numFrames];
+		bool shouldAddToBuffer = false;
 
-	double timestamps[numFrames];
-	int64 sampleNumbers[numFrames];
-	uint64 eventCodes[numFrames];
+		float harpTimeSamples[numFrames];
 
-	JUCE_LEAK_DETECTOR(HarpSyncInput);
-};
+		double timestamps[numFrames];
+		int64 sampleNumbers[numFrames];
+		uint64 eventCodes[numFrames];
+
+		JUCE_LEAK_DETECTOR(HarpSyncInput);
+	};
+}

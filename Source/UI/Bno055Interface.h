@@ -29,27 +29,30 @@
 
 #include "../Devices/Bno055.h"
 
-class Bno055Interface : public SettingsInterface,
-	public Button::Listener
+namespace OnixSourcePlugin
 {
-public:
-	Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+	class Bno055Interface : public SettingsInterface,
+		public Button::Listener
+	{
+	public:
+		Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void setInterfaceEnabledState(bool newState) override;
+		void setInterfaceEnabledState(bool newState) override;
 
-	void saveParameters(XmlElement* xml) override;
+		void saveParameters(XmlElement* xml) override;
 
-	void loadParameters(XmlElement* xml) override;
+		void loadParameters(XmlElement* xml) override;
 
-	void updateInfoString() override {};
+		void updateInfoString() override {};
 
-	void updateSettings() override;
+		void updateSettings() override;
 
-	void buttonClicked(Button*) override;
+		void buttonClicked(Button*) override;
 
-private:
+	private:
 
-	std::unique_ptr<UtilityButton> deviceEnableButton;
+		std::unique_ptr<UtilityButton> deviceEnableButton;
 
-	JUCE_LEAK_DETECTOR(Bno055Interface);
-};
+		JUCE_LEAK_DETECTOR(Bno055Interface);
+	};
+}

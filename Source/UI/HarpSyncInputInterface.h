@@ -29,28 +29,31 @@
 
 #include "../Devices/HarpSyncInput.h"
 
-class HarpSyncInputInterface : public SettingsInterface,
-	public Button::Listener
+namespace OnixSourcePlugin
 {
-public:
+	class HarpSyncInputInterface : public SettingsInterface,
+		public Button::Listener
+	{
+	public:
 
-	HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+		HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void saveParameters(XmlElement* xml) override;
+		void saveParameters(XmlElement* xml) override;
 
-	void loadParameters(XmlElement* xml) override;
+		void loadParameters(XmlElement* xml) override;
 
-	void updateInfoString() override {};
+		void updateInfoString() override {};
 
-	void updateSettings() override;
+		void updateSettings() override;
 
-	void buttonClicked(Button*) override;
+		void buttonClicked(Button*) override;
 
-private:
+	private:
 
-	void setInterfaceEnabledState(bool newState) override;
+		void setInterfaceEnabledState(bool newState) override;
 
-	std::unique_ptr<UtilityButton> deviceEnableButton;
+		std::unique_ptr<UtilityButton> deviceEnableButton;
 
-	JUCE_LEAK_DETECTOR(HarpSyncInputInterface);
-};
+		JUCE_LEAK_DETECTOR(HarpSyncInputInterface);
+	};
+}

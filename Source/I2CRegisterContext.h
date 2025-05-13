@@ -29,26 +29,29 @@
 
 #include <cstddef>
 
-class I2CRegisterContext
+namespace OnixSourcePlugin
 {
-public:
+	class I2CRegisterContext
+	{
+	public:
 
-	I2CRegisterContext(uint32_t address, const oni_dev_idx_t, std::shared_ptr<Onix1>);
+		I2CRegisterContext(uint32_t address, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
-	int WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
+		int WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
 
-	int ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
+		int ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
 
-	int set933I2cRate(double);
+		int set933I2cRate(double);
 
-protected:
-	std::shared_ptr<Onix1> i2cContext;
+	protected:
+		std::shared_ptr<Onix1> i2cContext;
 
-private:
+	private:
 
-	const oni_dev_idx_t deviceIndex;
+		const oni_dev_idx_t deviceIndex;
 
-	const uint32_t i2cAddress;
+		const uint32_t i2cAddress;
 
-	JUCE_LEAK_DETECTOR(I2CRegisterContext);
-};
+		JUCE_LEAK_DETECTOR(I2CRegisterContext);
+	};
+}

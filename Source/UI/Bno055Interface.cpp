@@ -22,6 +22,8 @@
 
 #include "Bno055Interface.h"
 
+using namespace OnixSourcePlugin;
+
 Bno055Interface::Bno055Interface(std::shared_ptr<Bno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {
@@ -63,7 +65,17 @@ void Bno055Interface::buttonClicked(Button* button)
 
 		if (canvas->foundInputSource())
 		{
-			device->configureDevice();
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				LOGE(e.what());
+				button->setToggleState(!button->getToggleState(), dontSendNotification);
+				return;
+			}
+
 			canvas->resetContext();
 		}
 
@@ -106,7 +118,7 @@ void Bno055Interface::loadParameters(XmlElement* xml)
 	{
 		if (node->hasTagName("BNO055"))
 		{
-			if (node->getStringAttribute("name") == device->getName() &&
+			if (node->getStringAttribute("name").toStdString() == device->getName() &&
 				node->getIntAttribute("idx") == device->getDeviceIdx())
 			{
 				xmlNode = node;

@@ -22,15 +22,15 @@
 
 #include "OnixDevice.h"
 
-OnixDevice::OnixDevice(String name_, String headstageName, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
+using namespace OnixSourcePlugin;
+
+OnixDevice::OnixDevice(std::string name_, std::string hubName, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx, bool passthrough)
 	: type(type_), deviceIdx(deviceIdx_)
 {
 	deviceContext = ctx;
 	name = name_;
-	m_headstageName = headstageName;
-
-	if (type == OnixDeviceType::NEUROPIXELSV2E || type == OnixDeviceType::POLLEDBNO)
-		isPassthrough = true;
+	m_hubName = hubName;
+	isPassthrough = passthrough;
 }
 
 oni_dev_idx_t OnixDevice::getDeviceIdx(bool getPassthroughIndex)
@@ -41,11 +41,44 @@ oni_dev_idx_t OnixDevice::getDeviceIdx(bool getPassthroughIndex)
 		return deviceIdx;
 }
 
-oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex)
+std::string OnixDevice::createStreamName(std::vector<std::string> names)
 {
-	oni_dev_idx_t idx = (passthroughIndex - 7) << 8;
+	std::string streamName;
 
-	if (type == OnixDeviceType::POLLEDBNO)
+	for (int i = 0; i < names.size(); i++)
+	{
+		streamName += names[i];
+
+		if (i != names.size() - 1) streamName += "-";
+	}
+
+	streamName.erase(std::remove(streamName.begin(), streamName.end(), ' '), streamName.end());
+
+	return streamName;
+}
+
+oni_dev_idx_t OnixDevice::getHubIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex)
+{
+	if (passthroughIndex != (uint32_t)PassthroughIndex::A && passthroughIndex != (uint32_t)PassthroughIndex::B)
+	{
+		LOGE("Invalid passthrough index given. Value was ", passthroughIndex);
+		return 0;
+	}
+
+	oni_dev_idx_t idx = (passthroughIndex - 7) << 8;
+}
+
+oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex) const
+{
+	if (passthroughIndex != (uint32_t)PassthroughIndex::A && passthroughIndex != (uint32_t)PassthroughIndex::B)
+	{
+		LOGE("Invalid passthrough index given. Value was ", passthroughIndex);
+		return 0;
+	}
+
+	auto idx = getHubIndexFromPassthroughIndex(passthroughIndex);
+
+	if (type == OnixDeviceType::POLLEDBNO && m_hubName == NEUROPIXELSV2E_HEADSTAGE_NAME)
 		idx++;
 
 	return idx;
@@ -58,51 +91,127 @@ OnixDeviceType OnixDevice::getDeviceType() const
 
 String OnixDevice::getStreamIdentifier()
 {
-	String streamIdentifier = "onix.";
+	String streamIdentifier = "onix";
 
 	// Insert the headstage or breakout board
-	if (getHeadstageName() == NEUROPIXELSV1F_HEADSTAGE_NAME)
+	if (getHubName() == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
-		streamIdentifier += "npx1f.";
+		streamIdentifier += ".npx1f";
 	}
-	else if (getHeadstageName() == NEUROPIXELSV2E_HEADSTAGE_NAME)
+	else if (getHubName() == NEUROPIXELSV2E_HEADSTAGE_NAME)
 	{
-		streamIdentifier += "npx2e.";
+		streamIdentifier += ".npx2e";
 	}
-	else if (getHeadstageName() == BREAKOUT_BOARD_NAME)
+	else if (getHubName() == BREAKOUT_BOARD_NAME)
 	{
-		streamIdentifier += "breakout.";
+		streamIdentifier += ".breakout";
+	}
+	else
+	{
+		streamIdentifier += ".headstage";
 	}
 
 	// Insert the device
 	if (getDeviceType() == OnixDeviceType::ANALOGIO)
 	{
-		streamIdentifier += "analogio";
+		streamIdentifier += ".analogio";
 	}
 	else if (getDeviceType() == OnixDeviceType::BNO || getDeviceType() == OnixDeviceType::POLLEDBNO)
 	{
-		streamIdentifier += "9dof";
+		streamIdentifier += ".9dof";
 	}
 	else if (getDeviceType() == OnixDeviceType::DIGITALIO)
 	{
-		streamIdentifier += "digitalio";
+		streamIdentifier += ".digitalio";
 	}
 	else if (getDeviceType() == OnixDeviceType::HARPSYNCINPUT)
 	{
-		streamIdentifier += "harp";
+		streamIdentifier += ".harp";
 	}
 	else if (getDeviceType() == OnixDeviceType::MEMORYMONITOR)
 	{
-		streamIdentifier += "memory";
+		streamIdentifier += ".memory";
 	}
-	else if (getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
+	else if (getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 	{
-		streamIdentifier += "npx1f";
+		streamIdentifier += ".npx1f";
 	}
 	else if (getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
 	{
-		streamIdentifier += "npx2e";
+		streamIdentifier += ".npx2e";
+	}
+	else
+	{
+		streamIdentifier += ".device";
 	}
 
 	return streamIdentifier;
+}
+
+int OnixDevice::getPortOffset(PortName port)
+{
+	return (uint32_t)port << 8;
+}
+
+std::string OnixDevice::getPortName(int offset)
+{
+	switch (offset)
+	{
+	case 0:
+		return "";
+	case HubAddressPortA:
+		return "Port A";
+	case HubAddressPortB:
+		return "Port B";
+	default:
+		return "";
+	}
+}
+
+std::string OnixDevice::getPortName(PortName port)
+{
+	return getPortName(getPortOffset(port));
+}
+
+std::string OnixDevice::getPortNameFromIndex(oni_dev_idx_t index)
+{
+	return getPortName(getOffsetFromIndex(index));
+}
+
+PortName OnixDevice::getPortFromIndex(oni_dev_idx_t index)
+{
+	return index & (1 << 8) ? PortName::PortA : PortName::PortB;
+}
+
+int OnixDevice::getOffsetFromIndex(oni_dev_idx_t index)
+{
+	return index & 0x0000FF00;
+}
+
+std::vector<int> OnixDevice::getUniqueOffsetsFromIndices(std::vector<int> indices, bool ignoreBreakoutBoard)
+{
+	std::set<int> offsets;
+
+	for (auto index : indices)
+	{
+		auto offset = getOffsetFromIndex(index);
+
+		if (offset == HubAddressBreakoutBoard && ignoreBreakoutBoard) continue;
+
+		offsets.emplace(offset);
+	}
+
+	return std::vector<int>(offsets.begin(), offsets.end());
+}
+
+Array<PortName> OnixDevice::getUniquePortsFromIndices(std::vector<int> indices)
+{
+	Array<PortName> ports;
+
+	for (auto index : indices)
+	{
+		ports.addIfNotAlreadyThere(getPortFromIndex(index));
+	}
+
+	return ports;
 }

@@ -22,6 +22,8 @@
 
 #include "AnalogIOInterface.h"
 
+using namespace OnixSourcePlugin;
+
 AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {
@@ -109,7 +111,22 @@ void AnalogIOInterface::buttonClicked(Button* button)
 	if (button == deviceEnableButton.get())
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
-		device->configureDevice();
+
+		if (canvas->foundInputSource())
+		{
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				LOGE(e.what());
+				button->setToggleState(!button->getToggleState(), dontSendNotification);
+				return;
+			}
+
+			canvas->resetContext();
+		}
 
 		if (device->isEnabled())
 		{
