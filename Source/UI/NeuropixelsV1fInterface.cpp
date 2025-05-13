@@ -73,16 +73,8 @@ NeuropixelsV1fInterface::NeuropixelsV1fInterface(std::shared_ptr<Neuropixels1f> 
 		infoLabel->setJustificationType(Justification::topLeft);
 		addAndMakeVisible(infoLabel.get());
 
-		offsetCorrectionCheckbox = std::make_unique<ToggleButton>("Apply software offset correction");
-		offsetCorrectionCheckbox->setBounds(infoLabel->getX() + 2, infoLabel->getBottom() + 5, 240, 22);
-		offsetCorrectionCheckbox->setClickingTogglesState(true);
-		offsetCorrectionCheckbox->setToggleState(npx->getCorrectOffset(), dontSendNotification);
-		offsetCorrectionCheckbox->setTooltip("If enabled, the plugin will wait 5 seconds and then calculate a mean value to correct a constant offset present in most channels.");
-		offsetCorrectionCheckbox->addListener(this);
-		addAndMakeVisible(offsetCorrectionCheckbox.get());
-
 		adcCalibrationFileLabel = std::make_unique<Label>("adcCalibrationFileLabel", "ADC Calibration File");
-		adcCalibrationFileLabel->setBounds(offsetCorrectionCheckbox->getX(), offsetCorrectionCheckbox->getBottom() + 15, 240, 16);
+		adcCalibrationFileLabel->setBounds(infoLabel->getX(), infoLabel->getBottom() + 15, 240, 16);
 		adcCalibrationFileLabel->setColour(Label::textColourId, Colours::black);
 		addAndMakeVisible(adcCalibrationFileLabel.get());
 
@@ -881,9 +873,6 @@ void NeuropixelsV1fInterface::setInterfaceEnabledState(bool enabledState)
 
 	if (loadJsonButton != nullptr)
 		loadJsonButton->setEnabled(enabledState);
-
-	if (offsetCorrectionCheckbox != nullptr)
-		offsetCorrectionCheckbox->setEnabled(enabledState);
 
 	if (adcCalibrationFileButton != nullptr)
 		adcCalibrationFileButton->setEnabled(enabledState);

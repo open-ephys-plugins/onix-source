@@ -71,10 +71,6 @@ namespace OnixSourcePlugin
 		String getGainCalibrationFilePath();
 		void setGainCalibrationFilePath(String filepath);
 
-		bool getCorrectOffset() const;
-
-		void setCorrectOffset(bool value);
-
 		void writeShiftRegisters(ShankBitset shankBits, ConfigBitsArray configBits, Array<NeuropixelsV1Adc> adcs, double lfpGainCorrection, double apGainCorrection);
 
 		// INeuropixels methods
@@ -135,8 +131,6 @@ namespace OnixSourcePlugin
 
 		bool lfpOffsetCalculated = false;
 		bool apOffsetCalculated = false;
-
-		bool correctOffset = true;
 
 		std::array<float, numberOfChannels> apOffsets;
 		std::array<float, numberOfChannels> lfpOffsets;

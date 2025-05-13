@@ -303,21 +303,6 @@ void Neuropixels1f::setGainCalibrationFilePath(String filepath)
 	gainCalibrationFilePath = filepath;
 }
 
-bool Neuropixels1f::getCorrectOffset() const
-{
-	return correctOffset;
-}
-
-void Neuropixels1f::setCorrectOffset(bool value)
-{
-	correctOffset = value;
-}
-
-OnixDeviceType Neuropixels1f::getDeviceType()
-{
-	return OnixDeviceType::NEUROPIXELSV1F;
-}
-
 int Neuropixels1f::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized())
@@ -378,7 +363,7 @@ int Neuropixels1f::configureDevice()
 	rc = WriteByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
-    
+
 	return rc;
 }
 
