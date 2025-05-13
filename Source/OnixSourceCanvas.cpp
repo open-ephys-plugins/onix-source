@@ -88,21 +88,6 @@ void OnixSourceCanvas::addHub(std::string hubName, int offset)
 	}
 }
 
-bool OnixSourceCanvas::containsDevice(OnixDeviceType deviceType, int deviceIndex)
-{
-	for (const auto& settingsInterface : settingsInterfaces)
-	{
-		auto device = settingsInterface->getDevice();
-
-		if (device->getDeviceType() == deviceType && device->getDeviceIdx() == deviceIndex)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
 std::shared_ptr<OnixDevice> OnixSourceCanvas::getDevicePtr(OnixDeviceType deviceType, int deviceIndex)
 {
 	for (const auto& settingsInterface : settingsInterfaces)

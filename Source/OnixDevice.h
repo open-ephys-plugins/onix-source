@@ -180,19 +180,7 @@ namespace OnixSourcePlugin
 		oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
 		/** Creates a stream name using the provided inputs, returning a String following the pattern: name[0]-name[1]-name[2]-etc., with all spaces removed */
-		static String createStreamName(std::vector<String> names)
-		{
-			String streamName;
-
-			for (int i = 0; i < names.size(); i++)
-			{
-				streamName += names[i].removeCharacters(" ");
-
-				if (i != names.size() - 1) streamName += "-";
-			}
-
-			return streamName;
-		}
+		static std::string createStreamName(std::vector<std::string> names);
 
 		Array<StreamInfo> streamInfos;
 
@@ -219,9 +207,11 @@ namespace OnixSourcePlugin
 		/** Returns a string for this device that follows the pattern: onix.[hub].[device] */
 		String getStreamIdentifier();
 
+		static oni_dev_idx_t getHubIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex);
+
 	protected:
 
-		oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t hubIndex) const;
+		oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex) const;
 
 		const oni_dev_idx_t deviceIdx;
 		std::shared_ptr<Onix1> deviceContext;
@@ -236,6 +226,12 @@ namespace OnixSourcePlugin
 		std::string m_hubName;
 
 		const OnixDeviceType type;
+
+		enum class PassthroughIndex : uint32_t
+		{
+			A = 8,
+			B = 9
+		};
 
 		JUCE_LEAK_DETECTOR(OnixDevice);
 	};

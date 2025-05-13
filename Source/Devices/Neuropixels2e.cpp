@@ -29,8 +29,7 @@ Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_de
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	INeuropixel(NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
 {
-	probeSN[0] = 0;
-	probeSN[1] = 0;
+	probeSN.fill(0);
 
 	for (int i = 0; i < NeuropixelsV2eValues::numberOfSettings; i++)
 	{
@@ -44,7 +43,7 @@ Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_de
 void Neuropixels2e::createDataStream(int n)
 {
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ getPortNameFromIndex(getDeviceIdx()), getHubName(), "Probe" + String(n) }),
+		OnixDevice::createStreamName({ getPortNameFromIndex(getDeviceIdx()), getHubName(), "Probe" + std::to_string(n) }),
 		"Neuropixels 2.0 data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
@@ -331,15 +330,15 @@ std::vector<int> Neuropixels2e::selectElectrodeConfiguration(String config)
 
 uint64_t Neuropixels2e::getProbeSerialNumber(int index)
 {
-	switch (index)
-	{
-	case 0:
-		return probeSN[0];
-	case 1:
-		return probeSN[1];
-	default:
-		return 0;
+	try {
+		return probeSN.at(index);
 	}
+	catch (const std::out_of_range& ex) // filter for out of range
+	{
+		LOGE("Invalid index given requesting probe serial number.");
+	}
+
+	return 0ull;
 }
 
 OnixDeviceType Neuropixels2e::getDeviceType()
@@ -349,7 +348,7 @@ OnixDeviceType Neuropixels2e::getDeviceType()
 
 int Neuropixels2e::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) 
+	if (deviceContext == nullptr || !deviceContext->isInitialized())
 		throw error_str("Device context is not initialized properly for " + getName());
 
 	int rc = deviceContext->writeRegister(deviceIdx, DS90UB9x::ENABLE, isEnabled() ? 1 : 0);
@@ -359,7 +358,7 @@ int Neuropixels2e::configureDevice()
 	configureSerDes();
 	setProbeSupply(true);
 	rc = serializer->set933I2cRate(400e3);
-	if (rc != ONI_ESUCCESS) 
+	if (rc != ONI_ESUCCESS)
 		throw error_str("Unable to set I2C rate for " + getName());
 	probeSN[0] = getProbeSN(ProbeASelected);
 	probeSN[1] = getProbeSN(ProbeBSelected);
@@ -455,7 +454,7 @@ bool Neuropixels2e::updateSettings()
 	setProbeSupply(true);
 	resetProbes();
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < NumberOfProbes; i++)
 	{
 		if (probeSN[i] != 0)
 		{
@@ -549,6 +548,12 @@ void Neuropixels2e::setProbeSupply(bool en)
 
 void Neuropixels2e::selectProbe(uint8_t probeSelect)
 {
+	if (serializer == nullptr)
+	{
+		LOGE("Serializer is not initialized for Neuropixels 2.0");
+		return;
+	}
+
 	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO32), probeSelect);
 	Thread::sleep(20);
 }
@@ -564,8 +569,14 @@ void Neuropixels2e::resetProbes()
 
 uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 {
+	if (flex == nullptr)
+	{
+		LOGE("Flex is not initialized for Neuropixels 2.0");
+		return 0ull;
+	}
+
 	selectProbe(probeSelect);
-	uint64_t probeSN = 0;
+	uint64_t probeSN = 0ull;
 	int errorCode = 0, rc;
 	for (unsigned int i = 0; i < sizeof(probeSN); i++)
 	{
@@ -574,7 +585,7 @@ uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 
 		rc = flex->ReadByte(reg_addr, &val);
 
-		if (rc != ONI_ESUCCESS) return 0;
+		if (rc != ONI_ESUCCESS) return 0ull;
 
 		if (val <= 0xFF)
 		{

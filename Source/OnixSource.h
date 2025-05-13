@@ -54,6 +54,8 @@ namespace OnixSourcePlugin
 			}
 		}
 
+		void registerParameters() override;
+
 		/** Static method to create DataThread */
 		static DataThread* createDataThread(SourceNode* sn);
 
@@ -158,7 +160,7 @@ namespace OnixSourcePlugin
 
 		/** Template method to initialize an OnixDevice and add it to the currently active OnixDeviceVector variable */
 		template <class Device>
-		static bool configureDevice(OnixDeviceVector& sources, OnixSourceCanvas* canvas, std::string deviceName, std::string hubName, OnixDeviceType deviceType, const oni_dev_idx_t deviceIdx, std::shared_ptr<Onix1> ctx);
+		static bool configureDevice(OnixDeviceVector&, OnixSourceCanvas*, std::string, std::string, OnixDeviceType, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 	};

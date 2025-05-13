@@ -44,7 +44,7 @@ namespace OnixSourcePlugin
 	};
 
 	/*
-		Configures and streams data from a Neuropixels 2.0e device
+		Configures and streams data from a Neuropixels 2.0e device (aka a configured raw deserializer)
 	*/
 	class Neuropixels2e : public INeuropixel<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>,
 		public OnixDevice,
@@ -117,11 +117,14 @@ namespace OnixSourcePlugin
 		static OnixDeviceType getDeviceType();
 
 	private:
-		DataBuffer* amplifierBuffer[2];
 
-		std::array<uint64_t, 2> probeSN;
-		std::array<float, 2> gainCorrection;
-		std::array<String, 2> gainCorrectionFilePath;
+		static constexpr int NumberOfProbes = 2;
+
+		DataBuffer* amplifierBuffer[NumberOfProbes];
+
+		std::array<uint64_t, NumberOfProbes> probeSN;
+		std::array<float, NumberOfProbes> gainCorrection;
+		std::array<String, NumberOfProbes> gainCorrectionFilePath;
 
 		void createDataStream(int n);
 

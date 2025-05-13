@@ -29,7 +29,7 @@ Bno055::Bno055(std::string name, std::string hubName, const oni_dev_idx_t device
 {
 	auto streamIdentifier = getStreamIdentifier();
 
-	String port = getPortNameFromIndex(deviceIdx);
+	std::string port = getPortNameFromIndex(deviceIdx);
 	StreamInfo eulerAngleStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHubName(), getName(), "Euler" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",

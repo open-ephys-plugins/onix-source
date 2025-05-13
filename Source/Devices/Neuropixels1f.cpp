@@ -175,7 +175,7 @@ Neuropixels1f::Neuropixels1f(std::string name, std::string hubName, const oni_de
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	INeuropixel(NeuropixelsV1fValues::numberOfSettings, NeuropixelsV1fValues::numberOfShanks)
 {
-	String port = getPortNameFromIndex(deviceIdx);
+	std::string port = getPortNameFromIndex(deviceIdx);
 	auto streamIdentifier = getStreamIdentifier();
 
 	StreamInfo apStream = StreamInfo(

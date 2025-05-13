@@ -97,8 +97,6 @@ namespace OnixSourcePlugin
 
 		bool foundInputSource();
 
-		bool containsDevice(OnixDeviceType, int);
-
 		std::shared_ptr<OnixDevice> getDevicePtr(OnixDeviceType, int);
 
 	private:

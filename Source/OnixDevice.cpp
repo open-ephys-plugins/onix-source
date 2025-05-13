@@ -41,11 +41,44 @@ oni_dev_idx_t OnixDevice::getDeviceIdx(bool getPassthroughIndex)
 		return deviceIdx;
 }
 
+std::string OnixDevice::createStreamName(std::vector<std::string> names)
+{
+	std::string streamName;
+
+	for (int i = 0; i < names.size(); i++)
+	{
+		streamName += names[i];
+
+		if (i != names.size() - 1) streamName += "-";
+	}
+
+	streamName.erase(std::remove(streamName.begin(), streamName.end(), ' '), streamName.end());
+
+	return streamName;
+}
+
+oni_dev_idx_t OnixDevice::getHubIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex)
+{
+	if (passthroughIndex != (uint32_t)PassthroughIndex::A && passthroughIndex != (uint32_t)PassthroughIndex::B)
+	{
+		LOGE("Invalid passthrough index given. Value was ", passthroughIndex);
+		return 0;
+	}
+
+	oni_dev_idx_t idx = (passthroughIndex - 7) << 8;
+}
+
 oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex) const
 {
-	oni_dev_idx_t idx = (passthroughIndex - 7) << 8;
+	if (passthroughIndex != (uint32_t)PassthroughIndex::A && passthroughIndex != (uint32_t)PassthroughIndex::B)
+	{
+		LOGE("Invalid passthrough index given. Value was ", passthroughIndex);
+		return 0;
+	}
 
-	if (type == OnixDeviceType::POLLEDBNO)
+	auto idx = getHubIndexFromPassthroughIndex(passthroughIndex);
+
+	if (type == OnixDeviceType::POLLEDBNO && m_hubName == NEUROPIXELSV2E_HEADSTAGE_NAME)
 		idx++;
 
 	return idx;

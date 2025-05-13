@@ -58,14 +58,16 @@ OnixSource::OnixSource(SourceNode* sn) :
 		return;
 	}
 
-	// TODO: Add these parameters in the registerParameters() override?
-	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
-	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
-
 	portA = std::make_shared<PortController>(PortName::PortA, context);
 	portB = std::make_shared<PortController>(PortName::PortB, context);
 
 	if (!context->isInitialized()) { LOGE("Failed to initialize context."); return; }
+}
+
+void OnixSource::registerParameters()
+{
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough A", "Enables passthrough mode for e-variant headstages on Port A", false, true);
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough B", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 }
 
 DataThread* OnixSource::createDataThread(SourceNode* sn)
@@ -97,14 +99,18 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 }
 
 template <class Device>
-bool OnixSource::configureDevice(OnixDeviceVector& sources, OnixSourceCanvas* canvas, std::string deviceName, std::string hubName, OnixDeviceType deviceType, const oni_dev_idx_t deviceIdx, std::shared_ptr<Onix1> ctx)
+bool OnixSource::configureDevice(OnixDeviceVector& sources,
+	OnixSourceCanvas* canvas,
+	std::string deviceName,
+	std::string hubName, 
+	OnixDeviceType deviceType, 
+	const oni_dev_idx_t deviceIdx, 
+	std::shared_ptr<Onix1> ctx)
 {
-	std::shared_ptr<Device> device = nullptr;
+	std::shared_ptr<Device> device = std::static_pointer_cast<Device>(canvas->getDevicePtr(Device::getDeviceType(), deviceIdx));
 
-	if (canvas->containsDevice(deviceType, deviceIdx))
+	if (device != nullptr)
 	{
-		device = std::static_pointer_cast<Device>(canvas->getDevicePtr(Device::getDeviceType(), deviceIdx));
-
 		if (device->getName() != deviceName || device->getHubName() != hubName)
 		{
 			LOGD("Difference in names found for device at address ", deviceIdx, ". Found ", deviceName, " on ", hubName, ", but was expecting ", device->getName(), " on ", device->getHubName());
@@ -112,7 +118,8 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources, OnixSourceCanvas* ca
 	}
 	else
 	{
-		// NB: Create a new device if a headstage was not selected in the editor, but was found while connecting
+		// NB: Create a new device if a tab does not exist, but the device was found while connecting
+		LOGD("Creating new device ", deviceName, " on ", hubName);
 		device = std::make_shared<Device>(deviceName, hubName, deviceIdx, ctx);
 	}
 
@@ -131,6 +138,8 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources, OnixSourceCanvas* ca
 	catch (const error_str& e)
 	{
 		LOGE(e.what());
+		AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Error", e.what());
+
 		return false;
 	}
 
@@ -262,14 +271,16 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			if (hsid == ONIX_HUB_HSNP2E)
 			{
-				result = configureDevice<Neuropixels2e>(sources, canvas, "", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), index, context);
+				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
+
+				result = configureDevice<Neuropixels2e>(sources, canvas, "", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
 				if (!result) devicesFound = false;
 
-				result = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), index, context);
+				result = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
 				if (!result) devicesFound = false;
 
 				if (sources.back()->getDeviceType() != OnixDeviceType::POLLEDBNO)
-					throw error_str("Unknown device encountered when setting headstage.");
+					LOGE("Unknown device encountered when setting headstage.");
 
 				const auto& polledBno = std::static_pointer_cast<PolledBno055>(sources.back());
 
