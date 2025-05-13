@@ -283,6 +283,8 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		headstageComboBoxA->setEnabled(false);
 		headstageComboBoxB->setEnabled(false);
+		portVoltageValueA->setEnabled(false);
+		portVoltageValueB->setEnabled(false);
 
 		if (!source->foundInputSource())
 		{
@@ -306,6 +308,8 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		headstageComboBoxA->setEnabled(true);
 		headstageComboBoxB->setEnabled(true);
+		portVoltageValueA->setEnabled(true);
+		portVoltageValueB->setEnabled(true);
 	}
 }
 
