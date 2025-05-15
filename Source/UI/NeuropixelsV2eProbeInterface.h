@@ -70,7 +70,7 @@ namespace OnixSourcePlugin
 		void setReference(int index);
 		void selectElectrodes(std::vector<int> electrodes);
 
-		String getReferenceText() override { return referenceComboBox->getText(); }
+		std::string getReferenceText() override { return referenceComboBox->getText().toStdString(); }
 
 	private:
 		XmlElement neuropix_info;

@@ -344,7 +344,7 @@ void NeuropixelsV2eProbeInterface::comboBoxChanged(ComboBox* comboBox)
 
 	if (comboBox == electrodeConfigurationComboBox.get())
 	{
-		String preset = electrodeConfigurationComboBox->getText();
+		auto preset = electrodeConfigurationComboBox->getText().toStdString();
 
 		auto selection = npx->selectElectrodeConfiguration(preset);
 

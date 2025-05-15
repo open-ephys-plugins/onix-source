@@ -111,7 +111,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 	{
 		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 		{
-			auto neuropixInterface = std::make_shared<NeuropixelsV1fInterface>(std::static_pointer_cast<Neuropixels1f>(device), editor, this);
+			auto neuropixInterface = std::make_shared<NeuropixelsV1Interface>(device, editor, this);
 			addInterfaceToTab(device->getName(), tab, neuropixInterface);
 		}
 		else if (device->getDeviceType() == OnixDeviceType::BNO)

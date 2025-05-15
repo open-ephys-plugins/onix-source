@@ -92,7 +92,7 @@ namespace OnixSourcePlugin
 
 		VisualizationMode getMode() const { return mode; }
 
-		virtual String getReferenceText() { return ""; }
+		virtual std::string getReferenceText() { return ""; }
 
 	protected:
 

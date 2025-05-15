@@ -180,7 +180,7 @@ namespace OnixSourcePlugin
 
 		oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
-		/** Creates a stream name using the provided inputs, returning a String following the pattern: name[0]-name[1]-name[2]-etc., with all spaces removed */
+		/** Creates a stream name using the provided inputs, returning a string following the pattern: name[0]-name[1]-name[2]-etc., with all spaces removed */
 		static std::string createStreamName(std::vector<std::string> names);
 
 		Array<StreamInfo> streamInfos;

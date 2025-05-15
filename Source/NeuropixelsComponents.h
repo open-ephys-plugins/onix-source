@@ -43,9 +43,8 @@ namespace OnixSourcePlugin
 	enum class ProbeType
 	{
 		NONE = 1,
-		NPX_V1E,
-		NPX_V2E,
-		NPX_V2E_BETA,
+		NPX_V1,
+		NPX_V2,
 	};
 
 	enum class Bank
@@ -106,7 +105,7 @@ namespace OnixSourcePlugin
 		std::vector<std::array<float, 2>> probeContour;
 		int columns_per_shank;
 		int rows_per_shank;
-		String name;
+		std::string name;
 		bool switchable;
 	};
 
@@ -213,19 +212,21 @@ namespace OnixSourcePlugin
 
 	struct NeuropixelsV1Values
 	{
-		static const int numberOfChannels = 384;
-		static const int numberOfElectrodes = 960;
-		static const int numberOfShanks = 1;
-		static const int numberOfSettings = 1;
+		static constexpr int numberOfChannels = 384;
+		static constexpr int numberOfElectrodes = 960;
+		static constexpr int numberOfShanks = 1;
+		static constexpr int numberOfSettings = 1;
+		static constexpr int AdcCount = 32;
+		static constexpr int FrameWords = 40;
 	};
 
 	struct NeuropixelsV2eValues
 	{
-		static const int numberOfChannels = 384;
-		static const int electrodesPerShank = 1280;
-		static const int numberOfShanks = 4;
-		static const int numberOfElectrodes = numberOfShanks * electrodesPerShank;
-		static const int numberOfSettings = 2;
+		static constexpr int numberOfChannels = 384;
+		static constexpr int electrodesPerShank = 1280;
+		static constexpr int numberOfShanks = 4;
+		static constexpr int numberOfElectrodes = numberOfShanks * electrodesPerShank;
+		static constexpr int numberOfSettings = 2;
 	};
 
 	template<int numChannels, int numElectrodes>
@@ -298,10 +299,10 @@ namespace OnixSourcePlugin
 			selectedElectrode[channel] = global_index;
 		}
 
-		Array<String> availableElectrodeConfigurations;
+		Array<std::string> availableElectrodeConfigurations;
 		Array<float> availableApGains; // Available AP gain values for each channel (if any)
 		Array<float> availableLfpGains; // Available LFP gain values for each channel (if any)
-		Array<String> availableReferences; // reference types
+		Array<std::string> availableReferences; // reference types
 		Array<Bank> availableBanks; // bank inds
 
 		int electrodeConfigurationIndex;
@@ -367,7 +368,7 @@ namespace OnixSourcePlugin
 
 		virtual uint64_t getProbeSerialNumber(int index) { return 0; }
 
-		virtual std::vector<int> selectElectrodeConfiguration(String config) { return {}; }
+		virtual std::vector<int> selectElectrodeConfiguration(std::string config) { return {}; }
 	};
 
 	static constexpr int shankConfigurationBitCount = 968;
@@ -423,13 +424,16 @@ namespace OnixSourcePlugin
 			return shankBits;
 		}
 
-		ConfigBitsArray static makeConfigBits(NeuropixelsV1Reference reference, NeuropixelsV1Gain spikeAmplifierGain, NeuropixelsV1Gain lfpAmplifierGain, bool spikeFilterEnabled, Array<NeuropixelsV1Adc> adcs)
+		ConfigBitsArray static makeConfigBits(NeuropixelsV1Reference reference, NeuropixelsV1Gain spikeAmplifierGain, NeuropixelsV1Gain lfpAmplifierGain, bool spikeFilterEnabled, std::vector<NeuropixelsV1Adc> adcs)
 		{
+			if (adcs.size() != NeuropixelsV1Values::AdcCount)
+				throw error_str("Invalid number of ADC values given.");
+
 			const int BaseConfigurationConfigOffset = 576;
 
 			ConfigBitsArray baseConfigs;
 
-			for (int i = 0; i < NeuropixelsV1Values::numberOfChannels; i++)
+			for (size_t i = 0; i < NeuropixelsV1Values::numberOfChannels; i++)
 			{
 				size_t configIdx = i % 2;
 
@@ -460,7 +464,7 @@ namespace OnixSourcePlugin
 			for (const auto& adc : adcs)
 			{
 				auto configIdx = k % 2;
-				int d = k++ / 2;
+				size_t d = k++ / 2;
 
 				size_t compOffset = 2406 - 42 * (d / 2) + (d % 2) * 10;
 				size_t slopeOffset = compOffset + 20 + (d % 2);

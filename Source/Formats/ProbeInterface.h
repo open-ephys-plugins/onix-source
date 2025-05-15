@@ -255,11 +255,9 @@ namespace OnixSourcePlugin
 			{
 			case OnixSourcePlugin::ProbeType::NONE:
 				return "";
-			case OnixSourcePlugin::ProbeType::NPX_V1E:
+			case OnixSourcePlugin::ProbeType::NPX_V1:
 				return "Neuropixels 1.0";
-			case OnixSourcePlugin::ProbeType::NPX_V2E:
-				return "Neuropixels 2.0";
-			case OnixSourcePlugin::ProbeType::NPX_V2E_BETA:
+			case OnixSourcePlugin::ProbeType::NPX_V2:
 				return "Neuropixels 2.0";
 			default:
 				return "";

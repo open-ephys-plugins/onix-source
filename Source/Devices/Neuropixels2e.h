@@ -106,7 +106,7 @@ namespace OnixSourcePlugin
 
 		// INeuropixel Methods
 
-		std::vector<int> selectElectrodeConfiguration(String config) override;
+		std::vector<int> selectElectrodeConfiguration(std::string config) override;
 
 		uint64_t getProbeSerialNumber(int index) override;
 

@@ -25,19 +25,8 @@
 using namespace OnixSourcePlugin;
 
 NeuropixelsV1eBackgroundUpdater::NeuropixelsV1eBackgroundUpdater(Neuropixels1e* d)
-	: ThreadWithProgressWindow("Writing calibration files to Neuropixels Probe: " + d->getName(), true, false)
+	: NeuropixelsV1BackgroundUpdater(d)
 {
-	device = d;
-}
-
-bool NeuropixelsV1eBackgroundUpdater::updateSettings()
-{
-	if (device->isEnabled())
-		runThread();
-	else
-		return 0;
-
-	return result;
 }
 
 void NeuropixelsV1eBackgroundUpdater::run()
@@ -46,128 +35,20 @@ void NeuropixelsV1eBackgroundUpdater::run()
 
 	device->resetProbe();
 
-	// Parse ADC and Gain calibration files
-	String adcPath = device->getAdcCalibrationFilePath();
-	String gainPath = device->getGainCalibrationFilePath();
-
-	if (adcPath == "None" || gainPath == "None")
+	if (!device->parseGainCalibrationFile())
 	{
 		result = false;
-
-		LOGE("Missing ADC or Gain calibration files" + device->getName());
-
-		if (adcPath == "None")
-		{
-			CoreServices::sendStatusMessage("Missing ADC calibration file for " + device->getName());
-		}
-		else if (gainPath == "None")
-		{
-			CoreServices::sendStatusMessage("Missing Gain calibration file for " + device->getName());
-		}
-
 		return;
 	}
-
-	File adcFile = File(adcPath);
-	File gainFile = File(gainPath);
-
-	if (!adcFile.existsAsFile() || !gainFile.existsAsFile())
+	
+	if (!device->parseAdcCalibrationFile())
 	{
 		result = false;
-
-		LOGE("Invalid ADC or Gain calibration files for " + device->getName());
-
-		if (!adcFile.existsAsFile())
-		{
-			CoreServices::sendStatusMessage("Invalid ADC calibration file for " + device->getName());
-		}
-		else if (!gainFile.existsAsFile())
-		{
-			CoreServices::sendStatusMessage("Invalid Gain calibration file for " + device->getName());
-		}
-
 		return;
 	}
-
-	setProgress(0.2);
-
-	StringArray gainFileLines;
-	gainFile.readLines(gainFileLines);
-
-	auto gainSN = std::stoull(gainFileLines[0].toStdString());
-
-	LOGD("Gain calibration file SN = ", gainSN);
-
-	if (gainSN != device->getProbeSerialNumber())
-	{
-		result = false;
-
-		LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", device->getProbeSerialNumber(), ").");
-
-		CoreServices::sendStatusMessage("Serial Number Mismatch: Gain calibration (" + String(gainSN) + ") does not match " + String(device->getProbeSerialNumber()));
-
-		return;
-	}
-
-	StringRef gainCalLine = gainFileLines[1];
-	StringRef breakCharacters = ",";
-	StringRef noQuote = "";
-
-	StringArray calibrationValues = StringArray::fromTokens(gainCalLine, breakCharacters, noQuote);
-
-	double apGainCorrection = std::stod(calibrationValues[device->settings[0]->apGainIndex + 1].toStdString());
-	double lfpGainCorrection = std::stod(calibrationValues[device->settings[0]->lfpGainIndex + 8].toStdString());
-
-	LOGD("AP gain correction = ", apGainCorrection, ", LFP gain correction = ", lfpGainCorrection);
-
-	device->setApGainCorrection(apGainCorrection);
-	device->setLfpGainCorrection(lfpGainCorrection);
 
 	setProgress(0.5);
-
-	StringArray adcFileLines;
-	adcFile.readLines(adcFileLines);
-
-	auto adcSN = std::stoull(adcFileLines[0].toStdString());
-
-	LOGD("ADC calibration file SN = ", adcSN);
-
-	if (adcSN != device->getProbeSerialNumber())
-	{
-		result = false;
-
-		LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", device->getProbeSerialNumber(), ").");
-
-		CoreServices::sendStatusMessage("Serial Number Mismatch: ADC calibration (" + String(adcSN) + ") does not match " + String(device->getProbeSerialNumber()));
-
-		return;
-	}
-
-	Array<NeuropixelsV1Adc> adcs;
-
-	for (int i = 1; i < adcFileLines.size() - 1; i++)
-	{
-		auto adcLine = StringArray::fromTokens(adcFileLines[i], breakCharacters, noQuote);
-
-		adcs.add(
-			NeuropixelsV1Adc(
-				std::stoi(adcLine[1].toStdString()),
-				std::stoi(adcLine[2].toStdString()),
-				std::stoi(adcLine[3].toStdString()),
-				std::stoi(adcLine[4].toStdString()),
-				std::stoi(adcLine[5].toStdString()),
-				std::stoi(adcLine[6].toStdString()),
-				std::stoi(adcLine[7].toStdString()),
-				std::stoi(adcLine[8].toStdString())
-			));
-	}
-
-	setProgress(0.8);
-
-	// Write shift registers
-	auto shankBits = NeuropixelsV1::makeShankBits(device->getReference(device->settings[0]->referenceIndex), device->settings[0]->selectedElectrode);
-	auto configBits = NeuropixelsV1::makeConfigBits(device->getReference(device->settings[0]->referenceIndex), device->getGainEnum(device->settings[0]->apGainIndex), device->getGainEnum(device->settings[0]->lfpGainIndex), true, adcs);
-
+	
 	device->WriteByte((uint32_t)NeuropixelsV1Registers::CAL_MOD, (uint32_t)NeuropixelsV1CalibrationRegisterValues::CAL_OFF);
 	device->WriteByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG1, 0);
 	device->WriteByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG2, 0);
@@ -178,21 +59,29 @@ void NeuropixelsV1eBackgroundUpdater::run()
 	device->WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::ACTIVE);
 	device->WriteByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
 
-	device->writeShiftRegisters(shankBits, configBits, adcs);
+	try
+	{
+		device->writeShiftRegisters();
+	}
+	catch (const error_str& e)
+	{
+		LOGE(e.what());
+		AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Error Writing Shift Registers", e.what());
+		result = false;
+		return;
+	}
 
 	setProgress(1);
 
 	result = true;
 }
 
-Neuropixels1e::Neuropixels1e(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(name, NEUROPIXELSV1E_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELSV1E, deviceIdx_, ctx_),
-	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
-	INeuropixel(NeuropixelsV1Values::numberOfSettings, NeuropixelsV1Values::numberOfShanks)
+Neuropixels1e::Neuropixels1e(std::string name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
+	Neuropixels1(name, NEUROPIXELSV1E_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELSV1E, deviceIdx_, ctx_)
 {
-	String port = getPortNameFromIndex(deviceIdx);
+	std::string port = getPortNameFromIndex(deviceIdx);
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "AP" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "AP" }),
 		"Neuropixels 1.0 AP band data stream",
 		"onix-neuropixels1.data.ap",
 		numberOfChannels,
@@ -200,12 +89,14 @@ Neuropixels1e::Neuropixels1e(String name, const oni_dev_idx_t deviceIdx_, std::s
 		"AP",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
-		CharPointer_UTF8("\xc2\xb5V"),
-		{});
+		"µV",
+		{},
+		"ap"
+	);
 	streamInfos.add(apStream);
 
 	StreamInfo lfpStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "LFP" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "LFP" }),
 		"Neuropixels 1.0 LFP band data stream",
 		"onix-neuropixels1.data.lfp",
 		numberOfChannels,
@@ -213,8 +104,10 @@ Neuropixels1e::Neuropixels1e(String name, const oni_dev_idx_t deviceIdx_, std::s
 		"LFP",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
-		CharPointer_UTF8("\xc2\xb5V"),
-		{});
+		"µV",
+		{},
+		"lfp"
+	);
 	streamInfos.add(lfpStream);
 
 	defineMetadata(settings[0].get());
@@ -231,137 +124,19 @@ Neuropixels1e::Neuropixels1e(String name, const oni_dev_idx_t deviceIdx_, std::s
 	probeNumber = 0;
 }
 
-NeuropixelsV1Gain Neuropixels1e::getGainEnum(int index)
-{
-	switch (index)
-	{
-	case 0:
-		return NeuropixelsV1Gain::Gain50;
-	case 1:
-		return NeuropixelsV1Gain::Gain125;
-	case 2:
-		return NeuropixelsV1Gain::Gain250;
-	case 3:
-		return NeuropixelsV1Gain::Gain500;
-	case 4:
-		return NeuropixelsV1Gain::Gain1000;
-	case 5:
-		return NeuropixelsV1Gain::Gain1500;
-	case 6:
-		return NeuropixelsV1Gain::Gain2000;
-	case 7:
-		return NeuropixelsV1Gain::Gain3000;
-
-	default:
-		break;
-	}
-
-	return NeuropixelsV1Gain::Gain50;
-}
-
-int Neuropixels1e::getGainValue(NeuropixelsV1Gain gain)
-{
-	switch (gain)
-	{
-	case NeuropixelsV1Gain::Gain50:
-		return 50;
-	case NeuropixelsV1Gain::Gain125:
-		return 125;
-	case NeuropixelsV1Gain::Gain250:
-		return 250;
-	case NeuropixelsV1Gain::Gain500:
-		return 500;
-	case NeuropixelsV1Gain::Gain1000:
-		return 1000;
-	case NeuropixelsV1Gain::Gain1500:
-		return 1500;
-	case NeuropixelsV1Gain::Gain2000:
-		return 2000;
-	case NeuropixelsV1Gain::Gain3000:
-		return 3000;
-
-	default:
-		break;
-	}
-}
-
-NeuropixelsV1Reference Neuropixels1e::getReference(int index)
-{
-	switch (index)
-	{
-	case 0:
-		return NeuropixelsV1Reference::External;
-	case 1:
-		return NeuropixelsV1Reference::Tip;
-	default:
-		break;
-	}
-
-	return NeuropixelsV1Reference::External;
-}
-
-String Neuropixels1e::getAdcCalibrationFilePath()
-{
-	return adcCalibrationFilePath;
-}
-
-void Neuropixels1e::setAdcCalibrationFilePath(String filepath)
-{
-	adcCalibrationFilePath = filepath;
-}
-
-String Neuropixels1e::getGainCalibrationFilePath()
-{
-	return gainCalibrationFilePath;
-}
-
-void Neuropixels1e::setGainCalibrationFilePath(String filepath)
-{
-	gainCalibrationFilePath = filepath;
-}
-
-bool Neuropixels1e::getCorrectOffset() const
-{
-	return correctOffset;
-}
-
-void Neuropixels1e::setCorrectOffset(bool value)
-{
-	correctOffset = value;
-}
-
-double Neuropixels1e::getApGainCorrection() const
-{
-	return apGainCorrection;
-}
-
-void Neuropixels1e::setApGainCorrection(double value)
-{
-	apGainCorrection = value;
-}
-
-double Neuropixels1e::getLfpGainCorrection() const
-{
-	return lfpGainCorrection;
-}
-
-void Neuropixels1e::setLfpGainCorrection(double value)
-{
-	lfpGainCorrection = value;
-}
-
 int Neuropixels1e::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;
+	if (deviceContext == nullptr || !deviceContext->isInitialized())
+		throw error_str("Device context is not initialized properly for " + getName());
 
 	configureSerDes();
 
 	int rc = serializer->set933I2cRate(400e3);
-	if (rc != ONI_ESUCCESS) return rc;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Unable to set I2C rate for " + getName());
 
 	// Get Probe SN
 
-	uint32_t i2cAddr = 0x50;
 	int errorCode = 0;
 
 	for (int i = 0; i < 8; i++)
@@ -369,7 +144,8 @@ int Neuropixels1e::configureDevice()
 		oni_reg_val_t reg_val;
 		rc = flex->ReadByte(OFFSET_ID + i, &reg_val);
 
-		if (rc != ONI_ESUCCESS) return rc;
+		if (rc != ONI_ESUCCESS)
+			throw error_str("Unable to read the probe serial number for device at address " + getDeviceIdx());
 
 		if (reg_val <= 0xFF)
 		{
@@ -436,67 +212,9 @@ void Neuropixels1e::resetProbe()
 
 bool Neuropixels1e::updateSettings()
 {
-	NeuropixelsV1eBackgroundUpdater updater = NeuropixelsV1eBackgroundUpdater(this);
+	auto updater = NeuropixelsV1eBackgroundUpdater(this);
 
-	return updater.updateSettings();
-}
-
-void Neuropixels1e::setSettings(ProbeSettings<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>* settings_, int index)
-{
-	if (index >= settings.size())
-	{
-		LOGE("Invalid index given when trying to update settings.");
-		return;
-	}
-
-	settings[index]->updateProbeSettings(settings_);
-}
-
-std::vector<int> Neuropixels1e::selectElectrodeConfiguration(String config)
-{
-	std::vector<int> selection;
-
-	if (config.equalsIgnoreCase("Bank A"))
-	{
-		for (int i = 0; i < 384; i++)
-			selection.emplace_back(i);
-	}
-	else if (config.equalsIgnoreCase("Bank B"))
-	{
-		for (int i = 384; i < 768; i++)
-			selection.emplace_back(i);
-	}
-	else if (config.equalsIgnoreCase("Bank C"))
-	{
-		for (int i = 576; i < 960; i++)
-			selection.emplace_back(i);
-	}
-	else if (config.equalsIgnoreCase("Single Column"))
-	{
-		for (int i = 0; i < 384; i += 2)
-			selection.emplace_back(i);
-
-		for (int i = 385; i < 768; i += 2)
-			selection.emplace_back(i);
-	}
-	else if (config.equalsIgnoreCase("Tetrodes"))
-	{
-		for (int i = 0; i < 384; i += 8)
-		{
-			for (int j = 0; j < 4; j++)
-				selection.emplace_back(i + j);
-		}
-
-		for (int i = 388; i < 768; i += 8)
-		{
-			for (int j = 0; j < 4; j++)
-				selection.emplace_back(i + j);
-		}
-	}
-
-	assert(selection.size() == numberOfChannels && "Invalid number of selected channels.");
-
-	return selection;
+	return updater.updateSettings() && adcValues.size() == NeuropixelsV1Values::AdcCount;
 }
 
 void Neuropixels1e::startAcquisition()
@@ -534,7 +252,6 @@ void Neuropixels1e::startAcquisition()
 
 	superFrameCount = 0;
 	ultraFrameCount = 0;
-	shouldAddToBuffer = false;
 	apSampleNumber = 0;
 	lfpSampleNumber = 0;
 }
@@ -557,9 +274,9 @@ void Neuropixels1e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
-		if (streamInfo.getChannelPrefix().equalsIgnoreCase("AP"))
+		if (streamInfo.getChannelPrefix() == "AP")
 			apBuffer = sourceBuffers.getLast();
-		else if (streamInfo.getChannelPrefix().equalsIgnoreCase("LFP"))
+		else if (streamInfo.getChannelPrefix() == "LFP")
 			lfpBuffer = sourceBuffers.getLast();
 	}
 }
@@ -572,8 +289,8 @@ void Neuropixels1e::addFrame(oni_frame_t* frame)
 
 void Neuropixels1e::processFrames()
 {
-	const float apConversion = (1171.875 / apGain) * -1.0f; // TODO: This is from 1f, is it needed here?
-	const float lfpConversion = (1171.875 / lfpGain) * -1.0f;
+	const float apConversion = apGainCorrection * (1171.875 / apGain) * -1.0f;
+	const float lfpConversion = lfpGainCorrection * (1171.875 / lfpGain) * -1.0f;
 
 	while (!frameArray.isEmpty())
 	{
@@ -585,33 +302,36 @@ void Neuropixels1e::processFrames()
 		apTimestamps[superFrameCount] = deviceContext->convertTimestampToSeconds(frame->time);
 		apSampleNumbers[superFrameCount] = apSampleNumber++;
 
-		for (int i = 0; i < framesPerSuperFrame; i++)
+		for (size_t i = 0; i < framesPerSuperFrame; i++)
 		{
 			if (i == 0) // LFP data
 			{
-				int superCountOffset = superFrameCount % framesPerRoundRobin;
+				size_t superCountOffset = superFrameCount % superFramesPerUltraFrame;
 				if (superCountOffset == 0)
 				{
 					lfpTimestamps[ultraFrameCount] = apTimestamps[superFrameCount];
 					lfpSampleNumbers[ultraFrameCount] = lfpSampleNumber++;
 				}
 
-				for (int adc = 0; adc < AdcsPerProbe; adc++)
+				for (int adc = 0; adc < NeuropixelsV1Values::AdcCount; adc++)
 				{
-					// TODO: Use AP/LFP gain correction values here
-					int chanIndex = adcToFrameIndex[adc] + superCountOffset * 2; // map the ADC to muxed channel
-					lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount] =
-						lfpConversion * float((*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) - 512) - lfpOffsets.at(chanIndex);
+					auto sample = *(dataPtr + adcToFrameIndex[adc] + dataOffset);
+					sample = sample > adcValues.at(adc).threshold ? sample - adcValues.at(adc).offset : sample;
+					lfpSamples[(rawToChannel[adc][superCountOffset] * numUltraFrames) + ultraFrameCount] =
+						lfpConversion * (float(sample) - 512) - lfpOffsets.at(rawToChannel[adc][superCountOffset]);
 				}
 			}
 			else // AP data
 			{
-				int chanOffset = 2 * (i - 1);
-				for (int adc = 0; adc < AdcsPerProbe; adc++)
+				// The period of ADC data within data array is 36 words
+				int adcDataOffset = (i + 1) * NeuropixelsV1Values::FrameWords;
+
+				for (int adc = 0; adc < NeuropixelsV1Values::AdcCount; adc++)
 				{
-					int chanIndex = adcToFrameIndex[adc] + chanOffset; //  map the ADC to muxed channel.
-					apSamples[(chanIndex * framesPerRoundRobin * numUltraFrames) + superFrameCount] =
-						apConversion * float((*(dataPtr + rawToChannel[adc][i] + i * 36 + dataOffset) >> 5) - 512) - apOffsets.at(chanIndex);
+					auto sample = *(dataPtr + adcToFrameIndex[adc] + dataOffset + adcDataOffset);
+					sample = sample > adcValues.at(adc).threshold ? sample - adcValues.at(adc).offset : sample;
+					apSamples[(rawToChannel[adc][i - 1] * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
+						apConversion * (float(sample) - 512) - apOffsets.at(rawToChannel[adc][i - 1]);
 				}
 			}
 		}
@@ -620,7 +340,7 @@ void Neuropixels1e::processFrames()
 
 		superFrameCount++;
 
-		if (superFrameCount % framesPerRoundRobin == 0)
+		if (superFrameCount % superFramesPerUltraFrame == 0)
 		{
 			ultraFrameCount++;
 		}
@@ -629,14 +349,9 @@ void Neuropixels1e::processFrames()
 		{
 			ultraFrameCount = 0;
 			superFrameCount = 0;
-			shouldAddToBuffer = true;
-		}
 
-		if (shouldAddToBuffer)
-		{
-			shouldAddToBuffer = false;
 			lfpBuffer->addToBuffer(lfpSamples.data(), lfpSampleNumbers, lfpTimestamps, lfpEventCodes, numUltraFrames);
-			apBuffer->addToBuffer(apSamples.data(), apSampleNumbers, apTimestamps, apEventCodes, numUltraFrames * framesPerRoundRobin);
+			apBuffer->addToBuffer(apSamples.data(), apSampleNumbers, apTimestamps, apEventCodes, numUltraFrames * superFramesPerUltraFrame);
 
 			if (!lfpOffsetCalculated) updateLfpOffsets(lfpSamples, lfpSampleNumbers[0]);
 			if (!apOffsetCalculated) updateApOffsets(apSamples, apSampleNumbers[0]);
@@ -644,82 +359,29 @@ void Neuropixels1e::processFrames()
 	}
 }
 
-void Neuropixels1e::updateApOffsets(std::array<float, numApSamples>& samples, int64 sampleNumber)
+void Neuropixels1e::writeShiftRegisters()
 {
-	if (sampleNumber > apSampleRate * secondsToSettle)
-	{
-		uint32_t counter = 0;
+	if (adcValues.size() != NeuropixelsV1Values::AdcCount)
+		throw error_str("Invalid number of ADC values found.");
 
-		while (apOffsetValues[0].size() < samplesToAverage)
-		{
-			if (counter >= framesPerRoundRobin * numUltraFrames) break;
+	auto shankBits = NeuropixelsV1::makeShankBits(getReference(settings[0]->referenceIndex), settings[0]->selectedElectrode);
+	auto configBits = NeuropixelsV1::makeConfigBits(getReference(settings[0]->referenceIndex), getGainEnum(settings[0]->apGainIndex), getGainEnum(settings[0]->lfpGainIndex), true, adcValues);
 
-			for (int i = 0; i < numberOfChannels; i++)
-			{
-				apOffsetValues[i].emplace_back(samples[i * framesPerRoundRobin * numUltraFrames + counter]);
-			}
-
-			counter++;
-		}
-
-		if (apOffsetValues[0].size() >= samplesToAverage)
-		{
-			for (int i = 0; i < numberOfChannels; i++)
-			{
-				apOffsets[i] = std::reduce(apOffsetValues.at(i).begin(), apOffsetValues.at(i).end()) / apOffsetValues.at(i).size();
-			}
-
-			apOffsetCalculated = true;
-			apOffsetValues.clear();
-		}
-	}
-}
-
-void Neuropixels1e::updateLfpOffsets(std::array<float, numLfpSamples>& samples, int64 sampleNumber)
-{
-	if (sampleNumber > lfpSampleRate * secondsToSettle)
-	{
-		uint32_t counter = 0;
-
-		while (lfpOffsetValues[0].size() < samplesToAverage)
-		{
-			if (counter >= numUltraFrames) break;
-
-			for (int i = 0; i < numberOfChannels; i++)
-			{
-				lfpOffsetValues[i].emplace_back(samples[i * numUltraFrames + counter]);
-			}
-
-			counter++;
-		}
-
-		if (lfpOffsetValues[0].size() >= samplesToAverage)
-		{
-			for (int i = 0; i < numberOfChannels; i++)
-			{
-				lfpOffsets[i] = std::reduce(lfpOffsetValues.at(i).begin(), lfpOffsetValues.at(i).end()) / lfpOffsetValues.at(i).size();
-			}
-
-			lfpOffsetCalculated = true;
-			lfpOffsetValues.clear();
-		}
-	}
-}
-
-void Neuropixels1e::writeShiftRegisters(ShankBitset shankBits, ConfigBitsArray configBits, Array<NeuropixelsV1Adc> adcs)
-{
 	auto shankBytes = toBitReversedBytes<shankConfigurationBitCount>(shankBits);
 
 	int rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
-	if (rc != ONI_ESUCCESS) return;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Could not set shift register length.");
 
 	rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
-	if (rc != ONI_ESUCCESS) return;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Could not set shift register length.");
 
 	for (auto b : shankBytes)
 	{
 		rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_CHAIN1, b);
-		if (rc != ONI_ESUCCESS) return;
+		if (rc != ONI_ESUCCESS)
+			throw error_str("Could not write byte for shift register chain for shank configuration.");
 	}
 
 	const uint32_t shiftRegisterSuccess = 1 << 7;
@@ -742,15 +404,18 @@ void Neuropixels1e::writeShiftRegisters(ShankBitset shankBits, ConfigBitsArray c
 			auto baseBytes = toBitReversedBytes<BaseConfigurationBitCount>(configBits[i]);
 
 			rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100);
-			if (rc != ONI_ESUCCESS) return;
+			if (rc != ONI_ESUCCESS)
+				throw error_str("Could not set shift register length.");
 
 			rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100);
-			if (rc != ONI_ESUCCESS) return;
+			if (rc != ONI_ESUCCESS)
+				throw error_str("Could not set shift register length.");
 
 			for (auto b : baseBytes)
 			{
 				rc = WriteByte(srAddress, b);
-				if (rc != ONI_ESUCCESS) return;
+				if (rc != ONI_ESUCCESS)
+					throw error_str("Could not set write byte to shift register for base configuration.");
 			}
 		}
 
@@ -763,139 +428,4 @@ void Neuropixels1e::writeShiftRegisters(ShankBitset shankBits, ConfigBitsArray c
 			return;
 		}
 	}
-}
-
-void Neuropixels1e::defineMetadata(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
-{
-	settings->probeType = ProbeType::NPX_V1E;
-	settings->probeMetadata.name = "Neuropixels 1.0f";
-
-	std::vector<std::array<float, 2>> shankOutline{
-		{27, 31},
-		{27, 514},
-		{27 + 5, 522},
-		{27 + 10, 514},
-		{27 + 10, 31}
-	};
-
-	std::vector<std::array<float, 2>> probeContour{
-		{0, 155},
-		{35, 0},
-		{70, 155},
-		{70, 9770},
-		{0, 9770},
-		{0, 155}
-	};
-
-	settings->probeMetadata.shank_count = 1;
-	settings->probeMetadata.electrodes_per_shank = numberOfElectrodes;
-	settings->probeMetadata.rows_per_shank = numberOfElectrodes / 2;
-	settings->probeMetadata.columns_per_shank = 2;
-	settings->probeMetadata.shankOutline = shankOutline;
-	settings->probeMetadata.probeContour = probeContour;
-	settings->probeMetadata.num_adcs = 32; // NB: Is this right for 1.0e?
-	settings->probeMetadata.adc_bits = 10; // NB: Is this right for 1.0e?
-
-	settings->availableBanks = {
-		Bank::A,
-		Bank::B,
-		Bank::C,
-		Bank::NONE //disconnected
-	};
-
-	Array<float> xpositions = { 27.0f, 59.0f, 11.0f, 43.0f };
-
-	for (int i = 0; i < numberOfElectrodes; i++)
-	{
-		ElectrodeMetadata metadata;
-
-		metadata.shank = 0;
-		metadata.shank_local_index = i % settings->probeMetadata.electrodes_per_shank;
-		metadata.global_index = i;
-		metadata.xpos = xpositions[i % 4];
-		metadata.ypos = (i - (i % 2)) * 10.0f;
-		metadata.site_width = 12;
-		metadata.column_index = i % 2;
-		metadata.row_index = i / 2;
-		metadata.isSelected = false;
-		metadata.colour = Colours::lightgrey;
-
-		if (i < 384)
-		{
-			metadata.bank = Bank::A;
-			metadata.channel = i;
-			metadata.status = ElectrodeStatus::CONNECTED;
-		}
-		else if (i >= 384 && i < 768)
-		{
-			metadata.bank = Bank::B;
-			metadata.channel = i - 384;
-			metadata.status = ElectrodeStatus::DISCONNECTED;
-		}
-		else
-		{
-			metadata.bank = Bank::C;
-			metadata.channel = i - 768;
-			metadata.status = ElectrodeStatus::DISCONNECTED;
-		}
-
-		if (i == 191 || i == 575 || i == 959)
-		{
-			metadata.type = ElectrodeType::REFERENCE;
-		}
-		else
-		{
-			metadata.type = ElectrodeType::ELECTRODE;
-		}
-
-		settings->electrodeMetadata[i] = metadata;
-	}
-
-	settings->apGainIndex = 4;	// NB:  AP Gain Index of 4 = Gain1000
-	settings->lfpGainIndex = 0;	// NB: LFP Gain Index of 0 = Gain50
-	settings->referenceIndex = 0;
-	settings->apFilterState = true;
-
-	for (int i = 0; i < numberOfChannels; i++)
-	{
-		settings->selectedBank[i] = Bank::A;
-		settings->selectedShank[i] = 0;
-		settings->selectedElectrode[i] = i;
-	}
-
-	settings->availableApGains.add(50.0f);
-	settings->availableApGains.add(125.0f);
-	settings->availableApGains.add(250.0f);
-	settings->availableApGains.add(500.0f);
-	settings->availableApGains.add(1000.0f);
-	settings->availableApGains.add(1500.0f);
-	settings->availableApGains.add(2000.0f);
-	settings->availableApGains.add(3000.0f);
-
-	settings->availableLfpGains.add(50.0f);
-	settings->availableLfpGains.add(125.0f);
-	settings->availableLfpGains.add(250.0f);
-	settings->availableLfpGains.add(500.0f);
-	settings->availableLfpGains.add(1000.0f);
-	settings->availableLfpGains.add(1500.0f);
-	settings->availableLfpGains.add(2000.0f);
-	settings->availableLfpGains.add(3000.0f);
-
-	settings->availableReferences.add("Ext");
-	settings->availableReferences.add("Tip");
-
-	settings->availableElectrodeConfigurations.add("Bank A");
-	settings->availableElectrodeConfigurations.add("Bank B");
-	settings->availableElectrodeConfigurations.add("Bank C");
-	settings->availableElectrodeConfigurations.add("Single column");
-	settings->availableElectrodeConfigurations.add("Tetrodes");
-
-	settings->electrodeConfigurationIndex = 0;
-
-	settings->isValid = true;
-}
-
-uint64_t Neuropixels1e::getProbeSerialNumber(int index)
-{
-	return probeNumber;
 }
