@@ -288,7 +288,7 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		for (int i = 0; i < 6; i++)
 		{
 			colors.push_back(ColourScheme::getColourForNormalizedValue(float(i) / 5.0f));
-			legendLabels.add(String(float(probeBrowser->maxPeakToPeakAmplitude) / 5.0f * float(i)) + " uV");
+			legendLabels.add(std::to_string(float(probeBrowser->maxPeakToPeakAmplitude) / 5.0f * float(i)) + " uV");
 		}
 
 		for (int i = 0; i < colors.size(); i++)
@@ -319,7 +319,7 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 
 void NeuropixelsV2eProbeInterface::updateInfoString()
 {
-	String deviceString, infoString;
+	std::string deviceString, infoString;
 
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
@@ -344,9 +344,7 @@ void NeuropixelsV2eProbeInterface::comboBoxChanged(ComboBox* comboBox)
 
 	if (comboBox == electrodeConfigurationComboBox.get())
 	{
-		auto preset = electrodeConfigurationComboBox->getText().toStdString();
-
-		auto selection = npx->selectElectrodeConfiguration(preset);
+		auto selection = npx->selectElectrodeConfiguration(electrodeConfigurationComboBox->getText().toStdString());
 
 		selectElectrodes(selection);
 	}
@@ -455,7 +453,7 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 			gainCorrectionFile->setText("");
 		}
 
-		std::static_pointer_cast<Neuropixels2e>(device)->setGainCorrectionFile(probeIndex, gainCorrectionFile->getText());
+		std::static_pointer_cast<Neuropixels2e>(device)->setGainCorrectionFile(probeIndex, gainCorrectionFile->getText().toStdString());
 	}
 }
 
@@ -602,7 +600,7 @@ bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2
 	return true;
 }
 
-int NeuropixelsV2eProbeInterface::getIndexOfComboBoxItem(ComboBox* cb, String item)
+int NeuropixelsV2eProbeInterface::getIndexOfComboBoxItem(ComboBox* cb, std::string item)
 {
 	for (int i = 0; i < cb->getNumItems(); i++)
 	{
@@ -622,9 +620,9 @@ void NeuropixelsV2eProbeInterface::saveParameters(XmlElement* xml)
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 	auto settings = npx->settings[probeIndex].get();
 
-	XmlElement* xmlNode = xml->createNewChildElement("PROBE" + String(probeIndex));
+	XmlElement* xmlNode = xml->createNewChildElement("PROBE" + std::to_string(probeIndex));
 
-	xmlNode->setAttribute("probeSerialNumber", String(npx->getProbeSerialNumber(probeIndex)));
+	xmlNode->setAttribute("probeSerialNumber", std::to_string(npx->getProbeSerialNumber(probeIndex)));
 
 	xmlNode->setAttribute("gainCorrectionFile", npx->getGainCorrectionFile(probeIndex));
 
@@ -641,7 +639,7 @@ void NeuropixelsV2eProbeInterface::saveParameters(XmlElement* xml)
 	{
 		int globalIndex = settings->selectedElectrode[i];
 
-		channelsNode->setAttribute("CH" + String(i), String(globalIndex));
+		channelsNode->setAttribute(String("CH" + std::to_string(i)), std::to_string(globalIndex));
 	}
 }
 
@@ -658,7 +656,7 @@ void NeuropixelsV2eProbeInterface::loadParameters(XmlElement* xml)
 
 	for (auto* node : xml->getChildIterator())
 	{
-		if (node->hasTagName("PROBE" + String(probeIndex)))
+		if (node->hasTagName("PROBE" + std::to_string(probeIndex)))
 		{
 			xmlNode = node;
 			break;
@@ -667,16 +665,16 @@ void NeuropixelsV2eProbeInterface::loadParameters(XmlElement* xml)
 
 	if (xmlNode == nullptr)
 	{
-		LOGD("No PROBE" + String(probeIndex) + " element found");
+		LOGD("No PROBE" + std::to_string(probeIndex) + " element found");
 		return;
 	}
 
 	if (npx->getProbeSerialNumber(probeIndex) != 0 && xmlNode->getIntAttribute("probeSerialNumber") != npx->getProbeSerialNumber(probeIndex))
 	{
-		LOGC("Different serial numbers found. Current serial number is " + String(npx->getProbeSerialNumber(probeIndex)) + ", while the saved serial number is " + String(xmlNode->getIntAttribute("probeSerialNumber")) + ". Updating settings...");
+		LOGC("Different serial numbers found. Current serial number is " + std::to_string(npx->getProbeSerialNumber(probeIndex)) + ", while the saved serial number is " + std::to_string(xmlNode->getIntAttribute("probeSerialNumber")) + ". Updating settings...");
 	}
 
-	npx->setGainCorrectionFile(probeIndex, xmlNode->getStringAttribute("gainCorrectionFile"));
+	npx->setGainCorrectionFile(probeIndex, xmlNode->getStringAttribute("gainCorrectionFile").toStdString());
 
 	XmlElement* probeViewerNode = xmlNode->getChildByName("PROBE_VIEWER");
 
@@ -690,7 +688,7 @@ void NeuropixelsV2eProbeInterface::loadParameters(XmlElement* xml)
 
 	int idx = -1;
 
-	idx = getIndexOfComboBoxItem(referenceComboBox.get(), probeViewerNode->getStringAttribute("referenceChannel"));
+	idx = getIndexOfComboBoxItem(referenceComboBox.get(), probeViewerNode->getStringAttribute("referenceChannel").toStdString());
 	if (idx == -1)
 	{
 		LOGE("No reference channel variable found.");
@@ -711,15 +709,15 @@ void NeuropixelsV2eProbeInterface::loadParameters(XmlElement* xml)
 
 	for (int i = 0; i < npx->numberOfChannels; i++)
 	{
-		String chIdx = channelsNode->getStringAttribute("CH" + String(i), "");
+		std::string chIdx = channelsNode->getStringAttribute("CH" + std::to_string(i), "").toStdString();
 
 		if (chIdx == "")
 		{
-			LOGE("Channel #" + String(i) + " not found. Channel map will not be updated.");
+			LOGE("Channel #" + std::to_string(i) + " not found. Channel map will not be updated.");
 			return;
 		}
 
-		selectedChannels.emplace_back(std::stoi(chIdx.toStdString()));
+		selectedChannels.emplace_back(std::stoi(chIdx));
 	}
 
 	std::sort(selectedChannels.begin(), selectedChannels.end());

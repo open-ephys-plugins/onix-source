@@ -143,7 +143,7 @@ void MemoryMonitor::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
-		if (streamInfo.getChannelPrefix().equalsIgnoreCase("Percent"))
+		if (streamInfo.getChannelPrefix() == "Percent")
 			percentUsedBuffer = sourceBuffers.getLast();
 	}
 }

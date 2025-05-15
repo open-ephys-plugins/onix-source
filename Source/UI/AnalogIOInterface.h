@@ -63,7 +63,7 @@ namespace OnixSourcePlugin
 		static int getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber);
 		static int getChannelVoltageRangeId(std::shared_ptr<AnalogIO> device, int channelNumber);
 		static int getDataTypeId(std::shared_ptr<AnalogIO> device);
-		static AnalogIODirection getChannelDirectionFromString(String direction);
+		static AnalogIODirection getChannelDirectionFromString(std::string direction);
 
 		JUCE_LEAK_DETECTOR(AnalogIOInterface);
 	};

@@ -27,6 +27,7 @@
 #include "ColourScheme.h"
 #include "SettingsInterface.h"
 #include "NeuropixelsV1ProbeBrowser.h"
+#include "../Devices/Neuropixels1.h"
 
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
@@ -46,7 +47,7 @@ namespace OnixSourcePlugin
 	public:
 		friend class ProbeBrowser<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>;
 
-		NeuropixelsV1Interface(std::shared_ptr<OnixDevice> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+		NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 		void buttonClicked(Button*) override;
 		void comboBoxChanged(ComboBox*) override;

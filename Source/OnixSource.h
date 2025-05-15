@@ -83,7 +83,7 @@ namespace OnixSourcePlugin
 		void updateDiscoveryParameters(PortName port, DiscoveryParameters parameters);
 
 		/** Takes a string from the editor. Can be an empty string to allow for automated discovery */
-		bool configurePortVoltage(PortName port, String voltage) const;
+		bool configurePortVoltage(PortName port, std::string voltage) const;
 
 		/** Sets the port voltage */
 		void setPortVoltage(PortName port, double voltage) const;
@@ -123,7 +123,7 @@ namespace OnixSourcePlugin
 
 		std::map<int, std::string> getHubNames();
 
-		String getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
+		std::string getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
 
 		void updateSourceBuffers();
 

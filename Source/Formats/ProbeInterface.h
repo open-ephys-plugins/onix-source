@@ -126,7 +126,7 @@ namespace OnixSourcePlugin
 
 			if (obj->hasProperty(Identifier("specification")))
 			{
-				String specification = obj->getProperty(Identifier("specification")).toString();
+				std::string specification = obj->getProperty(Identifier("specification")).toString().toStdString();
 
 				if (specification.compare("probeinterface") != 0)
 					return false;

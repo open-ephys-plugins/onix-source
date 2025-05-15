@@ -29,6 +29,8 @@
 
 #include "UI/ActivityView.h"
 
+#include "Onix1.h"
+
 namespace OnixSourcePlugin
 {
 	enum class VisualizationMode

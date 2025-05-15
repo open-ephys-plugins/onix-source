@@ -41,7 +41,7 @@ bool NeuropixelsV1BackgroundUpdater::updateSettings()
 }
 
 Neuropixels1::Neuropixels1(std::string name, std::string hubName, OnixDeviceType deviceType, const oni_dev_idx_t deviceIndex, std::shared_ptr<Onix1> context) :
-	OnixDevice(name, hubName, OnixDeviceType::NEUROPIXELSV1E, deviceIndex, context),
+	OnixDevice(name, hubName, deviceType, deviceIndex, context),
 	I2CRegisterContext(ProbeI2CAddress, deviceIndex, context),
 	INeuropixel(NeuropixelsV1Values::numberOfSettings, NeuropixelsV1Values::numberOfShanks)
 {

@@ -51,7 +51,7 @@ void Neuropixels2e::createDataStream(int n)
 		"CH",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
-		CharPointer_UTF8("\xc2\xb5V"),
+		"µV",
 		{},
 		"ap"
 	);
@@ -406,7 +406,7 @@ bool Neuropixels2e::updateSettings()
 
 			if (!gainCorrectionFile.existsAsFile())
 			{
-				Onix1::showWarningMessageBoxAsync("Missing File", "The gain correction file \"" + gainCorrectionFilePath[i].toStdString() + "\" for probe " + std::to_string(probeSN[i]) + " does not exist.");
+				Onix1::showWarningMessageBoxAsync("Missing File", "The gain correction file \"" + gainCorrectionFilePath[i] + "\" for probe " + std::to_string(probeSN[i]) + " does not exist.");
 				return false;
 			}
 
@@ -652,7 +652,7 @@ void Neuropixels2e::processFrames()
 
 			for (int j = 0; j < AdcsPerProbe; j++)
 			{
-				const int channelIndex = rawToChannel[j][i];
+				const size_t channelIndex = rawToChannel[j][i];
 
 				samples[channelIndex * numFrames + frameCount] =
 					(float)(*(amplifierData + adcIndices[j] + adcDataOffset)) * gainCorrection[probeIndex];
@@ -719,7 +719,7 @@ void Neuropixels2e::writeShiftRegister(uint32_t srAddress, std::bitset<N> bits)
 	}
 }
 
-String Neuropixels2e::getShankName(uint32_t shiftRegisterAddress)
+std::string Neuropixels2e::getShankName(uint32_t shiftRegisterAddress)
 {
 	switch (shiftRegisterAddress)
 	{
@@ -736,7 +736,7 @@ String Neuropixels2e::getShankName(uint32_t shiftRegisterAddress)
 	}
 }
 
-void Neuropixels2e::setGainCorrectionFile(int index, String filename)
+void Neuropixels2e::setGainCorrectionFile(int index, std::string filename)
 {
 	if (index < gainCorrectionFilePath.size())
 	{
@@ -744,7 +744,7 @@ void Neuropixels2e::setGainCorrectionFile(int index, String filename)
 	}
 }
 
-String Neuropixels2e::getGainCorrectionFile(int index)
+std::string Neuropixels2e::getGainCorrectionFile(int index)
 {
 	if (index < gainCorrectionFilePath.size())
 	{
@@ -786,7 +786,7 @@ Neuropixels2e::BaseBitsArray Neuropixels2e::makeBaseBits(NeuropixelsV2Reference 
 	else
 		referenceBit = 2;
 
-	for (int i = 0; i < numberOfChannels; i++)
+	for (size_t i = 0; i < numberOfChannels; i++)
 	{
 		auto configIndex = i % 2;
 		auto bitOffset = (382 - i + configIndex) / 2 * baseBitsPerChannel;
@@ -803,8 +803,8 @@ Neuropixels2e::ShankBitsArray Neuropixels2e::makeShankBits(NeuropixelsV2Referenc
 
 	if (reference != NeuropixelsV2Reference::External)
 	{
-		shankBits[(int)reference - 1][643] = true;
-		shankBits[(int)reference - 1][644] = true;
+		shankBits[(size_t)reference - 1][643] = true;
+		shankBits[(size_t)reference - 1][644] = true;
 	}
 	else
 	{

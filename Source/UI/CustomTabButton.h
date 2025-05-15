@@ -33,7 +33,7 @@ namespace OnixSourcePlugin
 	{
 	public:
 		/** Constructor */
-		CustomTabButton(const String& name, TabbedComponent* parent, bool isTopLevel_) :
+		CustomTabButton(const std::string& name, TabbedComponent* parent, bool isTopLevel_) :
 			TabBarButton(name, parent->getTabbedButtonBar()),
 			isTopLevel(isTopLevel_)
 		{

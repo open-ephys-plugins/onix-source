@@ -37,7 +37,7 @@ OnixSourceCanvas::OnixSourceCanvas(GenericProcessor* processor_, OnixSourceEdito
 	addHub(BREAKOUT_BOARD_NAME, 0);
 }
 
-CustomTabComponent* OnixSourceCanvas::addTopLevelTab(String tabName, int index)
+CustomTabComponent* OnixSourceCanvas::addTopLevelTab(std::string tabName, int index)
 {
 	CustomTabComponent* tab = new CustomTabComponent(false);
 
@@ -111,7 +111,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 	{
 		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 		{
-			auto neuropixInterface = std::make_shared<NeuropixelsV1Interface>(device, editor, this);
+			auto neuropixInterface = std::make_shared<NeuropixelsV1Interface>(std::static_pointer_cast<Neuropixels1>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, neuropixInterface);
 		}
 		else if (device->getDeviceType() == OnixDeviceType::BNO)
@@ -154,7 +154,7 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 	}
 }
 
-void OnixSourceCanvas::addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_)
+void OnixSourceCanvas::addInterfaceToTab(std::string tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_)
 {
 	settingsInterfaces.emplace_back(interface_);
 	tab->addTab(tabName, Colours::darkgrey, CustomViewport::createCustomViewport(interface_.get()), true);

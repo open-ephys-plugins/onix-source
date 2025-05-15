@@ -617,7 +617,7 @@ namespace OnixSourcePlugin
 
 		MouseCursor::StandardCursorType cursorType;
 
-		String electrodeInfoString;
+		std::string electrodeInfoString;
 
 		Colour getElectrodeColour(int i)
 		{
@@ -752,14 +752,14 @@ namespace OnixSourcePlugin
 			return inds;
 		}
 
-		String getElectrodeInfoString(int index)
+		std::string getElectrodeInfoString(int index)
 		{
 			auto settings = getSettings();
 			if (settings == nullptr) return "";
 
-			String a;
+			std::string a;
 			a += "Electrode ";
-			a += String(settings->electrodeMetadata[index].global_index + 1);
+			a += std::to_string(settings->electrodeMetadata[index].global_index + 1);
 
 			a += "\nBank ";
 
@@ -809,10 +809,10 @@ namespace OnixSourcePlugin
 			}
 
 			a += ", Channel ";
-			a += String(settings->electrodeMetadata[index].channel + 1);
+			a += std::to_string(settings->electrodeMetadata[index].channel + 1);
 
 			a += "\nY Position: ";
-			a += String(settings->electrodeMetadata[index].ypos);
+			a += std::to_string(settings->electrodeMetadata[index].ypos);
 
 			a += "\nType: ";
 

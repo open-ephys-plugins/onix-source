@@ -38,7 +38,7 @@ OnixSource::OnixSource(SourceNode* sn) :
 	catch (const std::system_error& e)
 	{
 		LOGE("Failed to create context. ", e.what());
-		CoreServices::sendStatusMessage("Failed to create context." + String(e.what()));
+		CoreServices::sendStatusMessage("Failed to create context." + std::string(e.what()));
 		AlertWindow::showMessageBox(
 			MessageBoxIconType::WarningIcon,
 			"Failed to Create Context",
@@ -49,7 +49,7 @@ OnixSource::OnixSource(SourceNode* sn) :
 	catch (const error_t& e)
 	{
 		LOGE("Failed to initialize context. ", e.what());
-		CoreServices::sendStatusMessage("Failed to create context. " + String(e.what()));
+		CoreServices::sendStatusMessage("Failed to create context. " + std::string(e.what()));
 		AlertWindow::showMessageBox(
 			MessageBoxIconType::WarningIcon,
 			"Failed to Initialize Context",
@@ -568,7 +568,7 @@ void OnixSource::updateDiscoveryParameters(PortName port, DiscoveryParameters pa
 	}
 }
 
-bool OnixSource::configurePortVoltage(PortName port, String voltage) const
+bool OnixSource::configurePortVoltage(PortName port, std::string voltage) const
 {
 	if (!context->isInitialized()) return false;
 
@@ -578,12 +578,12 @@ bool OnixSource::configurePortVoltage(PortName port, String voltage) const
 		if (voltage == "" || voltage == "Auto")
 			return portA->configureVoltage();
 		else
-			return portA->configureVoltage(voltage.getDoubleValue());
+			return portA->configureVoltage(std::stod(voltage));
 	case PortName::PortB:
 		if (voltage == "" || voltage == "Auto")
 			return portB->configureVoltage();
 		else
-			return portB->configureVoltage(voltage.getDoubleValue());
+			return portB->configureVoltage(std::stod(voltage));
 	default:
 		return false;
 	}

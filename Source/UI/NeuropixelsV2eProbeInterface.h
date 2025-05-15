@@ -125,7 +125,7 @@ namespace OnixSourcePlugin
 
 		void checkForExistingChannelPreset();
 
-		int getIndexOfComboBoxItem(ComboBox* cb, String item);
+		int getIndexOfComboBoxItem(ComboBox* cb, std::string item);
 
 		JUCE_LEAK_DETECTOR(NeuropixelsV2eProbeInterface);
 	};

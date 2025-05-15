@@ -27,7 +27,7 @@
 using namespace OnixSourcePlugin;
 using namespace ColourScheme;
 
-NeuropixelsV1Interface::NeuropixelsV1Interface(std::shared_ptr<OnixDevice> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
+NeuropixelsV1Interface::NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c),
 	neuropix_info("INFO")
 {
@@ -577,9 +577,7 @@ void NeuropixelsV1Interface::comboBoxChanged(ComboBox* comboBox)
 
 		if (comboBox == electrodeConfigurationComboBox.get())
 		{
-			std::string preset = electrodeConfigurationComboBox->getText().toStdString();
-
-			auto selection = npx->selectElectrodeConfiguration(preset);
+			auto selection = npx->selectElectrodeConfiguration(electrodeConfigurationComboBox->getText().toStdString());
 
 			selectElectrodes(selection);
 		}
@@ -797,7 +795,7 @@ void NeuropixelsV1Interface::buttonClicked(Button* button)
 			adcCalibrationFile->setText("");
 		}
 
-		std::static_pointer_cast<Neuropixels1f>(device)->setAdcCalibrationFilePath(adcCalibrationFile->getText().toStdString());
+		std::static_pointer_cast<Neuropixels1>(device)->setAdcCalibrationFilePath(adcCalibrationFile->getText().toStdString());
 	}
 	else if (button == gainCalibrationFileButton.get())
 	{
@@ -810,7 +808,7 @@ void NeuropixelsV1Interface::buttonClicked(Button* button)
 			gainCalibrationFile->setText("");
 		}
 
-		std::static_pointer_cast<Neuropixels1f>(device)->setGainCalibrationFilePath(gainCalibrationFile->getText().toStdString());
+		std::static_pointer_cast<Neuropixels1>(device)->setGainCalibrationFilePath(gainCalibrationFile->getText().toStdString());
 	}
 }
 

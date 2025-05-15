@@ -100,9 +100,9 @@ namespace OnixSourcePlugin
 		template<int N>
 		void writeShiftRegister(uint32_t srAddress, std::bitset<N> bits);
 
-		void setGainCorrectionFile(int index, String filename);
+		void setGainCorrectionFile(int index, std::string filename);
 
-		String getGainCorrectionFile(int index);
+		std::string getGainCorrectionFile(int index);
 
 		// INeuropixel Methods
 
@@ -124,7 +124,7 @@ namespace OnixSourcePlugin
 
 		std::array<uint64_t, NumberOfProbes> probeSN;
 		std::array<float, NumberOfProbes> gainCorrection;
-		std::array<String, NumberOfProbes> gainCorrectionFilePath;
+		std::array<std::string, NumberOfProbes> gainCorrectionFilePath;
 
 		void createDataStream(int n);
 
@@ -138,7 +138,7 @@ namespace OnixSourcePlugin
 		void writeConfiguration(ProbeSettings<numberOfChannels, numberOfElectrodes>*);
 
 		NeuropixelsV2Reference getReference(int);
-		static String getShankName(uint32_t shiftRegisterAddress);
+		static std::string getShankName(uint32_t shiftRegisterAddress);
 
 		int m_numProbes = 0;
 
