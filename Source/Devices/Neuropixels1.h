@@ -147,11 +147,13 @@ namespace OnixSourcePlugin
 
 		bool updateSettings();
 
-	private:
+	protected:
 
 		Neuropixels1* device;
 
 		std::atomic<bool> result = false;
+
+	private:
 
 		JUCE_LEAK_DETECTOR(NeuropixelsV1BackgroundUpdater);
 	};

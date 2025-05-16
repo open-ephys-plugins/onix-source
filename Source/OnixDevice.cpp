@@ -89,9 +89,9 @@ OnixDeviceType OnixDevice::getDeviceType() const
 	return type;
 }
 
-String OnixDevice::getStreamIdentifier()
+std::string OnixDevice::getStreamIdentifier()
 {
-	String streamIdentifier = "onix";
+	std::string streamIdentifier = "onix";
 
 	// Insert the headstage or breakout board
 	if (getHubName() == NEUROPIXELSV1F_HEADSTAGE_NAME)

@@ -80,7 +80,8 @@ namespace OnixSourcePlugin
 			MirrorZ = 0b00000001, // Specifies that Z' axis should be mirrored.
 			MirrorY = 0b00000010, // Specifies that Y' axis should be mirrored.
 			MirrorX = 0b00000100, // Specifies that X' axis should be mirrored.
-			MirrorXAndY = 0b00000110, // X' and Y' are mirrored
+			MirrorXAndY = MirrorX | MirrorY, // X' and Y' are mirrored
+			MirrorXAndZ = MirrorX | MirrorZ, // X' and Z' are mirrored
 		};
 
 		void setBnoAxisMap(Bno055AxisMap map);

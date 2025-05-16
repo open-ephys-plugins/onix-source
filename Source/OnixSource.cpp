@@ -366,6 +366,27 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 				hubNames.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
+			else if (hsid == 0xFFFFFFFF) // TODO: hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH
+			{
+				devicesFound = configureDevice<Neuropixels1e>(sources, canvas, "Probe", NEUROPIXELSV1E_HEADSTAGE_NAME, Neuropixels1e::getDeviceType(), index, context);
+				if (!devicesFound) return false;
+
+				devicesFound = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV1E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), index, context);
+				if (!devicesFound) return false;
+
+				if (sources.back()->getDeviceType() != OnixDeviceType::POLLEDBNO)
+				{
+					LOGE("Unknown device encountered when setting headstage.");
+					continue;
+				}
+
+				const auto& polledBno = std::static_pointer_cast<PolledBno055>(sources.back());
+
+				polledBno->setBnoAxisMap(PolledBno055::Bno055AxisMap::YZX);
+				polledBno->setBnoAxisSign(PolledBno055::Bno055AxisSign::MirrorXAndZ);
+
+				hubNames.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV1E_HEADSTAGE_NAME });
+			}
 		}
 	}
 
@@ -847,7 +868,7 @@ void OnixSource::addIndividualStreams(Array<StreamInfo> streamInfos,
 	}
 }
 
-String OnixSource::createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber)
+std::string OnixSource::createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber)
 {
 	auto dataType = streamInfo.getChannelIdentifierDataType();
 	auto subTypes = streamInfo.getChannelIdentifierSubTypes();

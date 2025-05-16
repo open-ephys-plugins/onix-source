@@ -167,7 +167,7 @@ namespace OnixSourcePlugin
 
 		void addCombinedStreams(DataStream::Settings, Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
 
-		String createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber);
+		std::string createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber);
 
 		/** Template method to initialize an OnixDevice and add it to the currently active OnixDeviceVector variable */
 		template <class Device>

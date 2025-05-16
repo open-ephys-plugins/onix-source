@@ -164,7 +164,8 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 	comboBox->addItem("Select headstage...", 1);
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
-	comboBox->addItem(NEUROPIXELSV2E_HEADSTAGE_NAME, 3);
+	comboBox->addItem(NEUROPIXELSV1E_HEADSTAGE_NAME, 3);
+	comboBox->addItem(NEUROPIXELSV2E_HEADSTAGE_NAME, 4);
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)
@@ -379,33 +380,10 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 
 void OnixSourceEditor::updateComboBox(ComboBox* cb)
 {
-	auto deviceMap = source->createDeviceMap();
-	auto tabMap = canvas->createSelectedMap(canvas->settingsInterfaces);
-	std::vector<int> deviceIndices;
-	std::vector<int> tabIndices;
-
-	for (auto& [key, _] : deviceMap) { deviceIndices.emplace_back(key); }
-	for (auto& [key, _] : tabMap) { tabIndices.emplace_back(key); }
-
-	auto devicePorts = OnixDevice::getUniquePortsFromIndices(deviceIndices);
-	auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
-
 	bool isPortA = cb == headstageComboBoxA.get();
 
 	PortName currentPort = isPortA ? PortName::PortA : PortName::PortB;
 
-	if (tabPorts.contains(currentPort) && devicePorts.contains(currentPort) && source->foundInputSource())
-	{
-		AlertWindow::showMessageBox(
-			MessageBoxIconType::WarningIcon,
-			"Devices Connected",
-			"Cannot select a different headstage on " + OnixDevice::getPortName(currentPort) + " when connected. \n\nPress disconnect before changing the selected headstage.");
-
-		refreshComboBoxSelection();
-		return;
-	}
-
-	bool otherHeadstageSelected = isPortA ? headstageComboBoxB->getSelectedId() > 1 : headstageComboBoxA->getSelectedId() > 1;
 	bool currentHeadstageSelected = isPortA ? headstageComboBoxA->getSelectedId() > 1 : headstageComboBoxB->getSelectedId() > 1;
 
 	canvas->removeTabs(currentPort);
@@ -420,7 +398,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		source->updateDiscoveryParameters(currentPort, PortController::getHeadstageDiscoveryParameters(headstage));
 		canvas->addHub(headstage, PortController::getPortOffset(currentPort));
 
-		if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME)
+		if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME || headstage == NEUROPIXELSV1E_HEADSTAGE_NAME)
 		{
 			passthroughValue = true;
 		}

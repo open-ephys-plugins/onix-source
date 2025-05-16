@@ -33,7 +33,7 @@ void NeuropixelsV1eBackgroundUpdater::run()
 {
 	setProgress(0);
 
-	device->resetProbe();
+	((Neuropixels1e*)device)->resetProbe();
 
 	if (!device->parseGainCalibrationFile())
 	{
@@ -61,7 +61,7 @@ void NeuropixelsV1eBackgroundUpdater::run()
 
 	try
 	{
-		device->writeShiftRegisters();
+		((Neuropixels1e*)device)->writeShiftRegisters();
 	}
 	catch (const error_str& e)
 	{
@@ -76,14 +76,14 @@ void NeuropixelsV1eBackgroundUpdater::run()
 	result = true;
 }
 
-Neuropixels1e::Neuropixels1e(std::string name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
-	Neuropixels1(name, NEUROPIXELSV1E_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELSV1E, deviceIdx_, ctx_)
+Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
+	Neuropixels1(name, hubName, OnixDeviceType::NEUROPIXELSV1E, deviceIdx_, ctx_)
 {
-	std::string port = getPortNameFromIndex(deviceIdx);
+	std::string port = getPortNameFromIndex(getDeviceIdx());
 	StreamInfo apStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHubName(), getName(), "AP" }),
 		"Neuropixels 1.0 AP band data stream",
-		"onix-neuropixels1.data.ap",
+		getStreamIdentifier(),
 		numberOfChannels,
 		apSampleRate,
 		"AP",
@@ -98,7 +98,7 @@ Neuropixels1e::Neuropixels1e(std::string name, const oni_dev_idx_t deviceIdx_, s
 	StreamInfo lfpStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHubName(), getName(), "LFP" }),
 		"Neuropixels 1.0 LFP band data stream",
-		"onix-neuropixels1.data.lfp",
+		getStreamIdentifier(),
 		numberOfChannels,
 		lfpSampleRate,
 		"LFP",
@@ -156,6 +156,11 @@ int Neuropixels1e::configureDevice()
 	LOGD("Probe SN: ", probeNumber);
 
 	return ONI_ESUCCESS;
+}
+
+OnixDeviceType Neuropixels1e::getDeviceType()
+{
+	return OnixDeviceType::NEUROPIXELSV1E;
 }
 
 void Neuropixels1e::configureSerDes()

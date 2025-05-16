@@ -151,9 +151,6 @@ namespace OnixSourcePlugin
 
 		int getIndexOfComboBoxItem(ComboBox* cb, std::string item);
 
-		template <class NPX>
-		std::shared_ptr<NPX> castToDevicePtr(std::shared_ptr<OnixDevice>);
-
 		JUCE_LEAK_DETECTOR(NeuropixelsV1Interface);
 	};
 }

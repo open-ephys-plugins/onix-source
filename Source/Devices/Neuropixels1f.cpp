@@ -49,7 +49,7 @@ void NeuropixelsV1fBackgroundUpdater::run()
 
 	try
 	{
-		device->writeShiftRegisters();
+		((Neuropixels1f*)device)->writeShiftRegisters();
 	}
 	catch (const error_str& e)
 	{
@@ -180,6 +180,11 @@ bool Neuropixels1f::updateSettings()
 	auto updater = NeuropixelsV1fBackgroundUpdater(this);
 
 	return updater.updateSettings() && adcValues.size() == NeuropixelsV1Values::AdcCount;
+}
+
+OnixDeviceType Neuropixels1f::getDeviceType()
+{
+	return OnixDeviceType::NEUROPIXELSV1F;
 }
 
 void Neuropixels1f::startAcquisition()
@@ -401,9 +406,4 @@ void Neuropixels1f::writeShiftRegisters()
 			return;
 		}
 	}
-}
-
-OnixDeviceType Neuropixels1f::getDeviceType()
-{
-	return OnixDeviceType::NEUROPIXELSV1F;
 }

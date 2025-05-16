@@ -60,8 +60,8 @@ namespace OnixSourcePlugin
 	public:
 		StreamInfo() {}
 
-		StreamInfo(String name, String description, String streamIdentifier, int numChannels, float sampleRate, String channelPrefix, ContinuousChannel::Type channelType,
-			float bitVolts, String units, StringArray channelNameSuffixes, String channelIdentifierDataType, StringArray channelIdentifierSubTypes = {})
+		StreamInfo(std::string name, std::string description, std::string streamIdentifier, int numChannels, float sampleRate, std::string channelPrefix, ContinuousChannel::Type channelType,
+			float bitVolts, std::string units, std::vector<std::string> channelNameSuffixes, std::string channelIdentifierDataType, std::vector<std::string> channelIdentifierSubTypes = {})
 		{
 			m_name = name;
 			m_description = description;
@@ -82,11 +82,11 @@ namespace OnixSourcePlugin
 					LOGE("Difference between number of channels and channel name suffixes. Generating default suffixes instead.");
 
 				m_channelNameSuffixes.clear();
-				m_channelNameSuffixes.ensureStorageAllocated(numChannels);
+				m_channelNameSuffixes.reserve(numChannels);
 
 				for (int i = 0; i < m_numChannels; i++)
 				{
-					m_channelNameSuffixes.add(String(i + 1));
+					m_channelNameSuffixes.push_back(std::to_string(i + 1));
 				}
 			}
 
@@ -94,9 +94,11 @@ namespace OnixSourcePlugin
 			{
 				if (m_channelIdentifierSubTypes.size() == 1)
 				{
+					m_channelIdentifierSubTypes.reserve(m_numChannels);
+
 					for (int i = 1; i < m_numChannels; i++)
 					{
-						m_channelIdentifierSubTypes.add(m_channelIdentifierSubTypes[0]);
+						m_channelIdentifierSubTypes.push_back(m_channelIdentifierSubTypes[0]);
 					}
 				}
 				else
@@ -104,42 +106,42 @@ namespace OnixSourcePlugin
 					LOGE("Difference between number of channels and channel identifier subtypes. Generating default subtypes instead.");
 
 					m_channelIdentifierSubTypes.clear();
-					m_channelIdentifierSubTypes.ensureStorageAllocated(numChannels);
+					m_channelIdentifierSubTypes.reserve(numChannels);
 
 					for (int i = 0; i < m_numChannels; i++)
 					{
-						m_channelIdentifierSubTypes.add(String(i + 1));
+						m_channelIdentifierSubTypes.push_back(std::to_string(i + 1));
 					}
 				}
 			}
 		};
 
-		String getName() const { return m_name; }
-		String getDescription() const { return m_description; }
-		String getStreamIdentifier() const { return m_streamIdentifier; }
+		std::string getName() const { return m_name; }
+		std::string getDescription() const { return m_description; }
+		std::string getStreamIdentifier() const { return m_streamIdentifier; }
 		int getNumChannels() const { return m_numChannels; }
 		float getSampleRate() const { return m_sampleRate; }
-		String getChannelPrefix() const { return m_channelPrefix; }
+		std::string getChannelPrefix() const { return m_channelPrefix; }
 		ContinuousChannel::Type getChannelType() const { return m_channelType; }
 		float getBitVolts() const { return m_bitVolts; }
-		String getUnits() const { return m_units; }
-		StringArray getChannelNameSuffixes() const { return m_channelNameSuffixes; }
-		String getChannelIdentifierDataType() const { return m_channelIdentifierDataType; }
-		StringArray getChannelIdentifierSubTypes() const { return m_channelIdentifierSubTypes; }
+		std::string getUnits() const { return m_units; }
+		std::vector<std::string> getChannelNameSuffixes() const { return m_channelNameSuffixes; }
+		std::string getChannelIdentifierDataType() const { return m_channelIdentifierDataType; }
+		std::vector<std::string> getChannelIdentifierSubTypes() const { return m_channelIdentifierSubTypes; }
 
 	private:
-		String m_name = "name";
-		String m_description = "description";
-		String m_streamIdentifier = "identifier";
+		std::string m_name = "name";
+		std::string m_description = "description";
+		std::string m_streamIdentifier = "identifier";
 		int m_numChannels = 0;
 		float m_sampleRate = 0;
-		String m_channelPrefix = "channelPrefix";
+		std::string m_channelPrefix = "channelPrefix";
 		ContinuousChannel::Type m_channelType = ContinuousChannel::Type::INVALID;
 		float m_bitVolts = 1.0f;
-		String m_units = "units";
-		StringArray m_channelNameSuffixes = { "suffixes" };
-		String m_channelIdentifierDataType = "datatype";
-		StringArray m_channelIdentifierSubTypes = { "subtypes" };
+		std::string m_units = "units";
+		std::vector<std::string> m_channelNameSuffixes = { "suffixes" };
+		std::string m_channelIdentifierDataType = "datatype";
+		std::vector<std::string> m_channelIdentifierSubTypes = { "subtypes" };
 	};
 
 	/**
@@ -206,7 +208,7 @@ namespace OnixSourcePlugin
 		OnixDeviceType getDeviceType() const;
 
 		/** Returns a string for this device that follows the pattern: onix.[hub].[device] */
-		String getStreamIdentifier();
+		std::string getStreamIdentifier();
 
 		static oni_dev_idx_t getHubIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex);
 

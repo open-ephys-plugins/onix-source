@@ -34,7 +34,7 @@ namespace OnixSourcePlugin
 	public:
 		friend class NeuropixelsV1eBackgroundUpdater;
 
-		Neuropixels1e(std::string name, const oni_dev_idx_t, std::shared_ptr<Onix1>);
+		Neuropixels1e(std::string, std::string, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 		int configureDevice() override;
 		bool updateSettings() override;
@@ -45,6 +45,8 @@ namespace OnixSourcePlugin
 		void processFrames() override;
 
 		void configureSerDes();
+
+		static OnixDeviceType getDeviceType();
 
 	private:
 
@@ -138,10 +140,6 @@ namespace OnixSourcePlugin
 		void run() override;
 
 	private:
-
-		Neuropixels1e* device;
-
-		std::atomic<bool> result = false;
 
 		JUCE_LEAK_DETECTOR(NeuropixelsV1eBackgroundUpdater);
 	};

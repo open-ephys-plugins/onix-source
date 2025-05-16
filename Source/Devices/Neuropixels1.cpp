@@ -41,7 +41,7 @@ bool NeuropixelsV1BackgroundUpdater::updateSettings()
 }
 
 Neuropixels1::Neuropixels1(std::string name, std::string hubName, OnixDeviceType deviceType, const oni_dev_idx_t deviceIndex, std::shared_ptr<Onix1> context) :
-	OnixDevice(name, hubName, deviceType, deviceIndex, context),
+	OnixDevice(name, hubName, deviceType, deviceIndex, context, deviceType == OnixDeviceType::NEUROPIXELSV1E),
 	I2CRegisterContext(ProbeI2CAddress, deviceIndex, context),
 	INeuropixel(NeuropixelsV1Values::numberOfSettings, NeuropixelsV1Values::numberOfShanks)
 {
@@ -331,7 +331,7 @@ bool Neuropixels1::parseGainCalibrationFile()
 		return false;
 	}
 
-	if (gainFileLines.size() != numberOfElectrodes + 1)
+	if (gainFileLines.size() != numberOfElectrodes + 2)
 	{
 		Onix1::showWarningMessageBoxAsync("Invalid Gain Calibration File", "Expected to find " + std::to_string(numberOfElectrodes + 1) + " lines, but found " + std::to_string(gainFileLines.size()) + " instead.");
 		return false;
@@ -388,7 +388,7 @@ bool Neuropixels1::parseAdcCalibrationFile()
 		return false;
 	}
 
-	if (adcFileLines.size() != NeuropixelsV1Values::AdcCount + 1)
+	if (adcFileLines.size() != NeuropixelsV1Values::AdcCount + 2)
 	{
 		Onix1::showWarningMessageBoxAsync("ADC Calibration File Error", "ADC calibration file does not have the correct number of lines. Expected " + std::to_string(NeuropixelsV1Values::AdcCount + 1) + " lines, found " + std::to_string(adcFileLines.size()) + " instead.");
 		return false;

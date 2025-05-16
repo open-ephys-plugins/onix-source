@@ -84,10 +84,6 @@ namespace OnixSourcePlugin
 
 	private:
 
-		Neuropixels1f* device;
-
-		std::atomic<bool> result = false;
-
 		JUCE_LEAK_DETECTOR(NeuropixelsV1fBackgroundUpdater);
 	};
 }
