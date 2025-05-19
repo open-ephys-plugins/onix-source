@@ -398,7 +398,7 @@ bool Neuropixels2e::updateSettings()
 		{
 			if (gainCorrectionFilePath[i] == "None" || gainCorrectionFilePath[i] == "")
 			{
-				LOGE("Missing gain correction file for probe " + String(probeSN[i]));
+				Onix1::showWarningMessageBoxAsync("Missing File", "Missing gain correction file for probe " + std::to_string(probeSN[i]));
 				return false;
 			}
 
@@ -406,7 +406,7 @@ bool Neuropixels2e::updateSettings()
 
 			if (!gainCorrectionFile.existsAsFile())
 			{
-				LOGE("The gain correction file \"", gainCorrectionFilePath[i], "\" for probe ", String(probeSN[i]), " does not exist.");
+				Onix1::showWarningMessageBoxAsync("Missing File", "The gain correction file \"" + gainCorrectionFilePath[i].toStdString() + "\" for probe " + std::to_string(probeSN[i]) + " does not exist.");
 				return false;
 			}
 
@@ -419,13 +419,13 @@ bool Neuropixels2e::updateSettings()
 
 			if (gainSN != probeSN[i])
 			{
-				LOGE("Invalid serial number found in the calibration file. Should match the probe serial number (", String(probeSN[i]), ")");
+				Onix1::showWarningMessageBoxAsync("Invalid Serial Number", "Gain correction serial number (" + std::to_string(gainSN) + ") does not match probe serial number (" + std::to_string(probeSN[i]) + ").");
 				return false;
 			}
 
 			if (fileLines.size() != numberOfChannels + 1)
 			{
-				LOGE("Found the wrong number of lines in the calibration file. Expected ", numberOfChannels + 1, ", found ", fileLines.size());
+				Onix1::showWarningMessageBoxAsync("File Format Invalid", "Found the wrong number of lines in the calibration file. Expected " + std::to_string(numberOfChannels + 1) + ", found " + std::to_string(fileLines.size()));
 				return false;
 			}
 
@@ -440,7 +440,7 @@ bool Neuropixels2e::updateSettings()
 
 				if (std::stoi(calibrationValues[0].toStdString()) != j || std::stod(calibrationValues[1].toStdString()) != correctionValue)
 				{
-					LOGE("Calibration file is incorrectly formatted for probe ", String(probeSN[i]));
+					Onix1::showWarningMessageBoxAsync("File Format Invalid", "Calibration file is incorrectly formatted for probe " + std::to_string(probeSN[i]));
 					return false;
 				}
 			}

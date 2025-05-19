@@ -52,15 +52,13 @@ void BackgroundUpdaterWithProgressWindow::run()
 	{
 		result = false;
 
-		LOGE("Missing ADC or Gain calibration files" + device->getName());
-
 		if (adcPath == "None")
 		{
-			CoreServices::sendStatusMessage("Missing ADC calibration file for " + device->getName());
+			Onix1::showWarningMessageBoxAsync("Missing File", "Missing ADC calibration file for probe " + std::to_string(device->getProbeSerialNumber()));
 		}
 		else if (gainPath == "None")
 		{
-			CoreServices::sendStatusMessage("Missing Gain calibration file for " + device->getName());
+			Onix1::showWarningMessageBoxAsync("Missing File", "Missing Gain calibration file for probe " + std::to_string(device->getProbeSerialNumber()));
 		}
 
 		return;
@@ -73,15 +71,13 @@ void BackgroundUpdaterWithProgressWindow::run()
 	{
 		result = false;
 
-		LOGE("Invalid ADC or Gain calibration files for " + device->getName());
-
 		if (!adcFile.existsAsFile())
 		{
-			CoreServices::sendStatusMessage("Invalid ADC calibration file for " + device->getName());
+			Onix1::showWarningMessageBoxAsync("Invalid File", "Invalid ADC calibration file for probe " + std::to_string(device->getProbeSerialNumber()));
 		}
 		else if (!gainFile.existsAsFile())
 		{
-			CoreServices::sendStatusMessage("Invalid Gain calibration file for " + device->getName());
+			Onix1::showWarningMessageBoxAsync("Invalid File", "Invalid gain calibration file for probe " + std::to_string(device->getProbeSerialNumber()));
 		}
 
 		return;
@@ -100,9 +96,7 @@ void BackgroundUpdaterWithProgressWindow::run()
 	{
 		result = false;
 
-		LOGE("Gain calibration serial number (", gainSN, ") does not match probe serial number (", device->getProbeSerialNumber(), ").");
-
-		CoreServices::sendStatusMessage("Serial Number Mismatch: Gain calibration (" + String(gainSN) + ") does not match " + String(device->getProbeSerialNumber()));
+		Onix1::showWarningMessageBoxAsync("Invalid Serial Number", "Gain calibration file serial number (" + std::to_string(gainSN) + ") does not match probe serial number (" + std::to_string(device->getProbeSerialNumber()) + ").");
 
 		return;
 	}
@@ -131,9 +125,7 @@ void BackgroundUpdaterWithProgressWindow::run()
 	{
 		result = false;
 
-		LOGE("ADC calibration serial number (", adcSN, ") does not match probe serial number (", device->getProbeSerialNumber(), ").");
-
-		CoreServices::sendStatusMessage("Serial Number Mismatch: ADC calibration (" + String(adcSN) + ") does not match " + String(device->getProbeSerialNumber()));
+		Onix1::showWarningMessageBoxAsync("Invalid Serial Number", "ADC calibration file serial number (" + std::to_string(adcSN) + ") does not match probe serial number (" + std::to_string(device->getProbeSerialNumber()) + ").");
 
 		return;
 	}

@@ -146,3 +146,16 @@ oni_frame_t* Onix1::readFrame() const
 
 	return frame;
 }
+
+void Onix1::showWarningMessageBoxAsync(std::string title, std::string error_msg)
+{
+	LOGE(error_msg);
+	MessageManager::callAsync([title, error_msg]
+		{
+			AlertWindow::showMessageBoxAsync(
+				MessageBoxIconType::WarningIcon,
+				title,
+				error_msg
+			);
+		});
+}

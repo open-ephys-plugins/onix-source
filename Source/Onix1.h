@@ -116,6 +116,9 @@ namespace OnixSourcePlugin
 		/** Gets a vector of device indices from a device_map_t object, optionally filtered by a specific hub */
 		static std::vector<int> getDeviceIndices(device_map_t deviceMap, int hubIndex = -1);
 
+		/** Displays an AlertWindow::showMessageBoxAsync window using the message thread, with a warning icon */
+		static void showWarningMessageBoxAsync(std::string, std::string);
+
 	private:
 
 		/** The ONI ctx object */
