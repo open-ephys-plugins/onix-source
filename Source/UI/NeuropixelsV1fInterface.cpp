@@ -56,7 +56,7 @@ NeuropixelsV1fInterface::NeuropixelsV1fInterface(std::shared_ptr<Neuropixels1f> 
 		deviceLabel->setBounds(625, 40, 430, 45);
 		addAndMakeVisible(deviceLabel.get());
 
-		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
 		deviceEnableButton->setFont(fontRegularButton);
 		deviceEnableButton->setRadius(3.0f);
 		deviceEnableButton->setBounds(deviceLabel->getX(), deviceLabel->getBottom() + 3, 100, 22);
@@ -701,11 +701,11 @@ void NeuropixelsV1fInterface::buttonClicked(Button* button)
 
 		if (device->isEnabled())
 		{
-			deviceEnableButton->setLabel("ENABLED");
+			deviceEnableButton->setLabel(enabledButtonText);
 		}
 		else
 		{
-			deviceEnableButton->setLabel("DISABLED");
+			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
 		CoreServices::updateSignalChain(editor);

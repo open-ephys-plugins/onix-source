@@ -31,7 +31,7 @@ PolledBno055Interface::PolledBno055Interface(std::shared_ptr<PolledBno055> d, On
 
 	if (device != nullptr)
 	{
-		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
 		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
 		deviceEnableButton->setRadius(3.0f);
 		deviceEnableButton->setBounds(50, 40, 100, 22);
@@ -69,11 +69,11 @@ void PolledBno055Interface::buttonClicked(Button* button)
 
 		if (device->isEnabled())
 		{
-			deviceEnableButton->setLabel("ENABLED");
+			deviceEnableButton->setLabel(enabledButtonText);
 		}
 		else
 		{
-			deviceEnableButton->setLabel("DISABLED");
+			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
 		CoreServices::updateSignalChain(editor);

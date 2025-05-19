@@ -31,7 +31,7 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 	{
 		FontOptions font = FontOptions("Fira Code", "Regular", 12.0f);
 
-		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
 		deviceEnableButton->setFont(font);
 		deviceEnableButton->setRadius(3.0f);
 		deviceEnableButton->setBounds(50, 40, 100, 22);
@@ -130,11 +130,11 @@ void AnalogIOInterface::buttonClicked(Button* button)
 
 		if (device->isEnabled())
 		{
-			deviceEnableButton->setLabel("ENABLED");
+			deviceEnableButton->setLabel(enabledButtonText);
 		}
 		else
 		{
-			deviceEnableButton->setLabel("DISABLED");
+			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
 		CoreServices::updateSignalChain(editor);

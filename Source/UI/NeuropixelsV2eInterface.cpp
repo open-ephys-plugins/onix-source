@@ -42,7 +42,7 @@ NeuropixelsV2eInterface::NeuropixelsV2eInterface(std::shared_ptr<Neuropixels2e> 
 	deviceComponent = std::make_unique<Component>();
 	deviceComponent->setBounds(0, 0, 600, 40);
 
-	deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+	deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
 	deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
 	deviceEnableButton->setRadius(3.0f);
 	deviceEnableButton->setBounds(10, 15, 100, 22);
@@ -96,11 +96,11 @@ void NeuropixelsV2eInterface::buttonClicked(Button* button)
 
 		if (device->isEnabled())
 		{
-			deviceEnableButton->setLabel("ENABLED");
+			deviceEnableButton->setLabel(enabledButtonText);
 		}
 		else
 		{
-			deviceEnableButton->setLabel("DISABLED");
+			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
 		CoreServices::updateSignalChain(editor);

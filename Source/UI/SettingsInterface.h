@@ -106,6 +106,9 @@ namespace OnixSourcePlugin
 
 		VisualizationMode mode = VisualizationMode::ENABLE_VIEW;
 
+		const std::string enabledButtonText = "DISABLE";
+		const std::string disabledButtonText = "ENABLE";
+
 	private:
 
 		/** Enables or disables all UI elements that should not be changed during acquisition */
