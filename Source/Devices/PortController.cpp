@@ -22,8 +22,10 @@
 
 #include "PortController.h"
 
+using namespace OnixSourcePlugin;
+
 PortController::PortController(PortName port_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(getPortName(port_), BREAKOUT_BOARD_NAME, OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
+	OnixDevice(OnixDevice::getPortName(port_), BREAKOUT_BOARD_NAME, OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
 	port(port_)
 {
 }
@@ -96,21 +98,6 @@ DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String heads
 	return DiscoveryParameters();
 }
 
-String PortController::getPortName(int offset)
-{
-	switch (offset)
-	{
-	case 0:
-		return "";
-	case HubAddressPortA:
-		return "Port A";
-	case HubAddressPortB:
-		return "Port B";
-	default:
-		return "";
-	}
-}
-
 bool PortController::configureVoltage(double voltage)
 {
 	if (voltage == defaultVoltage)
@@ -179,38 +166,4 @@ bool PortController::checkLinkState() const
 	if (rc != ONI_ESUCCESS) { return false; }
 	else if ((linkState & LINKSTATE_SL) == 0) { LOGD("Unable to acquire communication lock."); return false; }
 	else return true;
-}
-
-PortName PortController::getPortFromIndex(oni_dev_idx_t index)
-{
-	return index & (1 << 8) ? PortName::PortA : PortName::PortB;
-}
-
-int PortController::getOffsetFromIndex(oni_dev_idx_t index)
-{
-	return index & 0b1100000000;
-}
-
-Array<int> PortController::getUniqueOffsetsFromIndices(std::vector<int> indices)
-{
-	Array<int> offsets;
-
-	for (auto index : indices)
-	{
-		offsets.addIfNotAlreadyThere(getOffsetFromIndex(index));
-	}
-
-	return offsets;
-}
-
-Array<PortName> PortController::getUniquePortsFromIndices(std::vector<int> indices)
-{
-	Array<PortName> ports;
-
-	for (auto index : indices)
-	{
-		ports.addIfNotAlreadyThere(PortController::getPortFromIndex(index));
-	}
-
-	return ports;
 }

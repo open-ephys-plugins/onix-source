@@ -22,6 +22,8 @@
 
 #include "PolledBno055Interface.h"
 
+using namespace OnixSourcePlugin;
+
 PolledBno055Interface::PolledBno055Interface(std::shared_ptr<PolledBno055> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {
@@ -29,7 +31,7 @@ PolledBno055Interface::PolledBno055Interface(std::shared_ptr<PolledBno055> d, On
 
 	if (device != nullptr)
 	{
-		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
 		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
 		deviceEnableButton->setRadius(3.0f);
 		deviceEnableButton->setBounds(50, 40, 100, 22);
@@ -51,17 +53,27 @@ void PolledBno055Interface::buttonClicked(Button* button)
 
 		if (canvas->foundInputSource())
 		{
-			device->configureDevice();
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				LOGE(e.what());
+				button->setToggleState(!button->getToggleState(), dontSendNotification);
+				return;
+			}
+
 			canvas->resetContext();
 		}
 
 		if (device->isEnabled())
 		{
-			deviceEnableButton->setLabel("ENABLED");
+			deviceEnableButton->setLabel(enabledButtonText);
 		}
 		else
 		{
-			deviceEnableButton->setLabel("DISABLED");
+			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
 		CoreServices::updateSignalChain(editor);
@@ -107,7 +119,7 @@ void PolledBno055Interface::loadParameters(XmlElement* xml)
 	{
 		if (node->hasTagName("POLLEDBNO055"))
 		{
-			if (node->getStringAttribute("name") == device->getName() &&
+			if (node->getStringAttribute("name").toStdString() == device->getName() &&
 				node->getIntAttribute("idx") == device->getDeviceIdx())
 			{
 				xmlNode = node;

@@ -21,6 +21,9 @@
 */
 
 #include "Onix1.h"
+#include "OnixDevice.h"
+
+using namespace OnixSourcePlugin;
 
 Onix1::Onix1(int hostIndex)
 {
@@ -57,7 +60,6 @@ int Onix1::updateDeviceTable()
 	if (numDevices == 0 || rc != ONI_ESUCCESS) return rc;
 
 	size_t devicesSize = sizeof(oni_device_t) * numDevices;
-	deviceTable.reserve(devicesSize);
 
 	std::vector<oni_device_t> devices;
 	devices.resize(numDevices);
@@ -72,6 +74,43 @@ int Onix1::updateDeviceTable()
 	}
 
 	return rc;
+}
+
+std::map<int, int> Onix1::getHubIds()
+{
+	std::map<int, int> hubIds;
+
+	if (deviceTable.size() == 0)
+		return hubIds;
+
+	auto deviceIndices = getDeviceIndices(deviceTable);
+
+	auto offsets = OnixDevice::getUniqueOffsetsFromIndices(deviceIndices, false);
+
+	for (int i = 0; i < offsets.size(); i++)
+	{
+		oni_reg_val_t hubId = 0;
+		int rc = oni_read_reg(ctx_, offsets[i] + ONIX_HUB_DEV_IDX, (uint32_t)ONIX_HUB_HARDWAREID, &hubId);
+		if (rc != ONI_ESUCCESS)
+			LOGE("Unable to read the hub device index for the hub at index ", offsets[i]);
+
+		hubIds.insert({ offsets[i], hubId });
+	}
+
+	return hubIds;
+}
+
+std::vector<int> Onix1::getDeviceIndices(device_map_t deviceMap, int hubIndex)
+{
+	std::vector<int> deviceIndices;
+
+	for (const auto& [idx, dev] : deviceMap)
+	{
+		if (dev.id != ONIX_NULL && (hubIndex == -1 || OnixDevice::getOffsetFromIndex(dev.idx) == hubIndex))
+			deviceIndices.emplace_back(idx);
+	}
+
+	return deviceIndices;
 }
 
 int Onix1::get_opt_(int option, void* value, size_t* size) const
@@ -106,4 +145,17 @@ oni_frame_t* Onix1::readFrame() const
 	}
 
 	return frame;
+}
+
+void Onix1::showWarningMessageBoxAsync(std::string title, std::string error_msg)
+{
+	LOGE(error_msg);
+	MessageManager::callAsync([title, error_msg]
+		{
+			AlertWindow::showMessageBoxAsync(
+				MessageBoxIconType::WarningIcon,
+				title,
+				error_msg
+			);
+		});
 }

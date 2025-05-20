@@ -20,9 +20,14 @@
 
 */
 
-#include "NeuropixV1Interface.h"
+#include "NeuropixelsV1fInterface.h"
 
-NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
+#include "../Formats/ProbeInterface.h"
+
+using namespace OnixSourcePlugin;
+using namespace ColourScheme;
+
+NeuropixelsV1fInterface::NeuropixelsV1fInterface(std::shared_ptr<Neuropixels1f> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c),
 	neuropix_info("INFO")
 {
@@ -30,7 +35,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 
 	if (device != nullptr)
 	{
-		auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+		auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 
 		type = SettingsInterface::Type::NEUROPIXELS1F_SETTINGS_INTERFACE;
 
@@ -51,7 +56,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		deviceLabel->setBounds(625, 40, 430, 45);
 		addAndMakeVisible(deviceLabel.get());
 
-		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
 		deviceEnableButton->setFont(fontRegularButton);
 		deviceEnableButton->setRadius(3.0f);
 		deviceEnableButton->setBounds(deviceLabel->getX(), deviceLabel->getBottom() + 3, 100, 22);
@@ -179,7 +184,7 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 		electrodeConfigurationComboBox->setItemEnabled(1, false);
 		electrodeConfigurationComboBox->addSeparator();
 
-		auto settings = std::static_pointer_cast<Neuropixels_1>(device)->settings[0].get();
+		auto settings = std::static_pointer_cast<Neuropixels1f>(device)->settings[0].get();
 
 		for (int i = 0; i < settings->availableElectrodeConfigurations.size(); i++)
 		{
@@ -529,11 +534,11 @@ NeuropixV1Interface::NeuropixV1Interface(std::shared_ptr<Neuropixels_1> d, OnixS
 	updateInfoString();
 }
 
-void NeuropixV1Interface::updateSettings()
+void NeuropixelsV1fInterface::updateSettings()
 {
 	if (device == nullptr) return;
 
-	auto npx1 = std::static_pointer_cast<Neuropixels_1>(device);
+	auto npx1 = std::static_pointer_cast<Neuropixels1f>(device);
 
 	applyProbeSettings(npx1->settings[0].get());
 	checkForExistingChannelPreset();
@@ -544,11 +549,11 @@ void NeuropixV1Interface::updateSettings()
 	adcCalibrationFile->setText(npx1->adcCalibrationFilePath == "None" ? "" : npx1->adcCalibrationFilePath, dontSendNotification);
 }
 
-void NeuropixV1Interface::updateInfoString()
+void NeuropixelsV1fInterface::updateInfoString()
 {
 	String deviceString, infoString;
 
-	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+	auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 
 	if (device != nullptr)
 	{
@@ -565,13 +570,13 @@ void NeuropixV1Interface::updateInfoString()
 	infoLabel->setText(infoString, dontSendNotification);
 }
 
-void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
+void NeuropixelsV1fInterface::comboBoxChanged(ComboBox* comboBox)
 {
-	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+	auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 
 	if (!editor->acquisitionIsActive)
 	{
-		auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+		auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 		auto settings = npx->settings[0].get();
 
 		if (comboBox == electrodeConfigurationComboBox.get())
@@ -642,9 +647,9 @@ void NeuropixV1Interface::comboBoxChanged(ComboBox* comboBox)
 	}
 }
 
-void NeuropixV1Interface::checkForExistingChannelPreset()
+void NeuropixelsV1fInterface::checkForExistingChannelPreset()
 {
-	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+	auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 	auto settings = npx->settings[0].get();
 
 	settings->electrodeConfigurationIndex = -1;
@@ -652,8 +657,15 @@ void NeuropixV1Interface::checkForExistingChannelPreset()
 	for (int i = 0; i < settings->availableElectrodeConfigurations.size(); i++)
 	{
 		auto selection = npx->selectElectrodeConfiguration(settings->availableElectrodeConfigurations[i]);
+		std::vector<int> channelMap;
+		channelMap.assign(NeuropixelsV2eValues::numberOfChannels, 0);
 
-		if (std::equal(selection.cbegin(), selection.cend(), settings->selectedElectrode.cbegin(), settings->selectedElectrode.cend()))
+		for (int j = 0; j < selection.size(); j++)
+		{
+			channelMap[settings->electrodeMetadata[selection[j]].channel] = selection[j];
+		}
+
+		if (std::equal(channelMap.cbegin(), channelMap.cend(), settings->selectedElectrode.cbegin(), settings->selectedElectrode.cend()))
 		{
 			settings->electrodeConfigurationIndex = i;
 			break;
@@ -663,9 +675,9 @@ void NeuropixV1Interface::checkForExistingChannelPreset()
 	electrodeConfigurationComboBox->setSelectedId(settings->electrodeConfigurationIndex + 2, dontSendNotification);
 }
 
-void NeuropixV1Interface::buttonClicked(Button* button)
+void NeuropixelsV1fInterface::buttonClicked(Button* button)
 {
-	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+	auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 
 	if (button == deviceEnableButton.get())
 	{
@@ -673,17 +685,27 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (canvas->foundInputSource())
 		{
-			device->configureDevice();
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				LOGE(e.what());
+				button->setToggleState(!button->getToggleState(), dontSendNotification);
+				return;
+			}
+
 			canvas->resetContext();
 		}
 
 		if (device->isEnabled())
 		{
-			deviceEnableButton->setLabel("ENABLED");
+			deviceEnableButton->setLabel(enabledButtonText);
 		}
 		else
 		{
-			deviceEnableButton->setLabel("DISABLED");
+			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
 		CoreServices::updateSignalChain(editor);
@@ -743,14 +765,13 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (fileChooser.browseForFileToOpen())
 		{
-			auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+			auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 
-			//bool success = ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings.get());
-
-			//if (success)
-			//{
-			//	applyProbeSettings(npx->settings.get());
-			//}
+			if (ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings[0].get()))
+			{
+				applyProbeSettings(npx->settings[0].get());
+				checkForExistingChannelPreset();
+			}
 		}
 	}
 	else if (button == saveJsonButton.get())
@@ -759,14 +780,12 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 
 		if (fileChooser.browseForFileToSave(true))
 		{
-			auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+			auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 
-			/*bool success = ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings.get());
-
-			if (!success)
+			if (!ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings[0].get()))
 				CoreServices::sendStatusMessage("Failed to write probe channel map.");
 			else
-				CoreServices::sendStatusMessage("Successfully wrote probe channel map.");*/
+				CoreServices::sendStatusMessage("Successfully wrote probe channel map.");
 		}
 	}
 	else if (button == adcCalibrationFileButton.get())
@@ -780,7 +799,7 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 			adcCalibrationFile->setText("");
 		}
 
-		std::static_pointer_cast<Neuropixels_1>(device)->adcCalibrationFilePath = adcCalibrationFile->getText();
+		std::static_pointer_cast<Neuropixels1f>(device)->adcCalibrationFilePath = adcCalibrationFile->getText();
 	}
 	else if (button == gainCalibrationFileButton.get())
 	{
@@ -793,15 +812,15 @@ void NeuropixV1Interface::buttonClicked(Button* button)
 			gainCalibrationFile->setText("");
 		}
 
-		std::static_pointer_cast<Neuropixels_1>(device)->gainCalibrationFilePath = gainCalibrationFile->getText();
+		std::static_pointer_cast<Neuropixels1f>(device)->gainCalibrationFilePath = gainCalibrationFile->getText();
 	}
 }
 
-std::vector<int> NeuropixV1Interface::getSelectedElectrodes() const
+std::vector<int> NeuropixelsV1fInterface::getSelectedElectrodes() const
 {
 	std::vector<int> electrodeIndices;
 
-	auto settings = std::static_pointer_cast<Neuropixels_1>(device)->settings[0].get();
+	auto settings = std::static_pointer_cast<Neuropixels1f>(device)->settings[0].get();
 
 	for (int i = 0; i < settings->electrodeMetadata.size(); i++)
 	{
@@ -814,7 +833,7 @@ std::vector<int> NeuropixV1Interface::getSelectedElectrodes() const
 	return electrodeIndices;
 }
 
-int NeuropixV1Interface::getIndexOfComboBoxItem(ComboBox* cb, String item)
+int NeuropixelsV1fInterface::getIndexOfComboBoxItem(ComboBox* cb, String item)
 {
 	for (int i = 0; i < cb->getNumItems(); i++)
 	{
@@ -825,14 +844,14 @@ int NeuropixV1Interface::getIndexOfComboBoxItem(ComboBox* cb, String item)
 	return -1;
 }
 
-void NeuropixV1Interface::selectElectrodes(std::vector<int> electrodes)
+void NeuropixelsV1fInterface::selectElectrodes(std::vector<int> electrodes)
 {
-	std::static_pointer_cast<Neuropixels_1>(device)->settings[0]->selectElectrodes(electrodes);
+	std::static_pointer_cast<Neuropixels1f>(device)->settings[0]->selectElectrodes(electrodes);
 
 	repaint();
 }
 
-void NeuropixV1Interface::setInterfaceEnabledState(bool enabledState)
+void NeuropixelsV1fInterface::setInterfaceEnabledState(bool enabledState)
 {
 	if (deviceEnableButton != nullptr)
 		deviceEnableButton->setEnabled(enabledState);
@@ -871,7 +890,7 @@ void NeuropixV1Interface::setInterfaceEnabledState(bool enabledState)
 		gainCalibrationFileButton->setEnabled(enabledState);
 }
 
-void NeuropixV1Interface::startAcquisition()
+void NeuropixelsV1fInterface::startAcquisition()
 {
 	acquisitionIsActive = true;
 
@@ -881,14 +900,14 @@ void NeuropixV1Interface::startAcquisition()
 		probeBrowser->startTimer(100);
 }
 
-void NeuropixV1Interface::stopAcquisition()
+void NeuropixelsV1fInterface::stopAcquisition()
 {
 	acquisitionIsActive = false;
 
 	setInterfaceEnabledState(true);
 }
 
-void NeuropixV1Interface::drawLegend()
+void NeuropixelsV1fInterface::drawLegend()
 {
 	enableViewComponent->setVisible(false);
 	apGainViewComponent->setVisible(false);
@@ -918,14 +937,13 @@ void NeuropixV1Interface::drawLegend()
 	}
 }
 
-bool NeuropixV1Interface::applyProbeSettings(ProbeSettings<Neuropixels_1::numberOfChannels, Neuropixels_1::numberOfElectrodes>* p)
+bool NeuropixelsV1fInterface::applyProbeSettings(ProbeSettings<Neuropixels1f::numberOfChannels, Neuropixels1f::numberOfElectrodes>* p)
 {
-	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+	auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 
 	if (electrodeConfigurationComboBox != 0)
 		electrodeConfigurationComboBox->setSelectedId(p->electrodeConfigurationIndex + 2, dontSendNotification);
 
-	// update display
 	if (apGainComboBox != 0)
 		apGainComboBox->setSelectedId(p->apGainIndex + 1, dontSendNotification);
 
@@ -943,7 +961,7 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings<Neuropixels_1::number
 	if (referenceComboBox != 0)
 		referenceComboBox->setSelectedId(p->referenceIndex + 1, dontSendNotification);
 
-	auto settings = std::static_pointer_cast<Neuropixels_1>(device)->settings[0].get();
+	auto settings = std::static_pointer_cast<Neuropixels1f>(device)->settings[0].get();
 
 	for (int i = 0; i < settings->electrodeMetadata.size(); i++)
 	{
@@ -951,7 +969,6 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings<Neuropixels_1::number
 			settings->electrodeMetadata[i].status = ElectrodeStatus::DISCONNECTED;
 	}
 
-	// update selection state
 	for (auto electrode : p->selectedElectrode)
 	{
 		settings->electrodeMetadata[electrode].status = ElectrodeStatus::CONNECTED;
@@ -968,13 +985,13 @@ bool NeuropixV1Interface::applyProbeSettings(ProbeSettings<Neuropixels_1::number
 	return true;
 }
 
-void NeuropixV1Interface::saveParameters(XmlElement* xml)
+void NeuropixelsV1fInterface::saveParameters(XmlElement* xml)
 {
 	if (device == nullptr) return;
 
 	LOGD("Saving Neuropixels 1.0f settings.");
 
-	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+	auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 	auto settings = npx->settings[0].get();
 
 	XmlElement* xmlNode = xml->createNewChildElement("NEUROPIXELSV1F");
@@ -1008,13 +1025,13 @@ void NeuropixV1Interface::saveParameters(XmlElement* xml)
 	}
 }
 
-void NeuropixV1Interface::loadParameters(XmlElement* xml)
+void NeuropixelsV1fInterface::loadParameters(XmlElement* xml)
 {
 	if (device == nullptr) return;
 
 	LOGD("Loading Neuropixels 1.0f settings.");
 
-	auto npx = std::static_pointer_cast<Neuropixels_1>(device);
+	auto npx = std::static_pointer_cast<Neuropixels1f>(device);
 	auto settings = npx->settings[0].get();
 
 	XmlElement* xmlNode = nullptr;
@@ -1023,7 +1040,7 @@ void NeuropixV1Interface::loadParameters(XmlElement* xml)
 	{
 		if (node->hasTagName("NEUROPIXELSV1F"))
 		{
-			if (node->getStringAttribute("name") == npx->getName() &&
+			if (node->getStringAttribute("name").toStdString() == npx->getName() &&
 				node->getIntAttribute("idx") == npx->getDeviceIdx())
 			{
 				xmlNode = node;

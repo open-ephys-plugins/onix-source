@@ -26,29 +26,27 @@
 
 #include "ColourScheme.h"
 #include "SettingsInterface.h"
-#include "NeuropixelsV2eProbeBrowser.h"
-#include "CustomTabComponent.h"
+#include "NeuropixelsV1fProbeBrowser.h"
+
+#include "../OnixSourceEditor.h"
+#include "../OnixSourceCanvas.h"
 
 namespace OnixSourcePlugin
 {
-	class OnixSourceCanvas;
-	class OnixSourceEditor;
-
 	/**
 
 		Extended graphical interface for updating probe settings
 
 	*/
-	class NeuropixelsV2eProbeInterface : public SettingsInterface,
+	class NeuropixelsV1fInterface : public SettingsInterface,
 		public Button::Listener,
 		public ComboBox::Listener,
 		public TextEditor::Listener
 	{
 	public:
-		friend class ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>;
-		friend class NeuropixelsV2eInterface;
+		friend class ProbeBrowser<Neuropixels1f::numberOfChannels, Neuropixels1f::numberOfElectrodes>;
 
-		NeuropixelsV2eProbeInterface(std::shared_ptr<Neuropixels2e> d, int ind, OnixSourceEditor* e, OnixSourceCanvas* c);
+		NeuropixelsV1fInterface(std::shared_ptr<Neuropixels1f> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 		void buttonClicked(Button*) override;
 		void comboBoxChanged(ComboBox*) override;
@@ -57,7 +55,8 @@ namespace OnixSourcePlugin
 
 		void stopAcquisition() override;
 
-		bool applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe = true);
+		/** Settings-related functions*/
+		bool applyProbeSettings(ProbeSettings<Neuropixels1f::numberOfChannels, Neuropixels1f::numberOfElectrodes>* p);
 
 		void saveParameters(XmlElement* xml) override;
 
@@ -67,66 +66,92 @@ namespace OnixSourcePlugin
 
 		void updateSettings() override;
 
-		void setReference(int index);
 		void selectElectrodes(std::vector<int> electrodes);
 
 		String getReferenceText() override { return referenceComboBox->getText(); }
 
 	private:
+
+		void setInterfaceEnabledState(bool newState) override;
+
 		XmlElement neuropix_info;
 
 		bool acquisitionIsActive = false;
 
-		const int probeIndex;
-
 		std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
+		std::unique_ptr<ComboBox> lfpGainComboBox;
+		std::unique_ptr<ComboBox> apGainComboBox;
 		std::unique_ptr<ComboBox> referenceComboBox;
+		std::unique_ptr<ComboBox> filterComboBox;
+		std::unique_ptr<ComboBox> activityViewComboBox;
 
 		std::unique_ptr<Label> deviceLabel;
 		std::unique_ptr<Label> infoLabel;
+		std::unique_ptr<Label> lfpGainLabel;
+		std::unique_ptr<Label> apGainLabel;
 		std::unique_ptr<Label> electrodesLabel;
 		std::unique_ptr<Label> electrodePresetLabel;
 		std::unique_ptr<Label> referenceLabel;
+		std::unique_ptr<Label> filterLabel;
+		std::unique_ptr<Label> activityViewLabel;
 
-		std::unique_ptr<Label> gainCorrectionFileLabel;
-		std::unique_ptr<UtilityButton> gainCorrectionFileButton;
-		std::unique_ptr<FileChooser> gainCorrectionFileChooser;
-		std::unique_ptr<TextEditor> gainCorrectionFile;
+		std::unique_ptr<Label> adcCalibrationFileLabel;
+		std::unique_ptr<Label> gainCalibrationFileLabel;
 
-		std::unique_ptr<UtilityButton> enableButton;
+		std::unique_ptr<UtilityButton> deviceEnableButton;
+		std::unique_ptr<UtilityButton> selectElectrodeButton;
 
 		std::unique_ptr<UtilityButton> enableViewButton;
+		std::unique_ptr<UtilityButton> lfpGainViewButton;
+		std::unique_ptr<UtilityButton> apGainViewButton;
 		std::unique_ptr<UtilityButton> referenceViewButton;
+		std::unique_ptr<UtilityButton> activityViewButton;
 
 		std::unique_ptr<DrawableRectangle> probeInterfaceRectangle;
 		std::unique_ptr<Label> probeInterfaceLabel;
 		std::unique_ptr<UtilityButton> loadJsonButton;
 		std::unique_ptr<UtilityButton> saveJsonButton;
 
-		std::unique_ptr<ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>> probeBrowser;
+		std::unique_ptr<UtilityButton> adcCalibrationFileButton;
+		std::unique_ptr<UtilityButton> gainCalibrationFileButton;
+
+		std::unique_ptr<TextEditor> adcCalibrationFile;
+		std::unique_ptr<TextEditor> gainCalibrationFile;
+
+		std::unique_ptr<FileChooser> adcCalibrationFileChooser;
+		std::unique_ptr<FileChooser> gainCalibrationFileChooser;
+
+		std::unique_ptr<NeuropixelsV1fProbeBrowser> probeBrowser;
+
+		std::unique_ptr<ToggleButton> offsetCorrectionCheckbox;
 
 		std::unique_ptr<Component> enableViewComponent;
+		std::unique_ptr<Component> apGainViewComponent;
+		std::unique_ptr<Component> lfpGainViewComponent;
 		std::unique_ptr<Component> referenceViewComponent;
 		std::unique_ptr<Component> activityViewComponent;
 
 		std::vector<std::unique_ptr<Label>> enableViewLabels;
+		std::vector<std::unique_ptr<Label>> apGainViewLabels;
+		std::vector<std::unique_ptr<Label>> lfpGainViewLabels;
 		std::vector<std::unique_ptr<Label>> referenceViewLabels;
 		std::vector<std::unique_ptr<Label>> activityViewLabels;
 
 		std::vector<std::unique_ptr<DrawableRectangle>> enableViewRectangles;
+		std::vector<std::unique_ptr<DrawableRectangle>> apGainViewRectangles;
+		std::vector<std::unique_ptr<DrawableRectangle>> lfpGainViewRectangles;
 		std::vector<std::unique_ptr<DrawableRectangle>> referenceViewRectangles;
 		std::vector<std::unique_ptr<DrawableRectangle>> activityViewRectangles;
 
 		void drawLegend();
 
-		std::vector<int> getSelectedElectrodes();
+		std::vector<int> getSelectedElectrodes() const;
 
-		void setInterfaceEnabledState(bool enabledState) override;
-
+		/** Checks if the current channel map matches an existing channel preset, and updates the combo box if it does */
 		void checkForExistingChannelPreset();
 
 		int getIndexOfComboBoxItem(ComboBox* cb, String item);
 
-		JUCE_LEAK_DETECTOR(NeuropixelsV2eProbeInterface);
+		JUCE_LEAK_DETECTOR(NeuropixelsV1fInterface);
 	};
 }

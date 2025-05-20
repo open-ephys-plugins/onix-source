@@ -29,48 +29,51 @@
 
 #include "../Devices/OutputClock.h"
 
-class OutputClockInterface : public SettingsInterface,
-	public Label::Listener,
-	public Button::Listener
+namespace OnixSourcePlugin
 {
-public:
+	class OutputClockInterface : public SettingsInterface,
+		public Label::Listener,
+		public Button::Listener
+	{
+	public:
 
-	OutputClockInterface(std::shared_ptr<OutputClock> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+		OutputClockInterface(std::shared_ptr<OutputClock> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
-	void saveParameters(XmlElement* xml) override;
+		void saveParameters(XmlElement* xml) override;
 
-	void loadParameters(XmlElement* xml) override;
+		void loadParameters(XmlElement* xml) override;
 
-	void updateInfoString() override {};
+		void updateInfoString() override {};
 
-	void updateSettings() override;
+		void updateSettings() override;
 
-	void buttonClicked(Button*) override;
-	void labelTextChanged(Label* l) override;
+		void buttonClicked(Button*) override;
+		void labelTextChanged(Label* l) override;
 
-private:
+	private:
 
-	void setInterfaceEnabledState(bool newState) override;
+		void setInterfaceEnabledState(bool newState) override;
 
-	std::unique_ptr<Label> frequencyHzLabel;
-	std::unique_ptr<Label> frequencyHzValue;
+		std::unique_ptr<Label> frequencyHzLabel;
+		std::unique_ptr<Label> frequencyHzValue;
 
-	std::unique_ptr<Label> dutyCycleLabel;
-	std::unique_ptr<Label> dutyCycleValue;
+		std::unique_ptr<Label> dutyCycleLabel;
+		std::unique_ptr<Label> dutyCycleValue;
 
-	std::unique_ptr<Label> delayLabel;
-	std::unique_ptr<Label> delayValue;
+		std::unique_ptr<Label> delayLabel;
+		std::unique_ptr<Label> delayValue;
 
-	std::unique_ptr<ToggleButton> gateRunButton;
+		std::unique_ptr<ToggleButton> gateRunButton;
 
-	const float MinFrequencyHz = 0.1f;
-	const float MaxFrequencyHz = 10e6;
+		const float MinFrequencyHz = 0.1f;
+		const float MaxFrequencyHz = 10e6;
 
-	const int MinDutyCyclePercent = 10;
-	const int MaxDutyCyclePercent = 90;
+		const int MinDutyCyclePercent = 10;
+		const int MaxDutyCyclePercent = 90;
 
-	const int MinDelaySeconds = 0;
-	const int MaxDelaySeconds = 3600;
+		const int MinDelaySeconds = 0;
+		const int MaxDelaySeconds = 3600;
 
-	JUCE_LEAK_DETECTOR(OutputClockInterface);
-};
+		JUCE_LEAK_DETECTOR(OutputClockInterface);
+	};
+}

@@ -24,6 +24,8 @@
 #include "DS90UB9x.h"
 #include <iostream>
 
+using namespace OnixSourcePlugin;
+
 HeadStageEEPROM::HeadStageEEPROM(const oni_dev_idx_t dev_id, std::shared_ptr<Onix1> ctx)
 	: I2CRegisterContext(HeadStageEEPROM::EEPROM_ADDRESS, dev_id, ctx)
 {

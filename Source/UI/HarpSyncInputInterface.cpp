@@ -22,12 +22,14 @@
 
 #include "HarpSyncInputInterface.h"
 
+using namespace OnixSourcePlugin;
+
 HarpSyncInputInterface::HarpSyncInputInterface(std::shared_ptr<HarpSyncInput> d, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c)
 {
 	if (device != nullptr)
 	{
-		deviceEnableButton = std::make_unique<UtilityButton>("ENABLED");
+		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
 		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
 		deviceEnableButton->setRadius(3.0f);
 		deviceEnableButton->setBounds(50, 40, 100, 22);
@@ -60,15 +62,30 @@ void HarpSyncInputInterface::buttonClicked(Button* button)
 	if (button == deviceEnableButton.get())
 	{
 		device->setEnabled(deviceEnableButton->getToggleState());
-		device->configureDevice();
+
+		if (canvas->foundInputSource())
+		{
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				LOGE(e.what());
+				button->setToggleState(!button->getToggleState(), dontSendNotification);
+				return;
+			}
+
+			canvas->resetContext();
+		}
 
 		if (device->isEnabled())
 		{
-			deviceEnableButton->setLabel("ENABLED");
+			deviceEnableButton->setLabel(enabledButtonText);
 		}
 		else
 		{
-			deviceEnableButton->setLabel("DISABLED");
+			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
 		CoreServices::updateSignalChain(editor);

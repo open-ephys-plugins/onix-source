@@ -22,15 +22,17 @@
 
 #include "PolledBno055.h"
 
-PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
-	: OnixDevice(name, headstageName, OnixDeviceType::POLLEDBNO, deviceIdx_, ctx),
+using namespace OnixSourcePlugin;
+
+PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
+	: OnixDevice(name, hubName, PolledBno055::getDeviceType(), deviceIdx_, ctx, true),
 	I2CRegisterContext(Bno055Address, deviceIdx_, ctx)
 {
 	auto streamIdentifier = getStreamIdentifier();
 
-	String port = PortController::getPortName(PortController::getPortFromIndex(deviceIdx));
+	std::string port = getPortNameFromIndex(deviceIdx);
 	StreamInfo eulerAngleStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Euler" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Euler" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",
 		streamIdentifier,
 		3,
@@ -46,7 +48,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 	streamInfos.add(eulerAngleStream);
 	
 	StreamInfo quaternionStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Quaternion" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Quaternion" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Quaternion",
 		streamIdentifier,
 		4,
@@ -62,7 +64,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 	streamInfos.add(quaternionStream);
 
 	StreamInfo accelerationStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Acceleration" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Acceleration" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Acceleration",
 		streamIdentifier,
 		3,
@@ -78,7 +80,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 	streamInfos.add(accelerationStream);
 
 	StreamInfo gravityStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Gravity" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Gravity" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Gravity",
 		streamIdentifier,
 		3,
@@ -94,7 +96,7 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 	streamInfos.add(gravityStream);
 
 	StreamInfo temperatureStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Temperature" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Temperature" }),
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Temperature",
 		streamIdentifier,
 		1,
@@ -109,17 +111,18 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 	streamInfos.add(temperatureStream);
 
 	StreamInfo calibrationStatusStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHeadstageName(), getName(), "Calibration" }),
-		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration",
+		OnixDevice::createStreamName({ port, getHubName(), getName(), "Calibration" }),
+		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration status",
 		streamIdentifier,
-		1,
+		4,
 		sampleRate,
 		"Cal",
 		ContinuousChannel::Type::AUX,
 		1.0f,
 		"",
-		{ "" },
-		"calibration"
+		{ "Mag", "Acc", "Gyr", "Sys" },
+		"calibration",
+		{ "magnetometer", "acceleration", "gyroscope", "system" }
 	);
 	streamInfos.add(calibrationStatusStream);
 
@@ -127,16 +130,24 @@ PolledBno055::PolledBno055(String name, String headstageName, const oni_dev_idx_
 		eventCodes[i] = 0;
 }
 
+OnixDeviceType PolledBno055::getDeviceType()
+{
+	return OnixDeviceType::POLLEDBNO;
+}
+
 int PolledBno055::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) 
+		throw error_str("Device context is not initialized properly for " + getName());
 
 	deserializer = std::make_unique<I2CRegisterContext>(DS90UB9x::DES_ADDR, deviceIdx, deviceContext);
 	uint32_t alias = Bno055Address << 1;
 	int rc = deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID4, alias);
-	if (rc != ONI_ESUCCESS) return -2;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Error while writing bytes for " + getName());
 	rc = deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias4, alias);
-	if (rc != ONI_ESUCCESS) return -2;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Error while writing bytes for " + getName());
 
 	return ONI_ESUCCESS;
 }
@@ -211,65 +222,47 @@ int16_t PolledBno055::readInt16(uint32_t startAddress)
 
 void PolledBno055::hiResTimerCallback()
 {
-	int offset = 0;
+	size_t offset = 0;
 
 	// Euler
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress) * eulerAngleScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 2) * eulerAngleScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 4) * eulerAngleScale;
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress) * eulerAngleScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 2) * eulerAngleScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 4) * eulerAngleScale;
 
 	// Quaternion
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 6) * quaternionScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 8) * quaternionScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 10) * quaternionScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 12) * quaternionScale;
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 6) * quaternionScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 8) * quaternionScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 10) * quaternionScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 12) * quaternionScale;
 
 	// Acceleration
 
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 14) * accelerationScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 16) * accelerationScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 18) * accelerationScale;
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 14) * accelerationScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 16) * accelerationScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 18) * accelerationScale;
 
 	// Gravity
 
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 20) * accelerationScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 22) * accelerationScale;
-	offset++;
-
-	bnoSamples[offset * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 24) * accelerationScale;
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 20) * accelerationScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 22) * accelerationScale;
+	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 24) * accelerationScale;
 
 	// Temperature
 
 	oni_reg_val_t byte;
 	ReadByte(EulerHeadingLsbAddress + 26, &byte);
-	bnoSamples[offset * numFrames + currentFrame] = static_cast<uint8_t>(byte);
-	offset++;
+	bnoSamples[offset++ * numFrames + currentFrame] = static_cast<uint8_t>(byte);
 
 	// Calibration Status
 
 	ReadByte(EulerHeadingLsbAddress + 27, &byte);
-	bnoSamples[offset * numFrames + currentFrame] = byte;
-	offset++;
+	
+	constexpr uint8_t statusMask = 0b11;
+
+	for (int i = 0; i < 4; i++)
+	{
+		bnoSamples[currentFrame + (offset + i) * numFrames] = (byte & (statusMask << (2 * i))) >> (2 * i);
+	}
 
 	oni_reg_val_t timestampL = 0, timestampH = 0;
 	int rc = deviceContext->readRegister(deviceIdx, DS90UB9x::LASTI2CL, &timestampL);

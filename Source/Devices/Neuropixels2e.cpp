@@ -22,13 +22,14 @@
 
 #include "Neuropixels2e.h"
 
-Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(name, NEUROPIXELSV2E_HEADSTAGE_NAME, OnixDeviceType::NEUROPIXELSV2E, deviceIdx_, ctx_),
+using namespace OnixSourcePlugin;
+
+Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
+	OnixDevice(name, hubName, Neuropixels2e::getDeviceType(), deviceIdx_, ctx_, true),
 	I2CRegisterContext(ProbeI2CAddress, deviceIdx_, ctx_),
 	INeuropixel(NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
 {
-	probeSN[0] = 0;
-	probeSN[1] = 0;
+	probeSN.fill(0);
 
 	for (int i = 0; i < NeuropixelsV2eValues::numberOfSettings; i++)
 	{
@@ -42,7 +43,7 @@ Neuropixels2e::Neuropixels2e(String name, const oni_dev_idx_t deviceIdx_, std::s
 void Neuropixels2e::createDataStream(int n)
 {
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ PortController::getPortName(PortController::getPortFromIndex(deviceIdx)), getHeadstageName(), "Probe" + String(n) }),
+		OnixDevice::createStreamName({ getPortNameFromIndex(getDeviceIdx()), getHubName(), "Probe" + std::to_string(n) }),
 		"Neuropixels 2.0 data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
@@ -329,28 +330,36 @@ std::vector<int> Neuropixels2e::selectElectrodeConfiguration(String config)
 
 uint64_t Neuropixels2e::getProbeSerialNumber(int index)
 {
-	switch (index)
-	{
-	case 0:
-		return probeSN[0];
-	case 1:
-		return probeSN[1];
-	default:
-		return 0;
+	try {
+		return probeSN.at(index);
 	}
+	catch (const std::out_of_range& ex) // filter for out of range
+	{
+		LOGE("Invalid index given requesting probe serial number.");
+	}
+
+	return 0ull;
+}
+
+OnixDeviceType Neuropixels2e::getDeviceType()
+{
+	return OnixDeviceType::NEUROPIXELSV2E;
 }
 
 int Neuropixels2e::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -1;
+	if (deviceContext == nullptr || !deviceContext->isInitialized())
+		throw error_str("Device context is not initialized properly for " + getName());
 
 	int rc = deviceContext->writeRegister(deviceIdx, DS90UB9x::ENABLE, isEnabled() ? 1 : 0);
-	if (rc != ONI_ESUCCESS) return rc;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Unable to enable " + getName());
 
 	configureSerDes();
 	setProbeSupply(true);
 	rc = serializer->set933I2cRate(400e3);
-	if (rc != ONI_ESUCCESS) return rc;
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Unable to set I2C rate for " + getName());
 	probeSN[0] = getProbeSN(ProbeASelected);
 	probeSN[1] = getProbeSN(ProbeBSelected);
 	setProbeSupply(false);
@@ -360,7 +369,7 @@ int Neuropixels2e::configureDevice()
 	if (probeSN[0] == 0 && probeSN[1] == 0)
 	{
 		m_numProbes = 0;
-		return -2;
+		throw error_str("No probes were found connected at address " + std::to_string(getDeviceIdx()));
 	}
 	else if (probeSN[0] != 0 && probeSN[1] != 0)
 	{
@@ -378,7 +387,7 @@ int Neuropixels2e::configureDevice()
 		createDataStream(i);
 	}
 
-	return 0;
+	return ONI_ESUCCESS;
 }
 
 bool Neuropixels2e::updateSettings()
@@ -389,7 +398,7 @@ bool Neuropixels2e::updateSettings()
 		{
 			if (gainCorrectionFilePath[i] == "None" || gainCorrectionFilePath[i] == "")
 			{
-				LOGE("Missing gain correction file for probe " + String(probeSN[i]));
+				Onix1::showWarningMessageBoxAsync("Missing File", "Missing gain correction file for probe " + std::to_string(probeSN[i]));
 				return false;
 			}
 
@@ -397,7 +406,7 @@ bool Neuropixels2e::updateSettings()
 
 			if (!gainCorrectionFile.existsAsFile())
 			{
-				LOGE("The gain correction file \"", gainCorrectionFilePath[i], "\" for probe ", String(probeSN[i]), " does not exist.");
+				Onix1::showWarningMessageBoxAsync("Missing File", "The gain correction file \"" + gainCorrectionFilePath[i].toStdString() + "\" for probe " + std::to_string(probeSN[i]) + " does not exist.");
 				return false;
 			}
 
@@ -410,13 +419,13 @@ bool Neuropixels2e::updateSettings()
 
 			if (gainSN != probeSN[i])
 			{
-				LOGE("Invalid serial number found in the calibration file. Should match the probe serial number (", String(probeSN[i]), ")");
+				Onix1::showWarningMessageBoxAsync("Invalid Serial Number", "Gain correction serial number (" + std::to_string(gainSN) + ") does not match probe serial number (" + std::to_string(probeSN[i]) + ").");
 				return false;
 			}
 
 			if (fileLines.size() != numberOfChannels + 1)
 			{
-				LOGE("Found the wrong number of lines in the calibration file. Expected ", numberOfChannels + 1, ", found ", fileLines.size());
+				Onix1::showWarningMessageBoxAsync("File Format Invalid", "Found the wrong number of lines in the calibration file. Expected " + std::to_string(numberOfChannels + 1) + ", found " + std::to_string(fileLines.size()));
 				return false;
 			}
 
@@ -431,7 +440,7 @@ bool Neuropixels2e::updateSettings()
 
 				if (std::stoi(calibrationValues[0].toStdString()) != j || std::stod(calibrationValues[1].toStdString()) != correctionValue)
 				{
-					LOGE("Calibration file is incorrectly formatted for probe ", String(probeSN[i]));
+					Onix1::showWarningMessageBoxAsync("File Format Invalid", "Calibration file is incorrectly formatted for probe " + std::to_string(probeSN[i]));
 					return false;
 				}
 			}
@@ -445,7 +454,7 @@ bool Neuropixels2e::updateSettings()
 	setProbeSupply(true);
 	resetProbes();
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < NumberOfProbes; i++)
 	{
 		if (probeSN[i] != 0)
 		{
@@ -539,6 +548,12 @@ void Neuropixels2e::setProbeSupply(bool en)
 
 void Neuropixels2e::selectProbe(uint8_t probeSelect)
 {
+	if (serializer == nullptr)
+	{
+		LOGE("Serializer is not initialized for Neuropixels 2.0");
+		return;
+	}
+
 	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO32), probeSelect);
 	Thread::sleep(20);
 }
@@ -554,8 +569,14 @@ void Neuropixels2e::resetProbes()
 
 uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 {
+	if (flex == nullptr)
+	{
+		LOGE("Flex is not initialized for Neuropixels 2.0");
+		return 0ull;
+	}
+
 	selectProbe(probeSelect);
-	uint64_t probeSN = 0;
+	uint64_t probeSN = 0ull;
 	int errorCode = 0, rc;
 	for (unsigned int i = 0; i < sizeof(probeSN); i++)
 	{
@@ -564,7 +585,7 @@ uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 
 		rc = flex->ReadByte(reg_addr, &val);
 
-		if (rc != ONI_ESUCCESS) return 0;
+		if (rc != ONI_ESUCCESS) return 0ull;
 
 		if (val <= 0xFF)
 		{
@@ -842,19 +863,46 @@ void Neuropixels2e::defineMetadata(ProbeSettings<numberOfChannels, numberOfElect
 	settings->probeType = ProbeType::NPX_V2E;
 	settings->probeMetadata.name = "Neuropixels 2.0e" + String(shankCount == 1 ? " - Single Shank" : " - Quad Shank");
 
-	Path path;
-	path.startNewSubPath(27, 31);
-	path.lineTo(27, 514);
-	path.lineTo(27 + 5, 522);
-	path.lineTo(27 + 10, 514);
-	path.lineTo(27 + 10, 31);
-	path.closeSubPath();
+	constexpr float shankTipY = 0.0f;
+	constexpr float shankBaseY = 155.0f;
+	constexpr float shankLengthY = 10000.0f;
+	constexpr float probeLengthY = 10155.0f;
+	constexpr float shankOffsetX = 200.0f;
+	constexpr float shankWidthX = 70.0f;
+	constexpr float shankPitchX = 250.0f;
+
+	std::vector<std::array<float, 2>> probeContour{
+		{0, probeLengthY},
+		{0, shankLengthY},
+	};
+
+	for (int i = 0; i < shankCount; i++)
+	{
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i, shankLengthY });
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i, shankBaseY });
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i + shankWidthX / 2, shankTipY });
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i + shankWidthX, shankBaseY });
+		probeContour.emplace_back(std::array<float, 2>{ shankOffsetX + (shankWidthX + shankPitchX) * i + shankWidthX, shankLengthY });
+	}
+
+	probeContour.emplace_back(std::array<float, 2>{shankOffsetX * 2 + (shankWidthX + shankPitchX) * (numberOfShanks - 1) + shankWidthX, shankLengthY});
+	probeContour.emplace_back(std::array<float, 2>{shankOffsetX * 2 + (shankWidthX + shankPitchX) * (numberOfShanks - 1) + shankWidthX, probeLengthY});
+	probeContour.emplace_back(std::array<float, 2>{0.0f, probeLengthY});
+
+	std::vector<std::array<float, 2>> shankOutline{
+		{27, 31},
+		{27, 514},
+		{27 + 5, 522},
+		{27 + 10, 514},
+		{27 + 10, 31}
+	};
 
 	settings->probeMetadata.shank_count = shankCount;
 	settings->probeMetadata.electrodes_per_shank = NeuropixelsV2eValues::electrodesPerShank;
 	settings->probeMetadata.rows_per_shank = NeuropixelsV2eValues::electrodesPerShank / 2;
 	settings->probeMetadata.columns_per_shank = 2;
-	settings->probeMetadata.shankOutline = path;
+	settings->probeMetadata.shankOutline = shankOutline;
+	settings->probeMetadata.probeContour = probeContour;
 	settings->probeMetadata.num_adcs = 24;
 	settings->probeMetadata.adc_bits = 12;
 
@@ -875,8 +923,9 @@ void Neuropixels2e::defineMetadata(ProbeSettings<numberOfChannels, numberOfElect
 		metadata.shank = i / settings->probeMetadata.electrodes_per_shank;
 		metadata.shank_local_index = i % settings->probeMetadata.electrodes_per_shank;
 
-		metadata.xpos = i % 2 * 32.0f + 8.0f;
-		metadata.ypos = (metadata.shank_local_index - (metadata.shank_local_index % 2)) * 7.5f;
+		auto offset = shankOffsetX + (shankWidthX + shankPitchX) * metadata.shank + 11.0f;
+		metadata.xpos = offset + (i % 2) * 32.0f + 8.0f;
+		metadata.ypos = std::floor((i % settings->probeMetadata.electrodes_per_shank) / 2.0f) * 15 + 170;
 		metadata.site_width = 12;
 
 		metadata.column_index = i % 2;

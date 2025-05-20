@@ -22,6 +22,9 @@
 
 #include "OnixSourceEditor.h"
 #include "OnixSource.h"
+#include "OnixSourceCanvas.h"
+
+using namespace OnixSourcePlugin;
 
 OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* source_)
 	: VisualizerEditor(parentNode, "Onix Source", 250), source(source_)
@@ -257,16 +260,35 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
 
 		source->initializeDevices(false);
-		canvas->refreshTabs();
+
+		if (source->foundInputSource())
+			canvas->refreshTabs();
+
+		// NB: Check if headstages were not discovered, and then removed
+		if (!isHeadstageSelected(PortName::PortA) && source->getLastVoltageSet(PortName::PortA) > 0)
+		{
+			source->setPortVoltage(PortName::PortA, 0);
+			portStatusA->setFill(fillDisconnected);
+			lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
+		}
+
+		if (!isHeadstageSelected(PortName::PortB) && source->getLastVoltageSet(PortName::PortB) > 0)
+		{
+			source->setPortVoltage(PortName::PortB, 0);
+			portStatusB->setFill(fillDisconnected);
+			lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
+		}
 
 		connectButton->setLabel("DISCONNECT");
 
 		headstageComboBoxA->setEnabled(false);
 		headstageComboBoxB->setEnabled(false);
+		portVoltageValueA->setEnabled(false);
+		portVoltageValueB->setEnabled(false);
 
 		if (!source->foundInputSource())
 		{
-			CoreServices::sendStatusMessage("No Onix hardware found.");
+			CoreServices::sendStatusMessage("Error configuring hardware. Check logs for more details.");
 			connectButton->setToggleState(false, sendNotification);
 		}
 	}
@@ -286,6 +308,8 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		headstageComboBoxA->setEnabled(true);
 		headstageComboBoxB->setEnabled(true);
+		portVoltageValueA->setEnabled(true);
+		portVoltageValueB->setEnabled(true);
 	}
 }
 
@@ -311,7 +335,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 	for (auto& [key, _] : deviceMap) { deviceIndices.emplace_back(key); }
 	for (auto& [key, _] : tabMap) { tabIndices.emplace_back(key); }
 
-	auto devicePorts = PortController::getUniquePortsFromIndices(deviceIndices);
+	auto devicePorts = OnixDevice::getUniquePortsFromIndices(deviceIndices);
 	auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
 
 	bool isPortA = cb == headstageComboBoxA.get();
@@ -323,7 +347,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		AlertWindow::showMessageBox(
 			MessageBoxIconType::WarningIcon,
 			"Devices Connected",
-			"Cannot select a different headstage on " + PortController::getPortName(currentPort) + " when connected. \n\nPress disconnect before changing the selected headstage.");
+			"Cannot select a different headstage on " + OnixDevice::getPortName(currentPort) + " when connected. \n\nPress disconnect before changing the selected headstage.");
 
 		refreshComboBoxSelection();
 		return;
@@ -339,7 +363,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 
 	if (currentHeadstageSelected)
 	{
-		String headstage = isPortA ? headstageComboBoxA->getText() : headstageComboBoxB->getText();
+		std::string headstage = isPortA ? headstageComboBoxA->getText().toStdString() : headstageComboBoxB->getText().toStdString();
 
 		source->updateDiscoveryParameters(currentPort, PortController::getHeadstageDiscoveryParameters(headstage));
 		canvas->addHub(headstage, PortController::getPortOffset(currentPort));
@@ -452,6 +476,11 @@ Visualizer* OnixSourceEditor::createNewCanvas(void)
 	return canvas;
 }
 
+OnixSourceCanvas* OnixSourceEditor::getCanvas()
+{
+	return canvas;
+}
+
 void OnixSourceEditor::resetCanvas()
 {
 	if (canvas != nullptr)
@@ -486,22 +515,22 @@ bool OnixSourceEditor::isHeadstageSelected(PortName port)
 	}
 }
 
-String OnixSourceEditor::getHeadstageSelected(int offset)
+std::string OnixSourceEditor::getHeadstageSelected(int offset)
 {
 	switch (offset)
 	{
 	case 0:
 		return "Breakout Board";
-	case PortController::HubAddressPortA:
-		return headstageComboBoxA->getText();
-	case PortController::HubAddressPortB:
-		return headstageComboBoxB->getText();
+	case OnixDevice::HubAddressPortA:
+		return headstageComboBoxA->getText().toStdString();
+	case OnixDevice::HubAddressPortB:
+		return headstageComboBoxB->getText().toStdString();
 	default:
 		return "";
 	}
 }
 
-String OnixSourceEditor::getHeadstageSelected(PortName port)
+std::string OnixSourceEditor::getHeadstageSelected(PortName port)
 {
 	switch (port)
 	{
@@ -520,7 +549,7 @@ void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage
 	{
 		if (headstage.contains(comboBox->getItemText(i)))
 		{
-			comboBox->setSelectedItemIndex(i, dontSendNotification); // TODO: double check this indexing
+			comboBox->setSelectedItemIndex(i, dontSendNotification);
 			return;
 		}
 	}
@@ -530,19 +559,19 @@ void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage
 
 void OnixSourceEditor::refreshComboBoxSelection()
 {
-	Array<CustomTabComponent*> headstageTabs = canvas->getHeadstageTabs();
+	Array<CustomTabComponent*> hubTabs = canvas->getHubTabs();
 
 	bool resetPortA = true, resetPortB = true;
 
-	for (const auto tab : headstageTabs)
+	for (const auto tab : hubTabs)
 	{
-		if (tab->getName().contains(PortController::getPortName(PortName::PortA)))
+		if (tab->getName().contains(OnixDevice::getPortName(PortName::PortA)))
 		{
 			setComboBoxSelection(headstageComboBoxA.get(), tab->getName());
 			source->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstageComboBoxA->getText()));
 			resetPortA = false;
 		}
-		else if (tab->getName().contains(PortController::getPortName(PortName::PortB)))
+		else if (tab->getName().contains(OnixDevice::getPortName(PortName::PortB)))
 		{
 			setComboBoxSelection(headstageComboBoxB.get(), tab->getName());
 			source->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstageComboBoxB->getText()));

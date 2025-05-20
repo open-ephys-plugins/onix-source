@@ -30,173 +30,159 @@
 
 using namespace std::this_thread;
 
-enum class PortControllerRegister : uint32_t
+namespace OnixSourcePlugin
 {
-	ENABLE = 0,
-	GPOSTATE = 1,
-	DESPWR = 2,
-	PORTVOLTAGE = 3,
-	SAVEVOLTAGE = 4,
-	LINKSTATE = 5
-};
-
-enum class PortStatusCode : uint32_t
-{
-	SerdesLock = 0x0001,
-	SerdesParityPass = 0x0002,
-	CrcError = 0x0100,
-	TooManyDevices = 0x0200,
-	InitializationError = 0x0400,
-	BadPacketFormat = 0x0800,
-	InitializationCrcError = 0x1000,
-};
-
-class DiscoveryParameters
-{
-public:
-	double minVoltage = 0.0;
-	double maxVoltage = 0.0;
-	double voltageOffset = 0.0;
-	double voltageIncrement = 0.0;
-
-	DiscoveryParameters() {};
-
-	DiscoveryParameters(double minVoltage_, double maxVoltage_, double voltageOffset_, double voltageIncrement_)
+	enum class PortControllerRegister : uint32_t
 	{
-		minVoltage = minVoltage_;
-		maxVoltage = maxVoltage_;
-		voltageOffset = voltageOffset_;
-		voltageIncrement = voltageIncrement_;
-	}
+		ENABLE = 0,
+		GPOSTATE = 1,
+		DESPWR = 2,
+		PORTVOLTAGE = 3,
+		SAVEVOLTAGE = 4,
+		LINKSTATE = 5
+	};
 
-	bool operator==(const DiscoveryParameters& rhs) const
+	enum class PortStatusCode : uint32_t
 	{
-		return rhs.minVoltage == minVoltage && rhs.maxVoltage == maxVoltage && rhs.voltageOffset == voltageOffset && rhs.voltageIncrement == voltageIncrement;
-	}
-};
+		SerdesLock = 0x0001,
+		SerdesParityPass = 0x0002,
+		CrcError = 0x0100,
+		TooManyDevices = 0x0200,
+		InitializationError = 0x0400,
+		BadPacketFormat = 0x0800,
+		InitializationCrcError = 0x1000,
+	};
 
-class PortController : public OnixDevice
-{
-public:
-	PortController(PortName port_, std::shared_ptr<Onix1> ctx_);
-
-	int configureDevice() override;
-
-	bool updateSettings() override { return true; }
-
-	void startAcquisition() override;
-
-	void stopAcquisition() override;
-
-	void addFrame(oni_frame_t*) override;
-
-	void processFrames() override;
-
-	void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
-
-	void updateDiscoveryParameters(DiscoveryParameters parameters);
-
-	bool configureVoltage(double voltage = defaultVoltage);
-
-	/** Sets the voltage to the given value, after setting the voltage to zero */
-	void setVoltage(double voltage);
-
-	/** Overrides the voltage setting and directly sets it to the given voltage */
-	void setVoltageOverride(double voltage, bool waitToSettle = true);
-
-	bool checkLinkState() const;
-
-	static DiscoveryParameters getHeadstageDiscoveryParameters(String headstage);
-
-	static int getPortOffset(PortName port) { return (uint32_t)port << 8; }
-
-	static String getPortName(int offset);
-
-	static String getPortName(PortName port) { return port == PortName::PortA ? "Port A" : "Port B"; }
-
-	String getPortName() const { return getPortName(port); }
-
-	static PortName getPortFromIndex(oni_dev_idx_t index);
-
-	static int getOffsetFromIndex(oni_dev_idx_t index);
-
-	static Array<int> getUniqueOffsetsFromIndices(std::vector<int> indices);
-
-	static Array<PortName> getUniquePortsFromIndices(std::vector<int>);
-
-	/** Check if the port status changed and there is an error reported */
-	bool getErrorFlag() { return errorFlag; }
-
-	double getLastVoltageSet() const { return lastVoltageSet; }
-
-	static constexpr int HubAddressPortA = 256;
-	static constexpr int HubAddressPortB = 512;
-
-private:
-	Array<oni_frame_t*, CriticalSection, 10> frameArray;
-
-	const PortName port;
-
-	static constexpr double defaultVoltage = -1.0;
-
-	double lastVoltageSet = 0.0;
-
-	static constexpr uint32_t LINKSTATE_PP = 0x2; // parity check pass bit
-	static constexpr uint32_t LINKSTATE_SL = 0x1; // SERDES lock bit
-
-	DiscoveryParameters discoveryParameters;
-
-	std::atomic<bool> errorFlag = false;
-
-	JUCE_LEAK_DETECTOR(PortController);
-};
-
-class ConfigureVoltageWithProgressBar : public ThreadWithProgressWindow
-{
-public:
-	ConfigureVoltageWithProgressBar(DiscoveryParameters params, PortController* port)
-		: ThreadWithProgressWindow("Configuring voltage on " + port->getPortName(), true, false)
+	class DiscoveryParameters
 	{
-		m_params = params;
-		m_port = port;
-	}
+	public:
+		double minVoltage = 0.0;
+		double maxVoltage = 0.0;
+		double voltageOffset = 0.0;
+		double voltageIncrement = 0.0;
 
-	void run() override
-	{
-		double voltage, progress = 0.0;
+		DiscoveryParameters() {};
 
-		double increment = m_params.voltageIncrement / (m_params.maxVoltage - m_params.minVoltage);
-
-		for (voltage = m_params.minVoltage; voltage <= m_params.maxVoltage; voltage += m_params.voltageIncrement)
+		DiscoveryParameters(double minVoltage_, double maxVoltage_, double voltageOffset_, double voltageIncrement_)
 		{
-			progress += increment;
-			setProgress(progress);
-
-			m_port->setVoltage(voltage);
-
-			if (m_port->checkLinkState())
-			{
-				setProgress(0.95);
-				m_port->setVoltage(voltage + m_params.voltageOffset);
-				result = m_port->checkLinkState();;
-				setProgress(1.0);
-				return;
-			}
+			minVoltage = minVoltage_;
+			maxVoltage = maxVoltage_;
+			voltageOffset = voltageOffset_;
+			voltageIncrement = voltageIncrement_;
 		}
 
-		result = false;
-		return;
-	}
+		bool operator==(const DiscoveryParameters& rhs) const
+		{
+			return rhs.minVoltage == minVoltage && rhs.maxVoltage == maxVoltage && rhs.voltageOffset == voltageOffset && rhs.voltageIncrement == voltageIncrement;
+		}
+	};
 
-	bool getResult() const { return result; }
+	class PortController : public OnixDevice
+	{
+	public:
+		PortController(PortName port_, std::shared_ptr<Onix1> ctx_);
 
-private:
+		int configureDevice() override;
 
-	DiscoveryParameters m_params;
+		bool updateSettings() override { return true; }
 
-	PortController* m_port;
+		void startAcquisition() override;
 
-	bool result = false;
+		void stopAcquisition() override;
 
-	JUCE_LEAK_DETECTOR(ConfigureVoltageWithProgressBar);
-};
+		void addFrame(oni_frame_t*) override;
+
+		void processFrames() override;
+
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
+
+		void updateDiscoveryParameters(DiscoveryParameters parameters);
+
+		bool configureVoltage(double voltage = defaultVoltage);
+
+		/** Sets the voltage to the given value, after setting the voltage to zero */
+		void setVoltage(double voltage);
+
+		/** Overrides the voltage setting and directly sets it to the given voltage */
+		void setVoltageOverride(double voltage, bool waitToSettle = true);
+
+		bool checkLinkState() const;
+
+		static DiscoveryParameters getHeadstageDiscoveryParameters(String headstage);
+
+		String getPortName() const { return OnixDevice::getPortName(port); }
+
+		/** Check if the port status changed and there is an error reported */
+		bool getErrorFlag() { return errorFlag; }
+
+		double getLastVoltageSet() const { return lastVoltageSet; }
+
+	private:
+		Array<oni_frame_t*, CriticalSection, 10> frameArray;
+
+		const PortName port;
+
+		static constexpr double defaultVoltage = -1.0;
+
+		double lastVoltageSet = 0.0;
+
+		static constexpr uint32_t LINKSTATE_PP = 0x2; // parity check pass bit
+		static constexpr uint32_t LINKSTATE_SL = 0x1; // SERDES lock bit
+
+		DiscoveryParameters discoveryParameters;
+
+		std::atomic<bool> errorFlag = false;
+
+		JUCE_LEAK_DETECTOR(PortController);
+	};
+
+	class ConfigureVoltageWithProgressBar : public ThreadWithProgressWindow
+	{
+	public:
+		ConfigureVoltageWithProgressBar(DiscoveryParameters params, PortController* port)
+			: ThreadWithProgressWindow("Configuring voltage on " + port->getPortName(), true, false)
+		{
+			m_params = params;
+			m_port = port;
+		}
+
+		void run() override
+		{
+			double voltage, progress = 0.0;
+
+			double increment = m_params.voltageIncrement / (m_params.maxVoltage - m_params.minVoltage);
+
+			for (voltage = m_params.minVoltage; voltage <= m_params.maxVoltage; voltage += m_params.voltageIncrement)
+			{
+				progress += increment;
+				setProgress(progress);
+
+				m_port->setVoltage(voltage);
+
+				if (m_port->checkLinkState())
+				{
+					setProgress(0.95);
+					m_port->setVoltage(voltage + m_params.voltageOffset);
+					result = m_port->checkLinkState();;
+					setProgress(1.0);
+					return;
+				}
+			}
+
+			result = false;
+			return;
+		}
+
+		bool getResult() const { return result; }
+
+	private:
+
+		DiscoveryParameters m_params;
+
+		PortController* m_port;
+
+		bool result = false;
+
+		JUCE_LEAK_DETECTOR(ConfigureVoltageWithProgressBar);
+	};
+}

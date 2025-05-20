@@ -8,6 +8,8 @@
 
 #include "ColourScheme.h"
 
+using namespace ColourScheme;
+
 #pragma mark ColourScheme utility forward declarations -
 namespace
 { // hidden from the outside world (true static and hidden)

@@ -21,7 +21,10 @@
 */
 
 #include "OnixSource.h"
+#include "OnixSourceCanvas.h"
 #include "Devices/DeviceList.h"
+
+using namespace OnixSourcePlugin;
 
 OnixSource::OnixSource(SourceNode* sn) :
 	DataThread(sn),
@@ -55,14 +58,16 @@ OnixSource::OnixSource(SourceNode* sn) :
 		return;
 	}
 
-	// TODO: Add these parameters in the registerParameters() override?
-	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough", "Enables passthrough mode for e-variant headstages on Port A", false, true);
-	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough", "Enables passthrough mode for e-variant headstages on Port B", false, true);
-
 	portA = std::make_shared<PortController>(PortName::PortA, context);
 	portB = std::make_shared<PortController>(PortName::PortB, context);
 
 	if (!context->isInitialized()) { LOGE("Failed to initialize context."); return; }
+}
+
+void OnixSource::registerParameters()
+{
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough A", "Enables passthrough mode for e-variant headstages on Port A", false, true);
+	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughB", "Passthrough B", "Enables passthrough mode for e-variant headstages on Port B", false, true);
 }
 
 DataThread* OnixSource::createDataThread(SourceNode* sn)
@@ -83,7 +88,7 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 	sourceBuffers.clear(true);
 
 	sources.clear();
-	headstages.clear();
+	hubNames.clear();
 
 	devicesFound = false;
 
@@ -91,6 +96,56 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 		context->setOption(ONIX_OPT_PASSTHROUGH, 0);
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
+}
+
+template <class Device>
+bool OnixSource::configureDevice(OnixDeviceVector& sources,
+	OnixSourceCanvas* canvas,
+	std::string deviceName,
+	std::string hubName, 
+	OnixDeviceType deviceType, 
+	const oni_dev_idx_t deviceIdx, 
+	std::shared_ptr<Onix1> ctx)
+{
+	std::shared_ptr<Device> device = std::static_pointer_cast<Device>(canvas->getDevicePtr(Device::getDeviceType(), deviceIdx));
+
+	if (device != nullptr)
+	{
+		if (device->getName() != deviceName || device->getHubName() != hubName)
+		{
+			LOGD("Difference in names found for device at address ", deviceIdx, ". Found ", deviceName, " on ", hubName, ", but was expecting ", device->getName(), " on ", device->getHubName());
+		}
+	}
+	else
+	{
+		// NB: Create a new device if a tab does not exist, but the device was found while connecting
+		LOGD("Creating new device ", deviceName, " on ", hubName);
+		device = std::make_shared<Device>(deviceName, hubName, deviceIdx, ctx);
+	}
+
+	if (device == nullptr)
+	{
+		LOGE("Could not create or find ", deviceName, " on ", hubName);
+		return false;
+	}
+
+	int res = -1;
+
+	try
+	{
+		res = device->configureDevice();
+	}
+	catch (const error_str& e)
+	{
+		LOGE(e.what());
+		AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Configuration Error", e.what());
+
+		return false;
+	}
+
+	sources.emplace_back(device);
+
+	return res == ONI_ESUCCESS;
 }
 
 void OnixSource::initializeDevices(bool updateStreamInfo)
@@ -139,64 +194,70 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 		return;
 	}
 
+	auto hubIds = context->getHubIds();
+
+	if (hubIds.size() == 0)
+	{
+		LOGE("No hub IDs found.");
+		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
+		return;
+	}
+
 	devicesFound = true;
 
 	const int bufferSizeInSeconds = 10;
-	int npxProbeIdx = 0;
 
+	// NB: Search through all hubs, and initialize devices
+	for (const auto& [hubIndex, hubId] : hubIds)
+	{
+		if (hubId == ONIX_HUB_FMCHOST) // NB: Breakout Board
+		{
+			hubNames.insert({ hubIndex, BREAKOUT_BOARD_NAME });
+			bool result = false;
+			auto canvas = editor->getCanvas();
+
+			result = configureDevice<Heartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, Heartbeat::getDeviceType(), hubIndex, context);
+			if (!result) devicesFound = false;
+
+			result = configureDevice<OutputClock>(sources, canvas, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
+			if (!result) devicesFound = false;
+
+			result = configureDevice<AnalogIO>(sources, canvas, "Analog IO", BREAKOUT_BOARD_NAME, AnalogIO::getDeviceType(), hubIndex + 6, context);
+			if (!result) devicesFound = false;
+
+			result = configureDevice<DigitalIO>(sources, canvas, "Digital IO", BREAKOUT_BOARD_NAME, DigitalIO::getDeviceType(), hubIndex + 7, context);
+			if (!result) devicesFound = false;
+
+			result = configureDevice<MemoryMonitor>(sources, canvas, "Memory Monitor", BREAKOUT_BOARD_NAME, MemoryMonitor::getDeviceType(), hubIndex + 10, context);
+			if (!result) devicesFound = false;
+
+			result = configureDevice<HarpSyncInput>(sources, canvas, "Harp Sync Input", BREAKOUT_BOARD_NAME, HarpSyncInput::getDeviceType(), hubIndex + 12, context);
+			if (!result) devicesFound = false;
+		}
+		else if (hubId == ONIX_HUB_HSNP)
+		{
+			hubNames.insert({ hubIndex, NEUROPIXELSV1F_HEADSTAGE_NAME });
+			bool result = false;
+			auto canvas = editor->getCanvas();
+
+			for (int i = 0; i < 2; i++)
+			{
+				result = configureDevice<Neuropixels1f>(sources, canvas, "Probe" + std::to_string(i), NEUROPIXELSV1F_HEADSTAGE_NAME, Neuropixels1f::getDeviceType(), hubIndex + i, context);
+				if (!result) devicesFound = false;
+			}
+
+			result = configureDevice<Bno055>(sources, canvas, "BNO055", NEUROPIXELSV1F_HEADSTAGE_NAME, Bno055::getDeviceType(), hubIndex + 2, context);
+			if (!result) devicesFound = false;
+		}
+	}
+
+	// NB: Search for passthrough devices, and initialize any headstages found in passthrough mode
 	for (const auto& [index, device] : deviceMap)
 	{
-		if (device.id == ONIX_NEUROPIX1R0)
-		{
-			auto np1 = std::make_shared<Neuropixels_1>("Probe" + String(npxProbeIdx++), index, context);
-
-			int res = np1->configureDevice();
-
-			if (res != 0)
-			{
-				if (res == -1)
-				{
-					LOGE("Device Idx: ", index, " Unable to read probe serial number. Device not found.");
-
-					continue;
-				}
-				else if (res == -2)
-				{
-					LOGE("Device Idx: ", index, " Error enabling device stream.");
-
-					continue;
-				}
-				else if (res == -3)
-				{
-					LOGE("Error enabling device ", index);
-
-					continue;
-				}
-			}
-
-			sources.emplace_back(np1);
-			headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV1F_HEADSTAGE_NAME });
-		}
-		else if (device.id == ONIX_BNO055)
-		{
-			String headstage = headstages.find(PortController::getOffsetFromIndex(index))->second;
-
-			auto bno = std::make_shared<Bno055>("BNO055", headstage, index, context);
-
-			int result = bno->configureDevice();
-
-			if (result != 0)
-			{
-				LOGE("Device Idx: ", index, " Error enabling device stream.");
-				continue;
-			}
-
-			sources.emplace_back(bno);
-		}
-		else if (device.id == ONIX_DS90UB9RAW)
+		if (device.id == ONIX_DS90UB9RAW)
 		{
 			LOGD("Passthrough device detected");
-			//initialize main i2c parameter
+
 			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, index, context);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
 			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
@@ -204,134 +265,30 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(index, context);
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
+
+			bool result = false;
+			auto canvas = editor->getCanvas();
+
 			if (hsid == ONIX_HUB_HSNP2E)
 			{
-				auto np2 = std::make_shared<Neuropixels2e>("", index, context);
-				int res = np2->configureDevice();
-				if (res != ONI_ESUCCESS)
-				{
-					if (res == -1)
-					{
-						LOGE("Device Idx: ", index, " Unable to read probe serial number. Device not found.");
-					}
-					//TODO add other errors if needed
-					continue;
-				}
-				
-				sources.emplace_back(np2);
+				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
-				auto polledBno = std::make_shared<PolledBno055>("BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, index, context);
+				result = configureDevice<Neuropixels2e>(sources, canvas, "", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
+				if (!result) devicesFound = false;
 
-				if (polledBno->configureDevice() != ONI_ESUCCESS)
-				{
-					if (res == -1)
-					{
-						LOGE("Context is not initialized properly for PolledBno055");
-					}
-					else if (res == -2)
-					{
-						LOGE("Error writing bytes for PolledBno055");
-					}
-					continue;
-				}
+				result = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
+				if (!result) devicesFound = false;
+
+				if (sources.back()->getDeviceType() != OnixDeviceType::POLLEDBNO)
+					LOGE("Unknown device encountered when setting headstage.");
+
+				const auto& polledBno = std::static_pointer_cast<PolledBno055>(sources.back());
 
 				polledBno->setBnoAxisMap(PolledBno055::Bno055AxisMap::YZX);
 				polledBno->setBnoAxisSign(PolledBno055::Bno055AxisSign::MirrorXAndY);
 
-				sources.emplace_back(polledBno);
-
-				headstages.insert({ PortController::getOffsetFromIndex(index), NEUROPIXELSV2E_HEADSTAGE_NAME });
+				hubNames.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
-		}
-		else if (device.id == ONIX_MEMUSAGE)
-		{
-			auto memoryMonitor = std::make_shared<MemoryMonitor>("Memory Monitor", index, context);
-
-			int result = memoryMonitor->configureDevice();
-
-			if (result != 0)
-			{
-				LOGE("Device Idx: ", index, " Error enabling device stream.");
-				continue;
-			}
-
-			sources.emplace_back(memoryMonitor);
-			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
-		}
-		else if (device.id == ONIX_FMCCLKOUT1R3)
-		{
-			auto outputClock = std::make_shared<OutputClock>("Output Clock", index, context);
-
-			int result = outputClock->configureDevice();
-
-			if (result != 0)
-			{
-				LOGE("Device Idx: ", index, " Error enabling device stream.");
-				continue;
-			}
-
-			sources.emplace_back(outputClock);
-			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
-		}
-		else if (device.id == ONIX_HEARTBEAT)
-		{
-			auto heartbeat = std::make_shared<Heartbeat>("Heartbeat", index, context);
-
-			int result = heartbeat->configureDevice();
-
-			if (result != 0)
-			{
-				LOGE("Device Idx: ", index, " Error enabling device stream.");
-				continue;
-			}
-
-			sources.emplace_back(heartbeat);
-			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
-		}
-		else if (device.id == ONIX_HARPSYNCINPUT)
-		{
-			auto harpSyncInput = std::make_shared<HarpSyncInput>("Harp Sync Input", index, context);
-
-			int result = harpSyncInput->configureDevice();
-
-			if (result != 0)
-			{
-				LOGE("Device Idx: ", index, " Error enabling device stream.");
-				continue;
-			}
-
-			sources.emplace_back(harpSyncInput);
-			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
-		}
-		else if (device.id == ONIX_FMCANALOG1R3)
-		{
-			auto analogIO = std::make_shared<AnalogIO>("Analog IO", index, context);
-
-			int result = analogIO->configureDevice();
-
-			if (result != 0)
-			{
-				LOGE("Device Idx: ", index, " Error enabling device stream.");
-				continue;
-			}
-
-			sources.emplace_back(analogIO);
-			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
-		}
-		else if (device.id == ONIX_BREAKDIG1R3)
-		{
-			auto digitalIO = std::make_shared<DigitalIO>("Digital IO", index, context);
-
-			int result = digitalIO->configureDevice();
-
-			if (result != 0)
-			{
-				LOGE("Device Idx: ", index, " Error enabling device stream.");
-				continue;
-			}
-
-			sources.emplace_back(digitalIO);
-			headstages.insert({ PortController::getOffsetFromIndex(index), BREAKOUT_BOARD_NAME });
 		}
 	}
 
@@ -429,12 +386,12 @@ std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devic
 
 std::map<int, OnixDeviceType> OnixSource::createDeviceMap(bool filterDevices)
 {
-	return createDeviceMap(getDataSources(), filterDevices);
+	return createDeviceMap(getEnabledDataSources(), filterDevices);
 }
 
-std::map<int, String> OnixSource::getHeadstageMap()
+std::map<int, std::string> OnixSource::getHubNames()
 {
-	return headstages;
+	return hubNames;
 }
 
 void OnixSource::updateSourceBuffers()
@@ -520,6 +477,22 @@ double OnixSource::getLastVoltageSet(PortName port)
 	}
 }
 
+void OnixSource::resetContext()
+{
+	if (context != nullptr && context->isInitialized())
+		context->issueReset();
+}
+
+bool OnixSource::isContextInitialized()
+{
+	return context != nullptr && context->isInitialized();
+}
+
+std::shared_ptr<Onix1> OnixSource::getContext()
+{
+	return context;
+}
+
 void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
 	OwnedArray<EventChannel>* eventChannels,
 	OwnedArray<SpikeChannel>* spikeChannels,
@@ -546,7 +519,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 		{
 			if (!source->isEnabled()) continue;
 
-			if (source->getDeviceType() == OnixDeviceType::NEUROPIXELS_1)
+			if (source->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -573,7 +546,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				DataStream::Settings dataStreamSettings{
-					OnixDevice::createStreamName({PortController::getPortName(PortController::getPortFromIndex(source->getDeviceIdx())), source->getHeadstageName(), source->getName()}),
+					OnixDevice::createStreamName({OnixDevice::getPortNameFromIndex(source->getDeviceIdx()), source->getHubName(), source->getName()}),
 					"Continuous data from a Bno055 9-axis IMU",
 					source->getStreamIdentifier(),
 					source->streamInfos[0].getSampleRate()
@@ -758,7 +731,7 @@ bool OnixSource::isReady()
 
 	if (!isDevicesReady())
 	{
-		CoreServices::sendStatusMessage("Selected headstages do not match hardware found.");
+		CoreServices::sendStatusMessage("Devices not initialized properly. Check error logs for details.");
 		return false;
 	}
 

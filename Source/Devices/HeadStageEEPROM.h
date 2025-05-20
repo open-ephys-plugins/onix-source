@@ -28,18 +28,20 @@
 #include <oni.h>
 #include <onix.h>
 
-class HeadStageEEPROM :
-	public I2CRegisterContext
+namespace OnixSourcePlugin
 {
-public:
-	HeadStageEEPROM(const oni_dev_idx_t, std::shared_ptr<Onix1>);
+	class HeadStageEEPROM :
+		public I2CRegisterContext
+	{
+	public:
+		HeadStageEEPROM(const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
-	uint32_t GetHeadStageID();
+		uint32_t GetHeadStageID();
 
-private:
-	static const uint32_t EEPROM_ADDRESS = 0x51;
-	static const uint32_t DEVID_START_ADDR = 18;
+	private:
+		static const uint32_t EEPROM_ADDRESS = 0x51;
+		static const uint32_t DEVID_START_ADDR = 18;
 
-	JUCE_LEAK_DETECTOR(HeadStageEEPROM);
-};
-
+		JUCE_LEAK_DETECTOR(HeadStageEEPROM);
+	};
+}
