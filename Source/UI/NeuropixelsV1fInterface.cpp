@@ -708,6 +708,8 @@ void NeuropixelsV1fInterface::buttonClicked(Button* button)
 			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
+		updateInfoString();
+
 		CoreServices::updateSignalChain(editor);
 	}
 	else if (button == enableViewButton.get())
