@@ -294,18 +294,37 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	context->issueReset();
 
-	oni_size_t frameSize;
-	rc = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE, &frameSize);
-	printf("Max. read frame size: %u bytes\n", frameSize);
+	oni_size_t readFrameSize;
+	rc = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE, &readFrameSize);
+	LOGD("Max read frame size: ", readFrameSize, " bytes");
 
-	rc = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE, &frameSize);
-	printf("Max. write frame size: %u bytes\n", frameSize);
+	oni_size_t writeFrameSize;
+	rc = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE, &writeFrameSize);
+	LOGD("Max write frame size: ", writeFrameSize, " bytes");
 
-	context->setOption(ONI_OPT_BLOCKREADSIZE, block_read_size);
+	rc = context->setOption(ONI_OPT_BLOCKREADSIZE, blockReadSize);
+	LOGD("Block read size: ", blockReadSize, " bytes");
+
+	if (rc != ONI_ESUCCESS)
+	{
+		Onix1::showWarningMessageBoxAsync("Invalid Block Read Size", "The block read size is too small. The max read frame size is " + std::to_string(readFrameSize) + ", but the block read size is " + std::to_string(blockReadSize) + ".\n\nTo continue, increase the block read size to be greater than " + std::to_string(readFrameSize) + " and reconnect.");
+		devicesFound = false;
+		return;
+	}
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 
 	LOGD("All devices initialized.");
+}
+
+uint32_t OnixSource::getBlockReadSize() const
+{
+	return blockReadSize;
+}
+
+void OnixSource::setBlockReadSize(uint32_t newReadSize)
+{
+	blockReadSize = newReadSize;
 }
 
 OnixDeviceVector OnixSource::getDataSources()
@@ -818,9 +837,7 @@ bool OnixSource::stopAcquisition()
 
 		devicesFound = false;
 
-		MessageManager::callAsync([] { AlertWindow::showMessageBoxAsync(MessageBoxIconType::WarningIcon, "Port Communication Lock Lost",
-			"The port communication lock was lost during acquisition, inspect hardware connections and port switch." +
-			String("\n\nTo continue, press disconnect in the GUI, then press connect."), "Okay"); });
+		Onix1::showWarningMessageBoxAsync("Port Communication Lock Lost", "The port communication lock was lost during acquisition. Inspect hardware connections and port switch. \n\nTo continue, press disconnect in the GUI, then press connect.");
 	}
 
 	return true;

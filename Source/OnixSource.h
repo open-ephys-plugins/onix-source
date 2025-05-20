@@ -128,6 +128,10 @@ namespace OnixSourcePlugin
 			OwnedArray<DeviceInfo>* devices,
 			OwnedArray<ConfigurationObject>* configurationObjects);
 
+		uint32_t getBlockReadSize() const;
+
+		void setBlockReadSize(uint32_t);
+
 	private:
 
 		/** Available data sources */
@@ -148,7 +152,7 @@ namespace OnixSourcePlugin
 		std::shared_ptr<PortController> portA;
 		std::shared_ptr<PortController> portB;
 
-		const oni_size_t block_read_size = 2048;
+		uint32_t blockReadSize = 4096;
 
 		bool devicesFound = false;
 

@@ -31,19 +31,30 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 {
 	canvas = nullptr;
 
-	FontOptions fontOptionSmall = FontOptions("Fira Code", "Regular", 12.0f);
-	FontOptions fontOptionTitle = FontOptions("Fira Code", "Bold", 15.0f);
-
-	memoryUsage = std::make_unique<MemoryMonitorUsage>(parentNode);
-	memoryUsage->setBounds(10, 30, 15, 95);
-	memoryUsage->setTooltip("Monitors the percent of the hardware memory buffer used.");
-	addAndMakeVisible(memoryUsage.get());
+	FontOptions fontOptionRegular = FontOptions("Fira Code", 12.0f, Font::plain);
+	FontOptions fontOptionTitle = FontOptions("Fira Code", 15.0f, Font::bold);
 
 	if (source->isContextInitialized())
 	{
+		memoryUsage = std::make_unique<MemoryMonitorUsage>(parentNode);
+		memoryUsage->setBounds(8, 28, 14, 80);
+		memoryUsage->setTooltip("Monitors the percent of the hardware memory buffer used.");
+		addAndMakeVisible(memoryUsage.get());
+
+		blockReadSizeValue = std::make_unique<Label>("blockReadSizeValue", String(source->getBlockReadSize()));
+		blockReadSizeValue->setBounds(memoryUsage->getX() - 4, memoryUsage->getBottom() + 4, 26, 14);
+		blockReadSizeValue->setFont(fontOptionRegular);
+		blockReadSizeValue->setEditable(true);
+		blockReadSizeValue->setColour(Label::textColourId, Colours::black);
+		blockReadSizeValue->setTooltip("Number of bytes read per cycle of the acquisition thread. Smaller values provide lower latency, but can cause the memory monitor to fill up. Larger values may improve processing performance for high-bandwidth data sources.");
+		blockReadSizeValue->addListener(this);
+		blockReadSizeValue->setBorderSize(BorderSize<int>(1));
+		blockReadSizeValue->setJustificationType(Justification::centred);
+		addAndMakeVisible(blockReadSizeValue.get());
+
 		portStatusA = std::make_unique<DrawableRectangle>();
 		portStatusA->setRectangle(Rectangle<float>(memoryUsage->getRight() + 4, memoryUsage->getY(), 10, 10));
-		portStatusA->setCornerSize(Point<float>(5,5));
+		portStatusA->setCornerSize(Point<float>(5, 5));
 		portStatusA->setFill(fillDisconnected);
 		portStatusA->setStrokeFill(statusIndicatorStrokeColor);
 		portStatusA->setStrokeThickness(statusIndicatorStrokeThickness);
@@ -64,12 +75,12 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 		portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage:");
 		portVoltageOverrideLabelA->setBounds(portLabelA->getX() + 15, headstageComboBoxA->getBottom() + 4, 62, headstageComboBoxA->getHeight());
-		portVoltageOverrideLabelA->setFont(fontOptionSmall);
+		portVoltageOverrideLabelA->setFont(fontOptionRegular);
 		addAndMakeVisible(portVoltageOverrideLabelA.get());
 
 		portVoltageValueA = std::make_unique<Label>("voltageValueA", "Auto");
 		portVoltageValueA->setBounds(portVoltageOverrideLabelA->getRight() + 3, portVoltageOverrideLabelA->getY(), 40, portVoltageOverrideLabelA->getHeight());
-		portVoltageValueA->setFont(fontOptionSmall);
+		portVoltageValueA->setFont(fontOptionRegular);
 		portVoltageValueA->setEditable(true);
 		portVoltageValueA->setColour(Label::textColourId, Colours::black);
 		portVoltageValueA->setColour(Label::backgroundColourId, Colours::lightgrey);
@@ -79,7 +90,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 		lastVoltageSetA = std::make_unique<Label>("lastVoltageSetA", "0 V");
 		lastVoltageSetA->setBounds(portVoltageValueA->getRight() + 5, portVoltageValueA->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
-		lastVoltageSetA->setFont(fontOptionSmall);
+		lastVoltageSetA->setFont(fontOptionRegular);
 		lastVoltageSetA->setEditable(false);
 		lastVoltageSetA->setTooltip("Records the last voltage set for Port A. Useful for displaying what the automated voltage discovery algorithm settled on.");
 		addAndMakeVisible(lastVoltageSetA.get());
@@ -107,12 +118,12 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 		portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage:");
 		portVoltageOverrideLabelB->setBounds(portVoltageOverrideLabelA->getX(), headstageComboBoxB->getBottom() + 4, portVoltageOverrideLabelA->getWidth(), portVoltageOverrideLabelA->getHeight());
-		portVoltageOverrideLabelB->setFont(fontOptionSmall);
+		portVoltageOverrideLabelB->setFont(fontOptionRegular);
 		addAndMakeVisible(portVoltageOverrideLabelB.get());
 
 		portVoltageValueB = std::make_unique<Label>("voltageValueB", "Auto");
 		portVoltageValueB->setBounds(portVoltageValueA->getX(), portVoltageOverrideLabelB->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
-		portVoltageValueB->setFont(fontOptionSmall);
+		portVoltageValueB->setFont(fontOptionRegular);
 		portVoltageValueB->setEditable(true);
 		portVoltageValueB->setColour(Label::textColourId, Colours::black);
 		portVoltageValueB->setColour(Label::backgroundColourId, Colours::lightgrey);
@@ -122,27 +133,29 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 		lastVoltageSetB = std::make_unique<Label>("lastVoltageSetB", "0 V");
 		lastVoltageSetB->setBounds(portVoltageValueB->getRight() + 5, portVoltageValueB->getY(), portVoltageValueB->getWidth(), portVoltageValueB->getHeight());
-		lastVoltageSetB->setFont(fontOptionSmall);
+		lastVoltageSetB->setFont(fontOptionRegular);
 		lastVoltageSetB->setEditable(false);
 		lastVoltageSetB->setTooltip("Records the last voltage set for Port B. Useful for displaying what the automated voltage discovery algorithm settled on.");
 		addAndMakeVisible(lastVoltageSetB.get());
 
+		liboniVersionLabel = std::make_unique<Label>("liboniVersion", "liboni: v" + source->getLiboniVersion());
+		liboniVersionLabel->setFont(fontOptionRegular);
+		liboniVersionLabel->setBounds(portLabelB->getX() + 5, portVoltageOverrideLabelB->getBottom() + 5, 95, 22);
+		liboniVersionLabel->setEnabled(false);
+		liboniVersionLabel->setTooltip("Displays the version of liboni running.");
+		addAndMakeVisible(liboniVersionLabel.get());
+
+		const int connectWidth = 70;
+
 		connectButton = std::make_unique<UtilityButton>("CONNECT");
-		connectButton->setFont(fontOptionSmall);
-		connectButton->setBounds(portLabelB->getX() + 5, portVoltageOverrideLabelB->getBottom() + 3, 70, 18);
+		connectButton->setFont(fontOptionRegular);
+		connectButton->setBounds(headstageComboBoxB->getRight() - connectWidth, liboniVersionLabel->getY(), connectWidth, 18);
 		connectButton->setRadius(3.0f);
 		connectButton->setClickingTogglesState(true);
 		connectButton->setToggleState(false, dontSendNotification);
 		connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
 		connectButton->addListener(this);
 		addAndMakeVisible(connectButton.get());
-
-		liboniVersionLabel = std::make_unique<Label>("liboniVersion", "liboni: v" + source->getLiboniVersion());
-		liboniVersionLabel->setFont(fontOptionSmall);
-		liboniVersionLabel->setBounds(desiredWidth - 100, 110, 95, 22);
-		liboniVersionLabel->setEnabled(false);
-		liboniVersionLabel->setTooltip("Displays the version of liboni running.");
-		addAndMakeVisible(liboniVersionLabel.get());
 	}
 }
 
@@ -158,7 +171,7 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 {
 	if (l == portVoltageValueA.get())
 	{
-		if (l->getText() == "" || l->getText() == "Auto")
+		if (l->getText() == "")
 		{
 			l->setText("Auto", dontSendNotification);
 			return;
@@ -177,7 +190,7 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 	}
 	else if (l == portVoltageValueB.get())
 	{
-		if (l->getText() == "" || l->getText() == "Auto")
+		if (l->getText() == "")
 		{
 			l->setText("Auto", dontSendNotification);
 			return;
@@ -193,6 +206,27 @@ void OnixSourceEditor::labelTextChanged(Label* l)
 		{
 			l->setText("7.0", dontSendNotification);
 		}
+	}
+	else if (l == blockReadSizeValue.get())
+	{
+		auto readSize = l->getText().getIntValue();
+
+		const int32_t minReadSize = 512;
+		const int32_t maxReadSize = 20e3;
+
+		if (readSize < minReadSize)
+		{
+			Onix1::showWarningMessageBoxAsync("Read Size Too Small", "The given read size is too small, it should be greater than " + std::to_string(minReadSize));
+			readSize = minReadSize;
+		}
+		if (readSize > maxReadSize)
+		{
+			Onix1::showWarningMessageBoxAsync("Read Size Too Big", "The given read size is too big, it should be less than " + std::to_string(maxReadSize));
+			readSize = maxReadSize;
+		}
+
+		source->setBlockReadSize(readSize);
+		l->setText(String(source->getBlockReadSize()), dontSendNotification);
 	}
 }
 
@@ -281,10 +315,7 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 		connectButton->setLabel("DISCONNECT");
 
-		headstageComboBoxA->setEnabled(false);
-		headstageComboBoxB->setEnabled(false);
-		portVoltageValueA->setEnabled(false);
-		portVoltageValueB->setEnabled(false);
+		enableEditorElements(false);
 
 		if (!source->foundInputSource())
 		{
@@ -306,11 +337,17 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		source->disconnectDevices(true);
 		connectButton->setLabel("CONNECT");
 
-		headstageComboBoxA->setEnabled(true);
-		headstageComboBoxB->setEnabled(true);
-		portVoltageValueA->setEnabled(true);
-		portVoltageValueB->setEnabled(true);
+		enableEditorElements(true);
 	}
+}
+
+void OnixSourceEditor::enableEditorElements(bool enable)
+{
+	headstageComboBoxA->setEnabled(enable);
+	headstageComboBoxB->setEnabled(enable);
+	portVoltageValueA->setEnabled(enable);
+	portVoltageValueB->setEnabled(enable);
+	blockReadSizeValue->setEnabled(enable);
 }
 
 void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
@@ -597,18 +634,32 @@ void OnixSourceEditor::saveVisualizerEditorParameters(XmlElement* xml)
 
 	xml->setAttribute("portVoltageA", portVoltageValueA->getText());
 	xml->setAttribute("portVoltageB", portVoltageValueB->getText());
+
+	xml->setAttribute("blockReadSize", String(source->getBlockReadSize()));
 }
 
 void OnixSourceEditor::loadVisualizerEditorParameters(XmlElement* xml)
 {
 	LOGD("Loading OnixSourceEditor settings.");
 
-	setComboBoxSelection(headstageComboBoxA.get(), xml->getStringAttribute("headstagePortA"));
-	updateComboBox(headstageComboBoxA.get());
+	if (xml->hasAttribute("headstagePortA"))
+	{
+		setComboBoxSelection(headstageComboBoxA.get(), xml->getStringAttribute("headstagePortA"));
+		updateComboBox(headstageComboBoxA.get());
+	}
 
-	setComboBoxSelection(headstageComboBoxB.get(), xml->getStringAttribute("headstagePortB"));
-	updateComboBox(headstageComboBoxB.get());
+	if (xml->hasAttribute("headstagePortB"))
+	{
+		setComboBoxSelection(headstageComboBoxB.get(), xml->getStringAttribute("headstagePortB"));
+		updateComboBox(headstageComboBoxB.get());
+	}
 
-	portVoltageValueA->setText(xml->getStringAttribute("portVoltageA"), sendNotification);
-	portVoltageValueB->setText(xml->getStringAttribute("portVoltageB"), sendNotification);
+	if (xml->hasAttribute("portVoltageA"))
+		portVoltageValueA->setText(xml->getStringAttribute("portVoltageA"), sendNotification);
+
+	if (xml->hasAttribute("portVoltageB"))
+		portVoltageValueB->setText(xml->getStringAttribute("portVoltageB"), sendNotification);
+
+	if (xml->hasAttribute("blockReadSize"))
+		blockReadSizeValue->setText(xml->getStringAttribute("blockReadSize"), sendNotification);
 }
