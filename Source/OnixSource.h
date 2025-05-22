@@ -166,6 +166,8 @@ namespace OnixSourcePlugin
 		template <class Device>
 		static bool configureDevice(OnixDeviceVector&, OnixSourceCanvas*, std::string, std::string, OnixDeviceType, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
+		static uint32_t getHubFirmwareVersion(std::shared_ptr<Onix1>, uint32_t);
+
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 	};
 }

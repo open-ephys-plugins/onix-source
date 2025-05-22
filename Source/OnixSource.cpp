@@ -148,6 +148,18 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 	return res == ONI_ESUCCESS;
 }
 
+uint32_t OnixSource::getHubFirmwareVersion(std::shared_ptr<Onix1> ctx, uint32_t hubIndex)
+{
+	oni_reg_val_t firmwareVersion = 0;
+	if (ctx->readRegister(hubIndex + ONIX_HUB_DEV_IDX, ONIX_HUB_FIRMWAREVER, &firmwareVersion) != ONI_ESUCCESS)
+	{
+		LOGE("Unable to read the hub firmware version at index ", hubIndex);
+		return 0;
+	}
+
+	return firmwareVersion;
+}
+
 void OnixSource::initializeDevices(bool updateStreamInfo)
 {
 	if (context == nullptr || !context->isInitialized())
@@ -212,27 +224,54 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 	{
 		if (hubId == ONIX_HUB_FMCHOST) // NB: Breakout Board
 		{
+			auto firmwareVersion = getHubFirmwareVersion(context, hubIndex);
+
+			if (firmwareVersion == 0)
+			{
+				devicesFound = false;
+				return;
+			}
+
+			auto majorVersion = (firmwareVersion & 0xFF00) >> 8;
+			auto minorVersion = firmwareVersion & 0xFF;
+
+			LOGD("Breakout board firmware version: v", majorVersion, ".", minorVersion);
+
 			hubNames.insert({ hubIndex, BREAKOUT_BOARD_NAME });
 			bool result = false;
 			auto canvas = editor->getCanvas();
 
-			result = configureDevice<Heartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, Heartbeat::getDeviceType(), hubIndex, context);
-			if (!result) devicesFound = false;
+			if (majorVersion == 1)
+			{
+				result = configureDevice<Heartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, Heartbeat::getDeviceType(), hubIndex, context);
+			}
+			else
+			{
+				LOGE("Invalid firmware version found, expected the major version to be 1, instead it is ", majorVersion);
+				result = false;
+				// NB: Add support for persistent heartbeat device here
+			}
+
+			if (!result)
+			{
+				devicesFound = false;
+				return;
+			}
 
 			result = configureDevice<OutputClock>(sources, canvas, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
-			if (!result) devicesFound = false;
+			if (!result) { devicesFound = false; return; }
 
 			result = configureDevice<AnalogIO>(sources, canvas, "Analog IO", BREAKOUT_BOARD_NAME, AnalogIO::getDeviceType(), hubIndex + 6, context);
-			if (!result) devicesFound = false;
+			if (!result) { devicesFound = false; return; }
 
 			result = configureDevice<DigitalIO>(sources, canvas, "Digital IO", BREAKOUT_BOARD_NAME, DigitalIO::getDeviceType(), hubIndex + 7, context);
-			if (!result) devicesFound = false;
+			if (!result) { devicesFound = false; return; }
 
 			result = configureDevice<MemoryMonitor>(sources, canvas, "Memory Monitor", BREAKOUT_BOARD_NAME, MemoryMonitor::getDeviceType(), hubIndex + 10, context);
-			if (!result) devicesFound = false;
+			if (!result) { devicesFound = false; return; }
 
 			result = configureDevice<HarpSyncInput>(sources, canvas, "Harp Sync Input", BREAKOUT_BOARD_NAME, HarpSyncInput::getDeviceType(), hubIndex + 12, context);
-			if (!result) devicesFound = false;
+			if (!result) { devicesFound = false; return; }
 		}
 		else if (hubId == ONIX_HUB_HSNP)
 		{
@@ -243,11 +282,11 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			for (int i = 0; i < 2; i++)
 			{
 				result = configureDevice<Neuropixels1f>(sources, canvas, "Probe" + std::to_string(i), NEUROPIXELSV1F_HEADSTAGE_NAME, Neuropixels1f::getDeviceType(), hubIndex + i, context);
-				if (!result) devicesFound = false;
+				if (!result) { devicesFound = false; return; }
 			}
 
 			result = configureDevice<Bno055>(sources, canvas, "BNO055", NEUROPIXELSV1F_HEADSTAGE_NAME, Bno055::getDeviceType(), hubIndex + 2, context);
-			if (!result) devicesFound = false;
+			if (!result) { devicesFound = false; return; }
 		}
 	}
 
@@ -274,13 +313,17 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
 				result = configureDevice<Neuropixels2e>(sources, canvas, "", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
-				if (!result) devicesFound = false;
+				if (!result) { devicesFound = false; return; }
 
 				result = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
-				if (!result) devicesFound = false;
+				if (!result) { devicesFound = false; return; }
 
 				if (sources.back()->getDeviceType() != OnixDeviceType::POLLEDBNO)
+				{
 					LOGE("Unknown device encountered when setting headstage.");
+					devicesFound = false;
+					return;
+				}
 
 				const auto& polledBno = std::static_pointer_cast<PolledBno055>(sources.back());
 
@@ -307,9 +350,18 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	if (rc != ONI_ESUCCESS)
 	{
-		Onix1::showWarningMessageBoxAsync("Invalid Block Read Size", "The block read size is too small. The max read frame size is " + std::to_string(readFrameSize) + ", but the block read size is " + std::to_string(blockReadSize) + ".\n\nTo continue, increase the block read size to be greater than " + std::to_string(readFrameSize) + " and reconnect.");
-		devicesFound = false;
-		return;
+		if (blockReadSize < readFrameSize)
+		{
+			Onix1::showWarningMessageBoxAsync("Invalid Block Read Size", "The block read size is too small. The max read frame size is " + std::to_string(readFrameSize) + ", but the block read size is " + std::to_string(blockReadSize) + ".\n\nTo continue, increase the block read size to be greater than " + std::to_string(readFrameSize) + " and reconnect.");
+			devicesFound = false;
+			return;
+		}
+		else
+		{
+			LOGE("Unknown error found when setting block read size.");
+			devicesFound = false;
+			return;
+		}
 	}
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
