@@ -557,7 +557,7 @@ void NeuropixelsV1fInterface::updateInfoString()
 
 	if (device != nullptr)
 	{
-		deviceString = "Device: Neuropixels 1.0 Probe";
+		deviceString = "Neuropixels 1.0 Probe";
 
 		infoString += "\n";
 		infoString += "Probe Number: ";
@@ -707,6 +707,8 @@ void NeuropixelsV1fInterface::buttonClicked(Button* button)
 		{
 			deviceEnableButton->setLabel(disabledButtonText);
 		}
+
+		updateInfoString();
 
 		CoreServices::updateSignalChain(editor);
 	}

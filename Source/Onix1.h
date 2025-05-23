@@ -98,9 +98,7 @@ namespace OnixSourcePlugin
 
 		int writeRegister(oni_dev_idx_t, oni_reg_addr_t, oni_reg_val_t) const;
 
-		device_map_t getDeviceTable() const noexcept { return deviceTable; }
-
-		int updateDeviceTable();
+		int getDeviceTable(device_map_t*);
 
 		oni_frame_t* readFrame() const;
 
@@ -111,7 +109,7 @@ namespace OnixSourcePlugin
 		double convertTimestampToSeconds(uint32_t timestamp) const { return static_cast<double>(timestamp) / ACQ_CLK_HZ; }
 
 		/** Gets a map of all hubs connected, where the index of the map is the hub address, and the value is the hub ID */
-		std::map<int, int> getHubIds();
+		std::map<int, int> getHubIds(device_map_t) const;
 
 		/** Gets a vector of device indices from a device_map_t object, optionally filtered by a specific hub */
 		static std::vector<int> getDeviceIndices(device_map_t deviceMap, int hubIndex = -1);
@@ -129,8 +127,6 @@ namespace OnixSourcePlugin
 		int patch;
 
 		uint32_t ACQ_CLK_HZ;
-
-		device_map_t deviceTable;
 
 		template<typename opt_t>
 		size_t opt_size_(opt_t opt)
