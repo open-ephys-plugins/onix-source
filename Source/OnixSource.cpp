@@ -83,7 +83,7 @@ std::unique_ptr<GenericEditor> OnixSource::createEditor(SourceNode* sn)
 	return e;
 }
 
-void OnixSource::disconnectDevices(bool updateStreamInfo)
+bool OnixSource::disconnectDevices(bool updateStreamInfo)
 {
 	sourceBuffers.clear(true);
 
@@ -93,18 +93,26 @@ void OnixSource::disconnectDevices(bool updateStreamInfo)
 	devicesFound = false;
 
 	if (context != nullptr && context->isInitialized())
-		context->setOption(ONIX_OPT_PASSTHROUGH, 0);
+	{
+		if (context->setOption(ONIX_OPT_PASSTHROUGH, 0) != ONI_ESUCCESS)
+		{
+			LOGE("Unable to set passthrough option when disconnecting devices.");
+			return false;
+		}
+	}
 
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
+
+	return true;
 }
 
 template <class Device>
 bool OnixSource::configureDevice(OnixDeviceVector& sources,
 	OnixSourceCanvas* canvas,
 	std::string deviceName,
-	std::string hubName, 
-	OnixDeviceType deviceType, 
-	const oni_dev_idx_t deviceIdx, 
+	std::string hubName,
+	OnixDeviceType deviceType,
+	const oni_dev_idx_t deviceIdx,
 	std::shared_ptr<Onix1> ctx)
 {
 	std::shared_ptr<Device> device = std::static_pointer_cast<Device>(canvas->getDevicePtr(Device::getDeviceType(), deviceIdx));
@@ -148,88 +156,89 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 	return res == ONI_ESUCCESS;
 }
 
-uint32_t OnixSource::getHubFirmwareVersion(std::shared_ptr<Onix1> ctx, uint32_t hubIndex)
+bool OnixSource::getHubFirmwareVersion(std::shared_ptr<Onix1> ctx, uint32_t hubIndex, uint32_t* firmwareVersion)
 {
-	oni_reg_val_t firmwareVersion = 0;
-	if (ctx->readRegister(hubIndex + ONIX_HUB_DEV_IDX, ONIX_HUB_FIRMWAREVER, &firmwareVersion) != ONI_ESUCCESS)
+	if (ctx->readRegister(hubIndex + ONIX_HUB_DEV_IDX, ONIX_HUB_FIRMWAREVER, firmwareVersion) != ONI_ESUCCESS)
 	{
 		LOGE("Unable to read the hub firmware version at index ", hubIndex);
-		return 0;
+		return false;
 	}
 
-	return firmwareVersion;
+	return true;
 }
 
-void OnixSource::initializeDevices(bool updateStreamInfo)
+bool OnixSource::enablePassthroughMode(std::shared_ptr<Onix1> ctx, bool passthroughA, bool passthroughB)
 {
-	if (context == nullptr || !context->isInitialized())
+	if (ctx == nullptr || !ctx->isInitialized())
 	{
-		LOGE("Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
-		return;
-	}
-
-	if (devicesFound)
-	{
-		disconnectDevices(false);
+		Onix1::showWarningMessageBoxAsync("Invalid Context", "Cannot enable passthrough mode, context is not initialized correctly.");
+		return false;
 	}
 
 	int val = 0;
 
-	if (getParameter("passthroughA")->getValue())
+	if (passthroughA)
 	{
 		LOGD("Passthrough mode enabled for Port A");
 		val |= 1 << 0;
 	}
 
-	if (getParameter("passthroughB")->getValue())
+	if (passthroughB)
 	{
 		LOGD("Passthrough mode enabled for Port B");
 		val |= 1 << 2;
 	}
 
-	context->setOption(ONIX_OPT_PASSTHROUGH, val);
+	return ctx->setOption(ONIX_OPT_PASSTHROUGH, val) == ONI_ESUCCESS;
+}
 
-	context->issueReset();
-	int rc = context->updateDeviceTable();
-
-	if (rc != ONI_ESUCCESS) return;
-
-	if (portA->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port A.");
-	if (portB->configureDevice() != ONI_ESUCCESS) LOGE("Unable to configure Port B.");
-
-	device_map_t deviceMap = context->getDeviceTable();
-
-	if (deviceMap.size() == 0)
+bool OnixSource::configurePort(PortName port)
+{
+	if (context == nullptr || !context->isInitialized())
 	{
-		LOGE("No devices found.");
-		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
-		return;
+		Onix1::showWarningMessageBoxAsync("Invalid Context", "Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
+		return false;
 	}
 
-	auto hubIds = context->getHubIds();
+	if (port == PortName::PortA)
+	{
+		if (portA->configureDevice() != ONI_ESUCCESS)
+		{
+			Onix1::showWarningMessageBoxAsync("Configuration Error", "Unable to configure Port A.");
+			return false;
+		}
+	}
+	else if (port == PortName::PortB)
+	{
+		if (portB->configureDevice() != ONI_ESUCCESS)
+		{
+			Onix1::showWarningMessageBoxAsync("Configuration Error", "Unable to configure Port B.");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool OnixSource::checkHubFirmwareCompatibility(std::shared_ptr<Onix1> context, device_map_t deviceTable)
+{
+	auto hubIds = context->getHubIds(deviceTable);
 
 	if (hubIds.size() == 0)
 	{
 		LOGE("No hub IDs found.");
-		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
-		return;
+		return false;
 	}
 
-	devicesFound = true;
-
-	const int bufferSizeInSeconds = 10;
-
-	// NB: Search through all hubs, and initialize devices
 	for (const auto& [hubIndex, hubId] : hubIds)
 	{
 		if (hubId == ONIX_HUB_FMCHOST) // NB: Breakout Board
 		{
-			auto firmwareVersion = getHubFirmwareVersion(context, hubIndex);
-
-			if (firmwareVersion == 0)
+			static constexpr int RequiredMajorVersion = 1;
+			uint32_t firmwareVersion = 0;
+			if (!getHubFirmwareVersion(context, hubIndex, &firmwareVersion))
 			{
-				devicesFound = false;
-				return;
+				return false;
 			}
 
 			auto majorVersion = (firmwareVersion & 0xFF00) >> 8;
@@ -237,61 +246,87 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 			LOGD("Breakout board firmware version: v", majorVersion, ".", minorVersion);
 
+			if (majorVersion != RequiredMajorVersion)
+			{
+				Onix1::showWarningMessageBoxAsync("Invalid Firmware Version", "The breakout board major version is v" + std::to_string(majorVersion) + ", but this plugin is only compatible with v" + std::to_string(RequiredMajorVersion) + ". To use this plugin, upgrade to a version that supports the breakout board v" + std::to_string(majorVersion));
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamInfo)
+{
+	if (context == nullptr || !context->isInitialized())
+	{
+		Onix1::showWarningMessageBoxAsync("Invalid Context", "Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
+		return false;
+	}
+
+	if (deviceTable.size() == 0)
+	{
+		LOGE("No devices found.");
+		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
+		return false;
+	}
+
+	auto hubIds = context->getHubIds(deviceTable);
+
+	if (hubIds.size() == 0)
+	{
+		LOGE("No hub IDs found.");
+		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
+		return false;
+	}
+
+	devicesFound = false;
+
+	// NB: Search through all hubs, and initialize devices
+	for (const auto& [hubIndex, hubId] : hubIds)
+	{
+		if (hubId == ONIX_HUB_FMCHOST) // NB: Breakout Board
+		{
 			hubNames.insert({ hubIndex, BREAKOUT_BOARD_NAME });
-			bool result = false;
 			auto canvas = editor->getCanvas();
 
-			if (majorVersion == 1)
-			{
-				result = configureDevice<Heartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, Heartbeat::getDeviceType(), hubIndex, context);
-			}
-			else
-			{
-				LOGE("Invalid firmware version found, expected the major version to be 1, instead it is ", majorVersion);
-				result = false;
-				// NB: Add support for persistent heartbeat device here
-			}
+			devicesFound = configureDevice<Heartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, Heartbeat::getDeviceType(), hubIndex, context);
+			if (!devicesFound) return false;
 
-			if (!result)
-			{
-				devicesFound = false;
-				return;
-			}
+			devicesFound = configureDevice<OutputClock>(sources, canvas, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
+			if (!devicesFound) return false;
 
-			result = configureDevice<OutputClock>(sources, canvas, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
-			if (!result) { devicesFound = false; return; }
+			devicesFound = configureDevice<AnalogIO>(sources, canvas, "Analog IO", BREAKOUT_BOARD_NAME, AnalogIO::getDeviceType(), hubIndex + 6, context);
+			if (!devicesFound) return false;
 
-			result = configureDevice<AnalogIO>(sources, canvas, "Analog IO", BREAKOUT_BOARD_NAME, AnalogIO::getDeviceType(), hubIndex + 6, context);
-			if (!result) { devicesFound = false; return; }
+			devicesFound = configureDevice<DigitalIO>(sources, canvas, "Digital IO", BREAKOUT_BOARD_NAME, DigitalIO::getDeviceType(), hubIndex + 7, context);
+			if (!devicesFound) return false;
 
-			result = configureDevice<DigitalIO>(sources, canvas, "Digital IO", BREAKOUT_BOARD_NAME, DigitalIO::getDeviceType(), hubIndex + 7, context);
-			if (!result) { devicesFound = false; return; }
+			devicesFound = configureDevice<MemoryMonitor>(sources, canvas, "Memory Monitor", BREAKOUT_BOARD_NAME, MemoryMonitor::getDeviceType(), hubIndex + 10, context);
+			if (!devicesFound) return false;
 
-			result = configureDevice<MemoryMonitor>(sources, canvas, "Memory Monitor", BREAKOUT_BOARD_NAME, MemoryMonitor::getDeviceType(), hubIndex + 10, context);
-			if (!result) { devicesFound = false; return; }
-
-			result = configureDevice<HarpSyncInput>(sources, canvas, "Harp Sync Input", BREAKOUT_BOARD_NAME, HarpSyncInput::getDeviceType(), hubIndex + 12, context);
-			if (!result) { devicesFound = false; return; }
+			devicesFound = configureDevice<HarpSyncInput>(sources, canvas, "Harp Sync Input", BREAKOUT_BOARD_NAME, HarpSyncInput::getDeviceType(), hubIndex + 12, context);
+			if (!devicesFound) return false;
 		}
 		else if (hubId == ONIX_HUB_HSNP)
 		{
 			hubNames.insert({ hubIndex, NEUROPIXELSV1F_HEADSTAGE_NAME });
-			bool result = false;
 			auto canvas = editor->getCanvas();
 
 			for (int i = 0; i < 2; i++)
 			{
-				result = configureDevice<Neuropixels1f>(sources, canvas, "Probe" + std::to_string(i), NEUROPIXELSV1F_HEADSTAGE_NAME, Neuropixels1f::getDeviceType(), hubIndex + i, context);
-				if (!result) { devicesFound = false; return; }
+				devicesFound = configureDevice<Neuropixels1f>(sources, canvas, "Probe" + std::to_string(i), NEUROPIXELSV1F_HEADSTAGE_NAME, Neuropixels1f::getDeviceType(), hubIndex + i, context);
+				if (!devicesFound) return false;
 			}
 
-			result = configureDevice<Bno055>(sources, canvas, "BNO055", NEUROPIXELSV1F_HEADSTAGE_NAME, Bno055::getDeviceType(), hubIndex + 2, context);
-			if (!result) { devicesFound = false; return; }
+			devicesFound = configureDevice<Bno055>(sources, canvas, "BNO055", NEUROPIXELSV1F_HEADSTAGE_NAME, Bno055::getDeviceType(), hubIndex + 2, context);
+			if (!devicesFound) return false;
 		}
 	}
 
 	// NB: Search for passthrough devices, and initialize any headstages found in passthrough mode
-	for (const auto& [index, device] : deviceMap)
+	for (const auto& [index, device] : deviceTable)
 	{
 		if (device.id == ONIX_DS90UB9RAW)
 		{
@@ -305,24 +340,23 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
 
-			bool result = false;
 			auto canvas = editor->getCanvas();
 
 			if (hsid == ONIX_HUB_HSNP2E)
 			{
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
-				result = configureDevice<Neuropixels2e>(sources, canvas, "", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
-				if (!result) { devicesFound = false; return; }
+				devicesFound = configureDevice<Neuropixels2e>(sources, canvas, "", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
+				if (!devicesFound) return false;
 
-				result = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
-				if (!result) { devicesFound = false; return; }
+				devicesFound = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
+				if (!devicesFound) return false;
 
 				if (sources.back()->getDeviceType() != OnixDeviceType::POLLEDBNO)
 				{
-					LOGE("Unknown device encountered when setting headstage.");
+					LOGE("Unknown device encountered when configuring headstage ", NEUROPIXELSV2E_HEADSTAGE_NAME);
 					devicesFound = false;
-					return;
+					return false;
 				}
 
 				const auto& polledBno = std::static_pointer_cast<PolledBno055>(sources.back());
@@ -337,36 +371,50 @@ void OnixSource::initializeDevices(bool updateStreamInfo)
 
 	context->issueReset();
 
-	oni_size_t readFrameSize;
-	rc = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE, &readFrameSize);
-	LOGD("Max read frame size: ", readFrameSize, " bytes");
-
-	oni_size_t writeFrameSize;
-	rc = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE, &writeFrameSize);
-	LOGD("Max write frame size: ", writeFrameSize, " bytes");
-
-	rc = context->setOption(ONI_OPT_BLOCKREADSIZE, blockReadSize);
-	LOGD("Block read size: ", blockReadSize, " bytes");
-
-	if (rc != ONI_ESUCCESS)
-	{
-		if (blockReadSize < readFrameSize)
-		{
-			Onix1::showWarningMessageBoxAsync("Invalid Block Read Size", "The block read size is too small. The max read frame size is " + std::to_string(readFrameSize) + ", but the block read size is " + std::to_string(blockReadSize) + ".\n\nTo continue, increase the block read size to be greater than " + std::to_string(readFrameSize) + " and reconnect.");
-			devicesFound = false;
-			return;
-		}
-		else
-		{
-			LOGE("Unknown error found when setting block read size.");
-			devicesFound = false;
-			return;
-		}
-	}
-
 	if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 
 	LOGD("All devices initialized.");
+	return devicesFound;
+}
+
+bool OnixSource::configureBlockReadSize(std::shared_ptr<Onix1> context, uint32_t blockReadSize)
+{
+	if (context == nullptr || !context->isInitialized())
+	{
+		Onix1::showWarningMessageBoxAsync("Invalid Context", "Cannot set block read size, context is not initialized correctly. Please try removing the plugin and adding it again.");
+		return false;
+	}
+
+	oni_size_t readFrameSize;
+	int rc = context->getOption<oni_size_t>(ONI_OPT_MAXREADFRAMESIZE, &readFrameSize);
+	if (rc == ONI_ESUCCESS)
+	{
+		LOGD("Max read frame size: ", readFrameSize, " bytes");
+	}
+	else
+	{
+		LOGE("Unable to get read frame size.");
+		return false;
+	}
+
+	oni_size_t writeFrameSize;
+	rc = context->getOption<oni_size_t>(ONI_OPT_MAXWRITEFRAMESIZE, &writeFrameSize);
+	if (rc == ONI_ESUCCESS)
+	{
+		LOGD("Max write frame size: ", writeFrameSize, " bytes");
+	}
+	else
+	{
+		LOGE("Unable to get write frame size.");
+		return false;
+	}
+
+	if (!writeBlockReadSize(context, blockReadSize, readFrameSize))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 uint32_t OnixSource::getBlockReadSize() const
@@ -377,6 +425,33 @@ uint32_t OnixSource::getBlockReadSize() const
 void OnixSource::setBlockReadSize(uint32_t newReadSize)
 {
 	blockReadSize = newReadSize;
+}
+
+bool OnixSource::writeBlockReadSize(std::shared_ptr<Onix1> context, uint32_t blockReadSize, uint32_t readFrameSize)
+{
+	if (context == nullptr || !context->isInitialized())
+	{
+		Onix1::showWarningMessageBoxAsync("Invalid Context", "Cannot initialize devices, context is not initialized correctly. Please try removing the plugin and adding it again.");
+		return false;
+	}
+
+	if (blockReadSize < readFrameSize)
+	{
+		Onix1::showWarningMessageBoxAsync("Invalid Block Read Size", "The block read size is too small. The max read frame size is " + std::to_string(readFrameSize) + ", but the block read size is " + std::to_string(blockReadSize) + ".\n\nTo continue, increase the block read size to be greater than " + std::to_string(readFrameSize) + " and reconnect.");
+		return false;
+	}
+
+	int rc = context->setOption(ONI_OPT_BLOCKREADSIZE, blockReadSize);
+
+	if (rc != ONI_ESUCCESS)
+	{
+		LOGE("Unknown error found when setting block read size to ", blockReadSize);
+		return false;
+	}
+
+	LOGD("Block read size: ", blockReadSize, " bytes");
+
+	return true;
 }
 
 OnixDeviceVector OnixSource::getDataSources()
@@ -562,6 +637,11 @@ bool OnixSource::isContextInitialized()
 std::shared_ptr<Onix1> OnixSource::getContext()
 {
 	return context;
+}
+
+bool OnixSource::getDeviceTable(device_map_t* deviceTable)
+{
+	return context->getDeviceTable(deviceTable) == ONI_ESUCCESS;
 }
 
 void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,

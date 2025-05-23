@@ -125,6 +125,9 @@ namespace OnixSourcePlugin
 		void setComboBoxSelection(ComboBox* comboBox, String headstage);
 		void addHeadstageComboBoxOptions(ComboBox* comboBox);
 		void enableEditorElements(bool);
+		bool configureAllDevices();
+		bool configurePortVoltage(PortName, Label*, Label*, DrawableRectangle*);
+		void setPortStatusAndVoltageValue(PortName, double, FillType, Label*, DrawableRectangle*);
 
 		std::unique_ptr<MemoryMonitorUsage> memoryUsage;
 

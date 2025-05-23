@@ -96,16 +96,23 @@ namespace OnixSourcePlugin
 
 		std::shared_ptr<Onix1> getContext();
 
-		void initializeDevices(bool updateStreamInfo = false);
+		bool getDeviceTable(device_map_t*);
 
-		void disconnectDevices(bool updateStreamInfo = false);
+		static bool enablePassthroughMode(std::shared_ptr<Onix1>, bool, bool);
+
+		bool configurePort(PortName);
+
+		static bool checkHubFirmwareCompatibility(std::shared_ptr<Onix1>, device_map_t);
+
+		bool initializeDevices(device_map_t, bool updateStreamInfo = false);
+
+		static bool configureBlockReadSize(std::shared_ptr<Onix1>, uint32_t);
+
+		bool disconnectDevices(bool updateStreamInfo = false);
 
 		OnixDeviceVector getDataSources();
-
 		OnixDeviceVector getEnabledDataSources();
-
 		OnixDeviceVector getDataSourcesFromPort(PortName port);
-
 		OnixDeviceVector getDataSourcesFromOffset(int offset);
 
 		std::shared_ptr<OnixDevice> getDevice(OnixDeviceType type);
@@ -166,7 +173,9 @@ namespace OnixSourcePlugin
 		template <class Device>
 		static bool configureDevice(OnixDeviceVector&, OnixSourceCanvas*, std::string, std::string, OnixDeviceType, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
-		static uint32_t getHubFirmwareVersion(std::shared_ptr<Onix1>, uint32_t);
+		static bool getHubFirmwareVersion(std::shared_ptr<Onix1>, uint32_t, uint32_t*);
+
+		static bool writeBlockReadSize(std::shared_ptr<Onix1>, uint32_t, uint32_t);
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 	};

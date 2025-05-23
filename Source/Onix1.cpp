@@ -49,10 +49,12 @@ Onix1::~Onix1()
 	oni_destroy_ctx(ctx_);
 }
 
-int Onix1::updateDeviceTable()
+int Onix1::getDeviceTable(device_map_t* deviceTable)
 {
-	if (deviceTable.size() > 0)
-		deviceTable.clear();
+	if (deviceTable->size() > 0)
+		deviceTable->clear();
+
+	issueReset();
 
 	oni_size_t numDevices;
 	int rc = getOption<oni_size_t>(ONI_OPT_NUMDEVICES, &numDevices);
@@ -70,13 +72,13 @@ int Onix1::updateDeviceTable()
 
 	for (const auto& device : devices)
 	{
-		deviceTable.insert({ device.idx, device });
+		deviceTable->insert({ device.idx, device });
 	}
 
 	return rc;
 }
 
-std::map<int, int> Onix1::getHubIds()
+std::map<int, int> Onix1::getHubIds(device_map_t deviceTable) const
 {
 	std::map<int, int> hubIds;
 
@@ -92,7 +94,10 @@ std::map<int, int> Onix1::getHubIds()
 		oni_reg_val_t hubId = 0;
 		int rc = oni_read_reg(ctx_, offsets[i] + ONIX_HUB_DEV_IDX, (uint32_t)ONIX_HUB_HARDWAREID, &hubId);
 		if (rc != ONI_ESUCCESS)
+		{
 			LOGE("Unable to read the hub device index for the hub at index ", offsets[i]);
+			continue;
+		}
 
 		hubIds.insert({ offsets[i], hubId });
 	}

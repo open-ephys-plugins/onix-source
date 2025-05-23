@@ -244,101 +244,116 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 
 	if (connected)
 	{
-		lastVoltageSetA->setText("---", dontSendNotification);
+		if (!source->configurePort(PortName::PortA) || !source->configurePort(PortName::PortB))
+			return;
 
-		// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
-		if (isHeadstageSelected(PortName::PortA) || portVoltageValueA->getText() != "Auto")
-		{
-			portStatusA->setFill(fillSearching);
+		if (!configurePortVoltage(PortName::PortA, lastVoltageSetA.get(), portVoltageValueA.get(), portStatusA.get()))
+			return;
 
-			if (!source->configurePortVoltage(PortName::PortA, portVoltageValueA->getText()))
-			{
-				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port A.");
-				portStatusA->setFill(fillDisconnected);
-			}
-			else
-			{
-				portStatusA->setFill(fillConnected);
-			}
-		}
-		else
-		{
-			source->setPortVoltage(PortName::PortA, 0);
-			portStatusA->setFill(fillDisconnected);
-		}
+		if (!configurePortVoltage(PortName::PortB, lastVoltageSetB.get(), portVoltageValueB.get(), portStatusB.get()))
+			return;
 
-		lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
-
-		lastVoltageSetB->setText("---", dontSendNotification);
-
-		if (isHeadstageSelected(PortName::PortB) || portVoltageValueB->getText() != "Auto")
-		{
-			portStatusB->setFill(fillSearching);
-
-			if (!source->configurePortVoltage(PortName::PortB, portVoltageValueB->getText()))
-			{
-				CoreServices::sendStatusMessage("Unable to acquire communication lock on Port B.");
-				portStatusB->setFill(fillDisconnected);
-			}
-			else
-			{
-				portStatusB->setFill(fillConnected);
-			}
-		}
-		else
-		{
-			source->setPortVoltage(PortName::PortB, 0);
-			portStatusB->setFill(fillDisconnected);
-		}
-
-		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
-
-		source->initializeDevices(false);
-
-		if (source->foundInputSource())
-			canvas->refreshTabs();
+		if (!configureAllDevices())
+			return;
 
 		// NB: Check if headstages were not discovered, and then removed
 		if (!isHeadstageSelected(PortName::PortA) && source->getLastVoltageSet(PortName::PortA) > 0)
-		{
-			source->setPortVoltage(PortName::PortA, 0);
-			portStatusA->setFill(fillDisconnected);
-			lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
-		}
+			setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
 
 		if (!isHeadstageSelected(PortName::PortB) && source->getLastVoltageSet(PortName::PortB) > 0)
-		{
-			source->setPortVoltage(PortName::PortB, 0);
-			portStatusB->setFill(fillDisconnected);
-			lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
-		}
+			setPortStatusAndVoltageValue(PortName::PortB, 0.0, fillDisconnected, lastVoltageSetB.get(), portStatusB.get());
 
 		connectButton->setLabel("DISCONNECT");
 
 		enableEditorElements(false);
-
-		if (!source->foundInputSource())
-		{
-			CoreServices::sendStatusMessage("Error configuring hardware. Check logs for more details.");
-			connectButton->setToggleState(false, sendNotification);
-		}
 	}
 	else
 	{
-		source->setPortVoltage(PortName::PortA, 0);
-		source->setPortVoltage(PortName::PortB, 0);
-
-		lastVoltageSetA->setText(String(source->getLastVoltageSet(PortName::PortA)) + " V", dontSendNotification);
-		lastVoltageSetB->setText(String(source->getLastVoltageSet(PortName::PortB)) + " V", dontSendNotification);
-
-		portStatusA->setFill(fillDisconnected);
-		portStatusB->setFill(fillDisconnected);
+		setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
+		setPortStatusAndVoltageValue(PortName::PortB, 0.0, fillDisconnected, lastVoltageSetB.get(), portStatusB.get());
 
 		source->disconnectDevices(true);
 		connectButton->setLabel("CONNECT");
 
 		enableEditorElements(true);
 	}
+}
+
+bool OnixSourceEditor::configurePortVoltage(PortName port, Label* lastVoltageSet, Label* portVoltageValue, DrawableRectangle* portStatus)
+{
+	bool result = false;
+
+	lastVoltageSet->setText("---", dontSendNotification);
+
+	// NB: Configure port voltages, using either the automated voltage discovery algorithm, or the explicit voltage value given
+	if (isHeadstageSelected(port) || portVoltageValue->getText() != "Auto")
+	{
+		portStatus->setFill(fillSearching);
+
+		if (!source->configurePortVoltage(port, portVoltageValue->getText()))
+		{
+			Onix1::showWarningMessageBoxAsync("Communication Error", "Unable to acquire communication lock on " + OnixDevice::getPortName(port) + ".");
+			portStatus->setFill(fillDisconnected);
+			result = false;
+		}
+		else
+		{
+			portStatus->setFill(fillConnected);
+			result = true;
+		}
+	}
+	else
+	{
+		source->setPortVoltage(port, 0);
+		portStatus->setFill(fillDisconnected);
+		result = true;
+	}
+
+	lastVoltageSet->setText(String(source->getLastVoltageSet(port)) + " V", dontSendNotification);
+
+	return result;
+}
+
+void OnixSourceEditor::setPortStatusAndVoltageValue(PortName port, double voltage, FillType fill, Label* lastVoltageSet, DrawableRectangle* portStatus)
+{
+	source->setPortVoltage(port, 0);
+	portStatus->setFill(fill);
+	lastVoltageSet->setText(String(source->getLastVoltageSet(port)) + " V", dontSendNotification);
+}
+
+bool OnixSourceEditor::configureAllDevices()
+{
+	if (source->foundInputSource() && !source->disconnectDevices(false))
+		return false;
+
+	if (!OnixSource::enablePassthroughMode(source->getContext(), source->getParameter("passthroughA")->getValue(), source->getParameter("passthroughB")->getValue()))
+	{
+		Onix1::showWarningMessageBoxAsync("Passthrough Configuration Error", "Unable to set passthrough mode. Check logs for more details.");
+		return false;
+	}
+
+	device_map_t deviceTable;
+	if (!source->getDeviceTable(&deviceTable))
+	{
+		Onix1::showWarningMessageBoxAsync("Device Table Error", "An error occurred when trying to get the device table. Check logs for more details.");
+		return false;
+	}
+
+	if (!OnixSource::checkHubFirmwareCompatibility(source->getContext(), deviceTable))
+		return false;
+
+	if (source->initializeDevices(deviceTable, false))
+		canvas->refreshTabs();
+	else
+	{
+		CoreServices::sendStatusMessage("Error configuring hardware. Check logs for more details.");
+		connectButton->setToggleState(false, sendNotification);
+	}
+
+	if (!source->configureBlockReadSize(source->getContext(), blockReadSizeValue->getText().getIntValue()))
+		return false;
+
+	return true;
 }
 
 void OnixSourceEditor::enableEditorElements(bool enable)
