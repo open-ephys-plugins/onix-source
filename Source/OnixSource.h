@@ -112,10 +112,10 @@ namespace OnixSourcePlugin
 
 		OnixDeviceVector getDataSources();
 		OnixDeviceVector getEnabledDataSources();
-		OnixDeviceVector getDataSourcesFromPort(PortName port);
 		OnixDeviceVector getDataSourcesFromOffset(int offset);
 
-		std::shared_ptr<OnixDevice> getDevice(OnixDeviceType type);
+		std::shared_ptr<OnixDevice> getDevice(OnixDeviceType, int);
+		OnixDeviceVector getDevices(OnixDeviceType);
 
 		static std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector, bool filterDevices = false);
 
@@ -162,6 +162,8 @@ namespace OnixSourcePlugin
 		uint32_t blockReadSize = 4096;
 
 		bool devicesFound = false;
+
+		static constexpr int BREAKOUT_BOARD_OFFSET = 0;
 
 		void addIndividualStreams(Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
 

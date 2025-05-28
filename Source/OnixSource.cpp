@@ -124,20 +124,19 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 			LOGD("Difference in names found for device at address ", deviceIdx, ". Found ", deviceName, " on ", hubName, ", but was expecting ", device->getName(), " on ", device->getHubName());
 		}
 	}
-	else
+	else if (device->getDeviceType() == OnixDeviceType::HEARTBEAT || device->getDeviceType() == OnixDeviceType::MEMORYMONITOR) // NB: These are devices with no equivalent settings tab that still need to be created and added to the vector of devices
 	{
-		// NB: Create a new device if a tab does not exist, but the device was found while connecting
 		LOGD("Creating new device ", deviceName, " on ", hubName);
 		device = std::make_shared<Device>(deviceName, hubName, deviceIdx, ctx);
 	}
 
 	if (device == nullptr)
 	{
-		LOGE("Could not create or find ", deviceName, " on ", hubName);
+		Onix1::showWarningMessageBoxAsync("Device Not Found", "Could not find " + deviceName + ", at address " + std::to_string(deviceIdx) + " on " + hubName);
 		return false;
 	}
 
-	int res = -1;
+	int res = 1;
 
 	try
 	{
@@ -366,12 +365,14 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 				hubNames.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
-			else if (hsid == 0xFFFFFFFF) // TODO: hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH
+			else if (hsid == 0xFFFFFFFF || hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH)
 			{
-				devicesFound = configureDevice<Neuropixels1e>(sources, canvas, "Probe", NEUROPIXELSV1E_HEADSTAGE_NAME, Neuropixels1e::getDeviceType(), index, context);
+				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
+
+				devicesFound = configureDevice<Neuropixels1e>(sources, canvas, "Probe", NEUROPIXELSV1E_HEADSTAGE_NAME, Neuropixels1e::getDeviceType(), hubIndex, context);
 				if (!devicesFound) return false;
 
-				devicesFound = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV1E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), index, context);
+				devicesFound = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV1E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
 				if (!devicesFound) return false;
 
 				if (sources.back()->getDeviceType() != OnixDeviceType::POLLEDBNO)
@@ -500,19 +501,6 @@ OnixDeviceVector OnixSource::getEnabledDataSources()
 	return devices;
 }
 
-OnixDeviceVector OnixSource::getDataSourcesFromPort(PortName port)
-{
-	OnixDeviceVector devices{};
-
-	for (const auto& source : sources)
-	{
-		if (PortController::getPortFromIndex(source->getDeviceIdx()) == port)
-			devices.emplace_back(source);
-	}
-
-	return devices;
-}
-
 OnixDeviceVector OnixSource::getDataSourcesFromOffset(int offset)
 {
 	OnixDeviceVector devices{};
@@ -527,7 +515,7 @@ OnixDeviceVector OnixSource::getDataSourcesFromOffset(int offset)
 	return devices;
 }
 
-std::shared_ptr<OnixDevice> OnixSource::getDevice(OnixDeviceType type)
+std::shared_ptr<OnixDevice> OnixSource::getDevice(OnixDeviceType type, int offset)
 {
 	for (const auto& device : sources)
 	{
@@ -535,6 +523,19 @@ std::shared_ptr<OnixDevice> OnixSource::getDevice(OnixDeviceType type)
 	}
 
 	return nullptr;
+}
+
+OnixDeviceVector OnixSource::getDevices(OnixDeviceType type)
+{
+	OnixDeviceVector foundDevices{};
+
+	for (const auto& device : sources)
+	{
+		if (device->getDeviceType() == type)
+			foundDevices.emplace_back(device);
+	}
+
+	return foundDevices;
 }
 
 std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devices, bool filterDevices)
@@ -683,7 +684,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 	updateSourceBuffers();
 
-	std::shared_ptr<DigitalIO> digitalIO = std::static_pointer_cast<DigitalIO>(getDevice(OnixDeviceType::DIGITALIO));
+	std::shared_ptr<DigitalIO> digitalIO = std::static_pointer_cast<DigitalIO>(getDevice(OnixDeviceType::DIGITALIO, BREAKOUT_BOARD_OFFSET));
 
 	if (devicesFound)
 	{
@@ -785,6 +786,20 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 					"harpsyncinput",
 					"0000000",
 					""
+				};
+
+				deviceInfos->add(new DeviceInfo(deviceSettings));
+
+				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
+			}
+			else if (source->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E)
+			{
+				DeviceInfo::Settings deviceSettings{
+					source->getName(),
+					"Neuropixels 1.0 Probe",
+					"neuropixels1.probe",
+					"0000000",
+					"imec"
 				};
 
 				deviceInfos->add(new DeviceInfo(deviceSettings));
@@ -958,10 +973,13 @@ bool OnixSource::stopAcquisition()
 	if (!portA->getErrorFlag() && !portB->getErrorFlag())
 		waitForThreadToExit(2000);
 
-	auto polledBno055 = getDevice(OnixDeviceType::POLLEDBNO);
+	auto polledBno055s = getDevices(OnixDeviceType::POLLEDBNO);
 
-	if (polledBno055 != nullptr && polledBno055->isEnabled())
-		polledBno055->stopAcquisition(); // NB: Polled BNO must be stopped before other devices to ensure there are no stream clashes
+	for (const auto& polledBno055 : polledBno055s)
+	{
+		if (polledBno055 != nullptr && polledBno055->isEnabled())
+			polledBno055->stopAcquisition(); // NB: Polled BNO must be stopped before other devices to ensure there are no stream clashes
+	}
 
 	for (const auto& source : enabledSources)
 	{

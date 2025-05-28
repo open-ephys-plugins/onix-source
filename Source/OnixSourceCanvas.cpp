@@ -62,7 +62,7 @@ void OnixSourceCanvas::addHub(std::string hubName, int offset)
 		const int passthroughIndex = (offset >> 8) + 7;
 
 		devices.emplace_back(std::make_shared<Neuropixels1e>("Probe", hubName, passthroughIndex, source->getContext()));
-		devices.emplace_back(std::make_shared<Bno055>("BNO055", hubName, passthroughIndex, source->getContext()));
+		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", hubName, passthroughIndex, source->getContext()));
 	}
 	else if (hubName == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
