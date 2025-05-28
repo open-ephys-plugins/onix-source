@@ -303,6 +303,7 @@ void Neuropixels1e::processFrames()
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint16_t* dataPtr = (uint16_t*)frame->data;
+		dataPtr += dataOffset;
 
 		apTimestamps[superFrameCount] = deviceContext->convertTimestampToSeconds(frame->time);
 		apSampleNumbers[superFrameCount] = apSampleNumber++;
@@ -320,23 +321,22 @@ void Neuropixels1e::processFrames()
 
 				for (int adc = 0; adc < NeuropixelsV1Values::AdcCount; adc++)
 				{
-					auto sample = *(dataPtr + adcToFrameIndex[adc] + dataOffset);
+					auto sample = *(dataPtr + adcToFrameIndex[adc]);
 					sample = sample > adcValues.at(adc).threshold ? sample - adcValues.at(adc).offset : sample;
 					lfpSamples[(rawToChannel[adc][superCountOffset] * numUltraFrames) + ultraFrameCount] =
-						lfpConversion * (float(sample) - 512) - lfpOffsets.at(rawToChannel[adc][superCountOffset]);
+						lfpConversion * (float(sample) - DataMidpoint) - lfpOffsets.at(rawToChannel[adc][superCountOffset]);
 				}
 			}
 			else // AP data
 			{
-				// The period of ADC data within data array is 36 words
-				int adcDataOffset = (i + 1) * NeuropixelsV1Values::FrameWords;
+				int adcDataOffset = i * NeuropixelsV1Values::FrameWords;
 
 				for (int adc = 0; adc < NeuropixelsV1Values::AdcCount; adc++)
 				{
-					auto sample = *(dataPtr + adcToFrameIndex[adc] + dataOffset + adcDataOffset);
+					auto sample = *(dataPtr + adcToFrameIndex[adc] + adcDataOffset);
 					sample = sample > adcValues.at(adc).threshold ? sample - adcValues.at(adc).offset : sample;
 					apSamples[(rawToChannel[adc][i - 1] * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
-						apConversion * (float(sample) - 512) - apOffsets.at(rawToChannel[adc][i - 1]);
+						apConversion * (float(sample) - DataMidpoint) - apOffsets.at(rawToChannel[adc][i - 1]);
 				}
 			}
 		}

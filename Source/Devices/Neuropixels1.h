@@ -87,7 +87,7 @@ namespace OnixSourcePlugin
 		static constexpr int framesPerSuperFrame = 13;
 		static constexpr int framesPerUltraFrame = superFramesPerUltraFrame * framesPerSuperFrame;
 		static constexpr int numUltraFrames = 12;
-		static constexpr int dataOffset = 1;
+		static constexpr int dataOffset = 4 + 1; // NB: 4 bytes [hubClock] + 1 byte [probeIndex]
 
 		static constexpr int secondsToSettle = 5;
 		static constexpr int samplesToAverage = 100;
