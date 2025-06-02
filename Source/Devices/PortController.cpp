@@ -32,7 +32,7 @@ PortController::PortController(PortName port_, std::shared_ptr<Onix1> ctx_) :
 
 int PortController::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) return -5;
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return 1;
 
 	return deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1);
 }
