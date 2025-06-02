@@ -89,7 +89,7 @@ Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_de
 		"AP",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
-		"µV",
+		"ï¿½V",
 		{},
 		"ap"
 	);
@@ -104,7 +104,7 @@ Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_de
 		"LFP",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
-		"µV",
+		"ï¿½V",
 		{},
 		"lfp"
 	);
@@ -329,11 +329,9 @@ void Neuropixels1e::processFrames()
 			}
 			else // AP data
 			{
-				int adcDataOffset = i * NeuropixelsV1Values::FrameWords;
-
 				for (int adc = 0; adc < NeuropixelsV1Values::AdcCount; adc++)
 				{
-					auto sample = *(dataPtr + adcToFrameIndex[adc] + adcDataOffset);
+					auto sample = *(dataPtr + adcToFrameIndex[adc] + i * NeuropixelsV1Values::FrameWordsV1e);
 					sample = sample > adcValues.at(adc).threshold ? sample - adcValues.at(adc).offset : sample;
 					apSamples[(rawToChannel[adc][i - 1] * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
 						apConversion * (float(sample) - DataMidpoint) - apOffsets.at(rawToChannel[adc][i - 1]);

@@ -219,7 +219,8 @@ namespace OnixSourcePlugin
 		static constexpr int numberOfShanks = 1;
 		static constexpr int numberOfSettings = 1;
 		static constexpr int AdcCount = 32;
-		static constexpr int FrameWords = 40;
+		static constexpr int FrameWordsV1e = 40;
+		static constexpr int FrameWordsV1f = 36;
 	};
 
 	struct NeuropixelsV2eValues

@@ -291,22 +291,46 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 			auto canvas = editor->getCanvas();
 
 			devicesFound = configureDevice<Heartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, Heartbeat::getDeviceType(), hubIndex, context);
-			if (!devicesFound) return false;
+			if (!devicesFound) 
+			{
+				sources.clear();
+				return false;
+			}
 
 			devicesFound = configureDevice<OutputClock>(sources, canvas, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
-			if (!devicesFound) return false;
+			if (!devicesFound)
+			{
+				sources.clear();
+				return false;
+			}
 
 			devicesFound = configureDevice<AnalogIO>(sources, canvas, "Analog IO", BREAKOUT_BOARD_NAME, AnalogIO::getDeviceType(), hubIndex + 6, context);
-			if (!devicesFound) return false;
+			if (!devicesFound)
+			{
+				sources.clear();
+				return false;
+			}
 
 			devicesFound = configureDevice<DigitalIO>(sources, canvas, "Digital IO", BREAKOUT_BOARD_NAME, DigitalIO::getDeviceType(), hubIndex + 7, context);
-			if (!devicesFound) return false;
+			if (!devicesFound)
+			{
+				sources.clear();
+				return false;
+			}
 
 			devicesFound = configureDevice<MemoryMonitor>(sources, canvas, "Memory Monitor", BREAKOUT_BOARD_NAME, MemoryMonitor::getDeviceType(), hubIndex + 10, context);
-			if (!devicesFound) return false;
+			if (!devicesFound)
+			{
+				sources.clear();
+				return false;
+			}
 
 			devicesFound = configureDevice<HarpSyncInput>(sources, canvas, "Harp Sync Input", BREAKOUT_BOARD_NAME, HarpSyncInput::getDeviceType(), hubIndex + 12, context);
-			if (!devicesFound) return false;
+			if (!devicesFound)
+			{
+				sources.clear();
+				return false;
+			}
 		}
 		else if (hubId == ONIX_HUB_HSNP)
 		{
@@ -316,11 +340,19 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 			for (int i = 0; i < 2; i++)
 			{
 				devicesFound = configureDevice<Neuropixels1f>(sources, canvas, "Probe" + std::to_string(i), NEUROPIXELSV1F_HEADSTAGE_NAME, Neuropixels1f::getDeviceType(), hubIndex + i, context);
-				if (!devicesFound) return false;
+				if (!devicesFound)
+				{
+					sources.clear();
+					return false;
+				}
 			}
 
 			devicesFound = configureDevice<Bno055>(sources, canvas, "BNO055", NEUROPIXELSV1F_HEADSTAGE_NAME, Bno055::getDeviceType(), hubIndex + 2, context);
-			if (!devicesFound) return false;
+			if (!devicesFound)
+			{
+				sources.clear();
+				return false;
+			}
 		}
 	}
 
@@ -346,15 +378,24 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
 				devicesFound = configureDevice<Neuropixels2e>(sources, canvas, "", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
-				if (!devicesFound) return false;
+				if (!devicesFound)
+				{
+					sources.clear();
+					return false;
+				}
 
 				devicesFound = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
-				if (!devicesFound) return false;
+				if (!devicesFound)
+				{
+					sources.clear();
+					return false;
+				}
 
 				if (sources.back()->getDeviceType() != OnixDeviceType::POLLEDBNO)
 				{
 					LOGE("Unknown device encountered when configuring headstage ", NEUROPIXELSV2E_HEADSTAGE_NAME);
 					devicesFound = false;
+					sources.clear();
 					return false;
 				}
 
@@ -370,15 +411,25 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
 				devicesFound = configureDevice<Neuropixels1e>(sources, canvas, "Probe", NEUROPIXELSV1E_HEADSTAGE_NAME, Neuropixels1e::getDeviceType(), hubIndex, context);
-				if (!devicesFound) return false;
+				if (!devicesFound)
+				{
+					sources.clear();
+					return false;
+				}
 
 				devicesFound = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV1E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
-				if (!devicesFound) return false;
+				if (!devicesFound)
+				{
+					sources.clear();
+					return false;
+				}
 
 				if (sources.back()->getDeviceType() != OnixDeviceType::POLLEDBNO)
 				{
 					LOGE("Unknown device encountered when setting headstage.");
-					continue;
+					devicesFound = false;
+					sources.clear();
+					return false;
 				}
 
 				const auto& polledBno = std::static_pointer_cast<PolledBno055>(sources.back());

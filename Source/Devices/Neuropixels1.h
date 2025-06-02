@@ -57,12 +57,6 @@ namespace OnixSourcePlugin
 
 		void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index = 0) override;
 
-		double getApGainCorrection() const;
-		void setApGainCorrection(double value);
-
-		double getLfpGainCorrection() const;
-		void setLfpGainCorrection(double value);
-
 		bool parseGainCalibrationFile();
 		bool parseAdcCalibrationFile();
 
@@ -88,6 +82,9 @@ namespace OnixSourcePlugin
 		static constexpr int framesPerUltraFrame = superFramesPerUltraFrame * framesPerSuperFrame;
 		static constexpr int numUltraFrames = 12;
 		static constexpr int dataOffset = 4 + 1; // NB: 4 bytes [hubClock] + 1 byte [probeIndex]
+
+		static constexpr uint16_t NumberOfAdcBins = 1024;
+		static constexpr float DataMidpoint = NumberOfAdcBins / 2;
 
 		static constexpr int secondsToSettle = 5;
 		static constexpr int samplesToAverage = 100;

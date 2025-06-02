@@ -63,9 +63,6 @@ namespace OnixSourcePlugin
 		static constexpr uint32_t Gpo10ResetMask = 1 << 3; // Used to issue mux reset command to probe
 		static constexpr uint32_t Gpo32LedMask = 1 << 7; // Used to turn on and off LED
 
-		static constexpr uint16_t NumberOfAdcBins = 1024;
-		static constexpr uint16_t DataMidpoint = NumberOfAdcBins / 2;
-
 		std::unique_ptr<I2CRegisterContext> deserializer;
 		std::unique_ptr<I2CRegisterContext> serializer;
 		std::unique_ptr<I2CRegisterContext> flex;

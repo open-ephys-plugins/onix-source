@@ -249,13 +249,27 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 			return;
 
 		if (!configurePortVoltage(PortName::PortA, lastVoltageSetA.get(), portVoltageValueA.get(), portStatusA.get()))
+		{
+			setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
+			connectButton->setToggleState(false, sendNotification);
 			return;
+		}
 
 		if (!configurePortVoltage(PortName::PortB, lastVoltageSetB.get(), portVoltageValueB.get(), portStatusB.get()))
+		{
+			setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
+			setPortStatusAndVoltageValue(PortName::PortB, 0.0, fillDisconnected, lastVoltageSetB.get(), portStatusB.get());
+			connectButton->setToggleState(false, sendNotification);
 			return;
+		}
 
 		if (!configureAllDevices())
+		{
+			setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
+			setPortStatusAndVoltageValue(PortName::PortB, 0.0, fillDisconnected, lastVoltageSetB.get(), portStatusB.get());
+			connectButton->setToggleState(false, dontSendNotification);
 			return;
+		}
 
 		// NB: Check if headstages were not discovered, and then removed
 		if (!isHeadstageSelected(PortName::PortA) && source->getLastVoltageSet(PortName::PortA) > 0)
@@ -349,10 +363,14 @@ bool OnixSourceEditor::configureAllDevices()
 	{
 		CoreServices::sendStatusMessage("Error configuring hardware. Check logs for more details.");
 		connectButton->setToggleState(false, sendNotification);
+		return false;
 	}
 
 	if (!source->configureBlockReadSize(source->getContext(), blockReadSizeValue->getText().getIntValue()))
+	{
+		connectButton->setToggleState(false, sendNotification);
 		return false;
+	}
 
 	return true;
 }

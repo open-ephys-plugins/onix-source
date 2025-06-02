@@ -273,21 +273,21 @@ void Neuropixels1f::processFrames()
 					lfpSampleNumbers[ultraFrameCount] = lfpSampleNumber++;
 				}
 
-				for (int adc = 0; adc < 32; adc++)
+				for (int adc = 0; adc < NeuropixelsV1Values::AdcCount; adc++)
 				{
-					size_t chanIndex = adcToChannel[adc] + superCountOffset * 2; // map the ADC to muxed channel
+					size_t chanIndex = adcToChannel[adc] + superCountOffset * 2;
 					lfpSamples[(chanIndex * numUltraFrames) + ultraFrameCount] =
-						lfpConversion * float((*(dataPtr + adcToFrameIndex[adc] + dataOffset) >> 5) - 512) - lfpOffsets.at(chanIndex); // TODO: Is this overflowing the unsigned integer?
+						lfpConversion * (float(*(dataPtr + adcToFrameIndex[adc]) >> 5) - DataMidpoint) - lfpOffsets.at(chanIndex);
 				}
 			}
 			else // AP data
 			{
 				int chanOffset = 2 * (i - 1);
-				for (int adc = 0; adc < 32; adc++)
+				for (int adc = 0; adc < NeuropixelsV1Values::AdcCount; adc++)
 				{
-					size_t chanIndex = adcToChannel[adc] + chanOffset; //  map the ADC to muxed channel.
+					size_t chanIndex = adcToChannel[adc] + chanOffset;
 					apSamples[(chanIndex * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
-						apConversion * float((*(dataPtr + adcToFrameIndex[adc] + i * 36 + dataOffset) >> 5) - 512) - apOffsets.at(chanIndex);
+						apConversion * (float(*(dataPtr + adcToFrameIndex[adc] + i * NeuropixelsV1Values::FrameWordsV1f) >> 5) - DataMidpoint) - apOffsets.at(chanIndex);
 				}
 			}
 		}
