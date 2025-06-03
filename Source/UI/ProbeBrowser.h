@@ -757,9 +757,9 @@ namespace OnixSourcePlugin
 			auto settings = getSettings();
 			if (settings == nullptr) return "";
 
-			std::string a;
+			String a;
 			a += "Electrode ";
-			a += std::to_string(settings->electrodeMetadata[index].global_index + 1);
+			a += String(settings->electrodeMetadata[index].global_index + 1);
 
 			a += "\nBank ";
 
@@ -809,10 +809,10 @@ namespace OnixSourcePlugin
 			}
 
 			a += ", Channel ";
-			a += std::to_string(settings->electrodeMetadata[index].channel + 1);
+			a += String(settings->electrodeMetadata[index].channel + 1);
 
 			a += "\nY Position: ";
-			a += std::to_string(settings->electrodeMetadata[index].ypos);
+			a += String(settings->electrodeMetadata[index].ypos);
 
 			a += "\nType: ";
 
@@ -832,7 +832,7 @@ namespace OnixSourcePlugin
 					a += "NO";
 			}
 
-			return a;
+			return a.toStdString();
 		}
 
 		Path convertVectorToPath(std::vector<std::array<float, 2>> vectorPath)

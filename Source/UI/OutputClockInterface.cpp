@@ -29,11 +29,13 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 {
 	if (device != nullptr)
 	{
+		auto outputClock = std::static_pointer_cast<OutputClock>(device);
+
 		frequencyHzLabel = std::make_unique<Label>("frequencyHz", "Frequency [Hz]");
 		frequencyHzLabel->setBounds(50, 40, 130, 20);
 		addAndMakeVisible(frequencyHzLabel.get());
 
-		frequencyHzValue = std::make_unique<Label>("frequencyHzValue", std::to_string(1e6));
+		frequencyHzValue = std::make_unique<Label>("frequencyHzValue", String(outputClock->getFrequencyHz()));
 		frequencyHzValue->setEditable(true);
 		frequencyHzValue->setBounds(frequencyHzLabel->getRight() + 3, frequencyHzLabel->getY(), 50, 20);
 		frequencyHzValue->setTooltip("Sets the output clock frequency in Hz. Must be between 0.1 Hz and 10 MHz.");
@@ -104,7 +106,7 @@ void OutputClockInterface::updateSettings()
 
 	auto outputClock = std::static_pointer_cast<OutputClock>(device);
 
-	frequencyHzValue->setText(std::to_string(outputClock->getFrequencyHz()), dontSendNotification);
+	frequencyHzValue->setText(String(outputClock->getFrequencyHz()), dontSendNotification);
 	dutyCycleValue->setText(std::to_string(outputClock->getDutyCycle()), dontSendNotification);
 	delayValue->setText(std::to_string(outputClock->getDelay()), dontSendNotification);
 	gateRunButton->setToggleState(outputClock->getGateRun(), dontSendNotification);
@@ -130,7 +132,7 @@ void OutputClockInterface::labelTextChanged(Label* l)
 
 		if (rate < MinFrequencyHz || rate > MaxFrequencyHz)
 		{
-			l->setText(std::to_string(outputClock->getFrequencyHz()), dontSendNotification);
+			l->setText(String(outputClock->getFrequencyHz()), dontSendNotification);
 			return;
 		}
 

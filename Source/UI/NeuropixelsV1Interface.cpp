@@ -200,7 +200,7 @@ NeuropixelsV1Interface::NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, 
 			apGainComboBox->addListener(this);
 
 			for (int i = 0; i < settings->availableApGains.size(); i++)
-				apGainComboBox->addItem(std::to_string(settings->availableApGains[i]) + "x", i + 1);
+				apGainComboBox->addItem(String(settings->availableApGains[i]) + "x", i + 1);
 
 			apGainComboBox->setSelectedId(settings->apGainIndex + 1, dontSendNotification);
 			addAndMakeVisible(apGainComboBox.get());
@@ -228,7 +228,7 @@ NeuropixelsV1Interface::NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, 
 			lfpGainComboBox->addListener(this);
 
 			for (int i = 0; i < settings->availableLfpGains.size(); i++)
-				lfpGainComboBox->addItem(std::to_string(settings->availableLfpGains[i]) + "x", i + 1);
+				lfpGainComboBox->addItem(String(settings->availableLfpGains[i]) + "x", i + 1);
 
 			lfpGainComboBox->setSelectedId(settings->lfpGainIndex + 1, dontSendNotification);
 			addAndMakeVisible(lfpGainComboBox.get());
