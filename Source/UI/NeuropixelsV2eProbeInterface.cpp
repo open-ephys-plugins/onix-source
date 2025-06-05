@@ -329,7 +329,7 @@ void NeuropixelsV2eProbeInterface::updateInfoString()
 
 		infoString += "\n";
 		infoString += "Probe Number: ";
-		infoString += npx->getProbeSerialNumber(probeIndex);
+		infoString += std::to_string(npx->getProbeSerialNumber(probeIndex));
 		infoString += "\n";
 		infoString += "\n";
 	}
