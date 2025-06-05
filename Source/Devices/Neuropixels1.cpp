@@ -343,16 +343,16 @@ bool Neuropixels1::parseGainCalibrationFile()
 
 	StringArray calibrationValues = StringArray::fromTokens(gainCalLine, breakCharacters, noQuote);
 
-	static constexpr int NumberOfGainFactors = 16;
+	static constexpr int NumberOfGainFactors = 8;
 
-	if (calibrationValues.size() != NumberOfGainFactors + 1)
+	if (calibrationValues.size() != NumberOfGainFactors * 2 + 1)
 	{
-		Onix1::showWarningMessageBoxAsync("Gain Calibration File Error", "Expected to find " + std::to_string(NumberOfGainFactors + 1) + " elements per line, but found " + std::to_string(calibrationValues.size()) + " instead.");
+		Onix1::showWarningMessageBoxAsync("Gain Calibration File Error", "Expected to find " + std::to_string(NumberOfGainFactors * 2 + 1) + " elements per line, but found " + std::to_string(calibrationValues.size()) + " instead.");
 		return false;
 	}
 
 	apGainCorrection = std::stod(calibrationValues[settings[0]->apGainIndex + 1].toStdString());
-	lfpGainCorrection = std::stod(calibrationValues[settings[0]->lfpGainIndex + 8].toStdString());
+	lfpGainCorrection = std::stod(calibrationValues[settings[0]->lfpGainIndex + NumberOfGainFactors + 1].toStdString());
 
 	LOGD("AP gain correction = ", apGainCorrection, ", LFP gain correction = ", lfpGainCorrection);
 
