@@ -54,17 +54,17 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 
 		for (int i = 0; i < numChannels; i++)
 		{
-			channelDirectionLabels[i] = std::make_unique<Label>("channelDirectionLabel" + String(i), "Channel " + String(i) + String(": Direction"));
+			channelDirectionLabels[i] = std::make_unique<Label>("channelDirectionLabel" + std::to_string(i), "Channel " + std::to_string(i) + ": Direction");
 			channelDirectionLabels[i]->setBounds(prevLabelRectangle.getX(), prevLabelRectangle.getBottom() + 4, prevLabelRectangle.getWidth(), prevLabelRectangle.getHeight());
 			channelDirectionLabels[i]->setFont(font);
 			addAndMakeVisible(channelDirectionLabels[i].get());
 
 			prevLabelRectangle = channelDirectionLabels[i]->getBounds();
 
-			channelDirectionComboBoxes[i] = std::make_unique<ComboBox>("channelDirectionComboBox" + String(i));
+			channelDirectionComboBoxes[i] = std::make_unique<ComboBox>("channelDirectionComboBox" + std::to_string(i));
 			channelDirectionComboBoxes[i]->setBounds(prevComboBoxRectangle.getX(), prevLabelRectangle.getY(), prevComboBoxRectangle.getWidth(), prevComboBoxRectangle.getHeight());
 			channelDirectionComboBoxes[i]->addListener(this);
-			channelDirectionComboBoxes[i]->setTooltip("Sets the direction of Channel " + String(i));
+			channelDirectionComboBoxes[i]->setTooltip("Sets the direction of Channel " + std::to_string(i));
 			channelDirectionComboBoxes[i]->addItemList(directionList, 1);
 			channelDirectionComboBoxes[i]->setSelectedId(1, dontSendNotification);
 			addAndMakeVisible(channelDirectionComboBoxes[i].get());
@@ -147,14 +147,14 @@ void AnalogIOInterface::comboBoxChanged(ComboBox* cb)
 	{
 		if (cb == channelDirectionComboBoxes[i].get())
 		{
-			AnalogIODirection newDirection = getChannelDirectionFromString(channelDirectionComboBoxes[i]->getText());
+			AnalogIODirection newDirection = getChannelDirectionFromString(channelDirectionComboBoxes[i]->getText().toStdString());
 			std::static_pointer_cast<AnalogIO>(device)->setChannelDirection(i, newDirection);
 			return;
 		}
 	}
 }
 
-AnalogIODirection AnalogIOInterface::getChannelDirectionFromString(String direction)
+AnalogIODirection AnalogIOInterface::getChannelDirectionFromString(std::string direction)
 {
 	if (direction == "Input")
 		return AnalogIODirection::Input;
@@ -223,7 +223,7 @@ void AnalogIOInterface::saveParameters(XmlElement* xml)
 
 	for (int i = 0; i < numChannels; i++)
 	{
-		channelDirectionNode->setAttribute("CH" + String(i), AnalogIO::getChannelDirection(analogIO->getChannelDirection(i)));
+		channelDirectionNode->setAttribute(String("CH" + std::to_string(i)), AnalogIO::getChannelDirection(analogIO->getChannelDirection(i)));
 	}
 }
 
@@ -256,7 +256,7 @@ void AnalogIOInterface::loadParameters(XmlElement* xml)
 
 	for (int i = 0; i < numChannels; i++)
 	{
-		AnalogIODirection direction = getChannelDirectionFromString(chDirectionNode->getStringAttribute("CH" + String(i)));
+		AnalogIODirection direction = getChannelDirectionFromString(chDirectionNode->getStringAttribute("CH" + std::to_string(i)).toStdString());
 		analogIO->setChannelDirection(i, direction);
 	}
 

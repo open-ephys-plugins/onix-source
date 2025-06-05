@@ -70,7 +70,7 @@ namespace OnixSourcePlugin
 		void setReference(int index);
 		void selectElectrodes(std::vector<int> electrodes);
 
-		String getReferenceText() override { return referenceComboBox->getText(); }
+		std::string getReferenceText() override { return referenceComboBox->getText().toStdString(); }
 
 	private:
 		XmlElement neuropix_info;
@@ -125,7 +125,7 @@ namespace OnixSourcePlugin
 
 		void checkForExistingChannelPreset();
 
-		int getIndexOfComboBoxItem(ComboBox* cb, String item);
+		int getIndexOfComboBoxItem(ComboBox* cb, std::string item);
 
 		JUCE_LEAK_DETECTOR(NeuropixelsV2eProbeInterface);
 	};

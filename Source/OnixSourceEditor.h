@@ -122,7 +122,7 @@ namespace OnixSourcePlugin
 
 		std::unique_ptr<Label> liboniVersionLabel;
 
-		void setComboBoxSelection(ComboBox* comboBox, String headstage);
+		void setComboBoxSelection(ComboBox* comboBox, std::string headstage);
 		void addHeadstageComboBoxOptions(ComboBox* comboBox);
 		void enableEditorElements(bool);
 		bool configureAllDevices();

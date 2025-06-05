@@ -49,8 +49,8 @@ int I2CRegisterContext::ReadByte(uint32_t address, oni_reg_val_t* value, bool si
 int I2CRegisterContext::set933I2cRate(double rate)
 {
 	auto sclTimes = (uint32_t)(std::round(1.0 / (100e-9 * rate)));
-	int rc = WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, sclTimes);
+	int rc = WriteByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::SclHigh, sclTimes);
 	if (rc != ONI_ESUCCESS) return rc;
-	rc = WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, sclTimes);
+	rc = WriteByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::SclLow, sclTimes);
 	if (rc != ONI_ESUCCESS) return rc;
 }

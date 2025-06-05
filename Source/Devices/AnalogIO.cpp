@@ -139,7 +139,7 @@ void AnalogIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
-		if (streamInfo.getChannelPrefix().equalsIgnoreCase("AnalogInput"))
+		if (streamInfo.getChannelPrefix() == "AnalogInput")
 			analogInputBuffer = sourceBuffers.getLast();
 	}
 }

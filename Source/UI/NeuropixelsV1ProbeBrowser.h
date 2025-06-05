@@ -23,22 +23,28 @@
 #pragma once
 
 #include "../Devices/Neuropixels1f.h"
+#include "../Devices/Neuropixels1e.h"
 #include "ProbeBrowser.h"
 
 namespace OnixSourcePlugin
 {
-	class NeuropixelsV1fProbeBrowser : public ProbeBrowser<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>
+	class NeuropixelsV1ProbeBrowser : public ProbeBrowser<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>
 	{
 	public:
-		NeuropixelsV1fProbeBrowser(SettingsInterface* parent_, int probeIndex_) :
+		NeuropixelsV1ProbeBrowser(SettingsInterface* parent_, int probeIndex_) :
 			ProbeBrowser(parent_, probeIndex_)
 		{
 			setDrawingSettings();
 		}
 
-		ProbeSettings<NeuropixelsV1fValues::numberOfChannels, NeuropixelsV1fValues::numberOfElectrodes>* getSettings() override
+		ProbeSettings<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>* getSettings() override
 		{
-			return std::static_pointer_cast<Neuropixels1f>(parent->getDevice())->settings[0].get();
+			if (parent->getDevice()->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E)
+				return std::static_pointer_cast<Neuropixels1e>(parent->getDevice())->settings[0].get();
+			else if (parent->getDevice()->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
+				return std::static_pointer_cast<Neuropixels1f>(parent->getDevice())->settings[0].get();
+			else
+				return nullptr;
 		}
 	};
 }

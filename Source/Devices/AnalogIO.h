@@ -94,14 +94,14 @@ namespace OnixSourcePlugin
 		{
 			if (channelNumber > numChannels || channelNumber < 0)
 			{
-				LOGE("Channel number must be between 0 and " + String(channelNumber));
+				LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
 				return AnalogIODirection::Input;
 			}
 
 			return channelDirection[channelNumber];
 		}
 
-		static String getChannelDirection(AnalogIODirection direction)
+		static std::string getChannelDirection(AnalogIODirection direction)
 		{
 			switch (direction)
 			{
@@ -118,7 +118,7 @@ namespace OnixSourcePlugin
 		{
 			if (channelNumber > numChannels || channelNumber < 0)
 			{
-				LOGE("Channel number must be between 0 and " + String(channelNumber));
+				LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
 				return;
 			}
 
@@ -129,7 +129,7 @@ namespace OnixSourcePlugin
 		{
 			if (channelNumber > numChannels || channelNumber < 0)
 			{
-				LOGE("Channel number must be between 0 and " + String(channelNumber));
+				LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
 				return AnalogIOVoltageRange::FiveVolts;
 			}
 
@@ -140,7 +140,7 @@ namespace OnixSourcePlugin
 		{
 			if (channelNumber > numChannels || channelNumber < 0)
 			{
-				LOGE("Channel number must be between 0 and " + String(channelNumber));
+				LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
 				return;
 			}
 

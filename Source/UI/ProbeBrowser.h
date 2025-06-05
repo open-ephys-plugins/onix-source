@@ -617,7 +617,7 @@ namespace OnixSourcePlugin
 
 		MouseCursor::StandardCursorType cursorType;
 
-		String electrodeInfoString;
+		std::string electrodeInfoString;
 
 		Colour getElectrodeColour(int i)
 		{
@@ -752,7 +752,7 @@ namespace OnixSourcePlugin
 			return inds;
 		}
 
-		String getElectrodeInfoString(int index)
+		std::string getElectrodeInfoString(int index)
 		{
 			auto settings = getSettings();
 			if (settings == nullptr) return "";
@@ -832,7 +832,7 @@ namespace OnixSourcePlugin
 					a += "NO";
 			}
 
-			return a;
+			return a.toStdString();
 		}
 
 		Path convertVectorToPath(std::vector<std::array<float, 2>> vectorPath)

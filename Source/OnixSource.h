@@ -83,7 +83,7 @@ namespace OnixSourcePlugin
 		void updateDiscoveryParameters(PortName port, DiscoveryParameters parameters);
 
 		/** Takes a string from the editor. Can be an empty string to allow for automated discovery */
-		bool configurePortVoltage(PortName port, String voltage) const;
+		bool configurePortVoltage(PortName port, std::string voltage) const;
 
 		/** Sets the port voltage */
 		void setPortVoltage(PortName port, double voltage) const;
@@ -112,10 +112,10 @@ namespace OnixSourcePlugin
 
 		OnixDeviceVector getDataSources();
 		OnixDeviceVector getEnabledDataSources();
-		OnixDeviceVector getDataSourcesFromPort(PortName port);
 		OnixDeviceVector getDataSourcesFromOffset(int offset);
 
-		std::shared_ptr<OnixDevice> getDevice(OnixDeviceType type);
+		std::shared_ptr<OnixDevice> getDevice(OnixDeviceType, int);
+		OnixDeviceVector getDevices(OnixDeviceType);
 
 		static std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector, bool filterDevices = false);
 
@@ -123,7 +123,7 @@ namespace OnixSourcePlugin
 
 		std::map<int, std::string> getHubNames();
 
-		String getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
+		std::string getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
 
 		void updateSourceBuffers();
 
@@ -163,11 +163,13 @@ namespace OnixSourcePlugin
 
 		bool devicesFound = false;
 
+		static constexpr int BREAKOUT_BOARD_OFFSET = 0;
+
 		void addIndividualStreams(Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
 
 		void addCombinedStreams(DataStream::Settings, Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
 
-		String createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber);
+		std::string createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber);
 
 		/** Template method to initialize an OnixDevice and add it to the currently active OnixDeviceVector variable */
 		template <class Device>

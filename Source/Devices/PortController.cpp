@@ -84,11 +84,15 @@ void PortController::updateDiscoveryParameters(DiscoveryParameters parameters)
 	discoveryParameters = parameters;
 }
 
-DiscoveryParameters PortController::getHeadstageDiscoveryParameters(String headstage)
+DiscoveryParameters PortController::getHeadstageDiscoveryParameters(std::string headstage)
 {
-	if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
+	if (headstage == NEUROPIXELSV1E_HEADSTAGE_NAME)
 	{
-		return DiscoveryParameters(5.0, 7.0, 1.0, 0.2);
+		return DiscoveryParameters(3.3f, 5.5f, 1.0f, 0.2f);
+	}
+	else if (headstage == NEUROPIXELSV1F_HEADSTAGE_NAME)
+	{
+		return DiscoveryParameters(5.0f, 7.0f, 1.0f, 0.2f);
 	}
 	else if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME)
 	{
@@ -132,7 +136,7 @@ bool PortController::configureVoltage(double voltage)
 
 void PortController::setVoltageOverride(double voltage, bool waitToSettle)
 {
-	if (voltage < 0.0 && voltage > 7.0) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
+	if (voltage < 0.0 && voltage > 7.0) { LOGE("Invalid voltage value. Tried to set the port to " + std::to_string(voltage) + " V."); return; }
 
 	int rc = deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, voltage * 10);
 	if (rc != ONI_ESUCCESS) return;
@@ -144,7 +148,7 @@ void PortController::setVoltageOverride(double voltage, bool waitToSettle)
 
 void PortController::setVoltage(double voltage)
 {
-	if (voltage < 0.0 && voltage > 7.0) { LOGE("Invalid voltage value. Tried to set the port to " + String(voltage) + " V."); return; }
+	if (voltage < 0.0 && voltage > 7.0) { LOGE("Invalid voltage value. Tried to set the port to " + std::to_string(voltage) + " V."); return; }
 
 	int rc = deviceContext->writeRegister((oni_dev_idx_t)port, (oni_reg_addr_t)PortControllerRegister::PORTVOLTAGE, 0);
 	sleep_for(std::chrono::milliseconds(300));

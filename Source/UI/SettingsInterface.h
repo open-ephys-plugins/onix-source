@@ -44,6 +44,7 @@ namespace OnixSourcePlugin
 		enum class Type
 		{
 			PROBE_SETTINGS_INTERFACE,
+			NEUROPIXELS1E_SETTINGS_INTERFACE,
 			NEUROPIXELS1F_SETTINGS_INTERFACE,
 			NEUROPIXELS2E_SETTINGS_INTERFACE,
 			BNO055_SETTINGS_INTERFACE,
@@ -92,7 +93,7 @@ namespace OnixSourcePlugin
 
 		VisualizationMode getMode() const { return mode; }
 
-		virtual String getReferenceText() { return ""; }
+		virtual std::string getReferenceText() { return ""; }
 
 	protected:
 

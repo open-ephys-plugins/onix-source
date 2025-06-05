@@ -93,7 +93,7 @@ void HarpSyncInput::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
-		if (streamInfo.getChannelPrefix().equalsIgnoreCase("HarpTime"))
+		if (streamInfo.getChannelPrefix() == "HarpTime")
 			harpTimeBuffer = sourceBuffers.getLast();
 	}
 }

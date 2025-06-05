@@ -108,9 +108,9 @@ namespace OnixSourcePlugin
 		std::unique_ptr<CustomTabComponent> topLevelTabComponent;
 		OwnedArray<CustomTabComponent> hubTabs;
 
-		CustomTabComponent* addTopLevelTab(String tabName, int index = -1);
+		CustomTabComponent* addTopLevelTab(std::string tabName, int index = -1);
 
-		void addInterfaceToTab(String tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_);
+		void addInterfaceToTab(std::string tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_);
 
 		std::string getTopLevelTabName(PortName port, std::string headstage);
 
