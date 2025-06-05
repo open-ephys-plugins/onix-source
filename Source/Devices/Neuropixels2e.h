@@ -152,11 +152,8 @@ namespace OnixSourcePlugin
 		double timestamps[numFrames];
 		uint64 eventCodes[numFrames];
 
-		bool shouldAddToBuffer = false;
 		int frameCount = 0;
 		int sampleNumber = 0;
-
-		bool singleProbe = false;
 
 		std::unique_ptr<I2CRegisterContext> serializer;
 		std::unique_ptr<I2CRegisterContext> deserializer;

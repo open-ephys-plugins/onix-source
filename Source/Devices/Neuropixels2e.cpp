@@ -597,11 +597,8 @@ uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 
 void Neuropixels2e::startAcquisition()
 {
-	shouldAddToBuffer = false;
 	sampleNumber = 0;
 	frameCount = 0;
-
-	singleProbe = m_numProbes == 1;
 }
 
 void Neuropixels2e::stopAcquisition()
@@ -664,15 +661,8 @@ void Neuropixels2e::processFrames()
 
 		if (frameCount >= numFrames)
 		{
-			frameCount = 0;
-			shouldAddToBuffer = true;
-		}
-
-		if (shouldAddToBuffer)
-		{
-			shouldAddToBuffer = false;
-
 			amplifierBuffer[probeIndex]->addToBuffer(samples.data(), sampleNumbers, timestamps, eventCodes, numFrames);
+			frameCount = 0;
 		}
 
 		oni_destroy_frame(frame);
