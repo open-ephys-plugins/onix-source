@@ -164,7 +164,7 @@ int Neuropixels1f::configureDevice()
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
-	rc = WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::DIG_AND_CH_RESET);
+	rc = WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::DIG_CH_RESET);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 

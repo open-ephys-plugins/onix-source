@@ -164,16 +164,14 @@ namespace OnixSourcePlugin
 
 	enum class NeuropixelsV1RecordRegisterValues : uint32_t
 	{
-		DIG_AND_CH_RESET = 0,
 		RESET_ALL = 1 << 5, // 1 = Set analog SR chains to default values
-		DIG_NRESET = 1 << 6, // 0 = Reset the MUX, ADC, and PSB counter, 1 = Disable reset
-		CH_NRESET = 1 << 7, // 0 = Reset channel pseudo-registers, 1 = Disable reset
+		DIG_ENABLE = 1 << 6, // 0 = Reset the MUX, ADC, and PSB counter, 1 = Disable reset
+		CH_ENABLE = 1 << 7, // 0 = Reset channel pseudo-registers, 1 = Disable reset
 
 		// Useful combinations
-		SR_RESET = RESET_ALL | CH_NRESET | DIG_NRESET,
-		DIG_RESET = CH_NRESET, // Yes, this is actually correct
-		CH_RESET = DIG_NRESET, // Yes, this is actually correct
-		ACTIVE = DIG_NRESET | CH_NRESET
+		SR_RESET = RESET_ALL | CH_ENABLE | DIG_ENABLE,
+		DIG_CH_RESET = 0,  // Yes, this is actually correct
+		ACTIVE = DIG_ENABLE | CH_ENABLE,
 	};
 
 	enum class NeuropixelsV1Reference : unsigned char
@@ -337,9 +335,6 @@ namespace OnixSourcePlugin
 			{
 				bytes[i] |= bits[i * 8 + j] << (8 - j - 1);
 			}
-
-			// NB: Reverse bytes (http://graphics.stanford.edu/~seander/bithacks.html)
-			bytes[i] = (unsigned char)((bytes[i] * 0x0202020202ul & 0x010884422010ul) % 1023);
 		}
 
 		return bytes;

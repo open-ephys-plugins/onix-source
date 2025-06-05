@@ -192,7 +192,7 @@ void Neuropixels1e::configureSerDes()
 	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SerAlias, DS90UB9x::SER_ADDR << 1);
 	// Enable backchannel GPIO on deserializer. It is then the serializer task to decide if using them or use manual output
 	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl0, 0x10);
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl0, 0x32);
+	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl1, 0x32);
 
 	auto alias = ProbeI2CAddress << 1;
 	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID1, alias);
@@ -294,8 +294,8 @@ void Neuropixels1e::addFrame(oni_frame_t* frame)
 
 void Neuropixels1e::processFrames()
 {
-	const float apConversion = apGainCorrection * (1171.875 / apGain) * -1.0f;
-	const float lfpConversion = lfpGainCorrection * (1171.875 / lfpGain) * -1.0f;
+	const float apConversion = (1171.875 / apGain) * -1.0f;
+	const float lfpConversion = (1171.875 / lfpGain) * -1.0f;
 
 	while (!frameArray.isEmpty())
 	{
@@ -324,7 +324,7 @@ void Neuropixels1e::processFrames()
 					auto sample = *(dataPtr + adcToFrameIndex[adc]);
 					sample = sample > adcValues.at(adc).threshold ? sample - adcValues.at(adc).offset : sample;
 					lfpSamples[(rawToChannel[adc][superCountOffset] * numUltraFrames) + ultraFrameCount] =
-						lfpConversion * (float(sample) - DataMidpoint) - lfpOffsets.at(rawToChannel[adc][superCountOffset]);
+						lfpConversion * (lfpGainCorrection * sample - DataMidpoint) - lfpOffsets.at(rawToChannel[adc][superCountOffset]);
 				}
 			}
 			else // AP data
@@ -334,7 +334,7 @@ void Neuropixels1e::processFrames()
 					auto sample = *(dataPtr + adcToFrameIndex[adc] + i * NeuropixelsV1Values::FrameWordsV1e);
 					sample = sample > adcValues.at(adc).threshold ? sample - adcValues.at(adc).offset : sample;
 					apSamples[(rawToChannel[adc][i - 1] * superFramesPerUltraFrame * numUltraFrames) + superFrameCount] =
-						apConversion * (float(sample) - DataMidpoint) - apOffsets.at(rawToChannel[adc][i - 1]);
+						apConversion * (apGainCorrection * sample - DataMidpoint) - apOffsets.at(rawToChannel[adc][i - 1]);
 				}
 			}
 		}
