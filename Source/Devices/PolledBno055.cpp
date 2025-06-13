@@ -204,7 +204,6 @@ void PolledBno055::addFrame(oni_frame_t* frame)
 void PolledBno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	sourceBuffers.add(new DataBuffer(numberOfChannels, (int)sampleRate * bufferSizeInSeconds));
-
 	bnoBuffer = sourceBuffers.getLast();
 }
 

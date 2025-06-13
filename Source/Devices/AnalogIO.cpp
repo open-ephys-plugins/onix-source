@@ -60,9 +60,9 @@ OnixDeviceType AnalogIO::getDeviceType()
 
 int AnalogIO::configureDevice()
 {
-	if (deviceContext == nullptr || !deviceContext->isInitialized()) 
+	if (deviceContext == nullptr || !deviceContext->isInitialized())
 		throw error_str("Device context is not initialized properly for	" + getName());
-	
+
 	return deviceContext->writeRegister(deviceIdx, (uint32_t)AnalogIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
 }
 
@@ -135,13 +135,8 @@ void AnalogIO::addFrame(oni_frame_t* frame)
 
 void AnalogIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	for (StreamInfo streamInfo : streamInfos)
-	{
-		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
-
-		if (streamInfo.getChannelPrefix() == "AnalogInput")
-			analogInputBuffer = sourceBuffers.getLast();
-	}
+	sourceBuffers.add(new DataBuffer(streamInfos.getFirst().getNumChannels(), (int)streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
+	analogInputBuffer = sourceBuffers.getLast();
 }
 
 void AnalogIO::processFrames()
@@ -155,7 +150,7 @@ void AnalogIO::processFrames()
 
 		int dataOffset = 4;
 
-		for (int i = 0; i < numChannels; i++)
+		for (size_t i = 0; i < numChannels; i++)
 		{
 			if (dataType == AnalogIODataType::S16)
 				analogInputSamples[currentFrame + i * numFrames] += *(dataPtr + dataOffset + i);
@@ -167,7 +162,7 @@ void AnalogIO::processFrames()
 
 		if (currentAverageFrame >= framesToAverage)
 		{
-			for (int i = 0; i < numChannels; i++)
+			for (size_t i = 0; i < numChannels; i++)
 			{
 				analogInputSamples[currentFrame + i * numFrames] /= framesToAverage;
 			}
