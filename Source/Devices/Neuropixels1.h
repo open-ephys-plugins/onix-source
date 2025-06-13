@@ -50,8 +50,8 @@ namespace OnixSourcePlugin
 		// INeuropixels methods
 		void defineMetadata(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings) override;
 
-		/** Select a preset electrode configuration */
-		std::vector<int> selectElectrodeConfiguration(std::string config) override;
+		/** Select a preset electrode configuration, based on the index of the given enum */
+		std::vector<int> selectElectrodeConfiguration(int electrodeConfigurationIndex) override;
 
 		uint64_t getProbeSerialNumber(int index = 0) override;
 
@@ -130,6 +130,23 @@ namespace OnixSourcePlugin
 
 		void updateLfpOffsets(std::array<float, numLfpSamples>&, int64);
 		void updateApOffsets(std::array<float, numApSamples>&, int64);
+
+		enum class ElectrodeConfiguration : int32_t
+		{
+			BankA = 0,
+			BankB = 1,
+			BankC = 2,
+			SingleColumn = 3,
+			Tetrodes = 4
+		};
+
+		std::map<ElectrodeConfiguration, std::string> electrodeConfiguration = {
+			{ElectrodeConfiguration::BankA, "Bank A"},
+			{ElectrodeConfiguration::BankB, "Bank B"},
+			{ElectrodeConfiguration::BankC, "Bank C"},
+			{ElectrodeConfiguration::SingleColumn, "Single Column"},
+			{ElectrodeConfiguration::Tetrodes, "Tetrodes"}
+		};
 
 		JUCE_LEAK_DETECTOR(Neuropixels1);
 	};

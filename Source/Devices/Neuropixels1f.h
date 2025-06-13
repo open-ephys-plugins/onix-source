@@ -48,6 +48,9 @@ namespace OnixSourcePlugin
 
 	private:
 
+		static constexpr char* STREAM_NAME_AP = "AP";
+		static constexpr char* STREAM_NAME_LFP = "LFP";
+
 		// ADC number to frame index mapping
 		static constexpr int adcToFrameIndex[] = {
 			0, 7 , 14, 21, 28,

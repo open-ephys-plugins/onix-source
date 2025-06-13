@@ -81,12 +81,12 @@ Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_de
 {
 	std::string port = getPortNameFromIndex(getDeviceIdx());
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHubName(), getName(), "AP" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), STREAM_NAME_AP }),
 		"Neuropixels 1.0 AP band data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
 		apSampleRate,
-		"AP",
+		STREAM_NAME_AP,
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
 		"�V",
@@ -96,12 +96,12 @@ Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_de
 	streamInfos.add(apStream);
 
 	StreamInfo lfpStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHubName(), getName(), "LFP" }),
+		OnixDevice::createStreamName({ port, getHubName(), getName(), STREAM_NAME_LFP }),
 		"Neuropixels 1.0 LFP band data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
 		lfpSampleRate,
-		"LFP",
+		STREAM_NAME_LFP,
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
 		"�V",
@@ -279,9 +279,9 @@ void Neuropixels1e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	{
 		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
 
-		if (streamInfo.getChannelPrefix() == "AP")
+		if (streamInfo.getChannelPrefix() == STREAM_NAME_AP)
 			apBuffer = sourceBuffers.getLast();
-		else if (streamInfo.getChannelPrefix() == "LFP")
+		else if (streamInfo.getChannelPrefix() == STREAM_NAME_LFP)
 			lfpBuffer = sourceBuffers.getLast();
 	}
 }

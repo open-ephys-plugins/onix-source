@@ -50,6 +50,9 @@ namespace OnixSourcePlugin
 
 	private:
 
+		static constexpr char* STREAM_NAME_AP = "AP";
+		static constexpr char* STREAM_NAME_LFP = "LFP";
+
 		static constexpr int FlexEepromI2CAddress = 0x50;
 
 		static constexpr uint32_t OFFSET_ID = 0;

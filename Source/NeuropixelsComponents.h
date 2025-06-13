@@ -366,7 +366,7 @@ namespace OnixSourcePlugin
 
 		virtual uint64_t getProbeSerialNumber(int index) { return 0; }
 
-		virtual std::vector<int> selectElectrodeConfiguration(std::string config) { return {}; }
+		virtual std::vector<int> selectElectrodeConfiguration(int electrodeConfigurationIndex) { return {}; }
 	};
 
 	static constexpr int shankConfigurationBitCount = 968;

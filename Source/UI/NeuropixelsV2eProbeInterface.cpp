@@ -344,7 +344,7 @@ void NeuropixelsV2eProbeInterface::comboBoxChanged(ComboBox* comboBox)
 
 	if (comboBox == electrodeConfigurationComboBox.get())
 	{
-		auto selection = npx->selectElectrodeConfiguration(electrodeConfigurationComboBox->getText().toStdString());
+		auto selection = npx->selectElectrodeConfiguration(electrodeConfigurationComboBox->getSelectedItemIndex() - 1);
 
 		selectElectrodes(selection);
 	}
@@ -365,7 +365,7 @@ void NeuropixelsV2eProbeInterface::checkForExistingChannelPreset()
 
 	for (int i = 0; i < settings->availableElectrodeConfigurations.size(); i++)
 	{
-		auto selection = npx->selectElectrodeConfiguration(settings->availableElectrodeConfigurations[i]);
+		auto selection = npx->selectElectrodeConfiguration(i);
 		std::vector<int> channelMap;
 		channelMap.assign(NeuropixelsV2eValues::numberOfChannels, 0);
 

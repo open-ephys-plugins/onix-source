@@ -58,26 +58,26 @@ void Neuropixels1::setSettings(ProbeSettings<NeuropixelsV1Values::numberOfChanne
 	settings[index]->updateProbeSettings(settings_);
 }
 
-std::vector<int> Neuropixels1::selectElectrodeConfiguration(std::string config)
+std::vector<int> Neuropixels1::selectElectrodeConfiguration(int electrodeConfigurationIndex)
 {
 	std::vector<int> selection;
 
-	if (config == "Bank A")
+	if (electrodeConfigurationIndex == (int32_t)ElectrodeConfiguration::BankA)
 	{
 		for (int i = 0; i < 384; i++)
 			selection.emplace_back(i);
 	}
-	else if (config == "Bank B")
+	else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfiguration::BankB)
 	{
 		for (int i = 384; i < 768; i++)
 			selection.emplace_back(i);
 	}
-	else if (config == "Bank C")
+	else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfiguration::BankC)
 	{
 		for (int i = 576; i < 960; i++)
 			selection.emplace_back(i);
 	}
-	else if (config == "Single Column")
+	else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfiguration::SingleColumn)
 	{
 		for (int i = 0; i < 384; i += 2)
 			selection.emplace_back(i);
@@ -85,7 +85,7 @@ std::vector<int> Neuropixels1::selectElectrodeConfiguration(std::string config)
 		for (int i = 385; i < 768; i += 2)
 			selection.emplace_back(i);
 	}
-	else if (config == "Tetrodes")
+	else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfiguration::Tetrodes)
 	{
 		for (int i = 0; i < 384; i += 8)
 		{
@@ -286,13 +286,14 @@ void Neuropixels1::defineMetadata(ProbeSettings<numberOfChannels, numberOfElectr
 	settings->availableReferences.add("Ext");
 	settings->availableReferences.add("Tip");
 
-	settings->availableElectrodeConfigurations.add("Bank A");
-	settings->availableElectrodeConfigurations.add("Bank B");
-	settings->availableElectrodeConfigurations.add("Bank C");
-	settings->availableElectrodeConfigurations.add("Single column");
-	settings->availableElectrodeConfigurations.add("Tetrodes");
+	for (const auto& [_, config] : electrodeConfiguration)
+	{
+		settings->availableElectrodeConfigurations.add(config);
+	}
 
-	settings->electrodeConfigurationIndex = 0;
+	settings->electrodeConfigurationIndex = (int32_t)ElectrodeConfiguration::BankA;
+	auto selection = selectElectrodeConfiguration(settings->electrodeConfigurationIndex);
+	settings->selectElectrodes(selection);
 
 	settings->isValid = true;
 }

@@ -63,265 +63,151 @@ int Neuropixels2e::getNumProbes() const
 	return m_numProbes;
 }
 
-std::vector<int> Neuropixels2e::selectElectrodeConfiguration(std::string config)
+void Neuropixels2e::selectElectrodesInRange(std::vector<int>& selection, int startIndex, int numberOfElectrodes)
 {
+	for (int i = startIndex; i < startIndex + numberOfElectrodes; i++)
+		selection.emplace_back(i);
+}
+
+void Neuropixels2e::selectElectrodesAcrossShanks(std::vector<int>& selection, int startIndex, int numberOfElectrodes)
+{
+	for (int shank = 0; shank < 4; shank++)
+	{
+		auto shankOffset = NeuropixelsV2eValues::electrodesPerShank * shank;
+		for (int i = startIndex + shankOffset; i < startIndex + numberOfElectrodes + shankOffset; i++)
+		{
+			selection.emplace_back(i);
+		}
+	}
+}
+
+std::vector<int> Neuropixels2e::selectElectrodeConfiguration(int electrodeConfigurationIndex)
+{
+	static int numberOfElectrodesAcrossShanks = 96;
+
 	std::vector<int> selection;
 
-	if (config == "Bank A" || config == "Shank 1 Bank A")
+	if (numberOfShanks == 1)
 	{
-		for (int i = 0; i < 384; i++)
-			selection.emplace_back(i);
-	}
-	else if (config == "Bank B" || config == "Shank 1 Bank B")
-	{
-		for (int i = 384; i < 768; i++)
-			selection.emplace_back(i);
-	}
-	else if (config == "Bank C" || config == "Shank 1 Bank C")
-	{
-		for (int i = 768; i < 1152; i++)
-			selection.emplace_back(i);
-	}
-	else if (config == "Bank D")
-	{
-		for (int i = 896; i < 1280; i++)
-			selection.emplace_back(i);
-	}
-	else if (config == "Shank 2 Bank A")
-	{
-		int startElectrode = 1280;
-
-		for (int i = startElectrode; i < startElectrode + 384; i++)
+		if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationSingleShank::BankA)
 		{
-			selection.emplace_back(i);
+			selectElectrodesInRange(selection, 0, numberOfChannels);
+		}
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationSingleShank::BankB)
+		{
+			selectElectrodesInRange(selection, numberOfChannels, numberOfChannels);
+		}
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationSingleShank::BankC)
+		{
+			selectElectrodesInRange(selection, numberOfChannels * 2, numberOfChannels);
+		}
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationSingleShank::BankD)
+		{
+			static int32_t bankDOffset = 896;
+			selectElectrodesInRange(selection, bankDOffset, numberOfChannels);
 		}
 	}
-	else if (config == "Shank 2 Bank B")
+	else if (numberOfShanks == 4)
 	{
-		int startElectrode = 1280 + 384;
-
-		for (int i = startElectrode; i < startElectrode + 384; i++)
+		if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank1BankA)
 		{
-			selection.emplace_back(i);
+			selectElectrodesInRange(selection, 0, numberOfChannels);
 		}
-	}
-	else if (config == "Shank 2 Bank C")
-	{
-		int startElectrode = 1280 + 384 * 2;
-
-		for (int i = startElectrode; i < startElectrode + 384; i++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank1BankB)
 		{
-			selection.emplace_back(i);
+			selectElectrodesInRange(selection, numberOfChannels, numberOfChannels);
 		}
-	}
-	else if (config == "Shank 3 Bank A")
-	{
-		int startElectrode = 1280 * 2;
-
-		for (int i = startElectrode; i < startElectrode + 384; i++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank1BankC)
 		{
-			selection.emplace_back(i);
+			selectElectrodesInRange(selection, numberOfChannels * 2, numberOfChannels);
 		}
-	}
-	else if (config == "Shank 3 Bank B")
-	{
-		int startElectrode = 1280 * 2 + 384;
-
-		for (int i = startElectrode; i < startElectrode + 384; i++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank2BankA)
 		{
-			selection.emplace_back(i);
+			selectElectrodesInRange(selection, NeuropixelsV2eValues::electrodesPerShank, numberOfChannels);
 		}
-	}
-	else if (config == "Shank 3 Bank C")
-	{
-		int startElectrode = 1280 * 2 + 384 * 2;
-
-		for (int i = startElectrode; i < startElectrode + 384; i++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank2BankB)
 		{
-			selection.emplace_back(i);
+			selectElectrodesInRange(selection, NeuropixelsV2eValues::electrodesPerShank + numberOfChannels, numberOfChannels);
 		}
-	}
-	else if (config == "Shank 4 Bank A")
-	{
-		int startElectrode = 1280 * 3;
-
-		for (int i = startElectrode; i < startElectrode + 384; i++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank2BankC)
 		{
-			selection.emplace_back(i);
+			selectElectrodesInRange(selection, NeuropixelsV2eValues::electrodesPerShank + numberOfChannels * 2, numberOfChannels);
 		}
-	}
-	else if (config == "Shank 4 Bank B")
-	{
-		int startElectrode = 1280 * 3 + 384;
-
-		for (int i = startElectrode; i < startElectrode + 384; i++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank3BankA)
 		{
-			selection.emplace_back(i);
+			selectElectrodesInRange(selection, NeuropixelsV2eValues::electrodesPerShank * 2, numberOfChannels);
 		}
-	}
-	else if (config == "Shank 4 Bank C")
-	{
-		int startElectrode = 1280 * 3 + 384 * 2;
-
-		for (int i = startElectrode; i < startElectrode + 384; i++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank3BankB)
 		{
-			selection.emplace_back(i);
+			selectElectrodesInRange(selection, NeuropixelsV2eValues::electrodesPerShank * 2 + numberOfChannels, numberOfChannels);
 		}
-	}
-	else if (config == "All Shanks 1-96")
-	{
-		int startElectrode = 0;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank3BankC)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesInRange(selection, NeuropixelsV2eValues::electrodesPerShank * 2 + numberOfChannels * 2, numberOfChannels);
 		}
-	}
-	else if (config == "All Shanks 97-192")
-	{
-		int startElectrode = 96;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank4BankA)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesInRange(selection, NeuropixelsV2eValues::electrodesPerShank * 3, numberOfChannels);
 		}
-	}
-	else if (config == "All Shanks 193-288")
-	{
-		int startElectrode = 192;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank4BankB)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesInRange(selection, NeuropixelsV2eValues::electrodesPerShank * 3 + numberOfChannels, numberOfChannels);
 		}
-	}
-	else if (config == "All Shanks 289-384")
-	{
-		int startElectrode = 288;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::Shank4BankC)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesInRange(selection, NeuropixelsV2eValues::electrodesPerShank * 3 + numberOfChannels * 2, numberOfChannels);
 		}
-	}
-	else if (config == "All Shanks 385-480")
-	{
-		int startElectrode = 384;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks1To96)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesAcrossShanks(selection, 0, numberOfElectrodesAcrossShanks);
 		}
-	}
-	else if (config == "All Shanks 481-576")
-	{
-		int startElectrode = 480;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks97To192)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks, numberOfElectrodesAcrossShanks);
 		}
-	}
-	else if (config == "All Shanks 577-672")
-	{
-		int startElectrode = 576;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks193To288)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 2, numberOfElectrodesAcrossShanks);
 		}
-	}
-	else if (config == "All Shanks 673-768")
-	{
-		int startElectrode = 672;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks289To384)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 3, numberOfElectrodesAcrossShanks);
 		}
-	}
-	else if (config == "All Shanks 769-864")
-	{
-		int startElectrode = 768;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks385To480)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 4, numberOfElectrodesAcrossShanks);
 		}
-	}
-	else if (config == "All Shanks 865-960")
-	{
-		int startElectrode = 864;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks481To576)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 5, numberOfElectrodesAcrossShanks);
 		}
-	}
-	else if (config == "All Shanks 961-1056")
-	{
-		int startElectrode = 960;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks577To672)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 6, numberOfElectrodesAcrossShanks);
 		}
-	}
-	else if (config == "All Shanks 1057-1152")
-	{
-		int startElectrode = 1056;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks673To768)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 7, numberOfElectrodesAcrossShanks);
 		}
-	}
-	else if (config == "All Shanks 1153-1248")
-	{
-		int startElectrode = 1152;
-
-		for (int shank = 0; shank < 4; shank++)
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks769To864)
 		{
-			for (int i = startElectrode + 1280 * shank; i < startElectrode + 96 + 1280 * shank; i++)
-			{
-				selection.emplace_back(i);
-			}
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 8, numberOfElectrodesAcrossShanks);
+		}
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks865To960)
+		{
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 9, numberOfElectrodesAcrossShanks);
+		}
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks961To1056)
+		{
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 10, numberOfElectrodesAcrossShanks);
+		}
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks1057To1152)
+		{
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 11, numberOfElectrodesAcrossShanks);
+		}
+		else if (electrodeConfigurationIndex == (int32_t)ElectrodeConfigurationQuadShank::AllShanks1153To1248)
+		{
+			selectElectrodesAcrossShanks(selection, numberOfElectrodesAcrossShanks * 12, numberOfElectrodesAcrossShanks);
 		}
 	}
 
@@ -1176,7 +1062,8 @@ void Neuropixels2e::defineMetadata(ProbeSettings<numberOfChannels, numberOfElect
 	settings->referenceIndex = 0;
 	settings->apFilterState = false;
 
-	auto selection = selectElectrodeConfiguration("Bank A");
+	settings->electrodeConfigurationIndex = (int32_t)ElectrodeConfigurationSingleShank::BankA;
+	auto selection = selectElectrodeConfiguration(settings->electrodeConfigurationIndex);
 	settings->selectElectrodes(selection);
 
 	settings->availableReferences.add("Ext");
@@ -1191,39 +1078,16 @@ void Neuropixels2e::defineMetadata(ProbeSettings<numberOfChannels, numberOfElect
 
 	if (shankCount == 1)
 	{
-		settings->availableElectrodeConfigurations.add("Bank A");
-		settings->availableElectrodeConfigurations.add("Bank B");
-		settings->availableElectrodeConfigurations.add("Bank C");
-		settings->availableElectrodeConfigurations.add("Bank D");
+		for (const auto& [_, config] : electrodeConfigurationSingleShank)
+		{
+			settings->availableElectrodeConfigurations.add(config);
+		}
 	}
 	else if (shankCount == 4)
 	{
-		settings->availableElectrodeConfigurations.add("Shank 1 Bank A");
-		settings->availableElectrodeConfigurations.add("Shank 1 Bank B");
-		settings->availableElectrodeConfigurations.add("Shank 1 Bank C");
-		settings->availableElectrodeConfigurations.add("Shank 2 Bank A");
-		settings->availableElectrodeConfigurations.add("Shank 2 Bank B");
-		settings->availableElectrodeConfigurations.add("Shank 2 Bank C");
-		settings->availableElectrodeConfigurations.add("Shank 3 Bank A");
-		settings->availableElectrodeConfigurations.add("Shank 3 Bank B");
-		settings->availableElectrodeConfigurations.add("Shank 3 Bank C");
-		settings->availableElectrodeConfigurations.add("Shank 4 Bank A");
-		settings->availableElectrodeConfigurations.add("Shank 4 Bank B");
-		settings->availableElectrodeConfigurations.add("Shank 4 Bank C");
-		settings->availableElectrodeConfigurations.add("All Shanks 1-96");
-		settings->availableElectrodeConfigurations.add("All Shanks 97-192");
-		settings->availableElectrodeConfigurations.add("All Shanks 193-288");
-		settings->availableElectrodeConfigurations.add("All Shanks 289-384");
-		settings->availableElectrodeConfigurations.add("All Shanks 385-480");
-		settings->availableElectrodeConfigurations.add("All Shanks 481-576");
-		settings->availableElectrodeConfigurations.add("All Shanks 577-672");
-		settings->availableElectrodeConfigurations.add("All Shanks 673-768");
-		settings->availableElectrodeConfigurations.add("All Shanks 769-864");
-		settings->availableElectrodeConfigurations.add("All Shanks 865-960");
-		settings->availableElectrodeConfigurations.add("All Shanks 961-1056");
-		settings->availableElectrodeConfigurations.add("All Shanks 1057-1152");
-		settings->availableElectrodeConfigurations.add("All Shanks 1153-1248");
+		for (const auto& [_, config] : electrodeConfigurationQuadShank)
+		{
+			settings->availableElectrodeConfigurations.add(config);
+		}
 	}
-
-	settings->electrodeConfigurationIndex = 0;
 }

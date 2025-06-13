@@ -106,7 +106,7 @@ namespace OnixSourcePlugin
 
 		// INeuropixel Methods
 
-		std::vector<int> selectElectrodeConfiguration(std::string config) override;
+		std::vector<int> selectElectrodeConfiguration(int electrodeConfigurationIndex) override;
 
 		uint64_t getProbeSerialNumber(int index) override;
 
@@ -139,6 +139,9 @@ namespace OnixSourcePlugin
 
 		NeuropixelsV2Reference getReference(int);
 		static std::string getShankName(uint32_t shiftRegisterAddress);
+
+		void selectElectrodesInRange(std::vector<int>& selection, int startIndex, int numberOfElectrodes);
+		void selectElectrodesAcrossShanks(std::vector<int>& selection, int startIndex, int numberOfElectrodes);
 
 		int m_numProbes = 0;
 
@@ -264,6 +267,78 @@ namespace OnixSourcePlugin
 			{ 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255 },     // Data Index 38, ADC 15
 			{ 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383 },     // Data Index 39, ADC 23
 		} };
+
+		enum class ElectrodeConfigurationSingleShank : int32_t
+		{
+			BankA = 0,
+			BankB = 1,
+			BankC = 2,
+			BankD = 3
+		};
+
+		std::map<ElectrodeConfigurationSingleShank, std::string> electrodeConfigurationSingleShank = {
+			{ElectrodeConfigurationSingleShank::BankA, "Bank A"},
+			{ElectrodeConfigurationSingleShank::BankB, "Bank B"},
+			{ElectrodeConfigurationSingleShank::BankC, "Bank C"},
+			{ElectrodeConfigurationSingleShank::BankD, "Bank D"}
+		};
+
+		enum class ElectrodeConfigurationQuadShank : int32_t
+		{
+			Shank1BankA = 0,
+			Shank1BankB,
+			Shank1BankC,
+			Shank2BankA,
+			Shank2BankB,
+			Shank2BankC,
+			Shank3BankA,
+			Shank3BankB,
+			Shank3BankC,
+			Shank4BankA,
+			Shank4BankB,
+			Shank4BankC,
+			AllShanks1To96,
+			AllShanks97To192,
+			AllShanks193To288,
+			AllShanks289To384,
+			AllShanks385To480,
+			AllShanks481To576,
+			AllShanks577To672,
+			AllShanks673To768,
+			AllShanks769To864,
+			AllShanks865To960,
+			AllShanks961To1056,
+			AllShanks1057To1152,
+			AllShanks1153To1248
+		};
+
+		std::map<ElectrodeConfigurationQuadShank, std::string> electrodeConfigurationQuadShank = {
+			{ElectrodeConfigurationQuadShank::Shank1BankA, "Shank 1 Bank A"},
+			{ElectrodeConfigurationQuadShank::Shank1BankB, "Shank 1 Bank B"},
+			{ElectrodeConfigurationQuadShank::Shank1BankC, "Shank 1 Bank C"},
+			{ElectrodeConfigurationQuadShank::Shank2BankA, "Shank 2 Bank A"},
+			{ElectrodeConfigurationQuadShank::Shank2BankB, "Shank 2 Bank B"},
+			{ElectrodeConfigurationQuadShank::Shank2BankC, "Shank 2 Bank C"},
+			{ElectrodeConfigurationQuadShank::Shank3BankA, "Shank 3 Bank A"},
+			{ElectrodeConfigurationQuadShank::Shank3BankB, "Shank 3 Bank B"},
+			{ElectrodeConfigurationQuadShank::Shank3BankC, "Shank 3 Bank C"},
+			{ElectrodeConfigurationQuadShank::Shank4BankA, "Shank 4 Bank A"},
+			{ElectrodeConfigurationQuadShank::Shank4BankB, "Shank 4 Bank B"},
+			{ElectrodeConfigurationQuadShank::Shank4BankC, "Shank 4 Bank C"},
+			{ElectrodeConfigurationQuadShank::AllShanks1To96, "All Shanks 1-96"},
+			{ElectrodeConfigurationQuadShank::AllShanks97To192, "All Shanks 97-192"},
+			{ElectrodeConfigurationQuadShank::AllShanks193To288, "All Shanks 193-288"},
+			{ElectrodeConfigurationQuadShank::AllShanks289To384, "All Shanks 289-384"},
+			{ElectrodeConfigurationQuadShank::AllShanks385To480, "All Shanks 385-480"},
+			{ElectrodeConfigurationQuadShank::AllShanks481To576, "All Shanks 481-576"},
+			{ElectrodeConfigurationQuadShank::AllShanks577To672, "All Shanks 577-672"},
+			{ElectrodeConfigurationQuadShank::AllShanks673To768, "All Shanks 673-768"},
+			{ElectrodeConfigurationQuadShank::AllShanks769To864, "All Shanks 769-864"},
+			{ElectrodeConfigurationQuadShank::AllShanks865To960, "All Shanks 865-960"},
+			{ElectrodeConfigurationQuadShank::AllShanks961To1056, "All Shanks 961-1056"},
+			{ElectrodeConfigurationQuadShank::AllShanks1057To1152, "All Shanks 1057-1152"},
+			{ElectrodeConfigurationQuadShank::AllShanks1153To1248, "All Shanks 1153-1248"}
+		};
 
 		JUCE_LEAK_DETECTOR(Neuropixels2e);
 	};
