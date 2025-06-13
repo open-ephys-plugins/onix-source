@@ -620,11 +620,20 @@ void Neuropixels2e::addFrame(oni_frame_t* frame)
 
 void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	int bufferIdx = 0;
-	for (const auto& streamInfo : streamInfos)
+	if (m_numProbes == 1)
 	{
-		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
-		amplifierBuffer[bufferIdx++] = sourceBuffers.getLast();
+		sourceBuffers.add(new DataBuffer(streamInfos.getFirst().getNumChannels(), (int)streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
+		auto bufferIndex = probeSN[0] != 0 ? 0 : 1;
+		amplifierBuffer[bufferIndex] = sourceBuffers.getLast();
+	}
+	else
+	{
+		int bufferIdx = 0;
+		for (const auto& streamInfo : streamInfos)
+		{
+			sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
+			amplifierBuffer[bufferIdx++] = sourceBuffers.getLast();
+		}
 	}
 }
 
