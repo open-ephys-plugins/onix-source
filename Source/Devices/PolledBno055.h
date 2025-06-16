@@ -79,13 +79,11 @@ namespace OnixSourcePlugin
 			Default = 0b00000000, // Specifies that all axes are positive (chip default).
 			MirrorZ = 0b00000001, // Specifies that Z' axis should be mirrored.
 			MirrorY = 0b00000010, // Specifies that Y' axis should be mirrored.
-			MirrorX = 0b00000100, // Specifies that X' axis should be mirrored.
-			MirrorXAndY = MirrorX | MirrorY, // X' and Y' are mirrored
-			MirrorXAndZ = MirrorX | MirrorZ, // X' and Z' are mirrored
+			MirrorX = 0b00000100  // Specifies that X' axis should be mirrored.
 		};
 
 		void setBnoAxisMap(Bno055AxisMap map);
-		void setBnoAxisSign(Bno055AxisSign sign);
+		void setBnoAxisSign(uint32_t sign);
 
 		static OnixDeviceType getDeviceType();
 
@@ -118,7 +116,7 @@ namespace OnixSourcePlugin
 		};
 
 		Bno055AxisMap axisMap = Bno055AxisMap::XYZ;
-		Bno055AxisSign axisSign = Bno055AxisSign::Default;
+		uint32_t axisSign = (uint32_t)Bno055AxisSign::Default; // NB: Holds the uint value of the flag. Allows for combinations of X/Y/Z to combined together
 
 		static const int numberOfChannels = 3 + 3 + 4 + 3 + 1 + 4;
 		static constexpr double sampleRate = 30.0;

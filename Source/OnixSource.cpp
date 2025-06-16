@@ -402,7 +402,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				const auto& polledBno = std::static_pointer_cast<PolledBno055>(sources.back());
 
 				polledBno->setBnoAxisMap(PolledBno055::Bno055AxisMap::YZX);
-				polledBno->setBnoAxisSign(PolledBno055::Bno055AxisSign::MirrorXAndY);
+				polledBno->setBnoAxisSign((uint32_t)(PolledBno055::Bno055AxisSign::MirrorX) | (uint32_t)(PolledBno055::Bno055AxisSign::MirrorY));
 
 				hubNames.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
@@ -435,7 +435,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				const auto& polledBno = std::static_pointer_cast<PolledBno055>(sources.back());
 
 				polledBno->setBnoAxisMap(PolledBno055::Bno055AxisMap::YZX);
-				polledBno->setBnoAxisSign(PolledBno055::Bno055AxisSign::MirrorXAndZ);
+				polledBno->setBnoAxisSign((uint32_t)(PolledBno055::Bno055AxisSign::MirrorX) | (uint32_t)(PolledBno055::Bno055AxisSign::MirrorZ));
 
 				hubNames.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV1E_HEADSTAGE_NAME });
 			}
