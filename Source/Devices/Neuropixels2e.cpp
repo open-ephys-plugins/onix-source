@@ -51,7 +51,7 @@ void Neuropixels2e::createDataStream(int n)
 		"CH",
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
-		"µV",
+		"uV",
 		{},
 		"ap"
 	);

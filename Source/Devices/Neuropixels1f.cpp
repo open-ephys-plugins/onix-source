@@ -76,7 +76,7 @@ Neuropixels1f::Neuropixels1f(std::string name, std::string hubName, const oni_de
 		STREAM_NAME_AP,
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
-		"µV",
+		"uV",
 		{},
 		"ap"
   );
@@ -91,7 +91,7 @@ Neuropixels1f::Neuropixels1f(std::string name, std::string hubName, const oni_de
 		STREAM_NAME_LFP,
 		ContinuousChannel::Type::ELECTRODE,
 		0.195f,
-		"µV",
+		"uV",
 		{},
 		"lfp"
   );
