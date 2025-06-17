@@ -174,7 +174,6 @@ void Bno055::addFrame(oni_frame_t* frame)
 void Bno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	sourceBuffers.add(new DataBuffer(numberOfChannels, (int)sampleRate * bufferSizeInSeconds));
-
 	bnoBuffer = sourceBuffers.getLast();
 }
 

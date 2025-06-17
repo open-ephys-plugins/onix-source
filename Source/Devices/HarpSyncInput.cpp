@@ -89,13 +89,8 @@ void HarpSyncInput::addFrame(oni_frame_t* frame)
 
 void HarpSyncInput::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	for (StreamInfo streamInfo : streamInfos)
-	{
-		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
-
-		if (streamInfo.getChannelPrefix().equalsIgnoreCase("HarpTime"))
-			harpTimeBuffer = sourceBuffers.getLast();
-	}
+	sourceBuffers.add(new DataBuffer(streamInfos.getFirst().getNumChannels(), (int)streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
+	harpTimeBuffer = sourceBuffers.getLast();
 }
 
 void HarpSyncInput::processFrames()

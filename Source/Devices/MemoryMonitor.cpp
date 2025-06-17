@@ -92,7 +92,7 @@ int MemoryMonitor::configureDevice()
 	setEnabled(true);
 
 	int rc = deviceContext->writeRegister(deviceIdx, (uint32_t)MemoryMonitorRegisters::ENABLE, 1);
-	if (rc != ONI_ESUCCESS) 
+	if (rc != ONI_ESUCCESS)
 		throw error_str("Unable to enable " + getName());
 
 	rc = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)MemoryMonitorRegisters::TOTAL_MEM, &totalMemory);
@@ -139,13 +139,8 @@ void MemoryMonitor::addFrame(oni_frame_t* frame)
 
 void MemoryMonitor::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	for (StreamInfo streamInfo : streamInfos)
-	{
-		sourceBuffers.add(new DataBuffer(streamInfo.getNumChannels(), (int)streamInfo.getSampleRate() * bufferSizeInSeconds));
-
-		if (streamInfo.getChannelPrefix().equalsIgnoreCase("Percent"))
-			percentUsedBuffer = sourceBuffers.getLast();
-	}
+	sourceBuffers.add(new DataBuffer(streamInfos.getFirst().getNumChannels(), (int)streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
+	percentUsedBuffer = sourceBuffers.getLast();
 }
 
 float MemoryMonitor::getLastPercentUsedValue()

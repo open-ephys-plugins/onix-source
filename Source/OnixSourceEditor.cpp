@@ -164,7 +164,8 @@ void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 	comboBox->addItem("Select headstage...", 1);
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
-	comboBox->addItem(NEUROPIXELSV2E_HEADSTAGE_NAME, 3);
+	comboBox->addItem(NEUROPIXELSV1E_HEADSTAGE_NAME, 3);
+	comboBox->addItem(NEUROPIXELSV2E_HEADSTAGE_NAME, 4);
 }
 
 void OnixSourceEditor::labelTextChanged(Label* l)
@@ -248,13 +249,27 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 			return;
 
 		if (!configurePortVoltage(PortName::PortA, lastVoltageSetA.get(), portVoltageValueA.get(), portStatusA.get()))
+		{
+			setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
+			connectButton->setToggleState(false, sendNotification);
 			return;
+		}
 
 		if (!configurePortVoltage(PortName::PortB, lastVoltageSetB.get(), portVoltageValueB.get(), portStatusB.get()))
+		{
+			setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
+			setPortStatusAndVoltageValue(PortName::PortB, 0.0, fillDisconnected, lastVoltageSetB.get(), portStatusB.get());
+			connectButton->setToggleState(false, sendNotification);
 			return;
+		}
 
 		if (!configureAllDevices())
+		{
+			setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
+			setPortStatusAndVoltageValue(PortName::PortB, 0.0, fillDisconnected, lastVoltageSetB.get(), portStatusB.get());
+			connectButton->setToggleState(false, dontSendNotification);
 			return;
+		}
 
 		// NB: Check if headstages were not discovered, and then removed
 		if (!isHeadstageSelected(PortName::PortA) && source->getLastVoltageSet(PortName::PortA) > 0)
@@ -290,7 +305,7 @@ bool OnixSourceEditor::configurePortVoltage(PortName port, Label* lastVoltageSet
 	{
 		portStatus->setFill(fillSearching);
 
-		if (!source->configurePortVoltage(port, portVoltageValue->getText()))
+		if (!source->configurePortVoltage(port, portVoltageValue->getText().toStdString()))
 		{
 			Onix1::showWarningMessageBoxAsync("Communication Error", "Unable to acquire communication lock on " + OnixDevice::getPortName(port) + ".");
 			portStatus->setFill(fillDisconnected);
@@ -348,10 +363,14 @@ bool OnixSourceEditor::configureAllDevices()
 	{
 		CoreServices::sendStatusMessage("Error configuring hardware. Check logs for more details.");
 		connectButton->setToggleState(false, sendNotification);
+		return false;
 	}
 
 	if (!source->configureBlockReadSize(source->getContext(), blockReadSizeValue->getText().getIntValue()))
+	{
+		connectButton->setToggleState(false, sendNotification);
 		return false;
+	}
 
 	return true;
 }
@@ -379,38 +398,15 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 
 void OnixSourceEditor::updateComboBox(ComboBox* cb)
 {
-	auto deviceMap = source->createDeviceMap();
-	auto tabMap = canvas->createSelectedMap(canvas->settingsInterfaces);
-	std::vector<int> deviceIndices;
-	std::vector<int> tabIndices;
-
-	for (auto& [key, _] : deviceMap) { deviceIndices.emplace_back(key); }
-	for (auto& [key, _] : tabMap) { tabIndices.emplace_back(key); }
-
-	auto devicePorts = OnixDevice::getUniquePortsFromIndices(deviceIndices);
-	auto tabPorts = PortController::getUniquePortsFromIndices(tabIndices);
-
 	bool isPortA = cb == headstageComboBoxA.get();
 
 	PortName currentPort = isPortA ? PortName::PortA : PortName::PortB;
 
-	if (tabPorts.contains(currentPort) && devicePorts.contains(currentPort) && source->foundInputSource())
-	{
-		AlertWindow::showMessageBox(
-			MessageBoxIconType::WarningIcon,
-			"Devices Connected",
-			"Cannot select a different headstage on " + OnixDevice::getPortName(currentPort) + " when connected. \n\nPress disconnect before changing the selected headstage.");
-
-		refreshComboBoxSelection();
-		return;
-	}
-
-	bool otherHeadstageSelected = isPortA ? headstageComboBoxB->getSelectedId() > 1 : headstageComboBoxA->getSelectedId() > 1;
 	bool currentHeadstageSelected = isPortA ? headstageComboBoxA->getSelectedId() > 1 : headstageComboBoxB->getSelectedId() > 1;
 
 	canvas->removeTabs(currentPort);
 
-	String passthroughName = isPortA ? "passthroughA" : "passthroughB";
+	std::string passthroughName = isPortA ? "passthroughA" : "passthroughB";
 	bool passthroughValue = false;
 
 	if (currentHeadstageSelected)
@@ -420,7 +416,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		source->updateDiscoveryParameters(currentPort, PortController::getHeadstageDiscoveryParameters(headstage));
 		canvas->addHub(headstage, PortController::getPortOffset(currentPort));
 
-		if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME)
+		if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME || headstage == NEUROPIXELSV1E_HEADSTAGE_NAME)
 		{
 			passthroughValue = true;
 		}
@@ -428,7 +424,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 
 	source->getParameter(passthroughName)->setNextValue(passthroughValue);
 
-	String voltage = isPortA ? portVoltageValueA->getText() : portVoltageValueB->getText();
+	std::string voltage = isPortA ? portVoltageValueA->getText().toStdString() : portVoltageValueB->getText().toStdString();
 
 	if (voltage != "Auto")
 	{
@@ -444,7 +440,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 			int result = AlertWindow::show(MessageBoxOptions()
 				.withIconType(MessageBoxIconType::InfoIcon)
 				.withTitle("Voltage Override")
-				.withMessage(String("There is currently a voltage override selected for this port. Would you like to keep this voltage [Keep Voltage] ") +
+				.withMessage(std::string("There is currently a voltage override selected for this port. Would you like to keep this voltage [Keep Voltage] ") +
 					"or allow the automated voltage discovery algorithm [Automated Discovery] to determine the best voltage for the new headstage selected?")
 				.withButton("Keep Voltage")
 				.withButton("Automated Discovery"));
@@ -595,11 +591,13 @@ std::string OnixSourceEditor::getHeadstageSelected(PortName port)
 	}
 }
 
-void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, String headstage)
+void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, std::string headstage)
 {
+	String headstage_ = headstage;
+
 	for (int i = 0; i < comboBox->getNumItems(); i++)
 	{
-		if (headstage.contains(comboBox->getItemText(i)))
+		if (headstage_.contains(comboBox->getItemText(i)))
 		{
 			comboBox->setSelectedItemIndex(i, dontSendNotification);
 			return;
@@ -619,14 +617,14 @@ void OnixSourceEditor::refreshComboBoxSelection()
 	{
 		if (tab->getName().contains(OnixDevice::getPortName(PortName::PortA)))
 		{
-			setComboBoxSelection(headstageComboBoxA.get(), tab->getName());
-			source->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstageComboBoxA->getText()));
+			setComboBoxSelection(headstageComboBoxA.get(), tab->getName().toStdString());
+			source->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstageComboBoxA->getText().toStdString()));
 			resetPortA = false;
 		}
 		else if (tab->getName().contains(OnixDevice::getPortName(PortName::PortB)))
 		{
-			setComboBoxSelection(headstageComboBoxB.get(), tab->getName());
-			source->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstageComboBoxB->getText()));
+			setComboBoxSelection(headstageComboBoxB.get(), tab->getName().toStdString());
+			source->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstageComboBoxB->getText().toStdString()));
 			resetPortB = false;
 		}
 	}
@@ -659,13 +657,13 @@ void OnixSourceEditor::loadVisualizerEditorParameters(XmlElement* xml)
 
 	if (xml->hasAttribute("headstagePortA"))
 	{
-		setComboBoxSelection(headstageComboBoxA.get(), xml->getStringAttribute("headstagePortA"));
+		setComboBoxSelection(headstageComboBoxA.get(), xml->getStringAttribute("headstagePortA").toStdString());
 		updateComboBox(headstageComboBoxA.get());
 	}
 
 	if (xml->hasAttribute("headstagePortB"))
 	{
-		setComboBoxSelection(headstageComboBoxB.get(), xml->getStringAttribute("headstagePortB"));
+		setComboBoxSelection(headstageComboBoxB.get(), xml->getStringAttribute("headstagePortB").toStdString());
 		updateComboBox(headstageComboBoxB.get());
 	}
 

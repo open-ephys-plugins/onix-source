@@ -108,9 +108,9 @@ namespace OnixSourcePlugin
 
 		bool checkLinkState() const;
 
-		static DiscoveryParameters getHeadstageDiscoveryParameters(String headstage);
+		static DiscoveryParameters getHeadstageDiscoveryParameters(std::string headstage);
 
-		String getPortName() const { return OnixDevice::getPortName(port); }
+		std::string getPortName() const { return OnixDevice::getPortName(port); }
 
 		/** Check if the port status changed and there is an error reported */
 		bool getErrorFlag() { return errorFlag; }

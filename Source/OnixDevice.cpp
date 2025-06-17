@@ -78,7 +78,7 @@ oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passt
 
 	auto idx = getHubIndexFromPassthroughIndex(passthroughIndex);
 
-	if (type == OnixDeviceType::POLLEDBNO && m_hubName == NEUROPIXELSV2E_HEADSTAGE_NAME)
+	if (type == OnixDeviceType::POLLEDBNO && (m_hubName == NEUROPIXELSV2E_HEADSTAGE_NAME || m_hubName == NEUROPIXELSV1E_HEADSTAGE_NAME))
 		idx++;
 
 	return idx;
@@ -89,9 +89,9 @@ OnixDeviceType OnixDevice::getDeviceType() const
 	return type;
 }
 
-String OnixDevice::getStreamIdentifier()
+std::string OnixDevice::getStreamIdentifier()
 {
-	String streamIdentifier = "onix";
+	std::string streamIdentifier = "onix";
 
 	// Insert the headstage or breakout board
 	if (getHubName() == NEUROPIXELSV1F_HEADSTAGE_NAME)

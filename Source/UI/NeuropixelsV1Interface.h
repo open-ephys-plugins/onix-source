@@ -26,7 +26,8 @@
 
 #include "ColourScheme.h"
 #include "SettingsInterface.h"
-#include "NeuropixelsV1fProbeBrowser.h"
+#include "NeuropixelsV1ProbeBrowser.h"
+#include "../Devices/Neuropixels1.h"
 
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
@@ -38,15 +39,15 @@ namespace OnixSourcePlugin
 		Extended graphical interface for updating probe settings
 
 	*/
-	class NeuropixelsV1fInterface : public SettingsInterface,
+	class NeuropixelsV1Interface : public SettingsInterface,
 		public Button::Listener,
 		public ComboBox::Listener,
 		public TextEditor::Listener
 	{
 	public:
-		friend class ProbeBrowser<Neuropixels1f::numberOfChannels, Neuropixels1f::numberOfElectrodes>;
+		friend class ProbeBrowser<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>;
 
-		NeuropixelsV1fInterface(std::shared_ptr<Neuropixels1f> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+		NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 		void buttonClicked(Button*) override;
 		void comboBoxChanged(ComboBox*) override;
@@ -56,7 +57,7 @@ namespace OnixSourcePlugin
 		void stopAcquisition() override;
 
 		/** Settings-related functions*/
-		bool applyProbeSettings(ProbeSettings<Neuropixels1f::numberOfChannels, Neuropixels1f::numberOfElectrodes>* p);
+		bool applyProbeSettings(ProbeSettings<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>* p);
 
 		void saveParameters(XmlElement* xml) override;
 
@@ -68,7 +69,7 @@ namespace OnixSourcePlugin
 
 		void selectElectrodes(std::vector<int> electrodes);
 
-		String getReferenceText() override { return referenceComboBox->getText(); }
+		std::string getReferenceText() override { return referenceComboBox->getText().toStdString(); }
 
 	private:
 
@@ -121,9 +122,7 @@ namespace OnixSourcePlugin
 		std::unique_ptr<FileChooser> adcCalibrationFileChooser;
 		std::unique_ptr<FileChooser> gainCalibrationFileChooser;
 
-		std::unique_ptr<NeuropixelsV1fProbeBrowser> probeBrowser;
-
-		std::unique_ptr<ToggleButton> offsetCorrectionCheckbox;
+		std::unique_ptr<NeuropixelsV1ProbeBrowser> probeBrowser;
 
 		std::unique_ptr<Component> enableViewComponent;
 		std::unique_ptr<Component> apGainViewComponent;
@@ -150,8 +149,8 @@ namespace OnixSourcePlugin
 		/** Checks if the current channel map matches an existing channel preset, and updates the combo box if it does */
 		void checkForExistingChannelPreset();
 
-		int getIndexOfComboBoxItem(ComboBox* cb, String item);
+		int getIndexOfComboBoxItem(ComboBox* cb, std::string item);
 
-		JUCE_LEAK_DETECTOR(NeuropixelsV1fInterface);
+		JUCE_LEAK_DETECTOR(NeuropixelsV1Interface);
 	};
 }

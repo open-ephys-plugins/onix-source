@@ -204,7 +204,6 @@ void PolledBno055::addFrame(oni_frame_t* frame)
 void PolledBno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	sourceBuffers.add(new DataBuffer(numberOfChannels, (int)sampleRate * bufferSizeInSeconds));
-
 	bnoBuffer = sourceBuffers.getLast();
 }
 
@@ -288,7 +287,7 @@ void PolledBno055::setBnoAxisMap(Bno055AxisMap map)
 	axisMap = map;
 }
 
-void PolledBno055::setBnoAxisSign(Bno055AxisSign sign)
+void PolledBno055::setBnoAxisSign(uint32_t sign)
 {
 	axisSign = sign;
 }

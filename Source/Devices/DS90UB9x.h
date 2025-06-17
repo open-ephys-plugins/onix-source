@@ -121,6 +121,22 @@ namespace OnixSourcePlugin
 			SCLLOW = 0x0B
 		};
 
+		enum class DS90UB933SerializerI2CRegister : uint32_t
+		{
+			Gpio10 = 0x0D,
+			Gpio32 = 0x0E,
+			SclHigh = 0x11,
+			SclLow = 0x12
+		};
+
+		enum class DS90UB953SerializerI2CRegister : uint32_t
+		{
+			GpioData = 0x0D,
+			GpioIOControl = 0x0E,
+			SclHigh = 0x0B,
+			SclLow = 0x0C
+		};
+
 		enum class DS90UB9xMode : uint32_t
 		{
 			Raw12BitLowFrequency = 1,

@@ -42,9 +42,9 @@ namespace OnixSourcePlugin
 			setIndent(0);
 		}
 
-		TabBarButton* createTabButton(const juce::String& name, int index) override
+		TabBarButton* createTabButton(const String& name, int index) override
 		{
-			return new CustomTabButton(name, this, isTopLevel);
+			return new CustomTabButton(name.toStdString(), this, isTopLevel);
 		}
 
 	private:
