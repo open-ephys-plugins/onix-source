@@ -21,6 +21,8 @@
 */
 
 #include "DigitalIOInterface.h"
+#include "../OnixSourceEditor.h"
+#include "../OnixSourceCanvas.h"
 
 using namespace OnixSourcePlugin;
 

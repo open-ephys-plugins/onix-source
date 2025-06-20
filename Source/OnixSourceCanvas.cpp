@@ -23,6 +23,7 @@
 #include "OnixSourceCanvas.h"
 #include "OnixSource.h"
 #include "OnixSourceEditor.h"
+#include "UI/SettingsInterface.h"
 
 using namespace OnixSourcePlugin;
 

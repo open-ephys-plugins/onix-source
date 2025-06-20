@@ -21,6 +21,8 @@
 */
 
 #include "AnalogIOInterface.h"
+#include "../OnixSourceEditor.h"
+#include "../OnixSourceCanvas.h"
 
 using namespace OnixSourcePlugin;
 

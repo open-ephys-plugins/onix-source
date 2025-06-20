@@ -23,14 +23,14 @@
 #pragma once
 
 #include <VisualizerEditorHeaders.h>
-
-#include "../OnixSourceEditor.h"
-#include "../OnixSourceCanvas.h"
-
+#include "SettingsInterface.h"
 #include "../Devices/PolledBno055.h"
 
 namespace OnixSourcePlugin
 {
+	class OnixSourceEditor;
+	class OnixSourceCanvas;
+
 	class PolledBno055Interface : public SettingsInterface,
 		public Button::Listener
 	{

@@ -33,15 +33,6 @@
 
 namespace OnixSourcePlugin
 {
-	enum class VisualizationMode
-	{
-		ENABLE_VIEW,
-		AP_GAIN_VIEW,
-		LFP_GAIN_VIEW,
-		REFERENCE_VIEW,
-		ACTIVITY_VIEW
-	};
-
 	enum class ProbeType
 	{
 		NONE = 1,

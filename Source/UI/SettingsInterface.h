@@ -24,7 +24,6 @@
 
 #include <VisualizerEditorHeaders.h>
 
-#include "../NeuropixelsComponents.h"
 #include "../OnixDevice.h"
 
 namespace OnixSourcePlugin
@@ -56,6 +55,15 @@ namespace OnixSourcePlugin
 			ANALOGIO_SETTINGS_INTERFACE,
 			DIGITALIO_SETTINGS_INTERFACE,
 			UNKNOWN_SETTINGS_INTERFACE
+		};
+
+		enum class VisualizationMode
+		{
+			ENABLE_VIEW,
+			AP_GAIN_VIEW,
+			LFP_GAIN_VIEW,
+			REFERENCE_VIEW,
+			ACTIVITY_VIEW
 		};
 
 		/** Constructor */
@@ -114,6 +122,5 @@ namespace OnixSourcePlugin
 
 		/** Enables or disables all UI elements that should not be changed during acquisition */
 		virtual void setInterfaceEnabledState(bool newState) = 0;
-
 	};
 }

@@ -21,7 +21,8 @@
 */
 
 #include "NeuropixelsV1Interface.h"
-
+#include "../OnixSourceEditor.h"
+#include "../OnixSourceCanvas.h"
 #include "../Formats/ProbeInterface.h"
 
 using namespace OnixSourcePlugin;
@@ -43,7 +44,7 @@ NeuropixelsV1Interface::NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, 
 	{
 		type = device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E ? SettingsInterface::Type::NEUROPIXELS1E_SETTINGS_INTERFACE : SettingsInterface::Type::NEUROPIXELS1F_SETTINGS_INTERFACE;
 
-		mode = VisualizationMode::ENABLE_VIEW;
+		mode = SettingsInterface::VisualizationMode::ENABLE_VIEW;
 
 		probeBrowser = std::make_unique<NeuropixelsV1ProbeBrowser>(this, 0);
 		probeBrowser->setBounds(0, 0, 600, 600);
@@ -708,35 +709,35 @@ void NeuropixelsV1Interface::buttonClicked(Button* button)
 	}
 	else if (button == enableViewButton.get())
 	{
-		mode = VisualizationMode::ENABLE_VIEW;
+		mode = SettingsInterface::VisualizationMode::ENABLE_VIEW;
 		probeBrowser->stopTimer();
 		drawLegend();
 		repaint();
 	}
 	else if (button == apGainViewButton.get())
 	{
-		mode = VisualizationMode::AP_GAIN_VIEW;
+		mode = SettingsInterface::VisualizationMode::AP_GAIN_VIEW;
 		probeBrowser->stopTimer();
 		drawLegend();
 		repaint();
 	}
 	else if (button == lfpGainViewButton.get())
 	{
-		mode = VisualizationMode::LFP_GAIN_VIEW;
+		mode = SettingsInterface::VisualizationMode::LFP_GAIN_VIEW;
 		probeBrowser->stopTimer();
 		drawLegend();
 		repaint();
 	}
 	else if (button == referenceViewButton.get())
 	{
-		mode = VisualizationMode::REFERENCE_VIEW;
+		mode = SettingsInterface::VisualizationMode::REFERENCE_VIEW;
 		probeBrowser->stopTimer();
 		drawLegend();
 		repaint();
 	}
 	else if (button == activityViewButton.get())
 	{
-		mode = VisualizationMode::ACTIVITY_VIEW;
+		mode = SettingsInterface::VisualizationMode::ACTIVITY_VIEW;
 
 		if (acquisitionIsActive)
 			probeBrowser->startTimer(100);
@@ -889,7 +890,7 @@ void NeuropixelsV1Interface::startAcquisition()
 
 	setInterfaceEnabledState(false);
 
-	if (mode == VisualizationMode::ACTIVITY_VIEW)
+	if (mode == SettingsInterface::VisualizationMode::ACTIVITY_VIEW)
 		probeBrowser->startTimer(100);
 }
 
@@ -910,19 +911,19 @@ void NeuropixelsV1Interface::drawLegend()
 
 	switch (mode)
 	{
-	case VisualizationMode::ENABLE_VIEW:
+	case SettingsInterface::VisualizationMode::ENABLE_VIEW:
 		enableViewComponent->setVisible(true);
 		break;
-	case VisualizationMode::AP_GAIN_VIEW:
+	case SettingsInterface::VisualizationMode::AP_GAIN_VIEW:
 		apGainViewComponent->setVisible(true);
 		break;
-	case VisualizationMode::LFP_GAIN_VIEW:
+	case SettingsInterface::VisualizationMode::LFP_GAIN_VIEW:
 		lfpGainViewComponent->setVisible(true);
 		break;
-	case VisualizationMode::REFERENCE_VIEW:
+	case SettingsInterface::VisualizationMode::REFERENCE_VIEW:
 		referenceViewComponent->setVisible(true);
 		break;
-	case VisualizationMode::ACTIVITY_VIEW:
+	case SettingsInterface::VisualizationMode::ACTIVITY_VIEW:
 		activityViewComponent->setVisible(true);
 		break;
 	default:
