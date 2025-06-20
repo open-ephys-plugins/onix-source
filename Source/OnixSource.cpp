@@ -233,7 +233,7 @@ bool OnixSource::checkHubFirmwareCompatibility(std::shared_ptr<Onix1> context, d
 	{
 		if (hubId == ONIX_HUB_FMCHOST) // NB: Breakout Board
 		{
-			static constexpr int RequiredMajorVersion = 1;
+			static constexpr int RequiredMajorVersion = 2;
 			uint32_t firmwareVersion = 0;
 			if (!getHubFirmwareVersion(context, hubIndex, &firmwareVersion))
 			{
@@ -247,7 +247,11 @@ bool OnixSource::checkHubFirmwareCompatibility(std::shared_ptr<Onix1> context, d
 
 			if (majorVersion != RequiredMajorVersion)
 			{
-				Onix1::showWarningMessageBoxAsync("Invalid Firmware Version", "The breakout board major version is v" + std::to_string(majorVersion) + ", but this plugin is only compatible with v" + std::to_string(RequiredMajorVersion) + ". To use this plugin, upgrade to a version that supports the breakout board v" + std::to_string(majorVersion));
+				Onix1::showWarningMessageBoxAsync(
+					"Invalid Firmware Version", 
+					"The breakout board firmware major version is v" + std::to_string(majorVersion) + 
+						", but this plugin is only compatible with v" + std::to_string(RequiredMajorVersion) + 
+						". To use this plugin, upgrade the firmware to a version that supports the breakout board v" + std::to_string(majorVersion));
 				return false;
 			}
 		}
