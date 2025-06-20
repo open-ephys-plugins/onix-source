@@ -124,8 +124,10 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 			LOGD("Difference in names found for device at address ", deviceIdx, ". Found ", deviceName, " on ", hubName, ", but was expecting ", device->getName(), " on ", device->getHubName());
 		}
 	}
-	else if (device->getDeviceType() == OnixDeviceType::HEARTBEAT || device->getDeviceType() == OnixDeviceType::MEMORYMONITOR) // NB: These are devices with no equivalent settings tab that still need to be created and added to the vector of devices
-	{
+	else if (device->getDeviceType() == OnixDeviceType::HEARTBEAT ||
+		device->getDeviceType() == OnixDeviceType::PERSISTENTHEARTBEAT ||
+		device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)
+	{// NB: These are devices with no equivalent settings tab that still need to be created and added to the vector of devices
 		LOGD("Creating new device ", deviceName, " on ", hubName);
 		device = std::make_shared<Device>(deviceName, hubName, deviceIdx, ctx);
 	}
@@ -248,10 +250,10 @@ bool OnixSource::checkHubFirmwareCompatibility(std::shared_ptr<Onix1> context, d
 			if (majorVersion != RequiredMajorVersion)
 			{
 				Onix1::showWarningMessageBoxAsync(
-					"Invalid Firmware Version", 
-					"The breakout board firmware major version is v" + std::to_string(majorVersion) + 
-						", but this plugin is only compatible with v" + std::to_string(RequiredMajorVersion) + 
-						". To use this plugin, upgrade the firmware to a version that supports the breakout board v" + std::to_string(majorVersion));
+					"Invalid Firmware Version",
+					"The breakout board firmware major version is v" + std::to_string(majorVersion) +
+					", but this plugin is only compatible with v" + std::to_string(RequiredMajorVersion) +
+					". To use this plugin, upgrade the firmware to a version that supports the breakout board v" + std::to_string(majorVersion));
 				return false;
 			}
 		}
@@ -294,8 +296,8 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 			hubNames.insert({ hubIndex, BREAKOUT_BOARD_NAME });
 			auto canvas = editor->getCanvas();
 
-			devicesFound = configureDevice<Heartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, Heartbeat::getDeviceType(), hubIndex, context);
-			if (!devicesFound) 
+			devicesFound = configureDevice<PersistentHeartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, PersistentHeartbeat::getDeviceType(), hubIndex, context);
+			if (!devicesFound)
 			{
 				sources.clear();
 				return false;
@@ -599,7 +601,10 @@ std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devic
 
 	for (const auto& device : devices)
 	{
-		if (filterDevices && (device->getDeviceType() == OnixDeviceType::HEARTBEAT || device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)) continue;
+		if (filterDevices &&
+			(device->getDeviceType() == OnixDeviceType::HEARTBEAT ||
+				device->getDeviceType() == OnixDeviceType::PERSISTENTHEARTBEAT ||
+				device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)) continue;
 
 		deviceMap.insert({ device->getDeviceIdx(), device->getDeviceType() });
 	}
