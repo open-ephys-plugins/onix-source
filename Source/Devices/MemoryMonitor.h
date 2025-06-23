@@ -27,8 +27,6 @@
 
 namespace OnixSourcePlugin
 {
-	class DigitalIO;
-
 	enum class MemoryMonitorRegisters : uint32_t
 	{
 		ENABLE = 0,
@@ -66,17 +64,11 @@ namespace OnixSourcePlugin
 
 		float getLastPercentUsedValue();
 
-		void setDigitalIO(std::shared_ptr<DigitalIO> digitalIO) { m_digitalIO = digitalIO; }
-
 		static OnixDeviceType getDeviceType();
 
 	private:
 
 		DataBuffer* percentUsedBuffer;
-
-		std::shared_ptr<DigitalIO> m_digitalIO;
-
-		uint64_t prevWord = 0;
 
 		static const int numFrames = 10;
 

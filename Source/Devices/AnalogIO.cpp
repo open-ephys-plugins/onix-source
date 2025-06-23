@@ -32,7 +32,7 @@ AnalogIO::AnalogIO(std::string name, std::string hubName, const oni_dev_idx_t de
 		"Analog Input data",
 		getStreamIdentifier(),
 		getNumChannels(),
-		std::floor(AnalogIOFrequencyHz / framesToAverage),
+		getSampleRate(),
 		"AnalogInput",
 		ContinuousChannel::Type::ADC,
 		getVoltsPerDivision(AnalogIOVoltageRange::TenVolts), // NB: +/- 10 Volts
@@ -51,6 +51,11 @@ AnalogIO::AnalogIO(std::string name, std::string hubName, const oni_dev_idx_t de
 	}
 
 	dataType = AnalogIODataType::Volts;
+}
+
+int AnalogIO::getSampleRate()
+{
+	return std::floor(AnalogIOFrequencyHz / framesToAverage);
 }
 
 OnixDeviceType AnalogIO::getDeviceType()
@@ -109,6 +114,78 @@ float AnalogIO::getVoltsPerDivision(AnalogIOVoltageRange voltageRange)
 	}
 }
 
+AnalogIODirection AnalogIO::getChannelDirection(int channelNumber)
+{
+	if (channelNumber > numChannels || channelNumber < 0)
+	{
+		LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
+		return AnalogIODirection::Input;
+	}
+
+	return channelDirection[channelNumber];
+}
+
+std::string AnalogIO::getChannelDirection(AnalogIODirection direction)
+{
+	switch (direction)
+	{
+	case AnalogIODirection::Input:
+		return "Input";
+	case AnalogIODirection::Output:
+		return "Output";
+	default:
+		return "";
+	}
+}
+
+void AnalogIO::setChannelDirection(int channelNumber, AnalogIODirection direction)
+{
+	if (channelNumber > numChannels || channelNumber < 0)
+	{
+		LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
+		return;
+	}
+
+	channelDirection[channelNumber] = direction;
+}
+
+AnalogIOVoltageRange AnalogIO::getChannelVoltageRange(int channelNumber)
+{
+	if (channelNumber > numChannels || channelNumber < 0)
+	{
+		LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
+		return AnalogIOVoltageRange::FiveVolts;
+	}
+
+	return channelVoltageRange[channelNumber];
+}
+
+void AnalogIO::setChannelVoltageRange(int channelNumber, AnalogIOVoltageRange direction)
+{
+	if (channelNumber > numChannels || channelNumber < 0)
+	{
+		LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
+		return;
+	}
+
+	channelVoltageRange[channelNumber] = direction;
+}
+
+AnalogIODataType AnalogIO::getDataType() const
+{
+	return dataType;
+}
+
+void AnalogIO::setDataType(AnalogIODataType type)
+{
+	dataType = type;
+}
+
+int AnalogIO::getNumChannels()
+{
+	return numChannels;
+}
+
 void AnalogIO::startAcquisition()
 {
 	currentFrame = 0;
@@ -133,62 +210,74 @@ void AnalogIO::addFrame(oni_frame_t* frame)
 	frameArray.add(frame);
 }
 
+int AnalogIO::getNumberOfFrames()
+{
+	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
+	return frameArray.size();
+}
+
 void AnalogIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	sourceBuffers.add(new DataBuffer(streamInfos.getFirst().getNumChannels(), (int)streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
 	analogInputBuffer = sourceBuffers.getLast();
 }
 
+void AnalogIO::processFrame(uint64_t eventWord)
+{
+	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
+	oni_frame_t* frame = frameArray.removeAndReturn(0);
+
+	int16_t* dataPtr = (int16_t*)frame->data;
+
+	int dataOffset = 4;
+
+	for (size_t i = 0; i < numChannels; i++)
+	{
+		if (dataType == AnalogIODataType::S16)
+			analogInputSamples[currentFrame + i * numFrames] += *(dataPtr + dataOffset + i);
+		else
+			analogInputSamples[currentFrame + i * numFrames] += *(dataPtr + dataOffset + i) * voltsPerDivision[i];
+	}
+
+	currentAverageFrame++;
+
+	if (currentAverageFrame >= framesToAverage)
+	{
+		for (size_t i = 0; i < numChannels; i++)
+		{
+			analogInputSamples[currentFrame + i * numFrames] /= framesToAverage;
+		}
+
+		currentAverageFrame = 0;
+
+		timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
+		sampleNumbers[currentFrame] = sampleNumber++;
+		eventCodes[currentFrame] = eventWord;
+
+		currentFrame++;
+	}
+
+	oni_destroy_frame(frame);
+
+	if (currentFrame >= numFrames)
+	{
+		shouldAddToBuffer = true;
+		currentFrame = 0;
+	}
+
+	if (shouldAddToBuffer)
+	{
+		shouldAddToBuffer = false;
+		analogInputBuffer->addToBuffer(analogInputSamples.data(), sampleNumbers, timestamps, eventCodes, numFrames);
+
+		analogInputSamples.fill(0);
+	}
+}
+
 void AnalogIO::processFrames()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
-
-		int16_t* dataPtr = (int16_t*)frame->data;
-
-		int dataOffset = 4;
-
-		for (size_t i = 0; i < numChannels; i++)
-		{
-			if (dataType == AnalogIODataType::S16)
-				analogInputSamples[currentFrame + i * numFrames] += *(dataPtr + dataOffset + i);
-			else
-				analogInputSamples[currentFrame + i * numFrames] += *(dataPtr + dataOffset + i) * voltsPerDivision[i];
-		}
-
-		currentAverageFrame++;
-
-		if (currentAverageFrame >= framesToAverage)
-		{
-			for (size_t i = 0; i < numChannels; i++)
-			{
-				analogInputSamples[currentFrame + i * numFrames] /= framesToAverage;
-			}
-
-			currentAverageFrame = 0;
-
-			timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
-			sampleNumbers[currentFrame] = sampleNumber++;
-
-			currentFrame++;
-		}
-
-		oni_destroy_frame(frame);
-
-		if (currentFrame >= numFrames)
-		{
-			shouldAddToBuffer = true;
-			currentFrame = 0;
-		}
-
-		if (shouldAddToBuffer)
-		{
-			shouldAddToBuffer = false;
-			analogInputBuffer->addToBuffer(analogInputSamples.data(), sampleNumbers, timestamps, eventCodes, numFrames);
-
-			analogInputSamples.fill(0);
-		}
+		processFrame();
 	}
 }

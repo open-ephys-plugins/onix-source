@@ -28,7 +28,10 @@ namespace OnixSourcePlugin
 {
 	enum class DigitalIORegisters : uint32_t
 	{
-		ENABLE = 0
+		ENABLE = 0x0,
+		BASE_FREQ_HZ = 0x5,
+		DEAD_TICKS = 0x6,
+		SAMPLE_PERIOD = 0x7,
 	};
 
 	enum class DigitalPortState : uint16_t
@@ -45,6 +48,7 @@ namespace OnixSourcePlugin
 
 	enum class BreakoutButtonState : uint16_t
 	{
+		None = 0x0,
 		Moon = 0x1,
 		Triangle = 0x2,
 		X = 0x4,
@@ -60,44 +64,33 @@ namespace OnixSourcePlugin
 	};
 
 	/*
-		Configures and streams data from an AnalogIO device on a Breakout Board
+		Configures and streams data from a DigitalIO device on a Breakout Board
 	*/
 	class DigitalIO : public OnixDevice
 	{
 	public:
 		DigitalIO(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
-		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
-
-		/** Update the settings of the device */
 		bool updateSettings() override;
-
-		/** Starts probe data streaming */
 		void startAcquisition() override;
-
-		/** Stops probe data streaming*/
 		void stopAcquisition() override;
-
-		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
-
-		EventChannel::Settings getEventChannelSettings();
-
 		void addFrame(oni_frame_t*) override;
-
 		void processFrames() override;
 
-		uint64_t getEventWord();
+		EventChannel::Settings getEventChannelSettings(DataStream* stream);
 
+		int getNumberOfWords();
+		uint64_t getEventWord();
 		bool hasEventWord();
 
 		static OnixDeviceType getDeviceType();
 
 	private:
 
-		static const int numDigitalInputs = 8;
-		static const int numButtons = 6;
+		static constexpr int numDigitalInputs = 8;
+		static constexpr int numButtons = 6;
 
 		Array<oni_frame_t*, CriticalSection, 10> frameArray;
 		Array<uint64_t, CriticalSection, 64> eventWords;

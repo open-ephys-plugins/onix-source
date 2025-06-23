@@ -23,6 +23,7 @@
 #include "OnixSourceEditor.h"
 #include "OnixSource.h"
 #include "OnixSourceCanvas.h"
+#include "Devices/MemoryMonitor.h"
 
 using namespace OnixSourcePlugin;
 

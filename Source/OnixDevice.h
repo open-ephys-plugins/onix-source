@@ -231,6 +231,10 @@ namespace OnixSourcePlugin
 		JUCE_LEAK_DETECTOR(OnixDevice);
 	};
 
+	enum class CompositeDeviceType {
+		AUXILIARYIO = 0
+	};
+
 	using OnixDeviceVector = std::vector<std::shared_ptr<OnixDevice>>;
 
 	/*

@@ -36,7 +36,7 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
 		deviceEnableButton->setFont(font);
 		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(50, 40, 100, 22);
+		deviceEnableButton->setBounds(40, 20, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, AnalogIO will not stream or receive data during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);

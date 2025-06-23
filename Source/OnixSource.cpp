@@ -310,14 +310,8 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				return false;
 			}
 
-			devicesFound = configureDevice<AnalogIO>(sources, canvas, "Analog IO", BREAKOUT_BOARD_NAME, AnalogIO::getDeviceType(), hubIndex + 6, context);
-			if (!devicesFound)
-			{
-				sources.clear();
-				return false;
-			}
-
-			devicesFound = configureDevice<DigitalIO>(sources, canvas, "Digital IO", BREAKOUT_BOARD_NAME, DigitalIO::getDeviceType(), hubIndex + 7, context);
+			// NB: Configures AnalogIO and DigitalIO
+			devicesFound = configureDevice<AuxiliaryIO>(sources, canvas, "Auxiliary IO", BREAKOUT_BOARD_NAME, AuxiliaryIO::getDeviceType(), hubIndex + 6, context);
 			if (!devicesFound)
 			{
 				sources.clear();
@@ -412,7 +406,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 				hubNames.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
-			else if (hsid == 0xFFFFFFFF || hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH)
+			else if (hsid == 0xFFFFFFFF || hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH) // TODO: Remove the 0xFFFFFFFF before publishing
 			{
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
@@ -744,8 +738,6 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 	updateSourceBuffers();
 
-	std::shared_ptr<DigitalIO> digitalIO = std::static_pointer_cast<DigitalIO>(getDevice(OnixDeviceType::DIGITALIO, BREAKOUT_BOARD_OFFSET));
-
 	if (devicesFound)
 	{
 		for (const auto& source : sources)
@@ -814,29 +806,6 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
-
-				if (digitalIO != nullptr && digitalIO->isEnabled())
-				{
-					auto ttlChannelSettings = digitalIO->getEventChannelSettings();
-					ttlChannelSettings.stream = dataStreams->getLast();
-					eventChannels->add(new EventChannel(ttlChannelSettings));
-
-					std::static_pointer_cast<MemoryMonitor>(source)->setDigitalIO(digitalIO);
-				}
-			}
-			else if (source->getDeviceType() == OnixDeviceType::ANALOGIO)
-			{
-				DeviceInfo::Settings deviceSettings{
-					source->getName(),
-					"Analog IO",
-					"analogio",
-					"0000000",
-					""
-				};
-
-				deviceInfos->add(new DeviceInfo(deviceSettings));
-
-				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
 			else if (source->getDeviceType() == OnixDeviceType::HARPSYNCINPUT)
 			{
@@ -865,6 +834,50 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
+			}
+			else if (source->getDeviceType() == OnixDeviceType::HEARTBEAT ||
+				source->getDeviceType() == OnixDeviceType::PERSISTENTHEARTBEAT || 
+				source->getDeviceType() == OnixDeviceType::OUTPUTCLOCK)
+			{
+				continue;
+			}
+			else if (source->getDeviceType() == OnixDeviceType::COMPOSITE)
+			{
+				auto compositeDevice = std::static_pointer_cast<CompositeDevice>(source);
+
+				if (compositeDevice->getCompositeDeviceType() == CompositeDeviceType::AUXILIARYIO)
+				{
+					DeviceInfo::Settings deviceSettings{
+						source->getName(),
+						"Auxiliary device containing analog and digital IO data",
+						"auxiliaryio",
+						"0000000",
+						""
+					};
+
+					deviceInfos->add(new DeviceInfo(deviceSettings));
+
+					auto auxiliaryIO = std::static_pointer_cast<AuxiliaryIO>(compositeDevice);
+
+					addIndividualStreams(auxiliaryIO->getAnalogIO()->streamInfos, dataStreams, deviceInfos, continuousChannels);
+
+					auto eventChannelSettings = auxiliaryIO->getDigitalIO()->getEventChannelSettings(dataStreams->getLast());
+					eventChannels->add(new EventChannel(eventChannelSettings));
+				}
+				else
+				{
+					Onix1::showWarningMessageBoxAsync(
+						"Unknown Composite Source", 
+						"Found an unknown composite source (" + source->getName() + ") on hub " + source->getHubName() +
+						" at address " + std::to_string(source->getDeviceIdx()));
+				}
+			}
+			else
+			{
+				Onix1::showWarningMessageBoxAsync(
+					"Unknown Source", 
+					"Found an unknown source (" + source->getName() + ") on hub " + source->getHubName() +
+					" at address " + std::to_string(source->getDeviceIdx()));
 			}
 		}
 	}
