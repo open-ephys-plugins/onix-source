@@ -307,7 +307,7 @@ bool OnixSourceEditor::configurePortVoltage(PortName port, Label* lastVoltageSet
 
 		if (!source->configurePortVoltage(port, portVoltageValue->getText().toStdString()))
 		{
-			Onix1::showWarningMessageBoxAsync("Communication Error", "Unable to acquire communication lock on " + OnixDevice::getPortName(port) + ".");
+			Onix1::showWarningMessageBoxAsync("Communication Error", "Unable to acquire communication lock on " + OnixDevice::getPortNameString(port) + ".");
 			portStatus->setFill(fillDisconnected);
 			result = false;
 		}
@@ -615,13 +615,13 @@ void OnixSourceEditor::refreshComboBoxSelection()
 
 	for (const auto tab : hubTabs)
 	{
-		if (tab->getName().contains(OnixDevice::getPortName(PortName::PortA)))
+		if (tab->getName().contains(OnixDevice::getPortNameString(PortName::PortA)))
 		{
 			setComboBoxSelection(headstageComboBoxA.get(), tab->getName().toStdString());
 			source->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstageComboBoxA->getText().toStdString()));
 			resetPortA = false;
 		}
-		else if (tab->getName().contains(OnixDevice::getPortName(PortName::PortB)))
+		else if (tab->getName().contains(OnixDevice::getPortNameString(PortName::PortB)))
 		{
 			setComboBoxSelection(headstageComboBoxB.get(), tab->getName().toStdString());
 			source->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstageComboBoxB->getText().toStdString()));

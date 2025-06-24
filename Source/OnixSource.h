@@ -139,6 +139,8 @@ namespace OnixSourcePlugin
 
 		void setBlockReadSize(uint32_t);
 
+		static bool checkPortControllerStatus(OnixSourceEditor* editor, std::shared_ptr<PortController> port);
+
 	private:
 
 		/** Available data sources */

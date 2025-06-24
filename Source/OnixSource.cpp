@@ -971,6 +971,25 @@ bool OnixSource::foundInputSource()
 	return devicesFound;
 }
 
+bool OnixSource::checkPortControllerStatus(OnixSourceEditor* editor, std::shared_ptr<PortController> port)
+{
+	if (editor->isHeadstageSelected(port->getPortName()))
+	{
+		if (!port->checkLinkState())
+		{
+			Onix1::showWarningMessageBoxAsync("Port Controller Error", port->getName() + " is not currently connected.");
+			return false;
+		}
+		else if (port->getLinkFlags() != 0)
+		{
+			Onix1::showWarningMessageBoxAsync("Port Controller Error", port->getName() + " was disconnected, and must be reconnected.");
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool OnixSource::isReady()
 {
 	if (context == nullptr || !devicesFound)
@@ -982,9 +1001,12 @@ bool OnixSource::isReady()
 		return false;
 	}
 
-	if (editor->isHeadstageSelected(PortName::PortA) && !portA->checkLinkState()) return false;
-	if (editor->isHeadstageSelected(PortName::PortB) && !portB->checkLinkState()) return false;
-
+	if (!checkPortControllerStatus(editor, portA) || !checkPortControllerStatus(editor, portB))
+	{
+		editor->setConnectedStatus(false); // NB: If either port controller lost lock, disconnect all devices
+		return false;
+	}
+	
 	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
