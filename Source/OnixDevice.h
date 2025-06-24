@@ -55,6 +55,7 @@ namespace OnixSourcePlugin
 		HARPSYNCINPUT,
 		ANALOGIO,
 		DIGITALIO,
+		COMPOSITE,
 	};
 
 	struct StreamInfo {
@@ -157,29 +158,19 @@ namespace OnixSourcePlugin
 		/** Constructor */
 		OnixDevice(std::string name_, std::string hubName, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx, bool passthrough = false);
 
-		/** Destructor */
-		~OnixDevice() { }
-
 		virtual void addFrame(oni_frame_t*) {};
-
 		virtual void processFrames() {};
+		virtual int configureDevice() { return -1; };
+		virtual bool updateSettings() { return false; };
+		virtual void startAcquisition() {};
+		virtual void stopAcquisition() {};
+		virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
+		virtual bool compareIndex(uint32_t index);
 
 		const std::string getName() { return name; }
 
 		bool isEnabled() const { return enabled; }
-
 		void setEnabled(bool newState) { enabled = newState; }
-
-		virtual int configureDevice() { return -1; };
-
-		virtual bool updateSettings() { return false; };
-
-		virtual void startAcquisition() {};
-
-		virtual void stopAcquisition() {};
-
-		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
-		virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
 
 		oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
@@ -241,4 +232,46 @@ namespace OnixSourcePlugin
 	};
 
 	using OnixDeviceVector = std::vector<std::shared_ptr<OnixDevice>>;
+
+	/*
+		Abstract device that contains two or more devices
+	*/
+	class CompositeDevice : public OnixDevice
+	{
+	public:
+
+		CompositeDevice(std::string name_, std::string hubName, CompositeDeviceType type_, OnixDeviceVector devices_, std::shared_ptr<Onix1> oni_ctx);
+
+		CompositeDeviceType getCompositeDeviceType() const;
+
+		bool compareIndex(uint32_t index) override;
+		int configureDevice() override;
+		bool updateSettings() override;
+		void startAcquisition() override;
+		void stopAcquisition() override;
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+		void addFrame(oni_frame_t*) override;
+
+		template<class Device>
+		std::shared_ptr<Device> getDevice(OnixDeviceType deviceType)
+		{
+			for (const auto& device : devices)
+			{
+				if (device->getDeviceType() == deviceType)
+					return std::static_pointer_cast<Device>(device);
+			}
+
+			return nullptr;
+		}
+
+	protected:
+
+		OnixDeviceVector devices;
+
+		CompositeDeviceType compositeType;
+
+	private:
+
+		JUCE_LEAK_DETECTOR(CompositeDevice);
+	};
 }
