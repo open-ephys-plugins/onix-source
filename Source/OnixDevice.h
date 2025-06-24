@@ -198,8 +198,8 @@ namespace OnixSourcePlugin
 		void setHubName(std::string hubName) { m_hubName = hubName; }
 
 		static int getPortOffset(PortName port);
-		static std::string getPortName(int offset);
-		static std::string getPortName(PortName port);
+		static std::string getPortNameString(int offset);
+		static std::string getPortNameString(PortName port);
 		static std::string getPortNameFromIndex(oni_dev_idx_t index);
 		static PortName getPortFromIndex(oni_dev_idx_t index);
 		static int getOffsetFromIndex(oni_dev_idx_t index);

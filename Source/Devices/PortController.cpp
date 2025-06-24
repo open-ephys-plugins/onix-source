@@ -25,7 +25,7 @@
 using namespace OnixSourcePlugin;
 
 PortController::PortController(PortName port_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(OnixDevice::getPortName(port_), BREAKOUT_BOARD_NAME, OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
+	OnixDevice(OnixDevice::getPortNameString(port_), BREAKOUT_BOARD_NAME, OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
 	port(port_)
 {
 }
@@ -34,7 +34,57 @@ int PortController::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return 1;
 
-	return deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1);
+	int rc = deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::LINKFLAGS, 0b11);
+	if (rc != ONI_ESUCCESS)
+	{
+		Onix1::showWarningMessageBoxAsync("Port Controller Error", "Unable to set the link flags for " + getName());
+		return rc;
+	}
+
+	return deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1u);
+}
+
+uint32_t PortController::getLinkFlags()
+{
+	uint32_t linkFlags;
+	int rc = deviceContext->readRegister(deviceIdx, (uint32_t)PortControllerRegister::LINKFLAGS, &linkFlags);
+
+	if (rc != ONI_ESUCCESS)
+	{
+		Onix1::showWarningMessageBoxAsync("Port Controller Error", "Unable to read the link flags for " + getName());
+		return false;
+	}
+
+	return linkFlags; 
+}
+
+bool PortController::updateSettings()
+{
+	return getLinkFlags() == 0; 
+}
+
+void PortController::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+{
+}
+
+std::string PortController::getPortNameString() const
+{
+	return OnixDevice::getPortNameString(port);
+}
+
+PortName PortController::getPortName() const
+{
+	return port;
+}
+
+bool PortController::getErrorFlag()
+{
+	return errorFlag; 
+}
+
+double PortController::getLastVoltageSet() const
+{ 
+	return lastVoltageSet;
 }
 
 void PortController::startAcquisition()

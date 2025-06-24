@@ -153,7 +153,7 @@ int OnixDevice::getPortOffset(PortName port)
 	return (uint32_t)port << 8;
 }
 
-std::string OnixDevice::getPortName(int offset)
+std::string OnixDevice::getPortNameString(int offset)
 {
 	switch (offset)
 	{
@@ -168,14 +168,14 @@ std::string OnixDevice::getPortName(int offset)
 	}
 }
 
-std::string OnixDevice::getPortName(PortName port)
+std::string OnixDevice::getPortNameString(PortName port)
 {
-	return getPortName(getPortOffset(port));
+	return getPortNameString(getPortOffset(port));
 }
 
 std::string OnixDevice::getPortNameFromIndex(oni_dev_idx_t index)
 {
-	return getPortName(getOffsetFromIndex(index));
+	return getPortNameString(getOffsetFromIndex(index));
 }
 
 PortName OnixDevice::getPortFromIndex(oni_dev_idx_t index)

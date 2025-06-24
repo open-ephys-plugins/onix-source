@@ -176,7 +176,7 @@ void OnixSourceCanvas::addInterfaceToTab(std::string tabName, CustomTabComponent
 
 std::string OnixSourceCanvas::getTopLevelTabName(PortName port, std::string headstage)
 {
-	return OnixDevice::getPortName(port) + ": " + headstage;
+	return OnixDevice::getPortNameString(port) + ": " + headstage;
 }
 
 Array<CustomTabComponent*> OnixSourceCanvas::getHubTabs()
@@ -207,7 +207,7 @@ void OnixSourceCanvas::removeTabs(PortName port)
 
 	for (int i = hubTabs.size() - 1; i >= 0; i -= 1)
 	{
-		if (hubTabs[i]->getName().contains(OnixDevice::getPortName(port)))
+		if (hubTabs[i]->getName().contains(OnixDevice::getPortNameString(port)))
 		{
 			hubTabs.remove(i, true);
 			tabExists = true;
@@ -266,7 +266,7 @@ void OnixSourceCanvas::askKeepRemove(int offset)
 {
 	std::string selectedHeadstage = editor->getHeadstageSelected(offset);
 
-	std::string msg = "Headstage " + selectedHeadstage + " is selected on " + OnixDevice::getPortName(offset) + ", but was not discovered there.\n\n";
+	std::string msg = "Headstage " + selectedHeadstage + " is selected on " + OnixDevice::getPortNameString(offset) + ", but was not discovered there.\n\n";
 	msg += "Select one of the options below to continue:\n";
 	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
 	msg += " [Remove] to remove " + selectedHeadstage + ".\n - Note: this will delete any settings that were modified.";
@@ -298,8 +298,8 @@ void OnixSourceCanvas::askKeepUpdate(int offset, std::string foundHeadstage, Oni
 
 	if (selectedHeadstage == foundHeadstage) return;
 
-	std::string msg = "Headstage " + selectedHeadstage + " is selected on " + OnixDevice::getPortName(offset) + ". ";
-	msg += "However, headstage " + foundHeadstage + " was found on " + OnixDevice::getPortName(offset) + ". \n\n";
+	std::string msg = "Headstage " + selectedHeadstage + " is selected on " + OnixDevice::getPortNameString(offset) + ". ";
+	msg += "However, headstage " + foundHeadstage + " was found on " + OnixDevice::getPortNameString(offset) + ". \n\n";
 	msg += "Select one of the options below to continue:\n";
 	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
 	msg += " [Update] to change the selected headstage to " + foundHeadstage + ".\n - Note: this will delete any settings that were modified.";
