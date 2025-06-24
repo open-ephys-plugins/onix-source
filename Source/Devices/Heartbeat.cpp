@@ -48,9 +48,32 @@ bool Heartbeat::updateSettings()
 {
 	oni_reg_val_t clkHz;
 	int rc = deviceContext->readRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_HZ, &clkHz);
+	if (rc != ONI_ESUCCESS) return false;
+
 	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)HeartbeatRegisters::CLK_DIV, clkHz / beatsPerSecond);
 
 	if (rc == ONI_EREADONLY) return true; // NB: Ignore read-only errors
 
 	return rc == ONI_ESUCCESS;
+}
+
+void Heartbeat::startAcquisition()
+{
+}
+
+void Heartbeat::stopAcquisition()
+{
+}
+
+void Heartbeat::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+{
+}
+
+void Heartbeat::addFrame(oni_frame_t* frame)
+{
+	oni_destroy_frame(frame);
+}
+
+void Heartbeat::processFrames()
+{
 }

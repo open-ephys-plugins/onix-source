@@ -39,7 +39,11 @@ namespace OnixSourcePlugin
 
 		int WriteByte(uint32_t address, uint32_t value, bool sixteenBitAddress = false);
 
+		int WriteWord(uint32_t address, uint32_t value, uint32_t numBytes, bool sixteenBitAddress = false);
+
 		int ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
+
+		int ReadWord(uint32_t address, uint32_t numBytes, uint32_t* value, bool sixteenBitAddress = false);
 
 		int set933I2cRate(double);
 

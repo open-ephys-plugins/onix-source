@@ -26,20 +26,23 @@
 
 namespace OnixSourcePlugin
 {
-	enum class HeartbeatRegisters : uint32_t
+	enum class PersistentHeartbeatRegisters : uint32_t
 	{
-		ENABLE = 0,
-		CLK_DIV = 1,
-		CLK_HZ = 2
+		ENABLE = 0,		// Heartbeat enable state (read only; always enabled for this device).
+		CLK_DIV = 1,	// Heartbeat clock divider ratio. Minimum value is CLK_HZ / 10e6.
+						// Maximum value is CLK_HZ / MIN_HB_HZ.Attempting to set to a value outside
+						// this range will result in error.
+		CLK_HZ = 2,		// The frequency parameter, CLK_HZ, used in the calculation of CLK_DIV
+		MIN_HB_HZ = 3	// The minimum allowed beat frequency, in Hz, for this device
 	};
 
 	/*
 		Configures a Heartbeat device on a Breakout Board
 	*/
-	class Heartbeat : public OnixDevice
+	class PersistentHeartbeat : public OnixDevice
 	{
 	public:
-		Heartbeat(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
+		PersistentHeartbeat(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
 		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
@@ -62,10 +65,17 @@ namespace OnixSourcePlugin
 
 		static OnixDeviceType getDeviceType();
 
+		void setBeatsPerSecond(uint32_t value);
+
+		uint32_t getBeatsPerSecond() const;
+
 	private:
 
-		const uint32_t beatsPerSecond = 100;
+		uint32_t minimumHeartbeatHz = 100;
+		uint32_t beatsPerSecond = 100;
 
-		JUCE_LEAK_DETECTOR(Heartbeat);
+		static constexpr uint32_t MaxBeatsPerSecond = 10e6;
+
+		JUCE_LEAK_DETECTOR(PersistentHeartbeat);
 	};
 }
