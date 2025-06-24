@@ -124,9 +124,7 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 			LOGD("Difference in names found for device at address ", deviceIdx, ". Found ", deviceName, " on ", hubName, ", but was expecting ", device->getName(), " on ", device->getHubName());
 		}
 	}
-	else if (device->getDeviceType() == OnixDeviceType::HEARTBEAT ||
-		device->getDeviceType() == OnixDeviceType::PERSISTENTHEARTBEAT ||
-		device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)
+	else if (device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)
 	{// NB: These are devices with no equivalent settings tab that still need to be created and added to the vector of devices
 		LOGD("Creating new device ", deviceName, " on ", hubName);
 		device = std::make_shared<Device>(deviceName, hubName, deviceIdx, ctx);
@@ -295,13 +293,6 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 		{
 			hubNames.insert({ hubIndex, BREAKOUT_BOARD_NAME });
 			auto canvas = editor->getCanvas();
-
-			devicesFound = configureDevice<PersistentHeartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, PersistentHeartbeat::getDeviceType(), hubIndex, context);
-			if (!devicesFound)
-			{
-				sources.clear();
-				return false;
-			}
 
 			devicesFound = configureDevice<OutputClock>(sources, canvas, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
 			if (!devicesFound)
@@ -601,10 +592,7 @@ std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devic
 
 	for (const auto& device : devices)
 	{
-		if (filterDevices &&
-			(device->getDeviceType() == OnixDeviceType::HEARTBEAT ||
-				device->getDeviceType() == OnixDeviceType::PERSISTENTHEARTBEAT ||
-				device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)) continue;
+		if (filterDevices && (device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)) continue;
 
 		deviceMap.insert({ device->getDeviceIdx(), device->getDeviceType() });
 	}
