@@ -24,42 +24,42 @@
 
 #include <VisualizerEditorHeaders.h>
 #include "SettingsInterface.h"
-#include "../Devices/AnalogIO.h"
+#include "CustomViewport.h"
+
+#include "../Devices/AuxiliaryIO.h"
 
 namespace OnixSourcePlugin
 {
 	class OnixSourceEditor;
 	class OnixSourceCanvas;
 
-	class AnalogIOInterface : public SettingsInterface,
-		public Button::Listener,
-		public ComboBox::Listener
+	class AnalogIOInterface;
+	class DigitalIOInterface;
+
+	class AuxiliaryIOInterface : public SettingsInterface
 	{
 	public:
-		AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+
+		AuxiliaryIOInterface(std::shared_ptr<AuxiliaryIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 		void saveParameters(XmlElement* xml) override;
 		void loadParameters(XmlElement* xml) override;
-		void updateInfoString() override {};
+		void updateInfoString() override;
 		void updateSettings() override;
-		void buttonClicked(Button*) override;
-		void comboBoxChanged(ComboBox* cb) override;
-		void setInterfaceEnabledState(bool newState) override;
 
 	private:
 
-		static const int numChannels = 12;
+		void setInterfaceEnabledState(bool newState) override;
 
-		std::array<std::unique_ptr<Label>, numChannels> channelDirectionLabels;
-		std::array<std::unique_ptr<ComboBox>, numChannels> channelDirectionComboBoxes;
+		std::unique_ptr<CustomViewport> analogViewport;
+		std::unique_ptr<CustomViewport> digitalViewport;
 
-		std::unique_ptr<UtilityButton> deviceEnableButton;
+		std::unique_ptr<AnalogIOInterface> analogInterface;
+		std::unique_ptr<DigitalIOInterface> digitalInterface;
 
-		static int getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber);
-		static int getChannelVoltageRangeId(std::shared_ptr<AnalogIO> device, int channelNumber);
-		static int getDataTypeId(std::shared_ptr<AnalogIO> device);
-		static AnalogIODirection getChannelDirectionFromString(std::string direction);
+		std::unique_ptr<Label> analogLabel;
+		std::unique_ptr<Label> digitalLabel;
 
-		JUCE_LEAK_DETECTOR(AnalogIOInterface);
+		JUCE_LEAK_DETECTOR(AuxiliaryIOInterface);
 	};
 }

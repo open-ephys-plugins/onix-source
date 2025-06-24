@@ -23,13 +23,13 @@
 #pragma once
 
 #include <VisualizerEditorHeaders.h>
-
-#include "Devices/MemoryMonitor.h"
+#include "OnixDevice.h"
 
 namespace OnixSourcePlugin
 {
 	class OnixSource;
 	class OnixSourceCanvas;
+	class MemoryMonitorUsage;
 
 	/**
 

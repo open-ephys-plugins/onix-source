@@ -29,11 +29,11 @@
 #include "NeuropixelsV1ProbeBrowser.h"
 #include "../Devices/Neuropixels1.h"
 
-#include "../OnixSourceEditor.h"
-#include "../OnixSourceCanvas.h"
-
 namespace OnixSourcePlugin
 {
+	class OnixSourceEditor;
+	class OnixSourceCanvas;
+
 	/**
 
 		Extended graphical interface for updating probe settings

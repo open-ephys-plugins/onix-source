@@ -23,14 +23,14 @@
 #pragma once
 
 #include <VisualizerEditorHeaders.h>
-
-#include "../OnixSourceEditor.h"
-#include "../OnixSourceCanvas.h"
-
+#include "SettingsInterface.h"
 #include "../Devices/HarpSyncInput.h"
 
 namespace OnixSourcePlugin
 {
+	class OnixSourceEditor;
+	class OnixSourceCanvas;
+
 	class HarpSyncInputInterface : public SettingsInterface,
 		public Button::Listener
 	{

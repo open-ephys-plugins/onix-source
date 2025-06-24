@@ -167,10 +167,6 @@ void MemoryMonitor::processFrames()
 
 		sampleNumbers[currentFrame] = sampleNumber++;
 
-		prevWord = m_digitalIO != nullptr && m_digitalIO->hasEventWord() ? m_digitalIO->getEventWord() : prevWord;
-
-		eventCodes[currentFrame] = prevWord;
-
 		currentFrame++;
 
 		if (currentFrame >= numFrames)

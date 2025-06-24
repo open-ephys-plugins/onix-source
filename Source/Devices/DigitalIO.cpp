@@ -21,6 +21,7 @@
 */
 
 #include "DigitalIO.h"
+#include "AnalogIO.h"
 
 using namespace OnixSourcePlugin;
 
@@ -39,7 +40,21 @@ int DigitalIO::configureDevice()
 	if (deviceContext == nullptr || !deviceContext->isInitialized())
 		throw error_str("Device context is not initialized properly for	" + getName());
 
-	return deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+	int rc = deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Failed to enable the DigitalIO device.");
+
+	oni_reg_val_t baseFreqHz;
+	rc = deviceContext->readRegister(deviceIdx, (uint32_t)DigitalIORegisters::BASE_FREQ_HZ, &baseFreqHz);
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Could not read the base frequency register on the DigitalIO device.");
+
+	uint32_t periodTicks = baseFreqHz / (uint32_t)AnalogIO::getSampleRate();
+	rc = deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::SAMPLE_PERIOD, periodTicks);
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Could not write the sample rate for polling to the DigitalIO device.");
+
+	return rc;
 }
 
 bool DigitalIO::updateSettings()
@@ -60,15 +75,14 @@ void DigitalIO::stopAcquisition()
 	}
 }
 
-EventChannel::Settings DigitalIO::getEventChannelSettings()
+EventChannel::Settings DigitalIO::getEventChannelSettings(DataStream* stream)
 {
-	// NB: The stream must be assigned before adding the channel
 	EventChannel::Settings settings{
 		EventChannel::Type::TTL,
 		OnixDevice::createStreamName({getHubName(), getName(), "Events"}),
 		"Digital inputs and breakout button states coming from a DigitalIO device",
 		getStreamIdentifier() + ".event.digital",
-		nullptr,
+		stream,
 		numButtons + numDigitalInputs
 	};
 
@@ -79,6 +93,12 @@ void DigitalIO::addFrame(oni_frame_t* frame)
 {
 	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
+}
+
+int DigitalIO::getNumberOfWords()
+{
+	const GenericScopedLock<CriticalSection> frameLock(eventWords.getLock());
+	return eventWords.size();
 }
 
 void DigitalIO::processFrames()

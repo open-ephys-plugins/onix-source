@@ -21,6 +21,8 @@
 */
 
 #include "DigitalIOInterface.h"
+#include "../OnixSourceEditor.h"
+#include "../OnixSourceCanvas.h"
 
 using namespace OnixSourcePlugin;
 
@@ -32,7 +34,7 @@ DigitalIOInterface::DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceE
 		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
 		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
 		deviceEnableButton->setRadius(3.0f);
-		deviceEnableButton->setBounds(50, 40, 100, 22);
+		deviceEnableButton->setBounds(40, 20, 100, 22);
 		deviceEnableButton->setClickingTogglesState(true);
 		deviceEnableButton->setTooltip("If disabled, the Digital IO device will not stream events during acquisition");
 		deviceEnableButton->setToggleState(true, dontSendNotification);

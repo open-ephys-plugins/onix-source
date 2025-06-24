@@ -71,102 +71,46 @@ namespace OnixSourcePlugin
 	public:
 		AnalogIO(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
-		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
-
-		/** Update the settings of the device */
 		bool updateSettings() override;
-
-		/** Starts probe data streaming */
 		void startAcquisition() override;
-
-		/** Stops probe data streaming*/
 		void stopAcquisition() override;
-
-		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
-
 		void addFrame(oni_frame_t*) override;
-
 		void processFrames() override;
 
-		AnalogIODirection getChannelDirection(int channelNumber)
-		{
-			if (channelNumber > numChannels || channelNumber < 0)
-			{
-				LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
-				return AnalogIODirection::Input;
-			}
+		void processFrame(uint64_t eventWord = 0);
 
-			return channelDirection[channelNumber];
-		}
+		AnalogIODirection getChannelDirection(int channelNumber);
+		static std::string getChannelDirection(AnalogIODirection direction);
+		void setChannelDirection(int channelNumber, AnalogIODirection direction);
 
-		static std::string getChannelDirection(AnalogIODirection direction)
-		{
-			switch (direction)
-			{
-			case AnalogIODirection::Input:
-				return "Input";
-			case AnalogIODirection::Output:
-				return "Output";
-			default:
-				return "";
-			}
-		}
+		AnalogIOVoltageRange getChannelVoltageRange(int channelNumber);
+		void setChannelVoltageRange(int channelNumber, AnalogIOVoltageRange direction);
 
-		void setChannelDirection(int channelNumber, AnalogIODirection direction)
-		{
-			if (channelNumber > numChannels || channelNumber < 0)
-			{
-				LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
-				return;
-			}
+		AnalogIODataType getDataType() const;
+		void setDataType(AnalogIODataType type);
 
-			channelDirection[channelNumber] = direction;
-		}
-
-		AnalogIOVoltageRange getChannelVoltageRange(int channelNumber)
-		{
-			if (channelNumber > numChannels || channelNumber < 0)
-			{
-				LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
-				return AnalogIOVoltageRange::FiveVolts;
-			}
-
-			return channelVoltageRange[channelNumber];
-		}
-
-		void setChannelVoltageRange(int channelNumber, AnalogIOVoltageRange direction)
-		{
-			if (channelNumber > numChannels || channelNumber < 0)
-			{
-				LOGE("Channel number must be between 0 and " + std::to_string(channelNumber));
-				return;
-			}
-
-			channelVoltageRange[channelNumber] = direction;
-		}
-
-		AnalogIODataType getDataType() const { return dataType; }
-
-		void setDataType(AnalogIODataType type) { dataType = type; }
-
-		int getNumChannels() { return numChannels; }
+		int getNumChannels();
 
 		static OnixDeviceType getDeviceType();
+
+		static constexpr int framesToAverage = 4; // NB: Downsampling from 100 kHz to 25 kHz
+		static int getSampleRate();
+
+		int getNumberOfFrames();
 
 	private:
 
 		DataBuffer* analogInputBuffer = nullptr;
 
-		static const int AnalogIOFrequencyHz = 100000;
+		static constexpr int AnalogIOFrequencyHz = 100000;
 
-		static const int numFrames = 25;
-		static const int framesToAverage = 4; // NB: Downsampling from 100 kHz to 25 kHz
-		static const int numChannels = 12;
+		static constexpr int numFrames = 25;
+		static constexpr int numChannels = 12;
 
-		static const int numberOfDivisions = 1 << 16;
-		const int dacMidScale = 1 << 15;
+		static constexpr int numberOfDivisions = 1 << 16;
+		static constexpr int dacMidScale = 1 << 15;
 
 		std::array<AnalogIODirection, numChannels> channelDirection;
 		std::array<AnalogIOVoltageRange, numChannels> channelVoltageRange;

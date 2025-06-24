@@ -20,12 +20,13 @@
 
 */
 
+#include "AnalogIOInterface.h"
+#include "AuxiliaryIOInterface.h"
+#include "Bno055Interface.h"
 #include "CustomViewport.h"
+#include "DigitalIOInterface.h"
+#include "HarpSyncInputInterface.h"
 #include "NeuropixelsV1Interface.h"
 #include "NeuropixelsV2eInterface.h"
-#include "Bno055Interface.h"
-#include "PolledBno055Interface.h"
 #include "OutputClockInterface.h"
-#include "HarpSyncInputInterface.h"
-#include "AnalogIOInterface.h"
-#include "DigitalIOInterface.h"
+#include "PolledBno055Interface.h"

@@ -50,7 +50,7 @@ void FrameReader::run()
 
 		for (const auto& source : sources)
 		{
-			if (frame->dev_idx == source->getDeviceIdx(true))
+			if (source->compareIndex(frame->dev_idx))
 			{
 				source->addFrame(frame);
 				destroyFrame = false;
