@@ -139,6 +139,23 @@ int Onix1::writeRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress,
 	return rc;
 }
 
+int Onix1::issueReset() 
+{ 
+	int val = 1; 
+	int rc = setOption(ONI_OPT_RESET, val); 
+	return rc;
+}
+
+std::string Onix1::getVersion() const 
+{ 
+	return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+}
+
+double Onix1::convertTimestampToSeconds(uint64_t timestamp) const
+{ 
+	return static_cast<double>(timestamp) / ACQ_CLK_HZ;
+}
+
 oni_frame_t* Onix1::readFrame() const
 {
 	oni_frame_t* frame = nullptr;

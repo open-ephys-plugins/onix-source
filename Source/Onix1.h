@@ -103,11 +103,11 @@ namespace OnixSourcePlugin
 
 		oni_frame_t* readFrame() const;
 
-		int issueReset() { int val = 1; int rc = setOption(ONI_OPT_RESET, val); return rc; }
+		int issueReset();
 
-		std::string getVersion() const { return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch); }
+		std::string getVersion() const;
 
-		double convertTimestampToSeconds(uint32_t timestamp) const { return static_cast<double>(timestamp) / ACQ_CLK_HZ; }
+		double convertTimestampToSeconds(uint64_t timestamp) const;
 
 		/** Gets a map of all hubs connected, where the index of the map is the hub address, and the value is the hub ID */
 		std::map<int, int> getHubIds(device_map_t) const;

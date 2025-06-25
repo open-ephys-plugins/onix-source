@@ -64,6 +64,23 @@ OnixSource::OnixSource(SourceNode* sn) :
 	if (!context->isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
+OnixSource::~OnixSource()
+{
+	if (context != nullptr && context->isInitialized())
+	{
+		portA->setVoltageOverride(0.0f, false);
+		portB->setVoltageOverride(0.0f, false);
+	}
+}
+
+std::string OnixSource::getLiboniVersion()
+{
+	if (context != nullptr && context->isInitialized())
+		return context->getVersion();
+	else
+		return "";
+}
+
 void OnixSource::registerParameters()
 {
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough A", "Enables passthrough mode for e-variant headstages on Port A", false, true);
