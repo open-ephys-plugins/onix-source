@@ -27,6 +27,8 @@
 #include <system_error>
 #include <exception>
 
+#include <DataThreadHeaders.h>
+
 #include "../../plugin-GUI/Source/Utils/Utils.h"
 
 namespace OnixSourcePlugin
@@ -90,6 +92,8 @@ namespace OnixSourcePlugin
 		template <typename opt_t>
 		int setOption(int option, const opt_t value)
 		{
+			const ScopedLock lock(optionLock);
+
 			int rc = oni_set_opt(ctx_, option, &value, opt_size_<opt_t>(value));
 			if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
 			return rc;
@@ -122,6 +126,10 @@ namespace OnixSourcePlugin
 
 		/** The ONI ctx object */
 		oni_ctx ctx_;
+
+		CriticalSection registerLock;
+		CriticalSection frameLock;
+		CriticalSection optionLock;
 
 		int major;
 		int minor;

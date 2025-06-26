@@ -1052,12 +1052,6 @@ bool OnixSource::stopAcquisition()
 	if (!portA->getErrorFlag() && !portB->getErrorFlag())
 		waitForThreadToExit(2000);
 
-	for (const auto& polledBno055 : getDevices(OnixDeviceType::POLLEDBNO))
-	{
-		if (polledBno055 != nullptr && polledBno055->isEnabled())
-			polledBno055->stopAcquisition(); // NB: Polled BNO must be stopped before other devices to ensure there are no stream clashes
-	}
-
 	for (const auto& source : enabledSources)
 	{
 		source->stopAcquisition();

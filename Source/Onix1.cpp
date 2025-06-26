@@ -120,6 +120,8 @@ std::vector<int> Onix1::getDeviceIndices(device_map_t deviceMap, int hubIndex)
 
 int Onix1::get_opt_(int option, void* value, size_t* size) const
 {
+	const ScopedLock lock(optionLock);
+
 	int rc = oni_get_opt(ctx_, option, value, size);
 	if (rc != ONI_ESUCCESS)
 		LOGE(oni_error_str(rc));
@@ -128,6 +130,8 @@ int Onix1::get_opt_(int option, void* value, size_t* size) const
 
 int Onix1::readRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, oni_reg_val_t* value) const
 {
+	const ScopedLock lock(registerLock);
+
 	int rc = oni_read_reg(ctx_, devIndex, registerAddress, value);
 	if (rc != ONI_ESUCCESS)
 		LOGE(oni_error_str(rc));
@@ -136,6 +140,8 @@ int Onix1::readRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, 
 
 int Onix1::writeRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, oni_reg_val_t value) const
 {
+	const ScopedLock lock(registerLock);
+
 	int rc = oni_write_reg(ctx_, devIndex, registerAddress, value);
 	if (rc != ONI_ESUCCESS)
 		LOGE(oni_error_str(rc));
@@ -161,6 +167,8 @@ double Onix1::convertTimestampToSeconds(uint64_t timestamp) const
 
 oni_frame_t* Onix1::readFrame() const
 {
+	const ScopedLock lock(frameLock);
+
 	oni_frame_t* frame = nullptr;
 	int rc = oni_read_frame(ctx_, &frame);
 	if (rc < ONI_ESUCCESS)
