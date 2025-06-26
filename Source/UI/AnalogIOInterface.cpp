@@ -72,6 +72,20 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 			prevComboBoxRectangle = channelDirectionComboBoxes[i]->getBounds();
 		}
 
+		saveSettingsButton = std::make_unique<UtilityButton>("Save Settings");
+		saveSettingsButton->setRadius(3.0f);
+		saveSettingsButton->setBounds(deviceEnableButton->getX() + 3, channelDirectionLabels[numChannels - 1]->getBottom() + 20, 120, 22);
+		saveSettingsButton->addListener(this);
+		saveSettingsButton->setTooltip("Save all AnalogIO settings to file.");
+		addAndMakeVisible(saveSettingsButton.get());
+
+		loadSettingsButton = std::make_unique<UtilityButton>("Load Settings");
+		loadSettingsButton->setRadius(3.0f);
+		loadSettingsButton->setBounds(saveSettingsButton->getRight() + 5, saveSettingsButton->getY(), saveSettingsButton->getWidth(), saveSettingsButton->getHeight());
+		loadSettingsButton->addListener(this);
+		loadSettingsButton->setTooltip("Load all AnalogIO settings from a file.");
+		addAndMakeVisible(loadSettingsButton.get());
+
 		updateInfoString();
 
 		updateSettings();
@@ -138,6 +152,32 @@ void AnalogIOInterface::buttonClicked(Button* button)
 		}
 
 		CoreServices::updateSignalChain(editor);
+	}
+	else if (button == saveSettingsButton.get())
+	{
+		FileChooser fileChooser("Save AnalogIO settings to an XML file.", File(), "*.xml");
+
+		if (fileChooser.browseForFileToSave(true))
+		{
+			XmlElement rootElement("DEVICE");
+
+			saveParameters(&rootElement);
+
+			writeToXmlFile(&rootElement, fileChooser.getResult());
+		}
+	}
+	else if (button == loadSettingsButton.get())
+	{
+		FileChooser fileChooser("Load AnalogIO settings from an XML file.", File(), "*.xml");
+
+		if (fileChooser.browseForFileToOpen())
+		{
+			auto rootElement = readFromXmlFile(fileChooser.getResult());
+
+			loadParameters(rootElement);
+
+			delete rootElement;
+		}
 	}
 }
 
