@@ -33,7 +33,7 @@ namespace OnixSourcePlugin
 {
 	class PolledBno055 : public OnixDevice,
 		public I2CRegisterContext,
-		public HighResolutionTimer
+		public Thread
 	{
 	public:
 
@@ -48,9 +48,12 @@ namespace OnixSourcePlugin
 		void stopAcquisition() override;
 		void addFrame(oni_frame_t*) override;
 		void processFrames() override;
+		void pollFrame();
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
-		void hiResTimerCallback() override;
+		void run() override;
+
+		static OnixDeviceType getDeviceType();
 
 		enum class Bno055AxisMap : uint32_t
 		{
@@ -73,9 +76,9 @@ namespace OnixSourcePlugin
 		void setBnoAxisMap(Bno055AxisMap map);
 		void setBnoAxisSign(uint32_t sign);
 
-		static OnixDeviceType getDeviceType();
-
 	private:
+
+		using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 
 		DataBuffer* bnoBuffer;
 
@@ -96,9 +99,9 @@ namespace OnixSourcePlugin
 		uint32_t axisSign = (uint32_t)Bno055AxisSign::Default; // NB: Holds the uint value of the flag. Allows for combinations of X/Y/Z to combined together
 
 		static constexpr int NumberOfChannels = 3 + 3 + 4 + 3 + 1 + 4;
-		static constexpr double SampleRate = 30.0;
+		static constexpr double SampleRate = 100.0;
 
-		static constexpr int TimerIntervalInMilliseconds = (int)(1e3 * (1 / SampleRate));
+		static constexpr std::chrono::milliseconds TimerIntervalInMilliseconds = std::chrono::milliseconds((int)(1e3 * (1 / SampleRate)));
 
 		static constexpr int NumFrames = 2;
 
@@ -111,7 +114,10 @@ namespace OnixSourcePlugin
 		unsigned short currentFrame = 0;
 		int sampleNumber = 0;
 
+		time_point previousTime;
+
 		int16_t readInt16(uint32_t);
+		static int16_t getInt16FromUint32(uint32_t, bool);
 
 		JUCE_LEAK_DETECTOR(PolledBno055);
 	};

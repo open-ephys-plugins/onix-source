@@ -26,7 +26,8 @@ using namespace OnixSourcePlugin;
 
 PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
 	: OnixDevice(name, hubName, PolledBno055::getDeviceType(), deviceIdx_, ctx, true),
-	I2CRegisterContext(Bno055Address, deviceIdx_, ctx)
+	I2CRegisterContext(Bno055Address, deviceIdx_, ctx),
+	Thread("Polled BNO: " + name)
 {
 	auto streamIdentifier = getStreamIdentifier();
 
@@ -132,7 +133,7 @@ PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_
 
 PolledBno055::~PolledBno055()
 {
-	stopTimer();
+	stopThread(500);
 }
 
 OnixDeviceType PolledBno055::getDeviceType()
@@ -189,16 +190,36 @@ void PolledBno055::startAcquisition()
 	sampleNumber = 0;
 	currentFrame = 0;
 
+	previousTime = std::chrono::steady_clock::now();
+
 	if (isEnabled())
-		startTimer(timerIntervalInMilliseconds);
+		startThread();
+}
+
+void PolledBno055::run()
+{
+	while (!threadShouldExit())
+	{
+		time_point now = std::chrono::steady_clock::now();
+
+		std::chrono::milliseconds dur = std::chrono::duration_cast<std::chrono::milliseconds>(now - previousTime);
+
+		// NB: If the interval has not passed yet, wait for the remaining duration
+		if (dur < TimerIntervalInMilliseconds)
+		{
+			std::this_thread::sleep_for(TimerIntervalInMilliseconds - dur);
+		}
+
+		pollFrame();
+
+		previousTime += TimerIntervalInMilliseconds;
+	}
 }
 
 void PolledBno055::stopAcquisition()
 {
-	stopTimer();
-
-	while (isTimerRunning())
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	if (isThreadRunning())
+		stopThread(500);
 }
 
 void PolledBno055::addFrame(oni_frame_t* frame)
@@ -212,53 +233,65 @@ void PolledBno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	bnoBuffer = sourceBuffers.getLast();
 }
 
-int16_t PolledBno055::readInt16(uint32_t startAddress)
+void PolledBno055::processFrames()
 {
-	uint32_t value = 0;
-	int rc = ReadWord(startAddress, 2, &value);
-
-	if (rc != ONI_ESUCCESS)
-		return 0;
-
-	return static_cast<int16_t>(value);
 }
 
-void PolledBno055::hiResTimerCallback()
+int16_t PolledBno055::getInt16FromUint32(uint32_t value, bool getLowerValue)
+{
+	return getLowerValue ?
+		static_cast<int16_t>(value & 0xFFFFu) :
+		static_cast<int16_t>((value & 0xFFFF0000u) >> 16);
+}
+
+void PolledBno055::pollFrame()
 {
 	size_t offset = 0;
+	uint32_t value;
+
 
 	// Euler
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress) * EulerAngleScale;
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 2) * EulerAngleScale;
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 4) * EulerAngleScale;
+	ReadWord(EulerHeadingLsbAddress, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * EulerAngleScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * EulerAngleScale;
+
+	ReadWord(EulerHeadingLsbAddress + 4, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * EulerAngleScale;
 
 	// Quaternion
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 6) * QuaternionScale;
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 8) * QuaternionScale;
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 10) * QuaternionScale;
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 12) * QuaternionScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * QuaternionScale;
+
+	ReadWord(EulerHeadingLsbAddress + 8, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * QuaternionScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * QuaternionScale;
+
+	ReadWord(EulerHeadingLsbAddress + 12, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * QuaternionScale;
 
 	// Acceleration
 
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 14) * AccelerationScale;
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 16) * AccelerationScale;
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 18) * AccelerationScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * AccelerationScale;
+
+	ReadWord(EulerHeadingLsbAddress + 16, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * AccelerationScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * AccelerationScale;
 
 	// Gravity
 
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 20) * AccelerationScale;
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 22) * AccelerationScale;
-	bnoSamples[offset++ * NumFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 24) * AccelerationScale;
+	ReadWord(EulerHeadingLsbAddress + 20, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * AccelerationScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * AccelerationScale;
+
+	ReadWord(EulerHeadingLsbAddress + 24, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * AccelerationScale;
 
 	// Temperature
 
-	oni_reg_val_t byte;
-	ReadByte(EulerHeadingLsbAddress + 26, &byte);
-	bnoSamples[offset++ * NumFrames + currentFrame] = static_cast<uint8_t>(byte);
+	bnoSamples[offset++ * NumFrames + currentFrame] = static_cast<uint8_t>((value & 0xFF0000u) >> 16);
 
 	// Calibration Status
 
-	ReadByte(EulerHeadingLsbAddress + 27, &byte);
+	oni_reg_val_t byte = static_cast<uint8_t>((value & 0xFF000000u) >> 24);
 
 	constexpr uint8_t statusMask = 0b11;
 
@@ -284,6 +317,17 @@ void PolledBno055::hiResTimerCallback()
 		bnoBuffer->addToBuffer(bnoSamples.data(), sampleNumbers, bnoTimestamps, eventCodes, NumFrames);
 		currentFrame = 0;
 	}
+}
+
+int16_t PolledBno055::readInt16(uint32_t startAddress)
+{
+	uint32_t value = 0;
+	int rc = ReadWord(startAddress, 2, &value);
+
+	if (rc != ONI_ESUCCESS)
+		return 0;
+
+	return static_cast<int16_t>(value);
 }
 
 void PolledBno055::setBnoAxisMap(Bno055AxisMap map)
