@@ -110,6 +110,33 @@ namespace OnixSourcePlugin
 		const std::string enabledButtonText = "DISABLE";
 		const std::string disabledButtonText = "ENABLE";
 
+		static void writeToXmlFile(XmlElement* rootElement, File file)
+		{
+			if (!rootElement->writeToFile(file, String()))
+			{
+				Onix1::showWarningMessageBoxAsync(
+					"Failed to Write XML File",
+					"Unable to write the file " + file.getFullPathName().toStdString());
+			}
+		}
+
+		static XmlElement* readFromXmlFile(File file)
+		{
+			XmlDocument xmlDocument(file);
+
+			auto rootElement = xmlDocument.getDocumentElement();
+
+			if (rootElement == nullptr)
+			{
+				Onix1::showWarningMessageBoxAsync(
+					"Failed to Read XML File",
+					"Unable to read the file " + file.getFullPathName().toStdString());
+				return nullptr;
+			}
+
+			return rootElement.release();
+		}
+
 	private:
 
 		/** Enables or disables all UI elements that should not be changed during acquisition */

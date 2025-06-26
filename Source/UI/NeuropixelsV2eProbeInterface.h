@@ -73,8 +73,6 @@ namespace OnixSourcePlugin
 		std::string getReferenceText() override { return referenceComboBox->getText().toStdString(); }
 
 	private:
-		XmlElement neuropix_info;
-
 		bool acquisitionIsActive = false;
 
 		const int probeIndex;
@@ -116,6 +114,9 @@ namespace OnixSourcePlugin
 		std::vector<std::unique_ptr<DrawableRectangle>> enableViewRectangles;
 		std::vector<std::unique_ptr<DrawableRectangle>> referenceViewRectangles;
 		std::vector<std::unique_ptr<DrawableRectangle>> activityViewRectangles;
+
+		std::unique_ptr<UtilityButton> saveSettingsButton;
+		std::unique_ptr<UtilityButton> loadSettingsButton;
 
 		void drawLegend();
 

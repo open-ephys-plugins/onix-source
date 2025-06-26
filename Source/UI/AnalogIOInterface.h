@@ -60,6 +60,9 @@ namespace OnixSourcePlugin
 
 		std::unique_ptr<UtilityButton> deviceEnableButton;
 
+		std::unique_ptr<UtilityButton> saveSettingsButton;
+		std::unique_ptr<UtilityButton> loadSettingsButton;
+
 		static int getChannelDirectionId(std::shared_ptr<AnalogIO> device, int channelNumber);
 		static int getChannelVoltageRangeId(std::shared_ptr<AnalogIO> device, int channelNumber);
 		static int getDataTypeId(std::shared_ptr<AnalogIO> device);

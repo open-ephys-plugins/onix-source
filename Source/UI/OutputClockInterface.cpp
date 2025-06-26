@@ -79,6 +79,20 @@ OutputClockInterface::OutputClockInterface(std::shared_ptr<OutputClock> d, OnixS
 		gateRunButton->addListener(this);
 		addAndMakeVisible(gateRunButton.get());
 
+		saveSettingsButton = std::make_unique<UtilityButton>("Save Settings");
+		saveSettingsButton->setRadius(3.0f);
+		saveSettingsButton->setBounds(gateRunButton->getX() + 3, gateRunButton->getBottom() + 20, 120, 22);
+		saveSettingsButton->addListener(this);
+		saveSettingsButton->setTooltip("Save all OutputClock settings to file.");
+		addAndMakeVisible(saveSettingsButton.get());
+
+		loadSettingsButton = std::make_unique<UtilityButton>("Load Settings");
+		loadSettingsButton->setRadius(3.0f);
+		loadSettingsButton->setBounds(saveSettingsButton->getRight() + 5, saveSettingsButton->getY(), saveSettingsButton->getWidth(), saveSettingsButton->getHeight());
+		loadSettingsButton->addListener(this);
+		loadSettingsButton->setTooltip("Load all OutputClock settings from a file.");
+		addAndMakeVisible(loadSettingsButton.get());
+
 		updateSettings();
 	}
 
@@ -119,6 +133,32 @@ void OutputClockInterface::buttonClicked(Button* b)
 	if (b == gateRunButton.get())
 	{
 		outputClock->setGateRun(gateRunButton->getToggleState(), editor->acquisitionIsActive);
+	}
+	else if (b == saveSettingsButton.get())
+	{
+		FileChooser fileChooser("Save OutputClock settings to an XML file.", File(), "*.xml");
+
+		if (fileChooser.browseForFileToSave(true))
+		{
+			XmlElement rootElement("DEVICE");
+
+			saveParameters(&rootElement);
+
+			writeToXmlFile(&rootElement, fileChooser.getResult());
+		}
+	}
+	else if (b == loadSettingsButton.get())
+	{
+		FileChooser fileChooser("Load OutputClock settings from an XML file.", File(), "*.xml");
+
+		if (fileChooser.browseForFileToOpen())
+		{
+			auto rootElement = readFromXmlFile(fileChooser.getResult());
+
+			loadParameters(rootElement);
+
+			delete rootElement;
+		}
 	}
 }
 

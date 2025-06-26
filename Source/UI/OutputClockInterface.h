@@ -65,6 +65,9 @@ namespace OnixSourcePlugin
 
 		std::unique_ptr<ToggleButton> gateRunButton;
 
+		std::unique_ptr<UtilityButton> saveSettingsButton;
+		std::unique_ptr<UtilityButton> loadSettingsButton;
+
 		const float MinFrequencyHz = 0.1f;
 		const float MaxFrequencyHz = 10e6;
 

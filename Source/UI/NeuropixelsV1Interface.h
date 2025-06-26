@@ -75,8 +75,6 @@ namespace OnixSourcePlugin
 
 		void setInterfaceEnabledState(bool newState) override;
 
-		XmlElement neuropix_info;
-
 		bool acquisitionIsActive = false;
 
 		std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
@@ -141,6 +139,9 @@ namespace OnixSourcePlugin
 		std::vector<std::unique_ptr<DrawableRectangle>> lfpGainViewRectangles;
 		std::vector<std::unique_ptr<DrawableRectangle>> referenceViewRectangles;
 		std::vector<std::unique_ptr<DrawableRectangle>> activityViewRectangles;
+
+		std::unique_ptr<UtilityButton> saveSettingsButton;
+		std::unique_ptr<UtilityButton> loadSettingsButton;
 
 		void drawLegend();
 
