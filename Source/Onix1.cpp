@@ -120,27 +120,55 @@ std::vector<int> Onix1::getDeviceIndices(device_map_t deviceMap, int hubIndex)
 
 int Onix1::get_opt_(int option, void* value, size_t* size) const
 {
+	const ScopedLock lock(registerLock);
+
 	int rc = oni_get_opt(ctx_, option, value, size);
-	if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
+	if (rc != ONI_ESUCCESS)
+		LOGE(oni_error_str(rc));
 	return rc;
 }
 
 int Onix1::readRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, oni_reg_val_t* value) const
 {
+	const ScopedLock lock(registerLock);
+
 	int rc = oni_read_reg(ctx_, devIndex, registerAddress, value);
-	if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
+	if (rc != ONI_ESUCCESS)
+		LOGE(oni_error_str(rc));
 	return rc;
 }
 
 int Onix1::writeRegister(oni_dev_idx_t devIndex, oni_reg_addr_t registerAddress, oni_reg_val_t value) const
 {
+	const ScopedLock lock(registerLock);
+
 	int rc = oni_write_reg(ctx_, devIndex, registerAddress, value);
-	if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
+	if (rc != ONI_ESUCCESS)
+		LOGE(oni_error_str(rc));
 	return rc;
+}
+
+int Onix1::issueReset() 
+{ 
+	int val = 1; 
+	int rc = setOption(ONI_OPT_RESET, val); 
+	return rc;
+}
+
+std::string Onix1::getVersion() const 
+{ 
+	return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+}
+
+double Onix1::convertTimestampToSeconds(uint64_t timestamp) const
+{ 
+	return static_cast<double>(timestamp) / ACQ_CLK_HZ;
 }
 
 oni_frame_t* Onix1::readFrame() const
 {
+	const ScopedLock lock(frameLock);
+
 	oni_frame_t* frame = nullptr;
 	int rc = oni_read_frame(ctx_, &frame);
 	if (rc < ONI_ESUCCESS)
@@ -154,7 +182,7 @@ oni_frame_t* Onix1::readFrame() const
 
 void Onix1::showWarningMessageBoxAsync(std::string title, std::string error_msg)
 {
-	LOGE(error_msg);
+	LOGD(error_msg);
 	MessageManager::callAsync([title, error_msg]
 		{
 			AlertWindow::showMessageBoxAsync(

@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include <DataThreadHeaders.h>
-
 #include <ctime>
 #include <ratio>
 #include <chrono>

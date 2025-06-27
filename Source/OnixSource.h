@@ -45,14 +45,7 @@ namespace OnixSourcePlugin
 		OnixSource(SourceNode* sn);
 
 		/** Destructor */
-		~OnixSource()
-		{
-			if (context != nullptr && context->isInitialized())
-			{
-				portA->setVoltageOverride(0.0f, false);
-				portB->setVoltageOverride(0.0f, false);
-			}
-		}
+		~OnixSource();
 
 		void registerParameters() override;
 
@@ -123,7 +116,7 @@ namespace OnixSourcePlugin
 
 		std::map<int, std::string> getHubNames();
 
-		std::string getLiboniVersion() { if (context != nullptr && context->isInitialized()) return context->getVersion(); else return ""; }
+		std::string getLiboniVersion();
 
 		void updateSourceBuffers();
 
