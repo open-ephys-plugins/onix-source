@@ -90,8 +90,8 @@ namespace OnixSourcePlugin
 		virtual void updateSettings() = 0;
 
 		std::shared_ptr<OnixDevice> getDevice() { return device; }
-
 		VisualizationMode getMode() const { return mode; }
+		Type getType() const { return type; }
 
 		virtual std::string getReferenceText() { return ""; }
 
