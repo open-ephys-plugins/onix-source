@@ -703,6 +703,7 @@ void NeuropixelsV1Interface::buttonClicked(Button* button)
 		}
 
 		updateInfoString();
+		repaint();
 
 		CoreServices::updateSignalChain(editor);
 	}

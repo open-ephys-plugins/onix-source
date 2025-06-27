@@ -622,8 +622,9 @@ namespace OnixSourcePlugin
 		Colour getElectrodeColour(int i)
 		{
 			auto mode = parent->getMode();
-
 			auto settings = getSettings();
+			auto device = parent->getDevice();
+			
 			if (settings == nullptr) return Colours::grey;
 
 			if (settings->electrodeMetadata[i].status == ElectrodeStatus::DISCONNECTED) // not available
@@ -631,7 +632,13 @@ namespace OnixSourcePlugin
 				return disconnectedColors[settings->electrodeMetadata[i].bank];
 			}
 			else if (settings->electrodeMetadata[i].type == ElectrodeType::REFERENCE)
+			{
 				return Colours::black;
+			}
+			else if (!device->isEnabled())
+			{
+				return Colours::darkgrey;
+			}
 			else
 			{
 				if (mode == VisualizationMode::ENABLE_VIEW) // ENABLED STATE
