@@ -84,6 +84,8 @@ namespace OnixSourcePlugin
 		template <typename opt_t>
 		int getOption(int option, opt_t* value)
 		{
+			const ScopedLock lock(registerLock);
+
 			size_t len = sizeof(opt_t);
 			int rc = get_opt_(option, value, &len);
 			return rc;
@@ -92,7 +94,7 @@ namespace OnixSourcePlugin
 		template <typename opt_t>
 		int setOption(int option, const opt_t value)
 		{
-			const ScopedLock lock(optionLock);
+			const ScopedLock lock(registerLock);
 
 			int rc = oni_set_opt(ctx_, option, &value, opt_size_<opt_t>(value));
 			if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
@@ -129,7 +131,6 @@ namespace OnixSourcePlugin
 
 		CriticalSection registerLock;
 		CriticalSection frameLock;
-		CriticalSection optionLock;
 
 		int major;
 		int minor;

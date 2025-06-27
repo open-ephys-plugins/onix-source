@@ -120,7 +120,7 @@ std::vector<int> Onix1::getDeviceIndices(device_map_t deviceMap, int hubIndex)
 
 int Onix1::get_opt_(int option, void* value, size_t* size) const
 {
-	const ScopedLock lock(optionLock);
+	const ScopedLock lock(registerLock);
 
 	int rc = oni_get_opt(ctx_, option, value, size);
 	if (rc != ONI_ESUCCESS)
