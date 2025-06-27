@@ -84,8 +84,6 @@ namespace OnixSourcePlugin
 		template <typename opt_t>
 		int getOption(int option, opt_t* value)
 		{
-			const ScopedLock lock(registerLock);
-
 			size_t len = sizeof(opt_t);
 			int rc = get_opt_(option, value, &len);
 			return rc;
