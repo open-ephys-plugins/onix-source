@@ -104,6 +104,7 @@ void NeuropixelsV2eInterface::buttonClicked(Button* button)
 		}
 
 		updateInfoString();
+		repaint();
 
 		CoreServices::updateSignalChain(editor);
 	}
