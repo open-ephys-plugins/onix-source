@@ -73,7 +73,7 @@ namespace OnixSourcePlugin
 	class Onix1
 	{
 	public:
-		Onix1(int hostIndex = 0);
+		Onix1(int hostIndex = -1);
 
 		~Onix1();
 
