@@ -245,9 +245,9 @@ void OnixSourceCanvas::removeAllTabs()
 	topLevelTabComponent->clearTabs();
 }
 
-std::map<int, OnixDeviceType> OnixSourceCanvas::createSelectedMap(std::vector<std::shared_ptr<SettingsInterface>> interfaces)
+OnixDeviceMap OnixSourceCanvas::getSelectedDevices(std::vector<std::shared_ptr<SettingsInterface>> interfaces)
 {
-	std::map<int, OnixDeviceType> tabMap;
+	OnixDeviceMap tabMap;
 
 	for (const auto& settings : interfaces)
 	{

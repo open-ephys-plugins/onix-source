@@ -89,7 +89,7 @@ namespace OnixSourcePlugin
 
 		Array<CustomTabComponent*> getHubTabs();
 
-		std::map<int, OnixDeviceType> createSelectedMap(std::vector<std::shared_ptr<SettingsInterface>>);
+		OnixDeviceMap getSelectedDevices(std::vector<std::shared_ptr<SettingsInterface>>);
 
 		std::vector<std::shared_ptr<SettingsInterface>> settingsInterfaces;
 
@@ -102,7 +102,6 @@ namespace OnixSourcePlugin
 	private:
 
 		OnixSourceEditor* editor;
-
 		OnixSource* source;
 
 		std::unique_ptr<CustomTabComponent> topLevelTabComponent;

@@ -365,7 +365,7 @@ bool OnixSourceEditor::configureAllDevices()
 		connectButton->setToggleState(false, sendNotification);
 		return false;
 	}
-
+	
 	if (!source->configureBlockReadSize(source->getContext(), blockReadSizeValue->getText().getIntValue()))
 	{
 		connectButton->setToggleState(false, sendNotification);
@@ -633,9 +633,9 @@ void OnixSourceEditor::refreshComboBoxSelection()
 	if (resetPortB) headstageComboBoxB->setSelectedItemIndex(0, dontSendNotification);
 }
 
-std::map<int, OnixDeviceType> OnixSourceEditor::createTabMapFromCanvas()
+OnixDeviceMap OnixSourceEditor::createTabMapFromCanvas()
 {
-	return canvas->createSelectedMap(canvas->settingsInterfaces);
+	return canvas->getSelectedDevices(canvas->settingsInterfaces);
 }
 
 void OnixSourceEditor::saveVisualizerEditorParameters(XmlElement* xml)

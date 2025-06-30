@@ -144,6 +144,8 @@ namespace OnixSourcePlugin
 		std::vector<std::string> m_channelIdentifierSubTypes = { "subtypes" };
 	};
 
+	using OnixDeviceMap = std::map<uint32_t, OnixDeviceType>;
+
 	/**
 
 		Streams data from an ONIX device
@@ -156,28 +158,18 @@ namespace OnixSourcePlugin
 		/** Constructor */
 		OnixDevice(std::string name_, std::string hubName, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx, bool passthrough = false);
 
-		/** Destructor */
-		~OnixDevice() { }
-
 		virtual void addFrame(oni_frame_t*) {};
-
 		virtual void processFrames() {};
 
 		const std::string getName() { return name; }
-
 		bool isEnabled() const { return enabled; }
-
 		void setEnabled(bool newState) { enabled = newState; }
 		oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
 		virtual int configureDevice() { return -1; };
-
 		virtual bool updateSettings() { return false; };
-
 		virtual void startAcquisition() {};
-
 		virtual void stopAcquisition() {};
-
 		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 		virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
 

@@ -589,9 +589,9 @@ OnixDeviceVector OnixSource::getDevices(OnixDeviceType type)
 	return foundDevices;
 }
 
-std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devices, bool filterDevices)
+OnixDeviceMap OnixSource::getConnectedDevices(OnixDeviceVector devices, bool filterDevices)
 {
-	std::map<int, OnixDeviceType> deviceMap;
+	OnixDeviceMap deviceMap;
 
 	for (const auto& device : devices)
 	{
@@ -603,9 +603,9 @@ std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devic
 	return deviceMap;
 }
 
-std::map<int, OnixDeviceType> OnixSource::createDeviceMap(bool filterDevices)
+OnixDeviceMap OnixSource::getConnectedDevices(bool filterDevices)
 {
-	return createDeviceMap(getEnabledDataSources(), filterDevices);
+	return getConnectedDevices(getEnabledDataSources(), filterDevices);
 }
 
 std::map<int, std::string> OnixSource::getHubNames()
@@ -952,7 +952,7 @@ std::string OnixSource::createContinuousChannelIdentifier(StreamInfo streamInfo,
 bool OnixSource::isDevicesReady()
 {
 	auto tabMap = editor->createTabMapFromCanvas();
-	auto sourceMap = createDeviceMap(true);
+	auto sourceMap = getConnectedDevices(true);
 
 	return tabMap == sourceMap;
 }
