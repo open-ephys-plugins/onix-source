@@ -173,7 +173,7 @@ namespace OnixSourcePlugin
 
 		/** Template method to initialize an OnixDevice and add it to the currently active OnixDeviceVector variable */
 		template <class Device>
-		static bool configureDevice(OnixDeviceVector&, OnixSourceCanvas*, std::string, std::string, OnixDeviceType, const oni_dev_idx_t, std::shared_ptr<Onix1>);
+		static bool configureDevice(OnixDeviceVector&, OnixSourceEditor*, std::string, std::string, OnixDeviceType, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 		static bool getHubFirmwareVersion(std::shared_ptr<Onix1>, uint32_t, uint32_t*);
 

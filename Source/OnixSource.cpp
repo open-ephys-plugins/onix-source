@@ -108,13 +108,14 @@ bool OnixSource::disconnectDevices(bool updateStreamInfo)
 
 template <class Device>
 bool OnixSource::configureDevice(OnixDeviceVector& sources,
-	OnixSourceCanvas* canvas,
+	OnixSourceEditor* editor,
 	std::string deviceName,
 	std::string hubName,
 	OnixDeviceType deviceType,
 	const oni_dev_idx_t deviceIdx,
 	std::shared_ptr<Onix1> ctx)
 {
+	auto canvas = editor->getCanvas();
 	std::shared_ptr<Device> device = std::static_pointer_cast<Device>(canvas->getDevicePtr(Device::getDeviceType(), deviceIdx));
 
 	if (device != nullptr)
@@ -132,7 +133,20 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 
 	if (device == nullptr)
 	{
-		Onix1::showWarningMessageBoxAsync("Device Not Found", "Could not find " + deviceName + ", at address " + std::to_string(deviceIdx) + " on " + hubName);
+		if (hubName == editor->getHeadstageSelected(OnixDevice::getOffset(deviceIdx)))
+		{
+			Onix1::showWarningMessageBoxAsync(
+				"Device Not Found",
+				"Could not find " + deviceName + ", at address " + std::to_string(deviceIdx) + " on " + hubName);
+		}
+		else
+		{
+			Onix1::showWarningMessageBoxAsync(
+				"Invalid Headstage Selection",
+				"Expected to find " + editor->getHeadstageSelected(OnixDevice::getOffset(deviceIdx)) + " on " + OnixDevice::getPortName(deviceIdx) +
+					", but found " + hubName + " instead. Confirm that the correct headstage is selected, and try to connect again.");
+		}
+
 		return false;
 	}
 
@@ -266,7 +280,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 	if (deviceTable.size() == 0)
 	{
-		LOGE("No devices found.");
+		Onix1::showWarningMessageBoxAsync("No Devices Found", "Could not find any devices from the connected hardware.");
 		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 		return false;
 	}
@@ -275,7 +289,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 	if (hubIds.size() == 0)
 	{
-		LOGE("No hub IDs found.");
+		Onix1::showWarningMessageBoxAsync("No Hubs Found", "Could not find any hubs from the connected hardware.");
 		if (updateStreamInfo) CoreServices::updateSignalChain(editor);
 		return false;
 	}
@@ -288,44 +302,43 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 		if (hubId == ONIX_HUB_FMCHOST) // NB: Breakout Board
 		{
 			hubNames.insert({ hubIndex, BREAKOUT_BOARD_NAME });
-			auto canvas = editor->getCanvas();
 
-			devicesFound = configureDevice<Heartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, Heartbeat::getDeviceType(), hubIndex, context);
-			if (!devicesFound) 
-			{
-				sources.clear();
-				return false;
-			}
-
-			devicesFound = configureDevice<OutputClock>(sources, canvas, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
+			devicesFound = configureDevice<PersistentHeartbeat>(sources, editor, "Heartbeat", BREAKOUT_BOARD_NAME, PersistentHeartbeat::getDeviceType(), hubIndex, context);
 			if (!devicesFound)
 			{
 				sources.clear();
 				return false;
 			}
 
-			devicesFound = configureDevice<AnalogIO>(sources, canvas, "Analog IO", BREAKOUT_BOARD_NAME, AnalogIO::getDeviceType(), hubIndex + 6, context);
+			devicesFound = configureDevice<OutputClock>(sources, editor, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
 			if (!devicesFound)
 			{
 				sources.clear();
 				return false;
 			}
 
-			devicesFound = configureDevice<DigitalIO>(sources, canvas, "Digital IO", BREAKOUT_BOARD_NAME, DigitalIO::getDeviceType(), hubIndex + 7, context);
+			devicesFound = configureDevice<AnalogIO>(sources, editor, "Analog IO", BREAKOUT_BOARD_NAME, AnalogIO::getDeviceType(), hubIndex + 6, context);
 			if (!devicesFound)
 			{
 				sources.clear();
 				return false;
 			}
 
-			devicesFound = configureDevice<MemoryMonitor>(sources, canvas, "Memory Monitor", BREAKOUT_BOARD_NAME, MemoryMonitor::getDeviceType(), hubIndex + 10, context);
+			devicesFound = configureDevice<DigitalIO>(sources, editor, "Digital IO", BREAKOUT_BOARD_NAME, DigitalIO::getDeviceType(), hubIndex + 7, context);
 			if (!devicesFound)
 			{
 				sources.clear();
 				return false;
 			}
 
-			devicesFound = configureDevice<HarpSyncInput>(sources, canvas, "Harp Sync Input", BREAKOUT_BOARD_NAME, HarpSyncInput::getDeviceType(), hubIndex + 12, context);
+			devicesFound = configureDevice<MemoryMonitor>(sources, editor, "Memory Monitor", BREAKOUT_BOARD_NAME, MemoryMonitor::getDeviceType(), hubIndex + 10, context);
+			if (!devicesFound)
+			{
+				sources.clear();
+				return false;
+			}
+
+			devicesFound = configureDevice<HarpSyncInput>(sources, editor, "Harp Sync Input", BREAKOUT_BOARD_NAME, HarpSyncInput::getDeviceType(), hubIndex + 12, context);
 			if (!devicesFound)
 			{
 				sources.clear();
@@ -335,11 +348,10 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 		else if (hubId == ONIX_HUB_HSNP)
 		{
 			hubNames.insert({ hubIndex, NEUROPIXELSV1F_HEADSTAGE_NAME });
-			auto canvas = editor->getCanvas();
 
 			for (int i = 0; i < 2; i++)
 			{
-				devicesFound = configureDevice<Neuropixels1f>(sources, canvas, "Probe" + std::to_string(i), NEUROPIXELSV1F_HEADSTAGE_NAME, Neuropixels1f::getDeviceType(), hubIndex + i, context);
+				devicesFound = configureDevice<Neuropixels1f>(sources, editor, "Probe" + std::to_string(i), NEUROPIXELSV1F_HEADSTAGE_NAME, Neuropixels1f::getDeviceType(), hubIndex + i, context);
 				if (!devicesFound)
 				{
 					sources.clear();
@@ -347,7 +359,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				}
 			}
 
-			devicesFound = configureDevice<Bno055>(sources, canvas, "BNO055", NEUROPIXELSV1F_HEADSTAGE_NAME, Bno055::getDeviceType(), hubIndex + 2, context);
+			devicesFound = configureDevice<Bno055>(sources, editor, "BNO055", NEUROPIXELSV1F_HEADSTAGE_NAME, Bno055::getDeviceType(), hubIndex + 2, context);
 			if (!devicesFound)
 			{
 				sources.clear();
@@ -371,20 +383,18 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 			uint32_t hsid = EEPROM->GetHeadStageID();
 			LOGD("Detected headstage ", hsid);
 
-			auto canvas = editor->getCanvas();
-
 			if (hsid == ONIX_HUB_HSNP2E)
 			{
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
-				devicesFound = configureDevice<Neuropixels2e>(sources, canvas, "", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
+				devicesFound = configureDevice<Neuropixels2e>(sources, editor, "Neuropixels 2.0", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
 				if (!devicesFound)
 				{
 					sources.clear();
 					return false;
 				}
 
-				devicesFound = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
+				devicesFound = configureDevice<PolledBno055>(sources, editor, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
 				if (!devicesFound)
 				{
 					sources.clear();
@@ -410,14 +420,14 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 			{
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
-				devicesFound = configureDevice<Neuropixels1e>(sources, canvas, "Probe", NEUROPIXELSV1E_HEADSTAGE_NAME, Neuropixels1e::getDeviceType(), hubIndex, context);
+				devicesFound = configureDevice<Neuropixels1e>(sources, editor, "Probe", NEUROPIXELSV1E_HEADSTAGE_NAME, Neuropixels1e::getDeviceType(), hubIndex, context);
 				if (!devicesFound)
 				{
 					sources.clear();
 					return false;
 				}
 
-				devicesFound = configureDevice<PolledBno055>(sources, canvas, "BNO055", NEUROPIXELSV1E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
+				devicesFound = configureDevice<PolledBno055>(sources, editor, "BNO055", NEUROPIXELSV1E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
 				if (!devicesFound)
 				{
 					sources.clear();
