@@ -357,12 +357,9 @@ bool OnixSourceEditor::configureAllDevices()
 	if (!OnixSource::checkHubFirmwareCompatibility(source->getContext(), deviceTable))
 		return false;
 
-	if (source->initializeDevices(deviceTable, false))
-		canvas->refreshTabs();
-	else
+	if (!source->initializeDevices(deviceTable, false) || !canvas->verifyHeadstageSelection())
 	{
-		CoreServices::sendStatusMessage("Error configuring hardware. Check logs for more details.");
-		connectButton->setToggleState(false, sendNotification);
+		setConnectedStatus(false);
 		return false;
 	}
 	
