@@ -43,7 +43,7 @@ Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_de
 void Neuropixels2e::createDataStream(int n)
 {
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ getPortNameFromIndex(getDeviceIdx()), getHubName(), "Probe" + std::to_string(n) }),
+		OnixDevice::createStreamName({ getPortName(getDeviceIdx()), getHubName(), "Probe" + std::to_string(n) }),
 		"Neuropixels 2.0 data stream",
 		getStreamIdentifier(),
 		numberOfChannels,

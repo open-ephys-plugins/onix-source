@@ -173,9 +173,9 @@ std::string OnixDevice::getPortName(PortName port)
 	return getPortName(getPortOffset(port));
 }
 
-std::string OnixDevice::getPortNameFromIndex(oni_dev_idx_t index)
+std::string OnixDevice::getPortName(oni_dev_idx_t index)
 {
-	return getPortName(getOffsetFromIndex(index));
+	return getPortName(getOffset(index));
 }
 
 PortName OnixDevice::getPortFromIndex(oni_dev_idx_t index)
@@ -183,18 +183,18 @@ PortName OnixDevice::getPortFromIndex(oni_dev_idx_t index)
 	return index & (1 << 8) ? PortName::PortA : PortName::PortB;
 }
 
-int OnixDevice::getOffsetFromIndex(oni_dev_idx_t index)
+int OnixDevice::getOffset(oni_dev_idx_t index)
 {
 	return index & 0x0000FF00;
 }
 
-std::vector<int> OnixDevice::getUniqueOffsetsFromIndices(std::vector<int> indices, bool ignoreBreakoutBoard)
+std::vector<int> OnixDevice::getUniqueOffsets(std::vector<int> indices, bool ignoreBreakoutBoard)
 {
 	std::set<int> offsets;
 
 	for (auto index : indices)
 	{
-		auto offset = getOffsetFromIndex(index);
+		auto offset = getOffset(index);
 
 		if (offset == HubAddressBreakoutBoard && ignoreBreakoutBoard) continue;
 
@@ -204,7 +204,19 @@ std::vector<int> OnixDevice::getUniqueOffsetsFromIndices(std::vector<int> indice
 	return std::vector<int>(offsets.begin(), offsets.end());
 }
 
-Array<PortName> OnixDevice::getUniquePortsFromIndices(std::vector<int> indices)
+std::vector<int> OnixDevice::getUniqueOffsets(OnixDeviceMap devices, bool ignoreBreakoutBoard)
+{
+	std::vector<int> indices;
+
+	for (const auto& [key, _] : devices) 
+	{ 
+		indices.emplace_back(key);
+	}
+
+	return getUniqueOffsets(indices, ignoreBreakoutBoard);
+}
+
+Array<PortName> OnixDevice::getUniquePorts(std::vector<int> indices)
 {
 	Array<PortName> ports;
 

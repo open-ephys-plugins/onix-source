@@ -404,7 +404,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				polledBno->setBnoAxisMap(PolledBno055::Bno055AxisMap::YZX);
 				polledBno->setBnoAxisSign((uint32_t)(PolledBno055::Bno055AxisSign::MirrorX) | (uint32_t)(PolledBno055::Bno055AxisSign::MirrorY));
 
-				hubNames.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
+				hubNames.insert({ PortController::getOffset(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
 			else if (hsid == 0xFFFFFFFF || hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH)
 			{
@@ -437,7 +437,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				polledBno->setBnoAxisMap(PolledBno055::Bno055AxisMap::YZX);
 				polledBno->setBnoAxisSign((uint32_t)(PolledBno055::Bno055AxisSign::MirrorX) | (uint32_t)(PolledBno055::Bno055AxisSign::MirrorZ));
 
-				hubNames.insert({ PortController::getOffsetFromIndex(polledBno->getDeviceIdx()), NEUROPIXELSV1E_HEADSTAGE_NAME });
+				hubNames.insert({ PortController::getOffset(polledBno->getDeviceIdx()), NEUROPIXELSV1E_HEADSTAGE_NAME });
 			}
 		}
 	}
@@ -555,11 +555,11 @@ OnixDeviceVector OnixSource::getEnabledDataSources()
 OnixDeviceVector OnixSource::getDataSourcesFromOffset(int offset)
 {
 	OnixDeviceVector devices{};
-	offset = PortController::getOffsetFromIndex(offset);
+	offset = PortController::getOffset(offset);
 
 	for (const auto& source : sources)
 	{
-		if (PortController::getOffsetFromIndex(source->getDeviceIdx()) == offset)
+		if (PortController::getOffset(source->getDeviceIdx()) == offset)
 			devices.emplace_back(source);
 	}
 
@@ -770,7 +770,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				deviceInfos->add(new DeviceInfo(deviceSettings));
 
 				DataStream::Settings dataStreamSettings{
-					OnixDevice::createStreamName({OnixDevice::getPortNameFromIndex(source->getDeviceIdx()), source->getHubName(), source->getName()}),
+					OnixDevice::createStreamName({OnixDevice::getPortName(source->getDeviceIdx()), source->getHubName(), source->getName()}),
 					"Continuous data from a Bno055 9-axis IMU",
 					source->getStreamIdentifier(),
 					source->streamInfos[0].getSampleRate()
