@@ -323,7 +323,6 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 		if (hubId == ONIX_HUB_FMCHOST) // NB: Breakout Board
 		{
 			hubNames.insert({ hubIndex, BREAKOUT_BOARD_NAME });
-			auto canvas = editor->getCanvas();
 
 			devicesFound = configureDevice<OutputClock>(sources, editor, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
 			if (!devicesFound)
@@ -429,7 +428,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				polledBno->setBnoAxisMap(PolledBno055::Bno055AxisMap::YZX);
 				polledBno->setBnoAxisSign((uint32_t)(PolledBno055::Bno055AxisSign::MirrorX) | (uint32_t)(PolledBno055::Bno055AxisSign::MirrorY));
 
-				hubNames.insert({ PortController::getOffset(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
+				hubNames.insert({ OnixDevice::getOffset(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
 			else if (hsid == 0xFFFFFFFF || hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH)
 			{
@@ -462,7 +461,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				polledBno->setBnoAxisMap(PolledBno055::Bno055AxisMap::YZX);
 				polledBno->setBnoAxisSign((uint32_t)(PolledBno055::Bno055AxisSign::MirrorX) | (uint32_t)(PolledBno055::Bno055AxisSign::MirrorZ));
 
-				hubNames.insert({ PortController::getOffset(polledBno->getDeviceIdx()), NEUROPIXELSV1E_HEADSTAGE_NAME });
+				hubNames.insert({ OnixDevice::getOffset(polledBno->getDeviceIdx()), NEUROPIXELSV1E_HEADSTAGE_NAME });
 			}
 		}
 	}
@@ -580,11 +579,11 @@ OnixDeviceVector OnixSource::getEnabledDataSources()
 OnixDeviceVector OnixSource::getDataSourcesFromOffset(int offset)
 {
 	OnixDeviceVector devices{};
-	offset = PortController::getOffset(offset);
+	offset = OnixDevice::getOffset(offset);
 
 	for (const auto& source : sources)
 	{
-		if (PortController::getOffset(source->getDeviceIdx()) == offset)
+		if (OnixDevice::getOffset(source->getDeviceIdx()) == offset)
 			devices.emplace_back(source);
 	}
 
