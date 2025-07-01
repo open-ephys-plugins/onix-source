@@ -117,11 +117,8 @@ void DigitalIO::processFrames()
 		uint64_t portState = *(dataPtr + dataOffset);
 		uint64_t buttonState = *(dataPtr + dataOffset + 1);
 
-		if (portState != 0 || buttonState != 0)
-		{
-			uint64_t ttlEventWord = (portState & 0xFF) << 6 | (buttonState & 0x3F);
-			eventWords.add(ttlEventWord);
-		}
+		uint64_t ttlEventWord = (buttonState & 0x3F) << 8 | (portState & 0xFF);
+		eventWords.add(ttlEventWord);
 
 		oni_destroy_frame(frame);
 	}
