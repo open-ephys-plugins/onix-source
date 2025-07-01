@@ -40,8 +40,20 @@ int I2CRegisterContext::WriteByte(uint32_t address, uint32_t value, bool sixteen
 
 int I2CRegisterContext::ReadByte(uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress)
 {
+	return ReadWord(address, 1, value, sixteenBitAddress);
+}
+
+int I2CRegisterContext::ReadWord(uint32_t address, uint32_t numBytes, uint32_t* value, bool sixteenBitAddress)
+{
+	if (numBytes < 1 || numBytes > 4)
+	{
+		LOGE("Invalid number of bytes requested when reading a word.");
+		return 1;
+	}
+
 	uint32_t registerAddress = (address << 7) | (i2cAddress & 0x7F);
 	registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
+	registerAddress |= (numBytes - 1) << 28;
 
 	return i2cContext->readRegister(deviceIndex, registerAddress, value);
 }

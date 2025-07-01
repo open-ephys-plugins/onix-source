@@ -209,14 +209,13 @@ void PolledBno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 int16_t PolledBno055::readInt16(uint32_t startAddress)
 {
-	oni_reg_val_t byte1 = 0, byte2 = 0;
+	uint32_t value = 0;
+	int rc = ReadWord(startAddress, 2, &value);
 
-	int rc = ReadByte(startAddress, &byte1);
-	if (rc != ONI_ESUCCESS) return 0;
-	rc = ReadByte(startAddress + 1, &byte2);
-	if (rc != ONI_ESUCCESS) return 0;
+	if (rc != ONI_ESUCCESS)
+		return 0;
 
-	return (static_cast<int16_t>(byte2) << 8) | byte1;
+	return static_cast<int16_t>(value);
 }
 
 void PolledBno055::hiResTimerCallback()

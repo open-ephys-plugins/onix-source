@@ -28,6 +28,7 @@
 #include "MemoryMonitor.h"
 #include "OutputClock.h"
 #include "Heartbeat.h"
+#include "PersistentHeartbeat.h"
 #include "HarpSyncInput.h"
 #include "AnalogIO.h"
 #include "DigitalIO.h"
