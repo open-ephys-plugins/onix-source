@@ -64,6 +64,23 @@ OnixSource::OnixSource(SourceNode* sn) :
 	if (!context->isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
+OnixSource::~OnixSource()
+{
+	if (context != nullptr && context->isInitialized())
+	{
+		portA->setVoltageOverride(0.0f, false);
+		portB->setVoltageOverride(0.0f, false);
+	}
+}
+
+std::string OnixSource::getLiboniVersion()
+{
+	if (context != nullptr && context->isInitialized())
+		return context->getVersion();
+	else
+		return "";
+}
+
 void OnixSource::registerParameters()
 {
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough A", "Enables passthrough mode for e-variant headstages on Port A", false, true);
@@ -124,9 +141,7 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 			LOGD("Difference in names found for device at address ", deviceIdx, ". Found ", deviceName, " on ", hubName, ", but was expecting ", device->getName(), " on ", device->getHubName());
 		}
 	}
-	else if (device->getDeviceType() == OnixDeviceType::HEARTBEAT ||
-		device->getDeviceType() == OnixDeviceType::PERSISTENTHEARTBEAT ||
-		device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)
+	else if (device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)
 	{// NB: These are devices with no equivalent settings tab that still need to be created and added to the vector of devices
 		LOGD("Creating new device ", deviceName, " on ", hubName);
 		device = std::make_shared<Device>(deviceName, hubName, deviceIdx, ctx);
@@ -295,13 +310,6 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 		{
 			hubNames.insert({ hubIndex, BREAKOUT_BOARD_NAME });
 			auto canvas = editor->getCanvas();
-
-			devicesFound = configureDevice<PersistentHeartbeat>(sources, canvas, "Heartbeat", BREAKOUT_BOARD_NAME, PersistentHeartbeat::getDeviceType(), hubIndex, context);
-			if (!devicesFound)
-			{
-				sources.clear();
-				return false;
-			}
 
 			devicesFound = configureDevice<OutputClock>(sources, canvas, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
 			if (!devicesFound)
@@ -601,10 +609,7 @@ std::map<int, OnixDeviceType> OnixSource::createDeviceMap(OnixDeviceVector devic
 
 	for (const auto& device : devices)
 	{
-		if (filterDevices &&
-			(device->getDeviceType() == OnixDeviceType::HEARTBEAT ||
-				device->getDeviceType() == OnixDeviceType::PERSISTENTHEARTBEAT ||
-				device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)) continue;
+		if (filterDevices && (device->getDeviceType() == OnixDeviceType::MEMORYMONITOR)) continue;
 
 		deviceMap.insert({ device->getDeviceIdx(), device->getDeviceType() });
 	}
@@ -782,7 +787,8 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 					OnixDevice::createStreamName({OnixDevice::getPortNameFromIndex(source->getDeviceIdx()), source->getHubName(), source->getName()}),
 					"Continuous data from a Bno055 9-axis IMU",
 					source->getStreamIdentifier(),
-					source->streamInfos[0].getSampleRate()
+					source->streamInfos[0].getSampleRate(),
+					true
 				};
 
 				addCombinedStreams(dataStreamSettings, source->streamInfos, dataStreams, deviceInfos, continuousChannels);
@@ -917,7 +923,8 @@ void OnixSource::addIndividualStreams(Array<StreamInfo> streamInfos,
 			streamInfo.getName(),
 			streamInfo.getDescription(),
 			streamInfo.getStreamIdentifier(),
-			streamInfo.getSampleRate()
+			streamInfo.getSampleRate(),
+			true
 		};
 
 		DataStream* stream = new DataStream(streamSettings);
@@ -1054,14 +1061,6 @@ bool OnixSource::stopAcquisition()
 
 	if (!portA->getErrorFlag() && !portB->getErrorFlag())
 		waitForThreadToExit(2000);
-
-	auto polledBno055s = getDevices(OnixDeviceType::POLLEDBNO);
-
-	for (const auto& polledBno055 : polledBno055s)
-	{
-		if (polledBno055 != nullptr && polledBno055->isEnabled())
-			polledBno055->stopAcquisition(); // NB: Polled BNO must be stopped before other devices to ensure there are no stream clashes
-	}
 
 	for (const auto& source : enabledSources)
 	{
