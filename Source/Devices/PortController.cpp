@@ -34,14 +34,21 @@ int PortController::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized()) return 1;
 
+	return deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1u);
+}
+
+bool PortController::resetLinkFlags()
+{
+	if (deviceContext == nullptr || !deviceContext->isInitialized()) return false;
+
 	int rc = deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::LINKFLAGS, 0b11);
 	if (rc != ONI_ESUCCESS)
 	{
 		Onix1::showWarningMessageBoxAsync("Port Controller Error", "Unable to set the link flags for " + getName());
-		return rc;
+		return false;
 	}
 
-	return deviceContext->writeRegister(deviceIdx, (uint32_t)PortControllerRegister::ENABLE, 1u);
+	return true;
 }
 
 uint32_t PortController::getLinkFlags()

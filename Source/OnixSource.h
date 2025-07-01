@@ -94,6 +94,8 @@ namespace OnixSourcePlugin
 		static bool enablePassthroughMode(std::shared_ptr<Onix1>, bool, bool);
 
 		bool configurePort(PortName);
+		bool resetPortLinkFlags();
+		bool resetPortLinkFlags(PortName);
 
 		static bool checkHubFirmwareCompatibility(std::shared_ptr<Onix1>, device_map_t);
 

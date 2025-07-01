@@ -114,6 +114,9 @@ namespace OnixSourcePlugin
 
 		double getLastVoltageSet() const;
 
+		/** Writes to the link flags register to reset the flags. This should be called after headstages are locked. */
+		bool resetLinkFlags();
+
 		/** Returns the link flags value, which is zero unless the lock or pass was lost outside of acquisition */
 		uint32_t getLinkFlags();
 

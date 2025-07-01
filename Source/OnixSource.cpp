@@ -236,6 +236,33 @@ bool OnixSource::configurePort(PortName port)
 	return true;
 }
 
+bool OnixSource::resetPortLinkFlags()
+{
+	if (context == nullptr || !context->isInitialized())
+		return false;
+
+	return portA->resetLinkFlags() != ONI_ESUCCESS || portB->resetLinkFlags() != ONI_ESUCCESS;
+}
+
+bool OnixSource::resetPortLinkFlags(PortName port)
+{
+	if (context == nullptr || !context->isInitialized())
+		return false;
+
+	if (port == PortName::PortA)
+	{
+		if (portA->resetLinkFlags() != ONI_ESUCCESS)
+			return false;
+	}
+	else if (port == PortName::PortB)
+	{
+		if (portB->resetLinkFlags() != ONI_ESUCCESS)
+			return false;
+	}
+
+	return true;
+}
+
 bool OnixSource::checkHubFirmwareCompatibility(std::shared_ptr<Onix1> context, device_map_t deviceTable)
 {
 	auto hubIds = context->getHubIds(deviceTable);
@@ -1013,7 +1040,7 @@ bool OnixSource::isReady()
 		editor->setConnectedStatus(false); // NB: If either port controller lost lock, disconnect all devices
 		return false;
 	}
-	
+
 	for (const auto& source : sources)
 	{
 		if (!source->isEnabled()) continue;
