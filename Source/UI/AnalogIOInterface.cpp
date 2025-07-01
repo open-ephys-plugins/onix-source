@@ -67,6 +67,7 @@ AnalogIOInterface::AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEdit
 			channelDirectionComboBoxes[i]->setTooltip("Sets the direction of Channel " + std::to_string(i));
 			channelDirectionComboBoxes[i]->addItemList(directionList, 1);
 			channelDirectionComboBoxes[i]->setSelectedId(1, dontSendNotification);
+			channelDirectionComboBoxes[i]->setItemEnabled(2, false);
 			addAndMakeVisible(channelDirectionComboBoxes[i].get());
 
 			prevComboBoxRectangle = channelDirectionComboBoxes[i]->getBounds();
