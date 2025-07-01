@@ -33,36 +33,27 @@ namespace OnixSourcePlugin
 {
 	class PolledBno055 : public OnixDevice,
 		public I2CRegisterContext,
-		public HighResolutionTimer
+		public Thread
 	{
 	public:
 
 		/** Constructor */
 		PolledBno055(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
 
-		~PolledBno055()
-		{
-			stopTimer();
-		}
+		~PolledBno055();
 
 		int configureDevice() override;
-
-		/** Update the settings of the device */
 		bool updateSettings() override;
-
-		/** Starts probe data streaming */
 		void startAcquisition() override;
-
-		/** Stops probe data streaming*/
 		void stopAcquisition() override;
-
 		void addFrame(oni_frame_t*) override;
-
-		void processFrames() override {};
-
+		void processFrames() override;
+		void pollFrame();
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
-		void hiResTimerCallback() override;
+		void run() override;
+
+		static OnixDeviceType getDeviceType();
 
 		enum class Bno055AxisMap : uint32_t
 		{
@@ -85,57 +76,48 @@ namespace OnixSourcePlugin
 		void setBnoAxisMap(Bno055AxisMap map);
 		void setBnoAxisSign(uint32_t sign);
 
-		static OnixDeviceType getDeviceType();
-
 	private:
+
+		using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 
 		DataBuffer* bnoBuffer;
 
-		static const int Bno055Address = 0x28;
-		static const int EulerHeadingLsbAddress = 0x1A;
+		static constexpr int Bno055Address = 0x28;
+		static constexpr int EulerHeadingLsbAddress = 0x1A;
 
-		const double i2cRate = 400e3;
+		static constexpr double I2cRate = 400e3;
 
-		static const int numberOfBytes = 28;
+		static constexpr int NumberOfBytes = 28;
 
-		const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
-		const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
-		const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
+		static constexpr float EulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
+		static constexpr float QuaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
+		static constexpr float AccelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
 
 		std::unique_ptr<I2CRegisterContext> deserializer;
-
-		enum class PolledBno055Registers : int32_t
-		{
-			EulerAngle = 0x1, // Specifies that the Euler angles will be polled.
-			Quaternion = 0x2, // Specifies that the quaternion will be polled.
-			Acceleration = 0x4, // Specifies that the linear acceleration will be polled.
-			Gravity = 0x8, // Specifies that the gravity vector will be polled.
-			Temperature = 0x10, // Specifies that the temperature measurement will be polled.
-			Calibration = 0x20, // Specifies that the sensor calibration status will be polled.
-			All = EulerAngle | Quaternion | Acceleration | Gravity | Temperature | Calibration, // Specifies that all sensor measurements and calibration status will be polled.
-		};
 
 		Bno055AxisMap axisMap = Bno055AxisMap::XYZ;
 		uint32_t axisSign = (uint32_t)Bno055AxisSign::Default; // NB: Holds the uint value of the flag. Allows for combinations of X/Y/Z to combined together
 
-		static const int numberOfChannels = 3 + 3 + 4 + 3 + 1 + 4;
-		static constexpr double sampleRate = 30.0;
+		static constexpr int NumberOfChannels = 3 + 3 + 4 + 3 + 1 + 4;
+		static constexpr double SampleRate = 100.0;
 
-		static const int timerIntervalInMilliseconds = (int)(1e3 * (1 / sampleRate));
+		static constexpr std::chrono::milliseconds TimerIntervalInMilliseconds = std::chrono::milliseconds((int)(1e3 * (1 / SampleRate)));
 
-		static const int numFrames = 2;
+		static constexpr int NumFrames = 2;
 
-		std::array<float, numberOfChannels* numFrames> bnoSamples;
+		std::array<float, NumberOfChannels * NumFrames> bnoSamples;
 
-		double bnoTimestamps[numFrames];
-		int64 sampleNumbers[numFrames];
-		uint64 eventCodes[numFrames];
+		double bnoTimestamps[NumFrames];
+		int64 sampleNumbers[NumFrames];
+		uint64 eventCodes[NumFrames];
 
 		unsigned short currentFrame = 0;
 		int sampleNumber = 0;
 
-		// Given the starting address (i.e., the LSB), read two bytes and convert to an int16_t
+		time_point previousTime;
+
 		int16_t readInt16(uint32_t);
+		static int16_t getInt16FromUint32(uint32_t, bool);
 
 		JUCE_LEAK_DETECTOR(PolledBno055);
 	};

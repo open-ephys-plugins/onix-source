@@ -64,6 +64,23 @@ OnixSource::OnixSource(SourceNode* sn) :
 	if (!context->isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
+OnixSource::~OnixSource()
+{
+	if (context != nullptr && context->isInitialized())
+	{
+		portA->setVoltageOverride(0.0f, false);
+		portB->setVoltageOverride(0.0f, false);
+	}
+}
+
+std::string OnixSource::getLiboniVersion()
+{
+	if (context != nullptr && context->isInitialized())
+		return context->getVersion();
+	else
+		return "";
+}
+
 void OnixSource::registerParameters()
 {
 	addBooleanParameter(Parameter::PROCESSOR_SCOPE, "passthroughA", "Passthrough A", "Enables passthrough mode for e-variant headstages on Port A", false, true);
@@ -770,7 +787,8 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 					OnixDevice::createStreamName({OnixDevice::getPortNameFromIndex(source->getDeviceIdx()), source->getHubName(), source->getName()}),
 					"Continuous data from a Bno055 9-axis IMU",
 					source->getStreamIdentifier(),
-					source->streamInfos[0].getSampleRate()
+					source->streamInfos[0].getSampleRate(),
+					true
 				};
 
 				addCombinedStreams(dataStreamSettings, source->streamInfos, dataStreams, deviceInfos, continuousChannels);
@@ -905,7 +923,8 @@ void OnixSource::addIndividualStreams(Array<StreamInfo> streamInfos,
 			streamInfo.getName(),
 			streamInfo.getDescription(),
 			streamInfo.getStreamIdentifier(),
-			streamInfo.getSampleRate()
+			streamInfo.getSampleRate(),
+			true
 		};
 
 		DataStream* stream = new DataStream(streamSettings);
@@ -1020,14 +1039,6 @@ bool OnixSource::stopAcquisition()
 
 	if (!portA->getErrorFlag() && !portB->getErrorFlag())
 		waitForThreadToExit(2000);
-
-	auto polledBno055s = getDevices(OnixDeviceType::POLLEDBNO);
-
-	for (const auto& polledBno055 : polledBno055s)
-	{
-		if (polledBno055 != nullptr && polledBno055->isEnabled())
-			polledBno055->stopAcquisition(); // NB: Polled BNO must be stopped before other devices to ensure there are no stream clashes
-	}
 
 	for (const auto& source : enabledSources)
 	{
