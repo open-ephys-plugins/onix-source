@@ -29,15 +29,31 @@ MemoryMonitorUsage::MemoryMonitorUsage(GenericProcessor* p)
 	: LevelMonitor(p)
 {
 	device = nullptr;
+	setPassiveTooltip();
 }
 
 void MemoryMonitorUsage::timerCallback()
 {
 	if (device != nullptr)
 	{
-		setFillPercentage(std::log(device->getLastPercentUsedValue() + 1) / maxLogarithmicValue);
+		auto logMemoryUsed = std::log(device->getLastPercentUsedValue() + 1) / maxLogarithmicValue;
+		setFillPercentage(logMemoryUsed);
+		setTooltip(getNewTooltip(logMemoryUsed));
 		repaint();
 	}
+}
+
+std::string MemoryMonitorUsage::getNewTooltip(float memoryUsage)
+{
+	std::stringstream ss;
+	ss.precision(2);
+	ss << std::fixed << "Memory Used: " << memoryUsage << "%";
+	return ss.str();
+}
+
+void MemoryMonitorUsage::setPassiveTooltip()
+{
+	setTooltip("Monitors the percent of the hardware memory buffer used.");
 }
 
 void MemoryMonitorUsage::setMemoryMonitor(std::shared_ptr<MemoryMonitor> memoryMonitor)
@@ -54,6 +70,7 @@ void MemoryMonitorUsage::stopAcquisition()
 {
 	stopTimer();
 	setFillPercentage(0.0f);
+	setPassiveTooltip();
 	repaint();
 }
 
