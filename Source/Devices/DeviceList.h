@@ -27,7 +27,6 @@
 #include "Neuropixels2e.h"
 #include "MemoryMonitor.h"
 #include "OutputClock.h"
-#include "Heartbeat.h"
 #include "HarpSyncInput.h"
 #include "AnalogIO.h"
 #include "DigitalIO.h"

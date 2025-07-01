@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include <DataThreadHeaders.h>
-
 #include <ctime>
 #include <ratio>
 #include <chrono>
@@ -50,7 +48,6 @@ namespace OnixSourcePlugin
 		PORT_CONTROL,
 		MEMORYMONITOR,
 		OUTPUTCLOCK,
-		HEARTBEAT,
 		HARPSYNCINPUT,
 		ANALOGIO,
 		DIGITALIO,

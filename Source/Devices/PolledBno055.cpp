@@ -26,7 +26,8 @@ using namespace OnixSourcePlugin;
 
 PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx)
 	: OnixDevice(name, hubName, PolledBno055::getDeviceType(), deviceIdx_, ctx, true),
-	I2CRegisterContext(Bno055Address, deviceIdx_, ctx)
+	I2CRegisterContext(Bno055Address, deviceIdx_, ctx),
+	Thread("Polled BNO: " + name)
 {
 	auto streamIdentifier = getStreamIdentifier();
 
@@ -36,10 +37,10 @@ PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",
 		streamIdentifier,
 		3,
-		sampleRate,
+		SampleRate,
 		"Eul",
 		ContinuousChannel::Type::AUX,
-		eulerAngleScale,
+		EulerAngleScale,
 		"Degrees",
 		{ "Y", "R", "P" },
 		"euler",
@@ -52,10 +53,10 @@ PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Quaternion",
 		streamIdentifier,
 		4,
-		sampleRate,
+		SampleRate,
 		"Quat",
 		ContinuousChannel::Type::AUX,
-		quaternionScale,
+		QuaternionScale,
 		"",
 		{ "W", "X", "Y", "Z" },
 		"quaternion",
@@ -68,10 +69,10 @@ PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Acceleration",
 		streamIdentifier,
 		3,
-		sampleRate,
+		SampleRate,
 		"Acc",
 		ContinuousChannel::Type::AUX,
-		accelerationScale,
+		AccelerationScale,
 		"m / s ^ 2",
 		{ "X", "Y", "Z" },
 		"acceleration",
@@ -84,10 +85,10 @@ PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Gravity",
 		streamIdentifier,
 		3,
-		sampleRate,
+		SampleRate,
 		"Grav",
 		ContinuousChannel::Type::AUX,
-		accelerationScale,
+		AccelerationScale,
 		"m/s^2",
 		{ "X", "Y", "Z" },
 		"gravity",
@@ -100,7 +101,7 @@ PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Temperature",
 		streamIdentifier,
 		1,
-		sampleRate,
+		SampleRate,
 		"Temp",
 		ContinuousChannel::Type::AUX,
 		1.0f,
@@ -115,7 +116,7 @@ PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_
 		"Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration status",
 		streamIdentifier,
 		4,
-		sampleRate,
+		SampleRate,
 		"Cal",
 		ContinuousChannel::Type::AUX,
 		1.0f,
@@ -126,8 +127,13 @@ PolledBno055::PolledBno055(std::string name, std::string hubName, const oni_dev_
 	);
 	streamInfos.add(calibrationStatusStream);
 
-	for (int i = 0; i < numFrames; i++)
+	for (int i = 0; i < NumFrames; i++)
 		eventCodes[i] = 0;
+}
+
+PolledBno055::~PolledBno055()
+{
+	stopThread(500);
 }
 
 OnixDeviceType PolledBno055::getDeviceType()
@@ -174,7 +180,7 @@ bool PolledBno055::updateSettings()
 	rc = WriteByte(0x3D, 0x0C); // Operation mode is NDOF
 	if (rc != ONI_ESUCCESS) return false;
 
-	rc = set933I2cRate(i2cRate);
+	rc = set933I2cRate(I2cRate);
 
 	return rc == ONI_ESUCCESS;
 }
@@ -184,16 +190,36 @@ void PolledBno055::startAcquisition()
 	sampleNumber = 0;
 	currentFrame = 0;
 
+	previousTime = std::chrono::steady_clock::now();
+
 	if (isEnabled())
-		startTimer(timerIntervalInMilliseconds);
+		startThread();
+}
+
+void PolledBno055::run()
+{
+	while (!threadShouldExit())
+	{
+		time_point now = std::chrono::steady_clock::now();
+
+		std::chrono::milliseconds dur = std::chrono::duration_cast<std::chrono::milliseconds>(now - previousTime);
+
+		// NB: If the interval has not passed yet, wait for the remaining duration
+		if (dur < TimerIntervalInMilliseconds)
+		{
+			std::this_thread::sleep_for(TimerIntervalInMilliseconds - dur);
+		}
+
+		pollFrame();
+
+		previousTime += TimerIntervalInMilliseconds;
+	}
 }
 
 void PolledBno055::stopAcquisition()
 {
-	stopTimer();
-
-	while (isTimerRunning())
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	if (isThreadRunning())
+		stopThread(500);
 }
 
 void PolledBno055::addFrame(oni_frame_t* frame)
@@ -203,64 +229,75 @@ void PolledBno055::addFrame(oni_frame_t* frame)
 
 void PolledBno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	sourceBuffers.add(new DataBuffer(numberOfChannels, (int)sampleRate * bufferSizeInSeconds));
+	sourceBuffers.add(new DataBuffer(NumberOfChannels, (int)SampleRate * bufferSizeInSeconds));
 	bnoBuffer = sourceBuffers.getLast();
 }
 
-int16_t PolledBno055::readInt16(uint32_t startAddress)
+void PolledBno055::processFrames()
 {
-	oni_reg_val_t byte1 = 0, byte2 = 0;
-
-	int rc = ReadByte(startAddress, &byte1);
-	if (rc != ONI_ESUCCESS) return 0;
-	rc = ReadByte(startAddress + 1, &byte2);
-	if (rc != ONI_ESUCCESS) return 0;
-
-	return (static_cast<int16_t>(byte2) << 8) | byte1;
 }
 
-void PolledBno055::hiResTimerCallback()
+int16_t PolledBno055::getInt16FromUint32(uint32_t value, bool getLowerValue)
+{
+	return getLowerValue ?
+		static_cast<int16_t>(value & 0xFFFFu) :
+		static_cast<int16_t>((value & 0xFFFF0000u) >> 16);
+}
+
+void PolledBno055::pollFrame()
 {
 	size_t offset = 0;
+	uint32_t value;
+
 
 	// Euler
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress) * eulerAngleScale;
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 2) * eulerAngleScale;
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 4) * eulerAngleScale;
+	ReadWord(EulerHeadingLsbAddress, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * EulerAngleScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * EulerAngleScale;
+
+	ReadWord(EulerHeadingLsbAddress + 4, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * EulerAngleScale;
 
 	// Quaternion
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 6) * quaternionScale;
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 8) * quaternionScale;
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 10) * quaternionScale;
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 12) * quaternionScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * QuaternionScale;
+
+	ReadWord(EulerHeadingLsbAddress + 8, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * QuaternionScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * QuaternionScale;
+
+	ReadWord(EulerHeadingLsbAddress + 12, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * QuaternionScale;
 
 	// Acceleration
 
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 14) * accelerationScale;
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 16) * accelerationScale;
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 18) * accelerationScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * AccelerationScale;
+
+	ReadWord(EulerHeadingLsbAddress + 16, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * AccelerationScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * AccelerationScale;
 
 	// Gravity
 
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 20) * accelerationScale;
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 22) * accelerationScale;
-	bnoSamples[offset++ * numFrames + currentFrame] = readInt16(EulerHeadingLsbAddress + 24) * accelerationScale;
+	ReadWord(EulerHeadingLsbAddress + 20, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * AccelerationScale;
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * AccelerationScale;
+
+	ReadWord(EulerHeadingLsbAddress + 24, 4, &value);
+	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * AccelerationScale;
 
 	// Temperature
 
-	oni_reg_val_t byte;
-	ReadByte(EulerHeadingLsbAddress + 26, &byte);
-	bnoSamples[offset++ * numFrames + currentFrame] = static_cast<uint8_t>(byte);
+	bnoSamples[offset++ * NumFrames + currentFrame] = static_cast<uint8_t>((value & 0xFF0000u) >> 16);
 
 	// Calibration Status
 
-	ReadByte(EulerHeadingLsbAddress + 27, &byte);
-	
+	oni_reg_val_t byte = static_cast<uint8_t>((value & 0xFF000000u) >> 24);
+
 	constexpr uint8_t statusMask = 0b11;
 
 	for (int i = 0; i < 4; i++)
 	{
-		bnoSamples[currentFrame + (offset + i) * numFrames] = (byte & (statusMask << (2 * i))) >> (2 * i);
+		bnoSamples[currentFrame + (offset + i) * NumFrames] = (byte & (statusMask << (2 * i))) >> (2 * i);
 	}
 
 	oni_reg_val_t timestampL = 0, timestampH = 0;
@@ -275,11 +312,22 @@ void PolledBno055::hiResTimerCallback()
 
 	currentFrame++;
 
-	if (currentFrame >= numFrames)
+	if (currentFrame >= NumFrames)
 	{
-		bnoBuffer->addToBuffer(bnoSamples.data(), sampleNumbers, bnoTimestamps, eventCodes, numFrames);
+		bnoBuffer->addToBuffer(bnoSamples.data(), sampleNumbers, bnoTimestamps, eventCodes, NumFrames);
 		currentFrame = 0;
 	}
+}
+
+int16_t PolledBno055::readInt16(uint32_t startAddress)
+{
+	uint32_t value = 0;
+	int rc = ReadWord(startAddress, 2, &value);
+
+	if (rc != ONI_ESUCCESS)
+		return 0;
+
+	return static_cast<int16_t>(value);
 }
 
 void PolledBno055::setBnoAxisMap(Bno055AxisMap map)
