@@ -119,7 +119,7 @@ void DigitalIO::processFrames()
 
 		if (portState != 0 || buttonState != 0)
 		{
-			uint64_t ttlEventWord = (portState & 255) << 6 | (buttonState & 63);
+			uint64_t ttlEventWord = (portState & 0xFF) << 6 | (buttonState & 0x3F);
 			eventWords.add(ttlEventWord);
 		}
 
