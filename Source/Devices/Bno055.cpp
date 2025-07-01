@@ -157,7 +157,6 @@ void Bno055::stopAcquisition()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
 
@@ -167,7 +166,6 @@ void Bno055::stopAcquisition()
 
 void Bno055::addFrame(oni_frame_t* frame)
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
@@ -181,7 +179,6 @@ void Bno055::processFrames()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		int16_t* dataPtr = ((int16_t*)frame->data) + 4;

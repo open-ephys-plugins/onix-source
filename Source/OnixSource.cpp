@@ -1051,13 +1051,13 @@ bool OnixSource::stopAcquisition()
 	if (!portA->getErrorFlag() && !portB->getErrorFlag())
 		waitForThreadToExit(2000);
 
+	oni_size_t reg = 0;
+	context->setOption(ONI_OPT_RUNNING, reg);
+
 	for (const auto& source : enabledSources)
 	{
 		source->stopAcquisition();
 	}
-
-	oni_size_t reg = 0;
-	context->setOption(ONI_OPT_RUNNING, reg);
 
 	for (auto buffers : sourceBuffers)
 		buffers->clear();
@@ -1092,9 +1092,6 @@ bool OnixSource::updateBuffer()
 
 		if (threadShouldExit()) return true;
 	}
-
-	portA->processFrames();
-	portB->processFrames();
 
 	return !portA->getErrorFlag() && !portB->getErrorFlag();
 }

@@ -199,20 +199,17 @@ void AnalogIO::stopAcquisition()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
 }
 
 void AnalogIO::addFrame(oni_frame_t* frame)
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
 int AnalogIO::getNumberOfFrames()
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	return frameArray.size();
 }
 
@@ -224,7 +221,6 @@ void AnalogIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 void AnalogIO::processFrame(uint64_t eventWord)
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 	int16_t* dataPtr = (int16_t*)frame->data;

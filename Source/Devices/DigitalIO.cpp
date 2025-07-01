@@ -70,7 +70,6 @@ void DigitalIO::stopAcquisition()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
 }
@@ -91,13 +90,11 @@ EventChannel::Settings DigitalIO::getEventChannelSettings(DataStream* stream)
 
 void DigitalIO::addFrame(oni_frame_t* frame)
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
 int DigitalIO::getNumberOfWords()
 {
-	const GenericScopedLock<CriticalSection> frameLock(eventWords.getLock());
 	return eventWords.size();
 }
 
@@ -105,8 +102,6 @@ void DigitalIO::processFrames()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
-		const GenericScopedLock<CriticalSection> digitalInputsLock(eventWords.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint16_t* dataPtr = (uint16_t*)frame->data;
@@ -126,8 +121,6 @@ void DigitalIO::processFrames()
 
 uint64_t DigitalIO::getEventWord()
 {
-	const GenericScopedLock<CriticalSection> digitalInputsLock(eventWords.getLock());
-
 	if (eventWords.size() != 0)
 		return eventWords.removeAndReturn(0);
 
@@ -136,7 +129,5 @@ uint64_t DigitalIO::getEventWord()
 
 bool DigitalIO::hasEventWord()
 {
-	const GenericScopedLock<CriticalSection> digitalInputsLock(eventWords.getLock());
-
 	return eventWords.size() > 0;
 }
