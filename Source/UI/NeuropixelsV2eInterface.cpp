@@ -21,7 +21,6 @@
 */
 
 #include "NeuropixelsV2eInterface.h"
-
 #include "../OnixSourceEditor.h"
 #include "../OnixSourceCanvas.h"
 

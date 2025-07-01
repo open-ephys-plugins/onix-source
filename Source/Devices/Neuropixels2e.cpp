@@ -493,14 +493,12 @@ void Neuropixels2e::stopAcquisition()
 
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
 }
 
 void Neuropixels2e::addFrame(oni_frame_t* frame)
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
@@ -527,7 +525,6 @@ void Neuropixels2e::processFrames()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint16_t* dataPtr = (uint16_t*)frame->data;

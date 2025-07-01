@@ -21,6 +21,7 @@
 */
 
 #include "DigitalIO.h"
+#include "AnalogIO.h"
 
 using namespace OnixSourcePlugin;
 
@@ -39,7 +40,21 @@ int DigitalIO::configureDevice()
 	if (deviceContext == nullptr || !deviceContext->isInitialized())
 		throw error_str("Device context is not initialized properly for	" + getName());
 
-	return deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+	int rc = deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::ENABLE, (oni_reg_val_t)(isEnabled() ? 1 : 0));
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Failed to enable the DigitalIO device.");
+
+	oni_reg_val_t baseFreqHz;
+	rc = deviceContext->readRegister(deviceIdx, (uint32_t)DigitalIORegisters::BASE_FREQ_HZ, &baseFreqHz);
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Could not read the base frequency register on the DigitalIO device.");
+
+	uint32_t periodTicks = baseFreqHz / (uint32_t)AnalogIO::getSampleRate();
+	rc = deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::SAMPLE_PERIOD, periodTicks);
+	if (rc != ONI_ESUCCESS)
+		throw error_str("Could not write the sample rate for polling to the DigitalIO device.");
+
+	return rc;
 }
 
 bool DigitalIO::updateSettings()
@@ -55,20 +70,18 @@ void DigitalIO::stopAcquisition()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
 }
 
-EventChannel::Settings DigitalIO::getEventChannelSettings()
+EventChannel::Settings DigitalIO::getEventChannelSettings(DataStream* stream)
 {
-	// NB: The stream must be assigned before adding the channel
 	EventChannel::Settings settings{
 		EventChannel::Type::TTL,
 		OnixDevice::createStreamName({getHubName(), getName(), "Events"}),
 		"Digital inputs and breakout button states coming from a DigitalIO device",
 		getStreamIdentifier() + ".event.digital",
-		nullptr,
+		stream,
 		numButtons + numDigitalInputs
 	};
 
@@ -77,16 +90,18 @@ EventChannel::Settings DigitalIO::getEventChannelSettings()
 
 void DigitalIO::addFrame(oni_frame_t* frame)
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
+}
+
+int DigitalIO::getNumberOfWords()
+{
+	return eventWords.size();
 }
 
 void DigitalIO::processFrames()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
-		const GenericScopedLock<CriticalSection> digitalInputsLock(eventWords.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint16_t* dataPtr = (uint16_t*)frame->data;
@@ -97,11 +112,8 @@ void DigitalIO::processFrames()
 		uint64_t portState = *(dataPtr + dataOffset);
 		uint64_t buttonState = *(dataPtr + dataOffset + 1);
 
-		if (portState != 0 || buttonState != 0)
-		{
-			uint64_t ttlEventWord = (portState & 255) << 6 | (buttonState & 63);
-			eventWords.add(ttlEventWord);
-		}
+		uint64_t ttlEventWord = (buttonState & 0x3F) << 8 | (portState & 0xFF);
+		eventWords.add(ttlEventWord);
 
 		oni_destroy_frame(frame);
 	}
@@ -109,8 +121,6 @@ void DigitalIO::processFrames()
 
 uint64_t DigitalIO::getEventWord()
 {
-	const GenericScopedLock<CriticalSection> digitalInputsLock(eventWords.getLock());
-
 	if (eventWords.size() != 0)
 		return eventWords.removeAndReturn(0);
 
@@ -119,7 +129,5 @@ uint64_t DigitalIO::getEventWord()
 
 bool DigitalIO::hasEventWord()
 {
-	const GenericScopedLock<CriticalSection> digitalInputsLock(eventWords.getLock());
-
 	return eventWords.size() > 0;
 }

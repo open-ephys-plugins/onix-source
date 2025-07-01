@@ -23,14 +23,14 @@
 #pragma once
 
 #include <VisualizerEditorHeaders.h>
-
-#include "../OnixSourceEditor.h"
-#include "../OnixSourceCanvas.h"
-
+#include "SettingsInterface.h"
 #include "../Devices/DigitalIO.h"
 
 namespace OnixSourcePlugin
 {
+	class OnixSourceEditor;
+	class OnixSourceCanvas;
+
 	class DigitalIOInterface : public SettingsInterface,
 		public Button::Listener
 	{
@@ -38,18 +38,13 @@ namespace OnixSourcePlugin
 		DigitalIOInterface(std::shared_ptr<DigitalIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 		void saveParameters(XmlElement* xml) override;
-
 		void loadParameters(XmlElement* xml) override;
-
 		void updateInfoString() override {};
-
 		void updateSettings() override;
-
 		void buttonClicked(Button*) override;
+		void setInterfaceEnabledState(bool newState) override;
 
 	private:
-
-		void setInterfaceEnabledState(bool newState) override;
 
 		std::unique_ptr<UtilityButton> deviceEnableButton;
 
