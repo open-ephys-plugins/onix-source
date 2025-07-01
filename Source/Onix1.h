@@ -27,6 +27,8 @@
 #include <system_error>
 #include <exception>
 
+#include <DataThreadHeaders.h>
+
 #include "../../plugin-GUI/Source/Utils/Utils.h"
 
 namespace OnixSourcePlugin
@@ -73,7 +75,7 @@ namespace OnixSourcePlugin
 	class Onix1
 	{
 	public:
-		Onix1(int hostIndex = 0);
+		Onix1(int hostIndex = -1);
 
 		~Onix1();
 
@@ -90,6 +92,8 @@ namespace OnixSourcePlugin
 		template <typename opt_t>
 		int setOption(int option, const opt_t value)
 		{
+			const ScopedLock lock(registerLock);
+
 			int rc = oni_set_opt(ctx_, option, &value, opt_size_<opt_t>(value));
 			if (rc != ONI_ESUCCESS) LOGE(oni_error_str(rc));
 			return rc;
@@ -103,11 +107,11 @@ namespace OnixSourcePlugin
 
 		oni_frame_t* readFrame() const;
 
-		int issueReset() { int val = 1; int rc = setOption(ONI_OPT_RESET, val); return rc; }
+		int issueReset();
 
-		std::string getVersion() const { return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch); }
+		std::string getVersion() const;
 
-		double convertTimestampToSeconds(uint32_t timestamp) const { return static_cast<double>(timestamp) / ACQ_CLK_HZ; }
+		double convertTimestampToSeconds(uint64_t timestamp) const;
 
 		/** Gets a map of all hubs connected, where the index of the map is the hub address, and the value is the hub ID */
 		std::map<int, int> getHubIds(device_map_t) const;
@@ -122,6 +126,9 @@ namespace OnixSourcePlugin
 
 		/** The ONI ctx object */
 		oni_ctx ctx_;
+
+		CriticalSection registerLock;
+		CriticalSection frameLock;
 
 		int major;
 		int minor;
