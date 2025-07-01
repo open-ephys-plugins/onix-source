@@ -841,9 +841,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->getDeviceType() == OnixDeviceType::HEARTBEAT ||
-				source->getDeviceType() == OnixDeviceType::PERSISTENTHEARTBEAT || 
-				source->getDeviceType() == OnixDeviceType::OUTPUTCLOCK)
+			else if (source->getDeviceType() == OnixDeviceType::OUTPUTCLOCK)
 			{
 				continue;
 			}
