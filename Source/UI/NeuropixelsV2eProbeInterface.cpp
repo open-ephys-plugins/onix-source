@@ -97,23 +97,23 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		probeInterfaceLabel->setColour(Label::textColourId, Colours::black);
 		addAndMakeVisible(probeInterfaceLabel.get());
 
-		saveJsonButton = std::make_unique<UtilityButton>("SAVE TO JSON");
+		saveJsonButton = std::make_unique<UtilityButton>("Save to JSON");
 		saveJsonButton->setRadius(3.0f);
 		saveJsonButton->setBounds(probeInterfaceRectangle->getX() + 3, probeInterfaceRectangle->getY() + 20, 120, 22);
 		saveJsonButton->addListener(this);
-		saveJsonButton->setTooltip("Save channel map to probeinterface .json file");
+		saveJsonButton->setTooltip("Save channel map to ProbeInterface .json file");
 		addAndMakeVisible(saveJsonButton.get());
 
-		loadJsonButton = std::make_unique<UtilityButton>("LOAD FROM JSON");
+		loadJsonButton = std::make_unique<UtilityButton>("Load from JSON");
 		loadJsonButton->setRadius(3.0f);
 		loadJsonButton->setBounds(saveJsonButton->getRight() + 5, saveJsonButton->getY(), 120, 22);
 		loadJsonButton->addListener(this);
-		loadJsonButton->setTooltip("Load channel map from probeinterface .json file");
+		loadJsonButton->setTooltip("Load channel map from ProbeInterface .json file");
 		addAndMakeVisible(loadJsonButton.get());
 
 		saveSettingsButton = std::make_unique<UtilityButton>("Save Settings");
 		saveSettingsButton->setRadius(3.0f);
-		saveSettingsButton->setBounds(saveJsonButton->getX(), saveJsonButton->getBottom() + 20, 120, 22);
+		saveSettingsButton->setBounds(saveJsonButton->getX(), probeBrowser->getBottom() - 80, 120, 22);
 		saveSettingsButton->addListener(this);
 		saveSettingsButton->setTooltip("Save all Neuropixels settings to file.");
 		addAndMakeVisible(saveSettingsButton.get());
