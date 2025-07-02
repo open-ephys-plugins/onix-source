@@ -176,6 +176,9 @@ namespace OnixSourcePlugin
 
 		static bool writeBlockReadSize(std::shared_ptr<Onix1>, uint32_t, uint32_t);
 
+		/** This method is expected to be called in a separate thread, and waits for acquisition to stop before gracefully disconnecting all devices */
+		static void disconnectDevicesAfterAcquisition(OnixSourceEditor* editor);
+
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 	};
 }

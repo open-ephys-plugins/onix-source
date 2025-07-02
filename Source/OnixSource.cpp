@@ -1088,6 +1088,18 @@ bool OnixSource::startAcquisition()
 	return true;
 }
 
+void OnixSource::disconnectDevicesAfterAcquisition(OnixSourceEditor* editor)
+{
+	while (CoreServices::getAcquisitionStatus())
+		std::this_thread::sleep_for(50ms);
+
+	if (editor != nullptr)
+	{
+		const MessageManagerLock mmLock;
+		editor->setConnectedStatus(false);
+	}
+}
+
 bool OnixSource::stopAcquisition()
 {
 	if (isThreadRunning())
@@ -1112,21 +1124,33 @@ bool OnixSource::stopAcquisition()
 
 	if (portA->getErrorFlag() || portB->getErrorFlag())
 	{
+		std::string msg = "";
+
 		if (portA->getErrorFlag())
 		{
-			LOGE("Port A lost communication lock. Reconnect hardware to continue.");
-			CoreServices::sendStatusMessage("Port A lost communication lock");
+			msg += "Port A";
+		}
+
+		if (portA->getErrorFlag() && portB->getErrorFlag())
+		{
+			msg += " and ";
 		}
 
 		if (portB->getErrorFlag())
 		{
-			LOGE("Port B lost communication lock. Reconnect hardware to continue.");
-			CoreServices::sendStatusMessage("Port B lost communication lock");
+			msg += "Port B";
 		}
 
-		devicesFound = false;
+		msg += " lost communication lock during acquisition. Inspect hardware connections and port switch before reconnecting.";
 
-		Onix1::showWarningMessageBoxAsync("Port Communication Lock Lost", "The port communication lock was lost during acquisition. Inspect hardware connections and port switch. \n\nTo continue, press disconnect in the GUI, then press connect.");
+		std::thread t(disconnectDevicesAfterAcquisition, editor);
+		t.detach(); // NB: Detach to allow the current thread to finish, stopping acquisition and allowing the called thread to complete
+
+		Onix1::showWarningMessageBoxAsync(
+			"Port Communication Lock Lost",
+			msg);
+
+		return false;
 	}
 
 	return true;
