@@ -36,9 +36,10 @@ void MemoryMonitorUsage::timerCallback()
 {
 	if (device != nullptr)
 	{
-		auto logMemoryUsed = std::log(device->getLastPercentUsedValue() + 1) / maxLogarithmicValue;
+		auto memoryUsedPercent = device->getLastPercentUsedValue();
+		auto logMemoryUsed = std::log(memoryUsedPercent + 1) / maxLogarithmicValue;
 		setFillPercentage(logMemoryUsed);
-		setTooltip(getNewTooltip(logMemoryUsed));
+		setTooltip(getNewTooltip(memoryUsedPercent));
 		repaint();
 	}
 }
@@ -46,8 +47,7 @@ void MemoryMonitorUsage::timerCallback()
 std::string MemoryMonitorUsage::getNewTooltip(float memoryUsage)
 {
 	std::stringstream ss;
-	ss.precision(2);
-	ss << std::fixed << "Memory Used: " << memoryUsage << "%";
+	ss << "Memory Used: " << std::setprecision(3) << memoryUsage << "%";
 	return ss.str();
 }
 
