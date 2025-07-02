@@ -87,7 +87,7 @@ std::map<int, int> Onix1::getHubIds(device_map_t deviceTable) const
 
 	auto deviceIndices = getDeviceIndices(deviceTable);
 
-	auto offsets = OnixDevice::getUniqueOffsetsFromIndices(deviceIndices, false);
+	auto offsets = OnixDevice::getUniqueOffsets(deviceIndices, false);
 
 	for (int i = 0; i < offsets.size(); i++)
 	{
@@ -111,7 +111,7 @@ std::vector<int> Onix1::getDeviceIndices(device_map_t deviceMap, int hubIndex)
 
 	for (const auto& [idx, dev] : deviceMap)
 	{
-		if (dev.id != ONIX_NULL && (hubIndex == -1 || OnixDevice::getOffsetFromIndex(dev.idx) == hubIndex))
+		if (dev.id != ONIX_NULL && (hubIndex == -1 || OnixDevice::getOffset(dev.idx) == hubIndex))
 			deviceIndices.emplace_back(idx);
 	}
 

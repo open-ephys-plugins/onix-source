@@ -141,6 +141,8 @@ namespace OnixSourcePlugin
 		std::vector<std::string> m_channelIdentifierSubTypes = { "subtypes" };
 	};
 
+	using OnixDeviceMap = std::map<uint32_t, OnixDeviceType>;
+
 	/**
 
 		Streams data from an ONIX device
@@ -153,31 +155,20 @@ namespace OnixSourcePlugin
 		/** Constructor */
 		OnixDevice(std::string name_, std::string hubName, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx, bool passthrough = false);
 
-		/** Destructor */
-		~OnixDevice() { }
-
 		virtual void addFrame(oni_frame_t*) {};
-
 		virtual void processFrames() {};
 
 		const std::string getName() { return name; }
-
 		bool isEnabled() const { return enabled; }
-
 		void setEnabled(bool newState) { enabled = newState; }
+		oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
 		virtual int configureDevice() { return -1; };
-
 		virtual bool updateSettings() { return false; };
-
 		virtual void startAcquisition() {};
-
 		virtual void stopAcquisition() {};
-
 		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 		virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
-
-		oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
 		/** Creates a stream name using the provided inputs, returning a string following the pattern: name[0]-name[1]-name[2]-etc., with all spaces removed */
 		static std::string createStreamName(std::vector<std::string> names);
@@ -194,13 +185,13 @@ namespace OnixSourcePlugin
 		void setHubName(std::string hubName) { m_hubName = hubName; }
 
 		static int getPortOffset(PortName port);
-		static std::string getPortNameString(int offset);
-		static std::string getPortNameString(PortName port);
-		static std::string getPortNameFromIndex(oni_dev_idx_t index);
+		static std::string getPortName(PortName port);
+		static std::string getPortName(oni_dev_idx_t index);
 		static PortName getPortFromIndex(oni_dev_idx_t index);
-		static int getOffsetFromIndex(oni_dev_idx_t index);
-		static std::vector<int> getUniqueOffsetsFromIndices(std::vector<int> indices, bool ignoreBreakoutBoard = true);
-		static Array<PortName> getUniquePortsFromIndices(std::vector<int> indices);
+		static int getOffset(oni_dev_idx_t index);
+		static std::vector<int> getUniqueOffsets(std::vector<int> indices, bool ignoreBreakoutBoard = true);
+		static std::vector<int> getUniqueOffsets(OnixDeviceMap devices, bool ignoreBreakoutBoard = true);
+		static Array<PortName> getUniquePorts(std::vector<int> indices);
 
 		OnixDeviceType getDeviceType() const;
 

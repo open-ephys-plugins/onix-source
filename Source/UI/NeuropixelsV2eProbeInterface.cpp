@@ -32,7 +32,6 @@ using namespace ColourScheme;
 
 NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuropixels2e> d, int ind, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c),
-	neuropix_info("INFO"),
 	probeIndex(ind)
 {
 	ColourScheme::setColourScheme(ColourSchemeId::PLASMA);
@@ -98,19 +97,33 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		probeInterfaceLabel->setColour(Label::textColourId, Colours::black);
 		addAndMakeVisible(probeInterfaceLabel.get());
 
-		saveJsonButton = std::make_unique<UtilityButton>("SAVE TO JSON");
+		saveJsonButton = std::make_unique<UtilityButton>("Save to JSON");
 		saveJsonButton->setRadius(3.0f);
 		saveJsonButton->setBounds(probeInterfaceRectangle->getX() + 3, probeInterfaceRectangle->getY() + 20, 120, 22);
 		saveJsonButton->addListener(this);
-		saveJsonButton->setTooltip("Save channel map to probeinterface .json file");
+		saveJsonButton->setTooltip("Save channel map to ProbeInterface .json file");
 		addAndMakeVisible(saveJsonButton.get());
 
-		loadJsonButton = std::make_unique<UtilityButton>("LOAD FROM JSON");
+		loadJsonButton = std::make_unique<UtilityButton>("Load from JSON");
 		loadJsonButton->setRadius(3.0f);
 		loadJsonButton->setBounds(saveJsonButton->getRight() + 5, saveJsonButton->getY(), 120, 22);
 		loadJsonButton->addListener(this);
-		loadJsonButton->setTooltip("Load channel map from probeinterface .json file");
+		loadJsonButton->setTooltip("Load channel map from ProbeInterface .json file");
 		addAndMakeVisible(loadJsonButton.get());
+
+		saveSettingsButton = std::make_unique<UtilityButton>("Save Settings");
+		saveSettingsButton->setRadius(3.0f);
+		saveSettingsButton->setBounds(saveJsonButton->getX(), probeBrowser->getBottom() - 80, 120, 22);
+		saveSettingsButton->addListener(this);
+		saveSettingsButton->setTooltip("Save all Neuropixels settings to file.");
+		addAndMakeVisible(saveSettingsButton.get());
+
+		loadSettingsButton = std::make_unique<UtilityButton>("Load Settings");
+		loadSettingsButton->setRadius(3.0f);
+		loadSettingsButton->setBounds(saveSettingsButton->getRight() + 5, saveSettingsButton->getY(), saveSettingsButton->getWidth(), saveSettingsButton->getHeight());
+		loadSettingsButton->addListener(this);
+		loadSettingsButton->setTooltip("Load all Neuropixels settings from a file.");
+		addAndMakeVisible(loadSettingsButton.get());
 
 		electrodesLabel = std::make_unique<Label>("ELECTRODES", "ELECTRODES");
 		electrodesLabel->setFont(FontOptions("Inter", "Regular", 13.0f));
@@ -440,6 +453,32 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 				CoreServices::sendStatusMessage("Failed to write probe channel map.");
 			else
 				CoreServices::sendStatusMessage("Successfully wrote probe channel map.");
+		}
+	}
+	else if (button == saveSettingsButton.get())
+	{
+		FileChooser fileChooser("Save Neuropixels settings to an XML file.", File(), "*.xml");
+
+		if (fileChooser.browseForFileToSave(true))
+		{
+			XmlElement rootElement("DEVICE");
+
+			saveParameters(&rootElement);
+
+			writeToXmlFile(&rootElement, fileChooser.getResult());
+		}
+	}
+	else if (button == loadSettingsButton.get())
+	{
+		FileChooser fileChooser("Load Neuropixels settings from an XML file.", File(), "*.xml");
+
+		if (fileChooser.browseForFileToOpen())
+		{
+			auto rootElement = readFromXmlFile(fileChooser.getResult());
+
+			loadParameters(rootElement);
+
+			delete rootElement;
 		}
 	}
 	else if (button == gainCorrectionFileButton.get())

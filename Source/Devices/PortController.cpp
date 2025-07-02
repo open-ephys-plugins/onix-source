@@ -25,7 +25,7 @@
 using namespace OnixSourcePlugin;
 
 PortController::PortController(PortName port_, std::shared_ptr<Onix1> ctx_) :
-	OnixDevice(OnixDevice::getPortNameString(port_), BREAKOUT_BOARD_NAME, OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
+	OnixDevice(OnixDevice::getPortName(port_), BREAKOUT_BOARD_NAME, OnixDeviceType::PORT_CONTROL, (oni_dev_idx_t)port_, ctx_),
 	port(port_)
 {
 }
@@ -76,10 +76,10 @@ void PortController::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 std::string PortController::getPortNameString() const
 {
-	return OnixDevice::getPortNameString(port);
+	return OnixDevice::getPortName(port);
 }
 
-PortName PortController::getPortName() const
+PortName PortController::getPort() const
 {
 	return port;
 }

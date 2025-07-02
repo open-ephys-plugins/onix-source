@@ -38,7 +38,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	{
 		memoryUsage = std::make_unique<MemoryMonitorUsage>(parentNode);
 		memoryUsage->setBounds(8, 28, 14, 80);
-		memoryUsage->setTooltip("Monitors the percent of the hardware memory buffer used.");
 		addAndMakeVisible(memoryUsage.get());
 
 		blockReadSizeValue = std::make_unique<Label>("blockReadSizeValue", String(source->getBlockReadSize()));
@@ -70,7 +69,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		headstageComboBoxA->addListener(this);
 		headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
 		addHeadstageComboBoxOptions(headstageComboBoxA.get());
-		headstageComboBoxA->setSelectedId(1, dontSendNotification);
 		addAndMakeVisible(headstageComboBoxA.get());
 
 		portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage:");
@@ -113,7 +111,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		headstageComboBoxB->addListener(this);
 		headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
 		addHeadstageComboBoxOptions(headstageComboBoxB.get());
-		headstageComboBoxB->setSelectedId(1, dontSendNotification);
 		addAndMakeVisible(headstageComboBoxB.get());
 
 		portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage:");
@@ -161,7 +158,8 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 {
-	comboBox->addItem("Select headstage...", 1);
+	comboBox->setTextWhenNothingSelected("Select Headstage...");
+	comboBox->addItem("None", 1);
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
 	comboBox->addItem(NEUROPIXELSV1E_HEADSTAGE_NAME, 3);
@@ -318,7 +316,7 @@ bool OnixSourceEditor::configurePortVoltage(PortName port, Label* lastVoltageSet
 
 		if (!source->configurePortVoltage(port, portVoltageValue->getText().toStdString()))
 		{
-			Onix1::showWarningMessageBoxAsync("Communication Error", "Unable to acquire communication lock on " + OnixDevice::getPortNameString(port) + ".");
+			Onix1::showWarningMessageBoxAsync("Communication Error", "Unable to acquire communication lock on " + OnixDevice::getPortName(port) + ".");
 			portStatus->setFill(fillDisconnected);
 			result = false;
 		}
@@ -368,15 +366,12 @@ bool OnixSourceEditor::configureAllDevices()
 	if (!OnixSource::checkHubFirmwareCompatibility(source->getContext(), deviceTable))
 		return false;
 
-	if (source->initializeDevices(deviceTable, false))
-		canvas->refreshTabs();
-	else
+	if (!source->initializeDevices(deviceTable, false) || !canvas->verifyHeadstageSelection())
 	{
-		CoreServices::sendStatusMessage("Error configuring hardware. Check logs for more details.");
-		connectButton->setToggleState(false, sendNotification);
+		setConnectedStatus(false);
 		return false;
 	}
-
+	
 	if (!source->configureBlockReadSize(source->getContext(), blockReadSizeValue->getText().getIntValue()))
 	{
 		connectButton->setToggleState(false, sendNotification);
@@ -431,6 +426,10 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		{
 			passthroughValue = true;
 		}
+	}
+	else
+	{
+		cb->setSelectedId(0, dontSendNotification);
 	}
 
 	source->getParameter(passthroughName)->setNextValue(passthroughValue);
@@ -626,13 +625,13 @@ void OnixSourceEditor::refreshComboBoxSelection()
 
 	for (const auto tab : hubTabs)
 	{
-		if (tab->getName().contains(OnixDevice::getPortNameString(PortName::PortA)))
+		if (tab->getName().contains(OnixDevice::getPortName(PortName::PortA)))
 		{
 			setComboBoxSelection(headstageComboBoxA.get(), tab->getName().toStdString());
 			source->updateDiscoveryParameters(PortName::PortA, PortController::getHeadstageDiscoveryParameters(headstageComboBoxA->getText().toStdString()));
 			resetPortA = false;
 		}
-		else if (tab->getName().contains(OnixDevice::getPortNameString(PortName::PortB)))
+		else if (tab->getName().contains(OnixDevice::getPortName(PortName::PortB)))
 		{
 			setComboBoxSelection(headstageComboBoxB.get(), tab->getName().toStdString());
 			source->updateDiscoveryParameters(PortName::PortB, PortController::getHeadstageDiscoveryParameters(headstageComboBoxB->getText().toStdString()));
@@ -644,9 +643,9 @@ void OnixSourceEditor::refreshComboBoxSelection()
 	if (resetPortB) headstageComboBoxB->setSelectedItemIndex(0, dontSendNotification);
 }
 
-std::map<int, OnixDeviceType> OnixSourceEditor::createTabMapFromCanvas()
+OnixDeviceMap OnixSourceEditor::createTabMapFromCanvas()
 {
-	return canvas->createSelectedMap(canvas->settingsInterfaces);
+	return canvas->getSelectedDevices(canvas->settingsInterfaces);
 }
 
 void OnixSourceEditor::saveVisualizerEditorParameters(XmlElement* xml)

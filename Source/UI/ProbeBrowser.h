@@ -37,6 +37,7 @@ namespace OnixSourcePlugin
 		{
 			parent = parent_;
 			probeIndex = probeIndex_;
+			tooltipWindow = std::make_unique <TooltipWindow>(parent, 300);
 
 			cursorType = MouseCursor::NormalCursor;
 
@@ -118,10 +119,27 @@ namespace OnixSourcePlugin
 			lowerBound = 530; // bottom of interface
 
 			disconnectedColors[Bank::NONE] = Colour(0, 0, 0);
+			disconnectedColors[Bank::OFF] = Colour(0, 0, 0);
 			disconnectedColors[Bank::A] = Colour(180, 180, 180);
+			disconnectedColors[Bank::A1] = Colour(180, 180, 180);
+			disconnectedColors[Bank::A1] = Colour(180, 180, 180);
+			disconnectedColors[Bank::A1] = Colour(180, 180, 180);
+			disconnectedColors[Bank::A1] = Colour(180, 180, 180);
 			disconnectedColors[Bank::B] = Colour(160, 160, 160);
+			disconnectedColors[Bank::B1] = Colour(160, 160, 160);
+			disconnectedColors[Bank::B2] = Colour(160, 160, 160);
+			disconnectedColors[Bank::B3] = Colour(160, 160, 160);
+			disconnectedColors[Bank::B4] = Colour(160, 160, 160);
 			disconnectedColors[Bank::C] = Colour(140, 140, 140);
+			disconnectedColors[Bank::C1] = Colour(140, 140, 140);
+			disconnectedColors[Bank::C2] = Colour(140, 140, 140);
+			disconnectedColors[Bank::C3] = Colour(140, 140, 140);
+			disconnectedColors[Bank::C4] = Colour(140, 140, 140);
 			disconnectedColors[Bank::D] = Colour(120, 120, 120);
+			disconnectedColors[Bank::D1] = Colour(120, 120, 120);
+			disconnectedColors[Bank::D2] = Colour(120, 120, 120);
+			disconnectedColors[Bank::D3] = Colour(120, 120, 120);
+			disconnectedColors[Bank::D4] = Colour(120, 120, 120);
 			disconnectedColors[Bank::E] = Colour(180, 180, 180);
 			disconnectedColors[Bank::F] = Colour(160, 160, 160);
 			disconnectedColors[Bank::G] = Colour(140, 140, 140);
@@ -212,10 +230,8 @@ namespace OnixSourcePlugin
 				if (index > -1)
 				{
 					isOverElectrode = true;
-					electrodeInfoString = getElectrodeInfoString(index);
+					tooltipWindow->displayTip(event.getScreenPosition(), getElectrodeInfoString(index));
 				}
-
-				repaint();
 			}
 			else
 			{
@@ -224,7 +240,7 @@ namespace OnixSourcePlugin
 				if (isOverChannelNew != isOverElectrode)
 				{
 					isOverElectrode = isOverChannelNew;
-					repaint();
+					tooltipWindow->hideTip();
 				}
 			}
 		}
@@ -431,7 +447,7 @@ namespace OnixSourcePlugin
 			}
 
 			// draw channel numbers
-			g.setColour(Colours::grey);
+			g.setColour(findColour(ThemeColours::defaultText));
 			g.setFont(12);
 
 			int ch = 0;
@@ -461,7 +477,7 @@ namespace OnixSourcePlugin
 				false);
 
 			// draw shank outline
-			g.setColour(Colours::lightgrey);
+			g.setColour(findColour(ThemeColours::outline).withAlpha(0.75f));
 
 			for (int i = 0; i < settings->probeMetadata.shank_count; i++)
 			{
@@ -499,7 +515,7 @@ namespace OnixSourcePlugin
 
 					if (settings->electrodeMetadata[i].isSelected)
 					{
-						g.setColour(Colours::white);
+						g.setColour(findColour(ThemeColours::componentBackground).contrasting());
 						g.fillRect(xLoc, yLoc, electrodeHeight, electrodeHeight);
 					}
 
@@ -510,9 +526,9 @@ namespace OnixSourcePlugin
 			}
 
 			if (isOverZoomRegion)
-				g.setColour(Colour(25, 25, 25));
+				g.setColour(findColour(ThemeColours::outline));
 			else
-				g.setColour(Colour(55, 55, 55));
+				g.setColour(findColour(ThemeColours::outline).withAlpha(0.5f));
 
 			Path upperBorder;
 			upperBorder.startNewSubPath(5, lowerBound - zoomOffset - zoomHeight);
@@ -539,16 +555,6 @@ namespace OnixSourcePlugin
 			if (isSelectionActive)
 			{
 				g.setColour(Colours::white.withAlpha(0.5f));
-			}
-
-			if (isOverElectrode)
-			{
-				g.setColour(Colour(55, 55, 55));
-				g.setFont(15);
-				g.drawMultiLineText(electrodeInfoString,
-					250 + shankOffset + 45,
-					330,
-					250);
 			}
 		}
 
@@ -617,13 +623,14 @@ namespace OnixSourcePlugin
 
 		MouseCursor::StandardCursorType cursorType;
 
-		std::string electrodeInfoString;
+		std::unique_ptr<TooltipWindow> tooltipWindow;
 
 		Colour getElectrodeColour(int i)
 		{
 			auto mode = parent->getMode();
-
 			auto settings = getSettings();
+			auto device = parent->getDevice();
+			
 			if (settings == nullptr) return Colours::grey;
 
 			if (settings->electrodeMetadata[i].status == ElectrodeStatus::DISCONNECTED) // not available
@@ -631,7 +638,13 @@ namespace OnixSourcePlugin
 				return disconnectedColors[settings->electrodeMetadata[i].bank];
 			}
 			else if (settings->electrodeMetadata[i].type == ElectrodeType::REFERENCE)
+			{
 				return Colours::black;
+			}
+			else if (!device->isEnabled())
+			{
+				return Colours::darkgrey;
+			}
 			else
 			{
 				if (mode == VisualizationMode::ENABLE_VIEW) // ENABLED STATE
@@ -655,7 +668,7 @@ namespace OnixSourcePlugin
 					else if (ref == "Tip")
 						return Colours::orange;
 					else
-						return Colours::black;
+						return Colours::purple;
 				}
 				else if (mode == VisualizationMode::ACTIVITY_VIEW)
 				{
@@ -768,14 +781,62 @@ namespace OnixSourcePlugin
 			case Bank::A:
 				a += "A";
 				break;
+			case Bank::A1:
+				a += "A1";
+				break;
+			case Bank::A2:
+				a += "A2";
+				break;
+			case Bank::A3:
+				a += "A3";
+				break;
+			case Bank::A4:
+				a += "A4";
+				break;
 			case Bank::B:
 				a += "B";
+				break;
+			case Bank::B1:
+				a += "B1";
+				break;
+			case Bank::B2:
+				a += "B2";
+				break;
+			case Bank::B3:
+				a += "B3";
+				break;
+			case Bank::B4:
+				a += "B4";
 				break;
 			case Bank::C:
 				a += "C";
 				break;
+			case Bank::C1:
+				a += "C1";
+				break;
+			case Bank::C2:
+				a += "C2";
+				break;
+			case Bank::C3:
+				a += "C3";
+				break;
+			case Bank::C4:
+				a += "C4";
+				break;
 			case Bank::D:
 				a += "D";
+				break;
+			case Bank::D1:
+				a += "D1";
+				break;
+			case Bank::D2:
+				a += "D2";
+				break;
+			case Bank::D3:
+				a += "D3";
+				break;
+			case Bank::D4:
+				a += "D4";
 				break;
 			case Bank::E:
 				a += "E";

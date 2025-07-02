@@ -59,8 +59,8 @@ namespace OnixSourcePlugin
 		/** Removes all tabs from the canvas */
 		void removeAllTabs();
 
-		/** Called when the hardware is connected, to ensure the right tabs are present */
-		void refreshTabs();
+		/** Called when the hardware is connected, to ensure the correct headstage is found */
+		bool verifyHeadstageSelection();
 
 		/** Called when the Visualizer is first created, and optionally when
 			the parameters of the underlying processor are changed */
@@ -89,7 +89,7 @@ namespace OnixSourcePlugin
 
 		Array<CustomTabComponent*> getHubTabs();
 
-		std::map<int, OnixDeviceType> createSelectedMap(std::vector<std::shared_ptr<SettingsInterface>>);
+		OnixDeviceMap getSelectedDevices(std::vector<std::shared_ptr<SettingsInterface>>);
 
 		std::vector<std::shared_ptr<SettingsInterface>> settingsInterfaces;
 
@@ -102,7 +102,6 @@ namespace OnixSourcePlugin
 	private:
 
 		OnixSourceEditor* editor;
-
 		OnixSource* source;
 
 		std::unique_ptr<CustomTabComponent> topLevelTabComponent;
@@ -113,18 +112,6 @@ namespace OnixSourcePlugin
 		void addInterfaceToTab(std::string tabName, CustomTabComponent* tab, std::shared_ptr<SettingsInterface> interface_);
 
 		std::string getTopLevelTabName(PortName port, std::string headstage);
-
-		/**
-			Create an alert window that asks whether to keep the selected headstage on the given port,
-			or to remove it since the hardware was not found
-		*/
-		void askKeepRemove(int offset);
-
-		/**
-			Create an alert window that asks whether to keep the selected headstage on the given port,
-			or to update to the headstage that was found
-		*/
-		void askKeepUpdate(int offset, std::string foundHeadstage, OnixDeviceVector devices);
 
 		JUCE_LEAK_DETECTOR(OnixSourceCanvas);
 	};

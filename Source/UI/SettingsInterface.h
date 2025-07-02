@@ -90,8 +90,8 @@ namespace OnixSourcePlugin
 		virtual void updateSettings() = 0;
 
 		std::shared_ptr<OnixDevice> getDevice() { return device; }
-
 		VisualizationMode getMode() const { return mode; }
+		Type getType() const { return type; }
 
 		virtual std::string getReferenceText() { return ""; }
 
@@ -109,6 +109,33 @@ namespace OnixSourcePlugin
 
 		const std::string enabledButtonText = "DISABLE";
 		const std::string disabledButtonText = "ENABLE";
+
+		static void writeToXmlFile(XmlElement* rootElement, File file)
+		{
+			if (!rootElement->writeToFile(file, String()))
+			{
+				Onix1::showWarningMessageBoxAsync(
+					"Failed to Write XML File",
+					"Unable to write the file " + file.getFullPathName().toStdString());
+			}
+		}
+
+		static XmlElement* readFromXmlFile(File file)
+		{
+			XmlDocument xmlDocument(file);
+
+			auto rootElement = xmlDocument.getDocumentElement();
+
+			if (rootElement == nullptr)
+			{
+				Onix1::showWarningMessageBoxAsync(
+					"Failed to Read XML File",
+					"Unable to read the file " + file.getFullPathName().toStdString());
+				return nullptr;
+			}
+
+			return rootElement.release();
+		}
 
 	private:
 

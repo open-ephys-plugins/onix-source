@@ -112,9 +112,9 @@ namespace OnixSourcePlugin
 		std::shared_ptr<OnixDevice> getDevice(OnixDeviceType, int);
 		OnixDeviceVector getDevices(OnixDeviceType);
 
-		static std::map<int, OnixDeviceType> createDeviceMap(OnixDeviceVector, bool filterDevices = false);
+		static OnixDeviceMap getConnectedDevices(OnixDeviceVector, bool filterDevices = false);
 
-		std::map<int, OnixDeviceType> createDeviceMap(bool filterDevices = false);
+		OnixDeviceMap getConnectedDevices(bool filterDevices = false);
 
 		std::map<int, std::string> getHubNames();
 
@@ -170,7 +170,7 @@ namespace OnixSourcePlugin
 
 		/** Template method to initialize an OnixDevice and add it to the currently active OnixDeviceVector variable */
 		template <class Device>
-		static bool configureDevice(OnixDeviceVector&, OnixSourceCanvas*, std::string, std::string, OnixDeviceType, const oni_dev_idx_t, std::shared_ptr<Onix1>);
+		static bool configureDevice(OnixDeviceVector&, OnixSourceEditor*, std::string, std::string, OnixDeviceType, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
 		static bool getHubFirmwareVersion(std::shared_ptr<Onix1>, uint32_t, uint32_t*);
 

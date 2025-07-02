@@ -107,7 +107,7 @@ namespace OnixSourcePlugin
 
 		std::string getPortNameString() const;
 
-		PortName getPortName() const;
+		PortName getPort() const;
 
 		/** Check if the port status changed during acquisition and there is an error reported */
 		bool getErrorFlag();
