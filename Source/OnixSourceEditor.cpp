@@ -70,7 +70,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		headstageComboBoxA->addListener(this);
 		headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
 		addHeadstageComboBoxOptions(headstageComboBoxA.get());
-		headstageComboBoxA->setSelectedId(1, dontSendNotification);
 		addAndMakeVisible(headstageComboBoxA.get());
 
 		portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage:");
@@ -113,7 +112,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 		headstageComboBoxB->addListener(this);
 		headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
 		addHeadstageComboBoxOptions(headstageComboBoxB.get());
-		headstageComboBoxB->setSelectedId(1, dontSendNotification);
 		addAndMakeVisible(headstageComboBoxB.get());
 
 		portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage:");
@@ -161,7 +159,8 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 void OnixSourceEditor::addHeadstageComboBoxOptions(ComboBox* comboBox)
 {
-	comboBox->addItem("Select headstage...", 1);
+	comboBox->setTextWhenNothingSelected("Select Headstage...");
+	comboBox->addItem("None", 1);
 	comboBox->addSeparator();
 	comboBox->addItem(NEUROPIXELSV1F_HEADSTAGE_NAME, 2);
 	comboBox->addItem(NEUROPIXELSV1E_HEADSTAGE_NAME, 3);
@@ -420,6 +419,10 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		{
 			passthroughValue = true;
 		}
+	}
+	else
+	{
+		cb->setSelectedId(0, dontSendNotification);
 	}
 
 	source->getParameter(passthroughName)->setNextValue(passthroughValue);
