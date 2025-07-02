@@ -245,9 +245,9 @@ void OnixSourceCanvas::removeAllTabs()
 	topLevelTabComponent->clearTabs();
 }
 
-std::map<int, OnixDeviceType> OnixSourceCanvas::createSelectedMap(std::vector<std::shared_ptr<SettingsInterface>> interfaces)
+OnixDeviceMap OnixSourceCanvas::getSelectedDevices(std::vector<std::shared_ptr<SettingsInterface>> interfaces)
 {
-	std::map<int, OnixDeviceType> tabMap;
+	OnixDeviceMap tabMap;
 
 	for (const auto& settings : interfaces)
 	{
@@ -262,184 +262,61 @@ std::map<int, OnixDeviceType> OnixSourceCanvas::createSelectedMap(std::vector<st
 	return tabMap;
 }
 
-void OnixSourceCanvas::askKeepRemove(int offset)
+bool OnixSourceCanvas::verifyHeadstageSelection()
 {
-	std::string selectedHeadstage = editor->getHeadstageSelected(offset);
+	auto selectedDevices = getSelectedDevices(settingsInterfaces);
+	auto connectedDevices = source->getConnectedDevices(true);
 
-	std::string msg = "Headstage " + selectedHeadstage + " is selected on " + OnixDevice::getPortName(offset) + ", but was not discovered there.\n\n";
-	msg += "Select one of the options below to continue:\n";
-	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
-	msg += " [Remove] to remove " + selectedHeadstage + ".\n - Note: this will delete any settings that were modified.";
-
-	int result = AlertWindow::show(
-		MessageBoxOptions()
-		.withIconType(MessageBoxIconType::WarningIcon)
-		.withTitle("Headstage Not Found")
-		.withMessage(msg)
-		.withButton("Keep Current")
-		.withButton("Remove")
-	);
-
-	switch (result)
+	if (selectedDevices != connectedDevices)
 	{
-	case 0: // Remove
-		removeTabs(PortController::getPortFromIndex(offset));
-		break;
-	case 1: // Keep Current
-		break;
-	default:
-		break;
-	}
-}
+		auto connectedOffsets = OnixDevice::getUniqueOffsets(connectedDevices);
+		auto selectedOffsets = OnixDevice::getUniqueOffsets(selectedDevices);
 
-void OnixSourceCanvas::askKeepUpdate(int offset, std::string foundHeadstage, OnixDeviceVector devices)
-{
-	std::string selectedHeadstage = editor->getHeadstageSelected(offset);
+		auto hubNames = source->getHubNames();
 
-	if (selectedHeadstage == foundHeadstage) return;
+		std::string title = "Invalid Headstage Selection", msg;
 
-	std::string msg = "Headstage " + selectedHeadstage + " is selected on " + OnixDevice::getPortName(offset) + ". ";
-	msg += "However, headstage " + foundHeadstage + " was found on " + OnixDevice::getPortName(offset) + ". \n\n";
-	msg += "Select one of the options below to continue:\n";
-	msg += " [Keep Current] to keep " + selectedHeadstage + " selected.\n";
-	msg += " [Update] to change the selected headstage to " + foundHeadstage + ".\n - Note: this will delete any settings that were modified.";
+		msg = "There is a mismatch between the headstages that are selected, and the headstages that are connected.\n\n";
+		msg += "Selected headstage";
+		msg += (selectedOffsets.size() > 1) ? "s" : "";
+		msg += ":\n\n";
 
-	int result = AlertWindow::show(
-		MessageBoxOptions()
-		.withIconType(MessageBoxIconType::WarningIcon)
-		.withTitle("Mismatched Headstages")
-		.withMessage(msg)
-		.withButton("Keep Current")
-		.withButton("Update")
-	);
-
-	switch (result)
-	{
-	case 0: // Update
-	{
-		PortName port = PortController::getPortFromIndex(offset);
-		removeTabs(port);
-
-		CustomTabComponent* tab = addTopLevelTab(getTopLevelTabName(port, foundHeadstage), (int)port);
-		populateSourceTabs(tab, devices);
-	}
-	break;
-	case 1: // Keep Current
-		break;
-	default:
-		break;
-	}
-}
-
-void OnixSourceCanvas::refreshTabs()
-{
-	auto selectedMap = createSelectedMap(settingsInterfaces);
-	auto foundMap = source->createDeviceMap(true);
-
-	if (selectedMap != foundMap)
-	{
-		std::vector<int> selectedIndices, foundIndices;
-
-		for (const auto& [key, _] : selectedMap) { selectedIndices.emplace_back(key); }
-		for (const auto& [key, _] : foundMap) { foundIndices.emplace_back(key); }
-
-		auto selectedOffsets = OnixDevice::getUniqueOffsetsFromIndices(selectedIndices);
-		auto foundOffsets = OnixDevice::getUniqueOffsetsFromIndices(foundIndices);
-
-		if (foundIndices.size() == 0 || foundOffsets.size() == 0) // NB: No devices found
+		if (selectedOffsets.size() == 0)
 		{
-			if (selectedMap.size() != 0)
+			msg += "None\n";
+		}
+		else
+		{
+			for (const auto offset : selectedOffsets)
 			{
-				for (const auto& offset : selectedOffsets)
-				{
-					askKeepRemove(offset);
-				}
+				msg += OnixDevice::getPortName(offset) + ": " + editor->getHeadstageSelected(offset) + "\n";
 			}
 		}
-		else if (selectedIndices.size() == 0) // NB: No headstages selected, add all found headstages
+
+		msg += "\nConnected headstage";
+		msg += (connectedOffsets.size() > 1) ? "s" : "";
+		msg += ":\n\n";
+
+		if (connectedOffsets.size() == 0)
 		{
-			for (auto& [offset, hubName] : source->getHubNames())
+			msg += "None\n";
+		}
+		else
+		{
+			for (const auto offset : connectedOffsets)
 			{
-				addHub(hubName, offset);
+				msg += OnixDevice::getPortName(offset) + ": " + hubNames[offset] + "\n";
 			}
 		}
-		else if (selectedOffsets.size() == foundOffsets.size()) // NB: Same number of ports selected and found
-		{
-			auto hubNames = source->getHubNames();
 
-			if (selectedOffsets.size() == 1)
-			{
-				if (hubNames.size() != 2)
-				{
-					LOGE("Wrong number of headstages found in the source node.");
-					return;
-				}
+		msg += "\nVerify that the correct headstage(s) are selected, and that all hardware connections are correct before trying to connect again.";
 
-				if (selectedOffsets[0] == foundOffsets[0]) // NB: Selected headstage is different from the found headstage on the same port
-				{
-					askKeepUpdate(selectedOffsets[0], hubNames[foundOffsets[0]], source->getDataSources());
-				}
-				else // NB: Selected headstage on one port is not found, and the found headstage is not selected on the other port
-				{
-					askKeepRemove(selectedOffsets[0]);
+		Onix1::showWarningMessageBoxAsync(title, msg);
 
-					addHub(hubNames[foundOffsets[0]], foundOffsets[0]);
-				}
-			}
-			else // NB: Two headstages are selected on different ports, and at least one of those headstages does not match the found headstages
-			{
-				for (const auto& offset : foundOffsets)
-				{
-					if (hubNames[offset] != editor->getHeadstageSelected(offset))
-					{
-						askKeepUpdate(offset, hubNames[offset], source->getDataSourcesFromOffset(offset));
-					}
-				}
-			}
-		}
-		else // NB: Different number of ports selected versus found
-		{
-			auto hubNames = source->getHubNames();
-
-			if (selectedOffsets.size() > foundOffsets.size()) // NB: More headstages selected than found
-			{
-				for (const auto& offset : selectedOffsets)
-				{
-					if (offset == foundOffsets[0])
-					{
-						if (hubNames[offset] != editor->getHeadstageSelected(offset))
-						{
-							askKeepUpdate(offset, hubNames[offset], source->getDataSourcesFromOffset(offset));
-						}
-					}
-					else
-					{
-						askKeepRemove(offset);
-					}
-				}
-			}
-			else // NB: More headstages found than selected
-			{
-				for (const auto& offset : foundOffsets)
-				{
-					if (offset == selectedOffsets[0])
-					{
-						if (hubNames[offset] != editor->getHeadstageSelected(offset))
-						{
-							askKeepUpdate(offset, hubNames[offset], source->getDataSourcesFromOffset(offset));
-						}
-					}
-					else
-					{
-						addHub(hubNames[offset], offset);
-					}
-				}
-			}
-		}
+		return false;
 	}
 
-	CoreServices::updateSignalChain(editor);
-	editor->refreshComboBoxSelection();
+	return true;
 }
 
 void OnixSourceCanvas::update() const

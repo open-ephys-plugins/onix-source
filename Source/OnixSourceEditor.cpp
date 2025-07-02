@@ -356,15 +356,12 @@ bool OnixSourceEditor::configureAllDevices()
 	if (!OnixSource::checkHubFirmwareCompatibility(source->getContext(), deviceTable))
 		return false;
 
-	if (source->initializeDevices(deviceTable, false))
-		canvas->refreshTabs();
-	else
+	if (!source->initializeDevices(deviceTable, false) || !canvas->verifyHeadstageSelection())
 	{
-		CoreServices::sendStatusMessage("Error configuring hardware. Check logs for more details.");
-		connectButton->setToggleState(false, sendNotification);
+		setConnectedStatus(false);
 		return false;
 	}
-
+	
 	if (!source->configureBlockReadSize(source->getContext(), blockReadSizeValue->getText().getIntValue()))
 	{
 		connectButton->setToggleState(false, sendNotification);
@@ -636,9 +633,9 @@ void OnixSourceEditor::refreshComboBoxSelection()
 	if (resetPortB) headstageComboBoxB->setSelectedItemIndex(0, dontSendNotification);
 }
 
-std::map<int, OnixDeviceType> OnixSourceEditor::createTabMapFromCanvas()
+OnixDeviceMap OnixSourceEditor::createTabMapFromCanvas()
 {
-	return canvas->createSelectedMap(canvas->settingsInterfaces);
+	return canvas->getSelectedDevices(canvas->settingsInterfaces);
 }
 
 void OnixSourceEditor::saveVisualizerEditorParameters(XmlElement* xml)
