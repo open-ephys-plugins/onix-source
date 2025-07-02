@@ -269,12 +269,23 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 			return;
 		}
 
-		// NB: Check if headstages were not discovered, and then removed
-		if (!isHeadstageSelected(PortName::PortA) && source->getLastVoltageSet(PortName::PortA) > 0)
-			setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
+		if (source->getLastVoltageSet(PortName::PortA) > 0)
+		{
+			if (!isHeadstageSelected(PortName::PortA))
+				setPortStatusAndVoltageValue(PortName::PortA, 0.0, fillDisconnected, lastVoltageSetA.get(), portStatusA.get());
 
-		if (!isHeadstageSelected(PortName::PortB) && source->getLastVoltageSet(PortName::PortB) > 0)
-			setPortStatusAndVoltageValue(PortName::PortB, 0.0, fillDisconnected, lastVoltageSetB.get(), portStatusB.get());
+			else
+				source->resetPortLinkFlags(PortName::PortA);
+		}
+		
+		if (source->getLastVoltageSet(PortName::PortB) > 0)
+		{
+			if (!isHeadstageSelected(PortName::PortB))
+				setPortStatusAndVoltageValue(PortName::PortB, 0.0, fillDisconnected, lastVoltageSetB.get(), portStatusB.get());
+
+			else
+				source->resetPortLinkFlags(PortName::PortB);
+		}
 
 		connectButton->setLabel("DISCONNECT");
 
