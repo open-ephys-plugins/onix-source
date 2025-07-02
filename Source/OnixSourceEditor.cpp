@@ -38,7 +38,6 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	{
 		memoryUsage = std::make_unique<MemoryMonitorUsage>(parentNode);
 		memoryUsage->setBounds(8, 28, 14, 80);
-		memoryUsage->setTooltip("Monitors the percent of the hardware memory buffer used.");
 		addAndMakeVisible(memoryUsage.get());
 
 		blockReadSizeValue = std::make_unique<Label>("blockReadSizeValue", String(source->getBlockReadSize()));
