@@ -108,10 +108,10 @@ namespace OnixSourcePlugin
 		void timerCallback() override;
 
 		void setMemoryMonitor(std::shared_ptr<MemoryMonitor> memoryMonitor);
-
 		void startAcquisition();
-
 		void stopAcquisition();
+		void setPassiveTooltip();
+		static std::string getNewTooltip(float memoryUsage);
 
 	private:
 

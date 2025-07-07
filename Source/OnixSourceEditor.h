@@ -83,7 +83,7 @@ namespace OnixSourcePlugin
 
 		void refreshComboBoxSelection();
 
-		std::map<int, OnixDeviceType> createTabMapFromCanvas();
+		OnixDeviceMap createTabMapFromCanvas();
 
 		void setConnectedStatus(bool);
 

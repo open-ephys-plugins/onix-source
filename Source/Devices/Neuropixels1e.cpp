@@ -79,7 +79,7 @@ void NeuropixelsV1eBackgroundUpdater::run()
 Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_) :
 	Neuropixels1(name, hubName, OnixDeviceType::NEUROPIXELSV1E, deviceIdx_, ctx_)
 {
-	std::string port = getPortNameFromIndex(getDeviceIdx());
+	std::string port = getPortName(getDeviceIdx());
 	StreamInfo apStream = StreamInfo(
 		OnixDevice::createStreamName({ port, getHubName(), getName(), STREAM_NAME_AP }),
 		"Neuropixels 1.0 AP band data stream",
