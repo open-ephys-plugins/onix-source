@@ -246,6 +246,8 @@ namespace OnixSourcePlugin
 		CompositeDeviceType getCompositeDeviceType() const;
 
 		bool compareIndex(uint32_t index) override;
+		bool isEnabled(uint32_t index);
+		void setEnabled(uint32_t index, bool newState);
 		int configureDevice() override;
 		bool updateSettings() override;
 		void startAcquisition() override;

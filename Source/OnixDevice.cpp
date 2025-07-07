@@ -256,6 +256,41 @@ bool CompositeDevice::compareIndex(uint32_t index)
 	return false;
 }
 
+bool CompositeDevice::isEnabled(uint32_t index)
+{
+	for (const auto& device : devices)
+	{
+		if (device->compareIndex(index))
+			return device->isEnabled();
+	}
+
+	Onix1::showWarningMessageBoxAsync(
+		"Unknown Index",
+		"Could not get the enabled status of a device at index " + std::to_string(index) + ", it was not found in " + getName()
+	);
+
+	return false;
+}
+
+void CompositeDevice::setEnabled(uint32_t index, bool newState)
+{
+	for (const auto& device : devices)
+	{
+		if (device->compareIndex(index))
+		{
+			device->setEnabled(newState);
+			return;
+		}
+	}
+
+	Onix1::showWarningMessageBoxAsync(
+		"Unknown Index",
+		"Could not set the enabled status of a device at index " + std::to_string(index) + ", it was not found in " + getName()
+	);
+
+	return;
+}
+
 int CompositeDevice::configureDevice()
 {
 	int result = ONI_ESUCCESS;
