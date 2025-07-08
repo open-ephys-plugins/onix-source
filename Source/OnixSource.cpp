@@ -457,7 +457,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 				hubNames.insert({ OnixDevice::getOffset(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
-			else if (hsid == 0xFFFFFFFF || hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH)
+			else if (hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH)
 			{
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
