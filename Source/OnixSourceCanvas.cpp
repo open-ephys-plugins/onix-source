@@ -84,9 +84,9 @@ void OnixSourceCanvas::addHub(std::string hubName, int offset)
 	{
 		tab = addTopLevelTab(hubName, 0);
 
-		devices.emplace_back(std::make_shared<OutputClock>("Output Clock", hubName, 5, context));
 		devices.emplace_back(std::make_shared<AuxiliaryIO>("Auxiliary IO", hubName, 6, 7, context));
 		devices.emplace_back(std::make_shared<HarpSyncInput>("Harp Sync Input", hubName, 12, context));
+		devices.emplace_back(std::make_shared<OutputClock>("Output Clock", hubName, 5, context));
 	}
 	else if (hubName == NEUROPIXELSV2E_HEADSTAGE_NAME)
 	{
