@@ -251,6 +251,18 @@ bool CompositeDevice::compareIndex(uint32_t index)
 	return false;
 }
 
+bool CompositeDevice::isEnabled() const
+{
+	bool enabled = true;
+
+	for (const auto& device : devices)
+	{
+		enabled &= device->isEnabled();
+	}
+
+	return enabled;
+}
+
 bool CompositeDevice::isEnabled(uint32_t index)
 {
 	for (const auto& device : devices)
@@ -265,6 +277,14 @@ bool CompositeDevice::isEnabled(uint32_t index)
 	);
 
 	return false;
+}
+
+void CompositeDevice::setEnabled(bool newState)
+{
+	for (const auto& device : devices)
+	{
+		device->setEnabled(newState);
+	}
 }
 
 void CompositeDevice::setEnabled(uint32_t index, bool newState)

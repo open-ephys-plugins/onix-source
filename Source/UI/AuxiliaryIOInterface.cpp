@@ -38,25 +38,20 @@ AuxiliaryIOInterface::AuxiliaryIOInterface(std::shared_ptr<AuxiliaryIO> d, OnixS
 		static int offset = 55;
 		FontOptions font = FontOptions("Fira Code", "Bold", 22.0f);
 
-		analogLabel = std::make_unique<Label>("analogLabel", "Analog IO");
-		analogLabel->setBounds(20, 20, 150, 35);
-		analogLabel->setFont(font);
-		addAndMakeVisible(analogLabel.get());
+		analogDigitalLabel = std::make_unique<Label>("analogDigitalLabel", "Analog and Digital IO");
+		analogDigitalLabel->setBounds(20, 20, 350, 35);
+		analogDigitalLabel->setFont(font);
+		addAndMakeVisible(analogDigitalLabel.get());
 
 		analogInterface = std::make_unique<AnalogIOInterface>(auxiliaryIO->getAnalogIO(), e, c);
 		analogViewport = std::make_unique<CustomViewport>(analogInterface.get(), SettingsInterface::Width / 2, SettingsInterface::Height);
 		analogViewport->setBounds(0, offset, SettingsInterface::Width / 2, SettingsInterface::Height);
 		addAndMakeVisible(analogViewport.get());
 
-		digitalLabel = std::make_unique<Label>("digitalLabel", "Digital IO");
-		digitalLabel->setBounds(analogLabel->getX() + SettingsInterface::Width / 2, analogLabel->getY(), analogLabel->getWidth(), analogLabel->getHeight());
-		digitalLabel->setFont(font);
-		addAndMakeVisible(digitalLabel.get());
-
 		digitalInterface = std::make_unique<DigitalIOInterface>(auxiliaryIO->getDigitalIO(), e, c);
 		digitalViewport = std::make_unique<CustomViewport>(digitalInterface.get(), SettingsInterface::Width / 2, SettingsInterface::Height);
 		digitalViewport->setBounds(SettingsInterface::Width / 2, offset, SettingsInterface::Width / 2, SettingsInterface::Height);
-		addAndMakeVisible(digitalViewport.get());
+		//addAndMakeVisible(digitalViewport.get()); // NB: Hide digital interface for now, if the digitalIO UI gets updates that need to be displayed they can be shown here
 	}
 }
 
@@ -74,8 +69,8 @@ void AuxiliaryIOInterface::saveParameters(XmlElement* xml)
 
 void AuxiliaryIOInterface::loadParameters(XmlElement* xml)
 {
-	analogInterface->saveParameters(xml);
-	digitalInterface->saveParameters(xml);
+	analogInterface->loadParameters(xml);
+	digitalInterface->loadParameters(xml);
 }
 
 void AuxiliaryIOInterface::updateInfoString()

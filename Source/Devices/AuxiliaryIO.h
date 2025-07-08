@@ -40,6 +40,8 @@ namespace OnixSourcePlugin
 
 		AuxiliaryIO(std::string name, std::string hubName, const oni_dev_idx_t analogIndex, const oni_dev_idx_t digitalIndex, std::shared_ptr<Onix1> oni_ctx);
 
+		bool isEnabled() const override;
+
 		static OnixDeviceType getDeviceType();
 		static CompositeDeviceType getCompositeDeviceType();
 
@@ -51,6 +53,9 @@ namespace OnixSourcePlugin
 	private:
 
 		static OnixDeviceVector createAuxiliaryIODevices(std::string hubName, const oni_dev_idx_t analogIndex, const oni_dev_idx_t digitalIndex, std::shared_ptr<Onix1> oni_ctx);
+
+		std::shared_ptr<AnalogIO> analogIO;
+		std::shared_ptr<DigitalIO> digitalIO;
 
 		JUCE_LEAK_DETECTOR(AuxiliaryIO);
 	};
