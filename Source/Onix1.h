@@ -35,7 +35,7 @@ namespace OnixSourcePlugin
 {
 	constexpr char* NEUROPIXELSV1F_HEADSTAGE_NAME = "Neuropixels 1.0f Headstage";
 	constexpr char* NEUROPIXELSV1E_HEADSTAGE_NAME = "Neuropixels 1.0e Headstage";
-	constexpr char* NEUROPIXELSV2E_HEADSTAGE_NAME = "Neuropixels 2.0 Headstage";
+	constexpr char* NEUROPIXELSV2E_HEADSTAGE_NAME = "Neuropixels 2.0e Headstage";
 	constexpr char* BREAKOUT_BOARD_NAME = "Breakout Board";
 
 	class error_t : public std::exception

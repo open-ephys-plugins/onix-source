@@ -250,6 +250,33 @@ bool OnixSource::configurePort(PortName port)
 	return true;
 }
 
+bool OnixSource::resetPortLinkFlags()
+{
+	if (context == nullptr || !context->isInitialized())
+		return false;
+
+	return portA->resetLinkFlags() != ONI_ESUCCESS || portB->resetLinkFlags() != ONI_ESUCCESS;
+}
+
+bool OnixSource::resetPortLinkFlags(PortName port)
+{
+	if (context == nullptr || !context->isInitialized())
+		return false;
+
+	if (port == PortName::PortA)
+	{
+		if (portA->resetLinkFlags() != ONI_ESUCCESS)
+			return false;
+	}
+	else if (port == PortName::PortB)
+	{
+		if (portB->resetLinkFlags() != ONI_ESUCCESS)
+			return false;
+	}
+
+	return true;
+}
+
 bool OnixSource::checkHubFirmwareCompatibility(std::shared_ptr<Onix1> context, device_map_t deviceTable)
 {
 	auto hubIds = context->getHubIds(deviceTable);
@@ -424,7 +451,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 				hubNames.insert({ OnixDevice::getOffset(polledBno->getDeviceIdx()), NEUROPIXELSV2E_HEADSTAGE_NAME });
 			}
-			else if (hsid == 0xFFFFFFFF || hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH) // TODO: Remove the 0xFFFFFFFF before publishing
+			else if (hsid == ONIX_HUB_HSNP1ET || hsid == ONIX_HUB_HSNP1EH)
 			{
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
@@ -999,6 +1026,25 @@ bool OnixSource::foundInputSource()
 	return devicesFound;
 }
 
+bool OnixSource::checkPortControllerStatus(OnixSourceEditor* editor, std::shared_ptr<PortController> port)
+{
+	if (editor->isHeadstageSelected(port->getPort()))
+	{
+		if (!port->checkLinkState())
+		{
+			Onix1::showWarningMessageBoxAsync("Port Controller Error", port->getName() + " is not currently connected.");
+			return false;
+		}
+		else if (port->getLinkFlags() != 0)
+		{
+			Onix1::showWarningMessageBoxAsync("Port Controller Error", port->getName() + " was disconnected, and must be reconnected.");
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool OnixSource::isReady()
 {
 	if (context == nullptr || !devicesFound)
@@ -1010,8 +1056,11 @@ bool OnixSource::isReady()
 		return false;
 	}
 
-	if (editor->isHeadstageSelected(PortName::PortA) && !portA->checkLinkState()) return false;
-	if (editor->isHeadstageSelected(PortName::PortB) && !portB->checkLinkState()) return false;
+	if (!checkPortControllerStatus(editor, portA) || !checkPortControllerStatus(editor, portB))
+	{
+		editor->setConnectedStatus(false); // NB: If either port controller lost lock, disconnect all devices
+		return false;
+	}
 
 	for (const auto& source : sources)
 	{
@@ -1050,6 +1099,18 @@ bool OnixSource::startAcquisition()
 	return true;
 }
 
+void OnixSource::disconnectDevicesAfterAcquisition(OnixSourceEditor* editor)
+{
+	while (CoreServices::getAcquisitionStatus())
+		std::this_thread::sleep_for(50ms);
+
+	if (editor != nullptr)
+	{
+		const MessageManagerLock mmLock;
+		editor->setConnectedStatus(false);
+	}
+}
+
 bool OnixSource::stopAcquisition()
 {
 	if (isThreadRunning())
@@ -1074,21 +1135,33 @@ bool OnixSource::stopAcquisition()
 
 	if (portA->getErrorFlag() || portB->getErrorFlag())
 	{
+		std::string msg = "";
+
 		if (portA->getErrorFlag())
 		{
-			LOGE("Port A lost communication lock. Reconnect hardware to continue.");
-			CoreServices::sendStatusMessage("Port A lost communication lock");
+			msg += "Port A";
+		}
+
+		if (portA->getErrorFlag() && portB->getErrorFlag())
+		{
+			msg += " and ";
 		}
 
 		if (portB->getErrorFlag())
 		{
-			LOGE("Port B lost communication lock. Reconnect hardware to continue.");
-			CoreServices::sendStatusMessage("Port B lost communication lock");
+			msg += "Port B";
 		}
 
-		devicesFound = false;
+		msg += " lost communication lock during acquisition. Inspect hardware connections and port switch before reconnecting.";
 
-		Onix1::showWarningMessageBoxAsync("Port Communication Lock Lost", "The port communication lock was lost during acquisition. Inspect hardware connections and port switch. \n\nTo continue, press disconnect in the GUI, then press connect.");
+		std::thread t(disconnectDevicesAfterAcquisition, editor);
+		t.detach(); // NB: Detach to allow the current thread to finish, stopping acquisition and allowing the called thread to complete
+
+		Onix1::showWarningMessageBoxAsync(
+			"Port Communication Lock Lost",
+			msg);
+
+		return false;
 	}
 
 	return true;
