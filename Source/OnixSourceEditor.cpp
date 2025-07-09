@@ -145,13 +145,13 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 
 		const int connectWidth = 70;
 
-		connectButton = std::make_unique<UtilityButton>("CONNECT");
+		connectButton = std::make_unique<UtilityButton>("Scan Ports");
 		connectButton->setFont(fontOptionRegular);
 		connectButton->setBounds(headstageComboBoxB->getRight() - connectWidth, liboniVersionLabel->getY(), connectWidth, 18);
 		connectButton->setRadius(3.0f);
 		connectButton->setClickingTogglesState(true);
 		connectButton->setToggleState(false, dontSendNotification);
-		connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
+		connectButton->setTooltip("Press to scan ports or disconnect from Onix hardware");
 		connectButton->addListener(this);
 		addAndMakeVisible(connectButton.get());
 	}
@@ -298,7 +298,7 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 		setPortStatusAndVoltageValue(PortName::PortB, 0.0, fillDisconnected, lastVoltageSetB.get(), portStatusB.get());
 
 		source->disconnectDevices(true);
-		connectButton->setLabel("CONNECT");
+		connectButton->setLabel("Scan Ports");
 
 		enableEditorElements(true);
 	}
