@@ -405,6 +405,9 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 
 void OnixSourceEditor::updateComboBox(ComboBox* cb)
 {
+	if (cb == nullptr)
+		return;
+
 	bool isPortA = cb == headstageComboBoxA.get();
 
 	PortName currentPort = isPortA ? PortName::PortA : PortName::PortB;
@@ -604,6 +607,9 @@ std::string OnixSourceEditor::getHeadstageSelected(PortName port)
 
 void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, std::string headstage)
 {
+	if (comboBox == nullptr)
+		return;
+
 	String headstage_ = headstage;
 
 	for (int i = 0; i < comboBox->getNumItems(); i++)
@@ -651,6 +657,9 @@ OnixDeviceMap OnixSourceEditor::createTabMapFromCanvas()
 
 void OnixSourceEditor::saveVisualizerEditorParameters(XmlElement* xml)
 {
+	if (!source->isContextInitialized())
+		return;
+
 	LOGD("Saving OnixSourceEditor settings.");
 
 	xml->setAttribute("headstagePortA", headstageComboBoxA->getText());
@@ -664,6 +673,9 @@ void OnixSourceEditor::saveVisualizerEditorParameters(XmlElement* xml)
 
 void OnixSourceEditor::loadVisualizerEditorParameters(XmlElement* xml)
 {
+	if (!source->isContextInitialized())
+		return;
+
 	LOGD("Loading OnixSourceEditor settings.");
 
 	if (xml->hasAttribute("headstagePortA"))
