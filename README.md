@@ -37,18 +37,6 @@ For existing clones of the repo, run `git submodule update --init --recursive` t
 
 **Requirements:** [Visual Studio](https://visualstudio.microsoft.com/) and [CMake](https://cmake.org/install/)
 
-#### Build liboni and associated drivers
-
-Enter the `liboni/api/liboni` directory, and open the `liboni.sln` file using Visual Studio. Alternatively, build the project from the command line using `msbuild` or equivalent command. 
-
-To ensure that this project functions correctly, the following projects must be built so that they can be properly linked by the `cmake` command below:
-
-- `liboni`
-- `onidriver_riffa`
-- `riffa`
-
-NOTE: For proper linking, these projects must be built using the `ReleaseStatic` configuration. This will create `liboni` as a static library, while leaving the other two libraries as dynamic.
-
 #### Create OnixSource project using CMAKE
 
 From the `Build` directory, enter:
