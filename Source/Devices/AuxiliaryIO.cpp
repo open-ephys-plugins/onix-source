@@ -56,29 +56,9 @@ bool AuxiliaryIO::isEnabled() const
 
 void AuxiliaryIO::processFrames()
 {
-	if (!digitalIO->isEnabled() && !analogIO->isEnabled())
-	{
-		return;
-	}
-	else if (!digitalIO->isEnabled())
-	{
-		analogIO->processFrames();
-		return;
-	}
-	else if (!analogIO->isEnabled())
-	{
-		digitalIO->processFrames();
-		while (digitalIO->hasEventWord())
-		{
-			digitalIO->getEventWord();
-		}
-
-		return;
-	}
-
 	digitalIO->processFrames();
 
-	while (analogIO->getNumberOfFrames() >= AnalogIO::framesToAverage && digitalIO->getNumberOfWords() >= 1)
+	while (digitalIO->hasEventWord() && analogIO->getNumberOfFrames() >= AnalogIO::framesToAverage)
 	{
 		auto eventWord = digitalIO->getEventWord();
 

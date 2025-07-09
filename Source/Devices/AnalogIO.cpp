@@ -209,7 +209,9 @@ void AnalogIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 void AnalogIO::processFrame(uint64_t eventWord)
 {
 	oni_frame_t* frame;
-	while (!frameQueue.try_dequeue(frame)); //NB: This while is for safety, but this method should never be called unless a frame is sure to be there
+	if (!frameQueue.try_dequeue(frame)) { //NB: This method should never be called unless a frame is sure to be there
+		jassertfalse;
+	}
 
 	int16_t* dataPtr = (int16_t*)frame->data;
 
