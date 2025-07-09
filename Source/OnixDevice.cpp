@@ -153,9 +153,9 @@ int OnixDevice::getPortOffset(PortName port)
 	return (uint32_t)port << 8;
 }
 
-std::string OnixDevice::getPortName(int offset)
+std::string OnixDevice::getPortName(oni_dev_idx_t index)
 {
-	switch (offset)
+	switch (getOffset(index))
 	{
 	case 0:
 		return "";
@@ -171,11 +171,6 @@ std::string OnixDevice::getPortName(int offset)
 std::string OnixDevice::getPortName(PortName port)
 {
 	return getPortName(getPortOffset(port));
-}
-
-std::string OnixDevice::getPortName(oni_dev_idx_t index)
-{
-	return getPortName(getOffset(index));
 }
 
 PortName OnixDevice::getPortFromIndex(oni_dev_idx_t index)
@@ -270,6 +265,18 @@ bool CompositeDevice::compareIndex(uint32_t index)
 	return false;
 }
 
+bool CompositeDevice::isEnabled() const
+{
+	bool enabled = true;
+
+	for (const auto& device : devices)
+	{
+		enabled &= device->isEnabled();
+	}
+
+	return enabled;
+}
+
 bool CompositeDevice::isEnabled(uint32_t index)
 {
 	for (const auto& device : devices)
@@ -284,6 +291,14 @@ bool CompositeDevice::isEnabled(uint32_t index)
 	);
 
 	return false;
+}
+
+void CompositeDevice::setEnabled(bool newState)
+{
+	for (const auto& device : devices)
+	{
+		device->setEnabled(newState);
+	}
 }
 
 void CompositeDevice::setEnabled(uint32_t index, bool newState)

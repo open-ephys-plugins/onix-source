@@ -57,8 +57,7 @@ namespace OnixSourcePlugin
 		std::unique_ptr<AnalogIOInterface> analogInterface;
 		std::unique_ptr<DigitalIOInterface> digitalInterface;
 
-		std::unique_ptr<Label> analogLabel;
-		std::unique_ptr<Label> digitalLabel;
+		std::unique_ptr<Label> analogDigitalLabel;
 
 		JUCE_LEAK_DETECTOR(AuxiliaryIOInterface);
 	};

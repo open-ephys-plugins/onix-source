@@ -94,6 +94,8 @@ namespace OnixSourcePlugin
 		static bool enablePassthroughMode(std::shared_ptr<Onix1>, bool, bool);
 
 		bool configurePort(PortName);
+		bool resetPortLinkFlags();
+		bool resetPortLinkFlags(PortName);
 
 		static bool checkHubFirmwareCompatibility(std::shared_ptr<Onix1>, device_map_t);
 
@@ -131,6 +133,8 @@ namespace OnixSourcePlugin
 		uint32_t getBlockReadSize() const;
 
 		void setBlockReadSize(uint32_t);
+
+		static bool checkPortControllerStatus(OnixSourceEditor* editor, std::shared_ptr<PortController> port);
 
 	private:
 
@@ -171,6 +175,9 @@ namespace OnixSourcePlugin
 		static bool getHubFirmwareVersion(std::shared_ptr<Onix1>, uint32_t, uint32_t*);
 
 		static bool writeBlockReadSize(std::shared_ptr<Onix1>, uint32_t, uint32_t);
+
+		/** This method is expected to be called in a separate thread, and waits for acquisition to stop before gracefully disconnecting all devices */
+		static void disconnectDevicesAfterAcquisition(OnixSourceEditor* editor);
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 	};

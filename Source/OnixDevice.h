@@ -168,8 +168,8 @@ namespace OnixSourcePlugin
 		virtual bool compareIndex(uint32_t index);
 
 		const std::string getName() { return name; }
-		bool isEnabled() const { return enabled; }
-		void setEnabled(bool newState) { enabled = newState; }
+		virtual bool isEnabled() const { return enabled; }
+		virtual void setEnabled(bool newState) { enabled = newState; }
 		oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
 		/** Creates a stream name using the provided inputs, returning a string following the pattern: name[0]-name[1]-name[2]-etc., with all spaces removed */
@@ -187,7 +187,6 @@ namespace OnixSourcePlugin
 		void setHubName(std::string hubName) { m_hubName = hubName; }
 
 		static int getPortOffset(PortName port);
-		static std::string getPortName(int offset);
 		static std::string getPortName(PortName port);
 		static std::string getPortName(oni_dev_idx_t index);
 		static PortName getPortFromIndex(oni_dev_idx_t index);
@@ -250,7 +249,9 @@ namespace OnixSourcePlugin
 		CompositeDeviceType getCompositeDeviceType() const;
 
 		bool compareIndex(uint32_t index) override;
+		bool isEnabled() const override;
 		bool isEnabled(uint32_t index);
+		void setEnabled(bool newState) override;
 		void setEnabled(uint32_t index, bool newState);
 		int configureDevice() override;
 		bool updateSettings() override;

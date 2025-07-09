@@ -29,6 +29,8 @@ using namespace OnixSourcePlugin;
 AuxiliaryIO::AuxiliaryIO(std::string name, std::string hubName, const oni_dev_idx_t analogIndex, const oni_dev_idx_t digitalIndex, std::shared_ptr<Onix1> oni_ctx)
 	: CompositeDevice(name, hubName, AuxiliaryIO::getCompositeDeviceType(), createAuxiliaryIODevices(hubName, analogIndex, digitalIndex, oni_ctx), oni_ctx)
 {
+	analogIO = getDevice<AnalogIO>(OnixDeviceType::ANALOGIO);
+	digitalIO = getDevice<DigitalIO>(OnixDeviceType::DIGITALIO);
 }
 
 // NB: This constructor assumes that the digitalIO device is located at one index above the analogIndex
@@ -47,11 +49,13 @@ OnixDeviceVector AuxiliaryIO::createAuxiliaryIODevices(std::string hubName, cons
 	return devices;
 }
 
+bool AuxiliaryIO::isEnabled() const
+{
+	return analogIO->isEnabled();
+}
+
 void AuxiliaryIO::processFrames()
 {
-	auto analogIO = getAnalogIO();
-	auto digitalIO = getDigitalIO();
-
 	if (!digitalIO->isEnabled() && !analogIO->isEnabled())
 	{
 		return;
@@ -99,10 +103,10 @@ CompositeDeviceType AuxiliaryIO::getCompositeDeviceType()
 
 std::shared_ptr<AnalogIO> AuxiliaryIO::getAnalogIO()
 {
-	return getDevice<AnalogIO>(OnixDeviceType::ANALOGIO);
+	return analogIO;
 }
 
 std::shared_ptr<DigitalIO> AuxiliaryIO::getDigitalIO()
 {
-	return getDevice<DigitalIO>(OnixDeviceType::DIGITALIO);
+	return digitalIO;
 }

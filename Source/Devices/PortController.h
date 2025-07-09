@@ -39,7 +39,8 @@ namespace OnixSourcePlugin
 		DESPWR = 2,
 		PORTVOLTAGE = 3,
 		SAVEVOLTAGE = 4,
-		LINKSTATE = 5
+		LINKSTATE = 5,
+		LINKFLAGS = 7,
 	};
 
 	enum class PortStatusCode : uint32_t
@@ -83,14 +84,10 @@ namespace OnixSourcePlugin
 		PortController(PortName port_, std::shared_ptr<Onix1> ctx_);
 
 		int configureDevice() override;
-
-		bool updateSettings() override { return true; }
-
+		bool updateSettings() override;
 		void startAcquisition() override;
-
 		void processFrames() override;
-
-		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
 		void updateDiscoveryParameters(DiscoveryParameters parameters);
 
@@ -106,12 +103,20 @@ namespace OnixSourcePlugin
 
 		static DiscoveryParameters getHeadstageDiscoveryParameters(std::string headstage);
 
-		std::string getPortName() const { return OnixDevice::getPortName(port); }
+		std::string getPortNameString() const;
 
-		/** Check if the port status changed and there is an error reported */
-		bool getErrorFlag() { return errorFlag; }
+		PortName getPort() const;
 
-		double getLastVoltageSet() const { return lastVoltageSet; }
+		/** Check if the port status changed during acquisition and there is an error reported */
+		bool getErrorFlag();
+
+		double getLastVoltageSet() const;
+
+		/** Writes to the link flags register to reset the flags. This should be called after headstages are locked. */
+		bool resetLinkFlags();
+
+		/** Returns the link flags value, which is zero unless the lock or pass was lost outside of acquisition */
+		uint32_t getLinkFlags();
 
 	private:
 
@@ -135,7 +140,7 @@ namespace OnixSourcePlugin
 	{
 	public:
 		ConfigureVoltageWithProgressBar(DiscoveryParameters params, PortController* port)
-			: ThreadWithProgressWindow("Configuring voltage on " + port->getPortName(), true, false)
+			: ThreadWithProgressWindow("Configuring voltage on " + port->getPortNameString(), true, false)
 		{
 			m_params = params;
 			m_port = port;
