@@ -103,14 +103,12 @@ void PortController::stopAcquisition()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
 }
 
 void PortController::addFrame(oni_frame_t* frame)
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
@@ -118,7 +116,6 @@ void PortController::processFrames()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		int8_t* dataPtr = (int8_t*)frame->data;

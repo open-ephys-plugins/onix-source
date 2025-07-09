@@ -23,7 +23,6 @@
 #pragma once
 
 #include <VisualizerEditorHeaders.h>
-
 #include "SettingsInterface.h"
 
 namespace OnixSourcePlugin
@@ -647,19 +646,19 @@ namespace OnixSourcePlugin
 			}
 			else
 			{
-				if (mode == VisualizationMode::ENABLE_VIEW) // ENABLED STATE
+				if (mode == SettingsInterface::VisualizationMode::ENABLE_VIEW) // ENABLED STATE
 				{
 					return Colours::yellow;
 				}
-				else if (mode == VisualizationMode::AP_GAIN_VIEW) // AP GAIN
+				else if (mode == SettingsInterface::VisualizationMode::AP_GAIN_VIEW) // AP GAIN
 				{
 					return Colour(25 * settings->apGainIndex, 25 * settings->apGainIndex, 50);
 				}
-				else if (mode == VisualizationMode::LFP_GAIN_VIEW) // LFP GAIN
+				else if (mode == SettingsInterface::VisualizationMode::LFP_GAIN_VIEW) // LFP GAIN
 				{
 					return Colour(66, 25 * settings->lfpGainIndex, 35 * settings->lfpGainIndex);
 				}
-				else if (mode == VisualizationMode::REFERENCE_VIEW)
+				else if (mode == SettingsInterface::VisualizationMode::REFERENCE_VIEW)
 				{
 					auto ref = parent->getReferenceText();
 
@@ -670,7 +669,7 @@ namespace OnixSourcePlugin
 					else
 						return Colours::purple;
 				}
-				else if (mode == VisualizationMode::ACTIVITY_VIEW)
+				else if (mode == SettingsInterface::VisualizationMode::ACTIVITY_VIEW)
 				{
 					if (settings->electrodeMetadata[i].status == ElectrodeStatus::CONNECTED)
 					{

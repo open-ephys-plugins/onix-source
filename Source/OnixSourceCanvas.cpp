@@ -23,6 +23,7 @@
 #include "OnixSourceCanvas.h"
 #include "OnixSource.h"
 #include "OnixSourceEditor.h"
+#include "UI/SettingsInterface.h"
 
 using namespace OnixSourcePlugin;
 
@@ -54,6 +55,13 @@ void OnixSourceCanvas::addHub(std::string hubName, int offset)
 	CustomTabComponent* tab = nullptr;
 	OnixDeviceVector devices;
 	PortName port = PortController::getPortFromIndex(offset);
+	auto context = source->getContext();
+
+	if (context == nullptr || !context->isInitialized())
+	{
+		Onix1::showWarningMessageBoxAsync("Invalid Context", "Unable to find an initialized context when adding hubs to the canvas.");
+		return;
+	}
 
 	if (hubName == NEUROPIXELSV1E_HEADSTAGE_NAME)
 	{
@@ -61,25 +69,24 @@ void OnixSourceCanvas::addHub(std::string hubName, int offset)
 
 		const int passthroughIndex = (offset >> 8) + 7;
 
-		devices.emplace_back(std::make_shared<Neuropixels1e>("Probe", hubName, passthroughIndex, source->getContext()));
-		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", hubName, passthroughIndex, source->getContext()));
+		devices.emplace_back(std::make_shared<Neuropixels1e>("Probe", hubName, passthroughIndex, context));
+		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", hubName, passthroughIndex, context));
 	}
 	else if (hubName == NEUROPIXELSV1F_HEADSTAGE_NAME)
 	{
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.emplace_back(std::make_shared<Neuropixels1f>("Probe0", hubName, offset, source->getContext()));
-		devices.emplace_back(std::make_shared<Neuropixels1f>("Probe1", hubName, offset + 1, source->getContext()));
-		devices.emplace_back(std::make_shared<Bno055>("BNO055", hubName, offset + 2, source->getContext()));
+		devices.emplace_back(std::make_shared<Neuropixels1f>("Probe0", hubName, offset, context));
+		devices.emplace_back(std::make_shared<Neuropixels1f>("Probe1", hubName, offset + 1, context));
+		devices.emplace_back(std::make_shared<Bno055>("BNO055", hubName, offset + 2, context));
 	}
 	else if (hubName == BREAKOUT_BOARD_NAME)
 	{
 		tab = addTopLevelTab(hubName, 0);
 
-		devices.emplace_back(std::make_shared<OutputClock>("Output Clock", hubName, 5, source->getContext()));
-		devices.emplace_back(std::make_shared<AnalogIO>("Analog IO", hubName, 6, source->getContext()));
-		devices.emplace_back(std::make_shared<DigitalIO>("Digital IO", hubName, 7, source->getContext()));
-		devices.emplace_back(std::make_shared<HarpSyncInput>("Harp Sync Input", hubName, 12, source->getContext()));
+		devices.emplace_back(std::make_shared<AuxiliaryIO>("Auxiliary IO", hubName, 6, 7, context));
+		devices.emplace_back(std::make_shared<HarpSyncInput>("Harp Sync Input", hubName, 12, context));
+		devices.emplace_back(std::make_shared<OutputClock>("Output Clock", hubName, 5, context));
 	}
 	else if (hubName == NEUROPIXELSV2E_HEADSTAGE_NAME)
 	{
@@ -87,8 +94,8 @@ void OnixSourceCanvas::addHub(std::string hubName, int offset)
 
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.emplace_back(std::make_shared<Neuropixels2e>("", hubName, passthroughIndex, source->getContext()));
-		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", hubName, passthroughIndex, source->getContext()));
+		devices.emplace_back(std::make_shared<Neuropixels2e>("", hubName, passthroughIndex, context));
+		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", hubName, passthroughIndex, context));
 	}
 
 	if (tab != nullptr && devices.size() > 0)
@@ -143,16 +150,6 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 			auto harpSyncInputInterface = std::make_shared<HarpSyncInputInterface>(std::static_pointer_cast<HarpSyncInput>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, harpSyncInputInterface);
 		}
-		else if (device->getDeviceType() == OnixDeviceType::ANALOGIO)
-		{
-			auto analogIOInterface = std::make_shared<AnalogIOInterface>(std::static_pointer_cast<AnalogIO>(device), editor, this);
-			addInterfaceToTab(device->getName(), tab, analogIOInterface);
-		}
-		else if (device->getDeviceType() == OnixDeviceType::DIGITALIO)
-		{
-			auto digitalIOInterface = std::make_shared<DigitalIOInterface>(std::static_pointer_cast<DigitalIO>(device), editor, this);
-			addInterfaceToTab(device->getName(), tab, digitalIOInterface);
-		}
 		else if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
 		{
 			auto npxv2eInterface = std::make_shared<NeuropixelsV2eInterface>(std::static_pointer_cast<Neuropixels2e>(device), editor, this);
@@ -164,6 +161,26 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 		{
 			auto polledBnoInterface = std::make_shared<PolledBno055Interface>(std::static_pointer_cast<PolledBno055>(device), editor, this);
 			addInterfaceToTab(device->getName(), tab, polledBnoInterface);
+		}
+		else if (device->getDeviceType() == OnixDeviceType::COMPOSITE)
+		{
+			auto compositeDevice = std::static_pointer_cast<CompositeDevice>(device);
+
+			if (compositeDevice->getCompositeDeviceType() == CompositeDeviceType::AUXILIARYIO)
+			{
+				auto auxiliaryIOInterface = std::make_shared<AuxiliaryIOInterface>(std::static_pointer_cast<AuxiliaryIO>(device), editor, this);
+				addInterfaceToTab(device->getName(), tab, auxiliaryIOInterface);
+			}
+			else
+			{
+				Onix1::showWarningMessageBoxAsync("Composite Device Type Not Found", "Could not find a valid composite device type when adding devices to the canvas.");
+				return;
+			}
+		}
+		else
+		{
+			Onix1::showWarningMessageBoxAsync("Device Type Not Found", "Could not find a valid device type when adding devices to the canvas.");
+			return;
 		}
 	}
 }

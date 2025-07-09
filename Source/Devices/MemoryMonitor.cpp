@@ -143,14 +143,12 @@ void MemoryMonitor::stopAcquisition()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_destroy_frame(frameArray.removeAndReturn(0));
 	}
 }
 
 void MemoryMonitor::addFrame(oni_frame_t* frame)
 {
-	const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 	frameArray.add(frame);
 }
 
@@ -169,7 +167,6 @@ void MemoryMonitor::processFrames()
 {
 	while (!frameArray.isEmpty())
 	{
-		const GenericScopedLock<CriticalSection> frameLock(frameArray.getLock());
 		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint32_t* dataPtr = (uint32_t*)frame->data;
@@ -183,10 +180,6 @@ void MemoryMonitor::processFrames()
 		oni_destroy_frame(frame);
 
 		sampleNumbers[currentFrame] = sampleNumber++;
-
-		prevWord = m_digitalIO != nullptr && m_digitalIO->hasEventWord() ? m_digitalIO->getEventWord() : prevWord;
-
-		eventCodes[currentFrame] = prevWord;
 
 		currentFrame++;
 

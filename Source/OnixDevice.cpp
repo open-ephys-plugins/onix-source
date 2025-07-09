@@ -222,3 +222,146 @@ Array<PortName> OnixDevice::getUniquePorts(std::vector<int> indices)
 
 	return ports;
 }
+
+bool OnixDevice::compareIndex(uint32_t index)
+{
+	return index == deviceIdx;
+}
+
+CompositeDevice::CompositeDevice(std::string name_, std::string hubName, CompositeDeviceType type_, OnixDeviceVector devices_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name_, hubName, OnixDeviceType::COMPOSITE, devices_.at(0)->getDeviceIdx(), oni_ctx)
+{
+	compositeType = type_;
+	devices = devices_;
+}
+
+CompositeDeviceType CompositeDevice::getCompositeDeviceType() const
+{
+	return compositeType;
+}
+
+bool CompositeDevice::compareIndex(uint32_t index)
+{
+	for (const auto& device : devices)
+	{
+		if (device->getDeviceIdx() == index)
+			return true;
+	}
+
+	return false;
+}
+
+bool CompositeDevice::isEnabled() const
+{
+	bool enabled = true;
+
+	for (const auto& device : devices)
+	{
+		enabled &= device->isEnabled();
+	}
+
+	return enabled;
+}
+
+bool CompositeDevice::isEnabled(uint32_t index)
+{
+	for (const auto& device : devices)
+	{
+		if (device->compareIndex(index))
+			return device->isEnabled();
+	}
+
+	Onix1::showWarningMessageBoxAsync(
+		"Unknown Index",
+		"Could not get the enabled status of a device at index " + std::to_string(index) + ", it was not found in " + getName()
+	);
+
+	return false;
+}
+
+void CompositeDevice::setEnabled(bool newState)
+{
+	for (const auto& device : devices)
+	{
+		device->setEnabled(newState);
+	}
+}
+
+void CompositeDevice::setEnabled(uint32_t index, bool newState)
+{
+	for (const auto& device : devices)
+	{
+		if (device->compareIndex(index))
+		{
+			device->setEnabled(newState);
+			return;
+		}
+	}
+
+	Onix1::showWarningMessageBoxAsync(
+		"Unknown Index",
+		"Could not set the enabled status of a device at index " + std::to_string(index) + ", it was not found in " + getName()
+	);
+
+	return;
+}
+
+int CompositeDevice::configureDevice()
+{
+	int result = ONI_ESUCCESS;
+
+	for (const auto& device : devices)
+	{
+		result |= device->configureDevice();
+	}
+
+	return result;
+}
+
+bool CompositeDevice::updateSettings()
+{
+	bool result = true;
+
+	for (const auto& device : devices)
+	{
+		result &= device->updateSettings();
+	}
+
+	return result;
+}
+
+void CompositeDevice::startAcquisition()
+{
+	for (const auto& device : devices)
+	{
+		device->startAcquisition();
+	}
+}
+
+void CompositeDevice::stopAcquisition()
+{
+	for (const auto& device : devices)
+	{
+		device->stopAcquisition();
+	}
+}
+
+void CompositeDevice::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+{
+	for (const auto& device : devices)
+	{
+		device->addSourceBuffers(sourceBuffers);
+	}
+}
+
+void CompositeDevice::addFrame(oni_frame_t* frame)
+{
+	for (const auto& device : devices)
+	{
+		if (device->compareIndex(frame->dev_idx))
+		{
+			device->addFrame(frame);
+			return;
+		}
+	}
+}

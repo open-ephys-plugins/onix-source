@@ -24,59 +24,41 @@
 
 #include <VisualizerEditorHeaders.h>
 #include "SettingsInterface.h"
-#include "../Devices/OutputClock.h"
+#include "CustomViewport.h"
+
+#include "../Devices/AuxiliaryIO.h"
 
 namespace OnixSourcePlugin
 {
 	class OnixSourceEditor;
 	class OnixSourceCanvas;
 
-	class OutputClockInterface : public SettingsInterface,
-		public Label::Listener,
-		public Button::Listener
+	class AnalogIOInterface;
+	class DigitalIOInterface;
+
+	class AuxiliaryIOInterface : public SettingsInterface
 	{
 	public:
 
-		OutputClockInterface(std::shared_ptr<OutputClock> d, OnixSourceEditor* e, OnixSourceCanvas* c);
+		AuxiliaryIOInterface(std::shared_ptr<AuxiliaryIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 		void saveParameters(XmlElement* xml) override;
-
 		void loadParameters(XmlElement* xml) override;
-
-		void updateInfoString() override {};
-
+		void updateInfoString() override;
 		void updateSettings() override;
-
-		void buttonClicked(Button*) override;
-		void labelTextChanged(Label* l) override;
 
 	private:
 
 		void setInterfaceEnabledState(bool newState) override;
 
-		std::unique_ptr<Label> frequencyHzLabel;
-		std::unique_ptr<Label> frequencyHzValue;
+		std::unique_ptr<CustomViewport> analogViewport;
+		std::unique_ptr<CustomViewport> digitalViewport;
 
-		std::unique_ptr<Label> dutyCycleLabel;
-		std::unique_ptr<Label> dutyCycleValue;
+		std::unique_ptr<AnalogIOInterface> analogInterface;
+		std::unique_ptr<DigitalIOInterface> digitalInterface;
 
-		std::unique_ptr<Label> delayLabel;
-		std::unique_ptr<Label> delayValue;
+		std::unique_ptr<Label> analogDigitalLabel;
 
-		std::unique_ptr<ToggleButton> gateRunButton;
-
-		std::unique_ptr<UtilityButton> saveSettingsButton;
-		std::unique_ptr<UtilityButton> loadSettingsButton;
-
-		const float MinFrequencyHz = 0.1f;
-		const float MaxFrequencyHz = 10e6;
-
-		const int MinDutyCyclePercent = 10;
-		const int MaxDutyCyclePercent = 90;
-
-		const int MinDelaySeconds = 0;
-		const int MaxDelaySeconds = 3600;
-
-		JUCE_LEAK_DETECTOR(OutputClockInterface);
+		JUCE_LEAK_DETECTOR(AuxiliaryIOInterface);
 	};
 }

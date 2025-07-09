@@ -24,7 +24,6 @@
 
 #include <VisualizerEditorHeaders.h>
 
-#include "../NeuropixelsComponents.h"
 #include "../OnixDevice.h"
 
 namespace OnixSourcePlugin
@@ -58,6 +57,18 @@ namespace OnixSourcePlugin
 			UNKNOWN_SETTINGS_INTERFACE
 		};
 
+		enum class VisualizationMode
+		{
+			ENABLE_VIEW,
+			AP_GAIN_VIEW,
+			LFP_GAIN_VIEW,
+			REFERENCE_VIEW,
+			ACTIVITY_VIEW
+		};
+
+		static constexpr int Width = 1000;
+		static constexpr int Height = 600;
+
 		/** Constructor */
 		SettingsInterface(std::shared_ptr<OnixDevice> device_, OnixSourceEditor* editor_, OnixSourceCanvas* canvas_)
 		{
@@ -65,8 +76,8 @@ namespace OnixSourcePlugin
 			editor = editor_;
 			canvas = canvas_;
 
-			int width = 1000;
-			int height = 600;
+			int width = Width;
+			int height = Height;
 
 			setBounds(0, 0, width, height);
 		}
@@ -94,6 +105,9 @@ namespace OnixSourcePlugin
 		Type getType() const { return type; }
 
 		virtual std::string getReferenceText() { return ""; }
+
+		/** Enables or disables all UI elements that should not be changed during acquisition */
+		virtual void setInterfaceEnabledState(bool newState) = 0;
 
 	protected:
 
@@ -136,11 +150,5 @@ namespace OnixSourcePlugin
 
 			return rootElement.release();
 		}
-
-	private:
-
-		/** Enables or disables all UI elements that should not be changed during acquisition */
-		virtual void setInterfaceEnabledState(bool newState) = 0;
-
 	};
 }

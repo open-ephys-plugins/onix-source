@@ -23,14 +23,14 @@
 #pragma once
 
 #include <VisualizerEditorHeaders.h>
-
-#include "../OnixSourceEditor.h"
-#include "../OnixSourceCanvas.h"
-
+#include "SettingsInterface.h"
 #include "../Devices/AnalogIO.h"
 
 namespace OnixSourcePlugin
 {
+	class OnixSourceEditor;
+	class OnixSourceCanvas;
+
 	class AnalogIOInterface : public SettingsInterface,
 		public Button::Listener,
 		public ComboBox::Listener
@@ -39,19 +39,14 @@ namespace OnixSourcePlugin
 		AnalogIOInterface(std::shared_ptr<AnalogIO> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
 		void saveParameters(XmlElement* xml) override;
-
 		void loadParameters(XmlElement* xml) override;
-
 		void updateInfoString() override {};
-
 		void updateSettings() override;
-
 		void buttonClicked(Button*) override;
 		void comboBoxChanged(ComboBox* cb) override;
+		void setInterfaceEnabledState(bool newState) override;
 
 	private:
-
-		void setInterfaceEnabledState(bool newState) override;
 
 		static const int numChannels = 12;
 
