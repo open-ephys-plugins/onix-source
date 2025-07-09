@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.5.0)
+
 if (NOT DEFINED GUI_BASE_DIR)
 	if (DEFINED ENV{GUI_BASE_DIR})
 		set(GUI_BASE_DIR $ENV{GUI_BASE_DIR})
@@ -66,69 +67,71 @@ foreach( src_file IN ITEMS ${SRC_FILES})
 	source_group("${group_name}" FILES "${src_file}")
 endforeach()
 
+
+function(vs_set_all_configurations target_name target_config_name)
+    foreach(config ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER ${config} config_upper)
+        set_property(
+            TARGET ${target_name}
+            APPEND PROPERTY MAP_IMPORTED_CONFIG_${config_upper} "${target_config_name}"
+        )
+    endforeach()
+endfunction()
+
+
 # add liboni project
 
 set(LIBONI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/liboni/api/liboni")
 set(LIBONI_NAME liboni)
+set(LIBONI_PNAME "submodule_${LIBONI_NAME}")
 
-add_custom_command(
-  TARGET "${PLUGIN_NAME}"
-  PRE_BUILD
-  COMMAND ${CMAKE_MAKE_PROGRAM} "${LIBONI_DIR}/liboni.vcxproj" /p:Configuration=ReleaseStatic /p:Platform=${CMAKE_LIBRARY_ARCHITECTURE}
-  WORKING_DIRECTORY "${LIBONI_DIR}"
-  COMMENT "Building liboni"
-  VERBATIM
+include_external_msproject (
+    ${LIBONI_PNAME}
+    "${LIBONI_DIR}/liboni.vcxproj"
+    PLATFORM  ${CMAKE_LIBRARY_ARCHITECTURE}
 )
+
+vs_set_all_configurations(${LIBONI_PNAME} "ReleaseStatic")
 
 add_library("${LIBONI_NAME}" STATIC IMPORTED)
 set_target_properties("${LIBONI_NAME}" PROPERTIES
   IMPORTED_LOCATION "${LIBONI_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/ReleaseStatic/liboni.lib"
   INTERFACE_INCLUDE_DIRECTORIES "${LIBONI_DIR}")
 
+add_dependencies(${LIBONI_NAME} ${LIBONI_PNAME})
 target_link_libraries(${PLUGIN_NAME} "${LIBONI_NAME}")
 
 # add riffa project
 
 set(RIFFA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/liboni/drivers/riffa/windows/lib")
 set(RIFFA_NAME riffa)
+set(RIFFA_PNAME "submodule_${RIFFA_NAME}")
 
-add_custom_command(
-  TARGET "${PLUGIN_NAME}"
-  PRE_BUILD
-  COMMAND ${CMAKE_MAKE_PROGRAM} "${RIFFA_DIR}/riffa.vcxproj" /p:Configuration=Release /p:Platform=${CMAKE_LIBRARY_ARCHITECTURE}
-  WORKING_DIRECTORY "${RIFFA_DIR}"
-  COMMENT "Building riffa"
-  VERBATIM
+include_external_msproject (
+    ${RIFFA_PNAME}
+    "${RIFFA_DIR}/riffa.vcxproj"
+    PLATFORM  ${CMAKE_LIBRARY_ARCHITECTURE}
 )
 
-add_library("${RIFFA_NAME}" STATIC IMPORTED)
-set_target_properties("${RIFFA_NAME}" PROPERTIES
-  IMPORTED_LOCATION "${RIFFA_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/Release/riffa.lib"
-  INTERFACE_INCLUDE_DIRECTORIES "${RIFFA_DIR}")
-
-target_link_libraries(${PLUGIN_NAME} "${RIFFA_NAME}")
+vs_set_all_configurations(${RIFFA_PNAME} "Release")
 
 # add onidriver_riffa project
 
 set(ONIDRIVER_RIFFA_DIR "${LIBONI_DIR}/drivers/riffa")
 set(ONIDRIVER_RIFFA_NAME libonidriver_riffa)
+set(ONIDRIVER_RIFFA_PNAME "submodule_${ONIDRIVER_RIFFA_NAME}")
 
-add_custom_command(
-  TARGET "${PLUGIN_NAME}"
-  PRE_BUILD
-  COMMAND ${CMAKE_MAKE_PROGRAM} "${ONIDRIVER_RIFFA_DIR}/onidriver_riffa.vcxproj" /p:Configuration=Release /p:Platform=${CMAKE_LIBRARY_ARCHITECTURE}
-  WORKING_DIRECTORY "${ONIDRIVER_RIFFA_DIR}"
-  COMMENT "Building onidriver_riffa"
-  VERBATIM
+include_external_msproject (
+    ${ONIDRIVER_RIFFA_PNAME}
+    "${ONIDRIVER_RIFFA_DIR}/onidriver_riffa.vcxproj"
+    PLATFORM  ${CMAKE_LIBRARY_ARCHITECTURE}
 )
 
-add_library("${ONIDRIVER_RIFFA_NAME}" STATIC IMPORTED)
-set_target_properties("${ONIDRIVER_RIFFA_NAME}" PROPERTIES
-  IMPORTED_LOCATION "${ONIDRIVER_RIFFA_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/Release/onidriver_riffa.lib"
-  INTERFACE_INCLUDE_DIRECTORIES "${ONIDRIVER_RIFFA_DIR}")
+vs_set_all_configurations(${ONIDRIVER_RIFFA_PNAME} "Release")
 
-target_link_libraries(${PLUGIN_NAME} "${ONIDRIVER_RIFFA_NAME}")
 
-# # Ensure needed DLLs are installed to the shared folder
+add_dependencies(${ONIDRIVER_RIFFA_PNAME} ${RIFFA_PNAME}) 
 
-install(FILES "${RIFFA_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/Release/riffa.dll" "${ONIDRIVER_RIFFA_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/Release/${ONIDRIVER_RIFFA_NAME}.dll" DESTINATION ${GUI_BIN_DIR}/shared)
+# Ensure needed DLLs are installed to the shared folder
+
+install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/$<CONFIG>/riffa.dll" "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/$<CONFIG>/${ONIDRIVER_RIFFA_NAME}.dll" DESTINATION ${GUI_BIN_DIR}/shared)
