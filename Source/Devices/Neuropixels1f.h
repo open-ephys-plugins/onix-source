@@ -39,7 +39,6 @@ namespace OnixSourcePlugin
 		void startAcquisition() override;
 		void stopAcquisition() override;
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
-		void addFrame(oni_frame_t*) override;
 		void processFrames() override;
 
 		void writeShiftRegisters();

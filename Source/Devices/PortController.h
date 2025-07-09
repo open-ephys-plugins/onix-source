@@ -88,10 +88,6 @@ namespace OnixSourcePlugin
 
 		void startAcquisition() override;
 
-		void stopAcquisition() override;
-
-		void addFrame(oni_frame_t*) override;
-
 		void processFrames() override;
 
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
@@ -118,7 +114,6 @@ namespace OnixSourcePlugin
 		double getLastVoltageSet() const { return lastVoltageSet; }
 
 	private:
-		Array<oni_frame_t*, CriticalSection, 10> frameArray;
 
 		const PortName port;
 

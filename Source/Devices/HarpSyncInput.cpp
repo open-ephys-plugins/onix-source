@@ -72,19 +72,6 @@ void HarpSyncInput::startAcquisition()
 	sampleNumber = 0;
 }
 
-void HarpSyncInput::stopAcquisition()
-{
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
-}
-
-void HarpSyncInput::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
-}
-
 void HarpSyncInput::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	sourceBuffers.add(new DataBuffer(streamInfos.getFirst().getNumChannels(), (int)streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
@@ -93,9 +80,9 @@ void HarpSyncInput::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 void HarpSyncInput::processFrames()
 {
-	while (!frameArray.isEmpty())
+	oni_frame_t* frame;
+	while (frameQueue.try_dequeue(frame))
 	{
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint32_t* dataPtr = (uint32_t*)frame->data;
 

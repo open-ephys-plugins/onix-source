@@ -74,9 +74,7 @@ namespace OnixSourcePlugin
 		int configureDevice() override;
 		bool updateSettings() override;
 		void startAcquisition() override;
-		void stopAcquisition() override;
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
-		void addFrame(oni_frame_t*) override;
 		void processFrames() override;
 
 		void processFrame(uint64_t eventWord = 0);
@@ -116,8 +114,6 @@ namespace OnixSourcePlugin
 		std::array<AnalogIOVoltageRange, numChannels> channelVoltageRange;
 
 		AnalogIODataType dataType = AnalogIODataType::Volts;
-
-		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
 		unsigned short currentFrame = 0;
 		unsigned short currentAverageFrame = 0;

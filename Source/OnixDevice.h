@@ -28,8 +28,10 @@
 #include <thread>
 
 #include "Onix1.h"
+#include "Queue/readerwriterqueue.h"
 
 using namespace std::chrono;
+using namespace moodycamel;
 
 namespace OnixSourcePlugin
 {
@@ -156,13 +158,13 @@ namespace OnixSourcePlugin
 		/** Constructor */
 		OnixDevice(std::string name_, std::string hubName, OnixDeviceType type_, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx, bool passthrough = false);
 
-		virtual void addFrame(oni_frame_t*) {};
-		virtual void processFrames() {};
-		virtual int configureDevice() { return -1; };
-		virtual bool updateSettings() { return false; };
+		virtual void addFrame(oni_frame_t*);
+		virtual void processFrames() = 0;
+		virtual int configureDevice() = 0;
+		virtual bool updateSettings() = 0;
 		virtual void startAcquisition() {};
-		virtual void stopAcquisition() {};
-		virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) {};
+		virtual void stopAcquisition();
+		virtual void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) = 0;
 		virtual bool compareIndex(uint32_t index);
 
 		const std::string getName() { return name; }
@@ -204,9 +206,11 @@ namespace OnixSourcePlugin
 	protected:
 
 		oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex) const;
-
+		
+		ReaderWriterQueue<oni_frame_t*> frameQueue;
 		const oni_dev_idx_t deviceIdx;
 		std::shared_ptr<Onix1> deviceContext;
+
 
 	private:
 

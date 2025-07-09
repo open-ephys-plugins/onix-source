@@ -155,18 +155,9 @@ void Bno055::startAcquisition()
 
 void Bno055::stopAcquisition()
 {
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
-
+	OnixDevice::stopAcquisition();
 	currentFrame = 0;
 	sampleNumber = 0;
-}
-
-void Bno055::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
 }
 
 void Bno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
@@ -177,10 +168,9 @@ void Bno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 void Bno055::processFrames()
 {
-	while (!frameArray.isEmpty())
+	oni_frame_t* frame;
+	while (frameQueue.try_dequeue(frame))
 	{
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
-
 		int16_t* dataPtr = ((int16_t*)frame->data) + 4;
 
 		bnoTimestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);

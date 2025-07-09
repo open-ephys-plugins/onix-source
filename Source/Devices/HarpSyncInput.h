@@ -55,13 +55,9 @@ namespace OnixSourcePlugin
 		/** Starts probe data streaming */
 		void startAcquisition() override;
 
-		/** Stops probe data streaming*/
-		void stopAcquisition() override;
 
 		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
-
-		void addFrame(oni_frame_t* frame) override;
 
 		void processFrames() override;
 
@@ -72,8 +68,6 @@ namespace OnixSourcePlugin
 		DataBuffer* harpTimeBuffer;
 
 		static const int numFrames = 2;
-
-		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
 		unsigned short currentFrame = 0;
 		int sampleNumber = 0;

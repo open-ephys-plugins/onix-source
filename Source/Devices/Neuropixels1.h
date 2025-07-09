@@ -104,8 +104,6 @@ namespace OnixSourcePlugin
 		std::vector<std::vector<float>> apOffsetValues;
 		std::vector<std::vector<float>> lfpOffsetValues;
 
-		Array<oni_frame_t*, CriticalSection, numUltraFrames> frameArray;
-
 		std::array<float, numLfpSamples> lfpSamples;
 		std::array<float, numApSamples> apSamples;
 

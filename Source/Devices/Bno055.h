@@ -52,8 +52,6 @@ namespace OnixSourcePlugin
 		/** Stops probe data streaming*/
 		void stopAcquisition() override;
 
-		void addFrame(oni_frame_t*) override;
-
 		void processFrames() override;
 
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
@@ -69,8 +67,6 @@ namespace OnixSourcePlugin
 		const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
 
 		static const int numFrames = 2;
-
-		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
 		bool shouldAddToBuffer = false;
 

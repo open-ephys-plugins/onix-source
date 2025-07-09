@@ -491,15 +491,7 @@ void Neuropixels2e::stopAcquisition()
 {
 	setProbeSupply(false);
 
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
-}
-
-void Neuropixels2e::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
+	OnixDevice::stopAcquisition();
 }
 
 void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
@@ -523,10 +515,9 @@ void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 void Neuropixels2e::processFrames()
 {
-	while (!frameArray.isEmpty())
+	oni_frame_t* frame;
+	while (frameQueue.try_dequeue(frame))
 	{
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
-
 		uint16_t* dataPtr = (uint16_t*)frame->data;
 
 		uint16_t probeIndex = *(dataPtr + 4);

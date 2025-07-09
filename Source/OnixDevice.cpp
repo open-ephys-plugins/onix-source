@@ -25,7 +25,7 @@
 using namespace OnixSourcePlugin;
 
 OnixDevice::OnixDevice(std::string name_, std::string hubName, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx, bool passthrough)
-	: type(type_), deviceIdx(deviceIdx_)
+	: type(type_), deviceIdx(deviceIdx_), frameQueue(32)
 {
 	deviceContext = ctx;
 	name = name_;
@@ -231,6 +231,20 @@ Array<PortName> OnixDevice::getUniquePorts(std::vector<int> indices)
 bool OnixDevice::compareIndex(uint32_t index)
 {
 	return index == deviceIdx;
+}
+
+void OnixDevice::addFrame(oni_frame_t* frame)
+{
+	frameQueue.enqueue(frame);
+}
+
+void OnixDevice::stopAcquisition()
+{
+	oni_frame_t* frame;
+	while (frameQueue.try_dequeue(frame))
+	{
+		oni_destroy_frame(frame);
+	}
 }
 
 CompositeDevice::CompositeDevice(std::string name_, std::string hubName, CompositeDeviceType type_, OnixDeviceVector devices_, std::shared_ptr<Onix1> oni_ctx)

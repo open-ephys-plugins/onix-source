@@ -76,8 +76,6 @@ namespace OnixSourcePlugin
 		/** Stops probe data streaming*/
 		void stopAcquisition() override;
 
-		void addFrame(oni_frame_t*) override;
-
 		void processFrames() override;
 
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
@@ -220,8 +218,6 @@ namespace OnixSourcePlugin
 		const uint32_t OFFSET_FLEX_REVISION = 0x11;
 		const uint32_t OFFSET_FLEX_PN = 0x20;
 		const uint32_t OFFSET_PROBE_PN = 0x40;
-
-		Array<oni_frame_t*, CriticalSection, 2 * FramesPerSuperFrame> frameArray;
 
 		static inline const std::array<int, AdcsPerProbe> adcIndices = {
 			0, 1, 2,

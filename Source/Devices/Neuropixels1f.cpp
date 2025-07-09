@@ -221,10 +221,7 @@ void Neuropixels1f::stopAcquisition()
 {
 	WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::RESET_ALL);
 
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
+	OnixDevice::stopAcquisition();
 }
 
 void Neuropixels1f::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
@@ -240,20 +237,14 @@ void Neuropixels1f::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	}
 }
 
-void Neuropixels1f::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
-}
-
 void Neuropixels1f::processFrames()
 {
 	const float apConversion = (1171.875 / apGain) * -1.0f;
 	const float lfpConversion = (1171.875 / lfpGain) * -1.0f;
 
-	while (!frameArray.isEmpty())
+	oni_frame_t* frame;
+	while (frameQueue.try_dequeue(frame))
 	{
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
-
 		uint16_t* dataPtr = (uint16_t*)frame->data;
 
 		apTimestamps[superFrameCount] = deviceContext->convertTimestampToSeconds(frame->time);
