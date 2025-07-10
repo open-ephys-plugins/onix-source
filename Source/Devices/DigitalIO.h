@@ -74,7 +74,7 @@ namespace OnixSourcePlugin
 		int configureDevice() override;
 		bool updateSettings() override;
 		void startAcquisition() override;
-		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 		void processFrames() override;
 
 		EventChannel::Settings getEventChannelSettings(DataStream* stream);

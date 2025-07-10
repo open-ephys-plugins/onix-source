@@ -42,18 +42,9 @@ namespace OnixSourcePlugin
 		Bno055(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
 
 		int configureDevice() override;
-
-		/** Update the settings of the device */
 		bool updateSettings() override;
-
-		/** Starts probe data streaming */
 		void startAcquisition() override;
-
-		/** Stops probe data streaming*/
-		void stopAcquisition() override;
-
 		void processFrames() override;
-
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
 		static OnixDeviceType getDeviceType();

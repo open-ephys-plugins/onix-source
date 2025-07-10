@@ -66,6 +66,10 @@ void DigitalIO::startAcquisition()
 {
 }
 
+void DigitalIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+{
+}
+
 EventChannel::Settings DigitalIO::getEventChannelSettings(DataStream* stream)
 {
 	EventChannel::Settings settings{

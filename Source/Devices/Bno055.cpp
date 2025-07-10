@@ -153,13 +153,6 @@ void Bno055::startAcquisition()
 	sampleNumber = 0;
 }
 
-void Bno055::stopAcquisition()
-{
-	OnixDevice::stopAcquisition();
-	currentFrame = 0;
-	sampleNumber = 0;
-}
-
 void Bno055::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	sourceBuffers.add(new DataBuffer(numberOfChannels, (int)sampleRate * bufferSizeInSeconds));

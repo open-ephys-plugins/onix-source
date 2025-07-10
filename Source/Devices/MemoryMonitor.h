@@ -43,18 +43,10 @@ namespace OnixSourcePlugin
 	public:
 		MemoryMonitor(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
-		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
-
-		/** Update the settings of the device */
 		bool updateSettings() override;
-
-		/** Starts probe data streaming */
 		void startAcquisition() override;
-
-		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
-
 		void processFrames() override;
 
 		float getLastPercentUsedValue();

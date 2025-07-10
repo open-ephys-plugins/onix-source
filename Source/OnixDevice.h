@@ -210,7 +210,6 @@ namespace OnixSourcePlugin
 		const oni_dev_idx_t deviceIdx;
 		std::shared_ptr<Onix1> deviceContext;
 
-
 	private:
 
 		std::string name;

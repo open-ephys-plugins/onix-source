@@ -40,6 +40,18 @@ Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_de
 		eventCodes[i] = 0;
 }
 
+Neuropixels2e::~Neuropixels2e()
+{
+	if (serializer != nullptr)
+	{
+		selectProbe(NoProbeSelected);
+		serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10, DefaultGPO10Config);
+	}
+
+	if (deviceContext != nullptr && deviceContext->isInitialized())
+		deviceContext->setOption(ONIX_OPT_PASSTHROUGH, 0);
+}
+
 void Neuropixels2e::createDataStream(int n)
 {
 	StreamInfo apStream = StreamInfo(

@@ -39,7 +39,7 @@ int OutputClock::configureDevice()
 	if (deviceContext == nullptr || !deviceContext->isInitialized())
 		throw error_str("Device context is not initialized properly for	" + getName());
 
-	setEnabled(true); 
+	setEnabled(true);
 	return ONI_ESUCCESS;
 };
 
@@ -62,4 +62,67 @@ bool OutputClock::updateSettings()
 	rc = deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, gateRun ? 1 : 0); if (rc != ONI_ESUCCESS) return false;
 
 	return true;
+}
+
+void OutputClock::startAcquisition()
+{
+}
+
+void OutputClock::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
+{
+}
+
+void OutputClock::addFrame(oni_frame_t* frame)
+{
+	oni_destroy_frame(frame);
+}
+
+void OutputClock::processFrames()
+{
+}
+
+double OutputClock::getFrequencyHz() const
+{
+	return frequencyHz;
+}
+
+void OutputClock::setFrequencyHz(double frequency)
+{
+	frequencyHz = frequency;
+}
+
+int32_t OutputClock::getDutyCycle() const
+{
+	return dutyCycle;
+}
+
+void OutputClock::setDutyCycle(int32_t dutyCycle_)
+{
+	dutyCycle = dutyCycle_;
+}
+
+int32_t OutputClock::getDelay() const
+{
+	return delay;
+}
+
+void OutputClock::setDelay(int32_t delay_)
+{
+	delay = delay_;
+}
+
+bool OutputClock::getGateRun() const
+{
+	return gateRun;
+}
+
+void OutputClock::setGateRun(bool gate, bool writeToRegister)
+{
+	gateRun = gate;
+	if (writeToRegister) writeGateRunRegister();
+}
+
+void OutputClock::writeGateRunRegister()
+{
+	deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, gateRun ? 1 : 0);
 }
