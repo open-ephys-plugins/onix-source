@@ -65,7 +65,7 @@ oni_dev_idx_t OnixDevice::getHubIndexFromPassthroughIndex(oni_dev_idx_t passthro
 		return 0;
 	}
 
-	oni_dev_idx_t idx = (passthroughIndex - 7) << 8;
+	return (passthroughIndex - 7) << 8;
 }
 
 oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex) const

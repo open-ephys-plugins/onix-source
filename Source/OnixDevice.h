@@ -42,7 +42,7 @@ namespace OnixSourcePlugin
 	};
 
 	enum class OnixDeviceType {
-		BNO,
+		BNO = 0,
 		POLLEDBNO,
 		NEUROPIXELSV1E,
 		NEUROPIXELSV1F,
