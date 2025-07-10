@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.5.0)
+
 if (NOT DEFINED GUI_BASE_DIR)
 	if (DEFINED ENV{GUI_BASE_DIR})
 		set(GUI_BASE_DIR $ENV{GUI_BASE_DIR})
@@ -12,12 +13,6 @@ get_filename_component(PLUGIN_NAME ${PROJECT_FOLDER} NAME)
 
 project(OE_PLUGIN_${PLUGIN_NAME})
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-	set(LINUX 1)
-	if(NOT CMAKE_BUILD_TYPE)
-		set(CMAKE_BUILD_TYPE Debug)
-	endif()
-endif()
 
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 	OEPLUGIN
@@ -29,7 +24,6 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 	$<$<CONFIG:Release>:NDEBUG=1>
 	)
 
-
 set(SOURCE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 file(GLOB_RECURSE SRC_FILES LIST_DIRECTORIES false "${SOURCE_PATH}/*.cpp" "${SOURCE_PATH}/*.h")
 set(GUI_COMMONLIB_DIR ${GUI_BASE_DIR}/installed_libs)
@@ -38,11 +32,7 @@ set(CONFIGURATION_FOLDER $<$<CONFIG:Debug>:Debug>$<$<NOT:$<CONFIG:Debug>>:Releas
 
 list(APPEND CMAKE_PREFIX_PATH ${GUI_COMMONLIB_DIR} ${GUI_COMMONLIB_DIR}/${CONFIGURATION_FOLDER})
 
-if (APPLE)
-	add_library(${PLUGIN_NAME} MODULE ${SRC_FILES})
-else()
-	add_library(${PLUGIN_NAME} SHARED ${SRC_FILES})
-endif()
+add_library(${PLUGIN_NAME} SHARED ${SRC_FILES})
 
 target_compile_features(${PLUGIN_NAME} PUBLIC cxx_auto_type cxx_generalized_initializers)
 target_include_directories(${PLUGIN_NAME} PUBLIC ${GUI_BASE_DIR}/JuceLibraryCode ${GUI_BASE_DIR}/JuceLibraryCode/modules ${GUI_BASE_DIR}/Plugins/Headers ${GUI_COMMONLIB_DIR}/include)
@@ -60,30 +50,13 @@ if (NOT CMAKE_LIBRARY_ARCHITECTURE)
 endif()
 
 #Libraries and compiler options
-if(MSVC)
-	target_link_libraries(${PLUGIN_NAME} ${GUI_BIN_DIR}/open-ephys.lib)
-	target_compile_options(${PLUGIN_NAME} PRIVATE /sdl- /W0)
-	
-	install(TARGETS ${PLUGIN_NAME} RUNTIME DESTINATION ${GUI_BIN_DIR}/plugins  CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
-	install(FILES $<TARGET_PDB_FILE:${PLUGIN_NAME}> DESTINATION  ${GUI_BIN_DIR}/plugins OPTIONAL)
+target_link_libraries(${PLUGIN_NAME} ${GUI_BIN_DIR}/open-ephys.lib)
+target_compile_options(${PLUGIN_NAME} PRIVATE /sdl- /W0 /MP)
 
-	set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../libs)
-elseif(LINUX)
-	target_link_libraries(${PLUGIN_NAME} GL X11 Xext Xinerama asound dl freetype pthread rt)
-	set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
-		"-fvisibility=hidden -fPIC -rdynamic -Wl,-rpath,'$$ORIGIN/../shared'")
-	target_compile_options(${PLUGIN_NAME} PRIVATE -fPIC -rdynamic)
-	target_compile_options(${PLUGIN_NAME} PRIVATE -O3) #enable optimization for linux debug
-	
-	install(TARGETS ${PLUGIN_NAME} LIBRARY DESTINATION ${GUI_BIN_DIR}/plugins)
-elseif(APPLE)
-	set_target_properties(${PLUGIN_NAME} PROPERTIES BUNDLE TRUE)
-	set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
-	"-undefined dynamic_lookup -rpath @loader_path/../../../../shared")
+install(TARGETS ${PLUGIN_NAME} RUNTIME DESTINATION ${GUI_BIN_DIR}/plugins  CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
+install(FILES $<TARGET_PDB_FILE:${PLUGIN_NAME}> DESTINATION  ${GUI_BIN_DIR}/plugins OPTIONAL)
 
-	install(TARGETS ${PLUGIN_NAME} DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/plugins-api8)
-	set(CMAKE_PREFIX_PATH /opt/local)
-endif()
+set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../libs)
 
 #create filters for vs and xcode
 
@@ -94,22 +67,71 @@ foreach( src_file IN ITEMS ${SRC_FILES})
 	source_group("${group_name}" FILES "${src_file}")
 endforeach()
 
-#additional libraries, if needed
-set(LIBONI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI)
-target_include_directories(${PLUGIN_NAME} PRIVATE ${LIBONI_DIR}/include)
 
-if (MSVC)
-  set(LIBONI_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI/win64)
-	target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/liboni.lib")
-	target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/riffa.lib")
-	target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/onidriver_riffa.lib")
-	install(DIRECTORY ${LIBONI_LIB_DIR}/ DESTINATION ${GUI_BIN_DIR}/shared FILES_MATCHING PATTERN "*.dll")
-elseif(LINUX)
-  find_library(LIBONI_LIBRARIES oni liboni PATHS ${CMAKE_CURRENT_SOURCE_DIR}/libONI/linux)
-	target_link_libraries(${PLUGIN_NAME} ${LIBONI_LIBRARIES})
-  install(DIRECTORY ${LIBONI_DIR}/linux/ DESTINATION ${GUI_BIN_DIR}/shared FILES_MATCHING PATTERN "*.so")
-elseif(APPLE)
-  set(LIBONI_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI/osx)
-  target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/liboni.dylib")
-  install(FILES ${LIBONI_LIB_DIR}/liboni.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api8)
-endif()
+function(vs_set_all_configurations target_name target_config_name)
+    foreach(config ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER ${config} config_upper)
+        set_property(
+            TARGET ${target_name}
+            APPEND PROPERTY MAP_IMPORTED_CONFIG_${config_upper} "${target_config_name}"
+        )
+    endforeach()
+endfunction()
+
+
+# add liboni project
+
+set(LIBONI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/liboni/api/liboni")
+set(LIBONI_NAME liboni)
+set(LIBONI_PNAME "submodule_${LIBONI_NAME}")
+
+include_external_msproject (
+    ${LIBONI_PNAME}
+    "${LIBONI_DIR}/liboni.vcxproj"
+    PLATFORM  ${CMAKE_LIBRARY_ARCHITECTURE}
+)
+
+vs_set_all_configurations(${LIBONI_PNAME} "ReleaseStatic")
+
+add_library("${LIBONI_NAME}" STATIC IMPORTED)
+set_target_properties("${LIBONI_NAME}" PROPERTIES
+  IMPORTED_LOCATION "${LIBONI_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/ReleaseStatic/liboni.lib"
+  INTERFACE_INCLUDE_DIRECTORIES "${LIBONI_DIR}")
+
+add_dependencies(${LIBONI_NAME} ${LIBONI_PNAME})
+target_link_libraries(${PLUGIN_NAME} "${LIBONI_NAME}")
+
+# add riffa project
+
+set(RIFFA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/liboni/drivers/riffa/windows/lib")
+set(RIFFA_NAME riffa)
+set(RIFFA_PNAME "submodule_${RIFFA_NAME}")
+
+include_external_msproject (
+    ${RIFFA_PNAME}
+    "${RIFFA_DIR}/riffa.vcxproj"
+    PLATFORM  ${CMAKE_LIBRARY_ARCHITECTURE}
+)
+
+vs_set_all_configurations(${RIFFA_PNAME} "Release")
+
+# add onidriver_riffa project
+
+set(ONIDRIVER_RIFFA_DIR "${LIBONI_DIR}/drivers/riffa")
+set(ONIDRIVER_RIFFA_NAME libonidriver_riffa)
+set(ONIDRIVER_RIFFA_PNAME "submodule_${ONIDRIVER_RIFFA_NAME}")
+
+include_external_msproject (
+    ${ONIDRIVER_RIFFA_PNAME}
+    "${ONIDRIVER_RIFFA_DIR}/onidriver_riffa.vcxproj"
+    PLATFORM  ${CMAKE_LIBRARY_ARCHITECTURE}
+)
+
+vs_set_all_configurations(${ONIDRIVER_RIFFA_PNAME} "Release")
+
+
+add_dependencies(${ONIDRIVER_RIFFA_PNAME} ${RIFFA_PNAME}) 
+
+# Ensure needed DLLs are installed to the shared folder
+
+install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/$<CONFIG>/riffa.dll" "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/$<CONFIG>/${ONIDRIVER_RIFFA_NAME}.dll" DESTINATION ${GUI_BIN_DIR}/shared)
