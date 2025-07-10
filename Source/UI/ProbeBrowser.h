@@ -32,10 +32,10 @@ namespace OnixSourcePlugin
 		public Timer
 	{
 	public:
-		ProbeBrowser(SettingsInterface* parent_, int probeIndex_)
+		ProbeBrowser(SettingsInterface* parent_, int probeIndex)
 		{
 			parent = parent_;
-			probeIndex = probeIndex_;
+			m_probeIndex = probeIndex;
 			tooltipWindow = std::make_unique <TooltipWindow>(parent, 300);
 
 			cursorType = MouseCursor::NormalCursor;
@@ -583,9 +583,19 @@ namespace OnixSourcePlugin
 
 		SettingsInterface* parent;
 
-		int probeIndex;
+		int m_probeIndex;
 
 		virtual ProbeSettings<ch, e>* getSettings() { return nullptr; }
+
+		virtual bool isProbeEnabled()
+		{
+			auto device = parent->getDevice();
+
+			if (device != nullptr) 
+				return device->isEnabled();
+
+			return false;
+		}
 
 	private:
 		const int leftEdgeOffset = 220;
@@ -640,7 +650,7 @@ namespace OnixSourcePlugin
 			{
 				return Colours::black;
 			}
-			else if (!device->isEnabled())
+			else if (!isProbeEnabled())
 			{
 				return Colours::darkgrey;
 			}

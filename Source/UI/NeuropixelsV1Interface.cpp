@@ -43,7 +43,7 @@ NeuropixelsV1Interface::NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, 
 	{
 		type = device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E ? SettingsInterface::Type::NEUROPIXELS1E_SETTINGS_INTERFACE : SettingsInterface::Type::NEUROPIXELS1F_SETTINGS_INTERFACE;
 
-		mode = SettingsInterface::VisualizationMode::ENABLE_VIEW;
+		mode = VisualizationMode::ENABLE_VIEW;
 
 		probeBrowser = std::make_unique<NeuropixelsV1ProbeBrowser>(this, 0);
 		probeBrowser->setBounds(0, 0, 600, 600);

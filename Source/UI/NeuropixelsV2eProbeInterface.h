@@ -75,7 +75,7 @@ namespace OnixSourcePlugin
 	private:
 		bool acquisitionIsActive = false;
 
-		const int probeIndex;
+		const int m_probeIndex;
 
 		std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
 		std::unique_ptr<ComboBox> referenceComboBox;
@@ -91,7 +91,8 @@ namespace OnixSourcePlugin
 		std::unique_ptr<FileChooser> gainCorrectionFileChooser;
 		std::unique_ptr<TextEditor> gainCorrectionFile;
 
-		std::unique_ptr<UtilityButton> enableButton;
+		std::unique_ptr<UtilityButton> deviceEnableButton;
+		std::unique_ptr<UtilityButton> selectElectrodeButton;
 
 		std::unique_ptr<UtilityButton> enableViewButton;
 		std::unique_ptr<UtilityButton> referenceViewButton;

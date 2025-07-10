@@ -94,7 +94,7 @@ void OnixSourceCanvas::addHub(std::string hubName, int offset)
 
 		tab = addTopLevelTab(getTopLevelTabName(port, hubName), (int)port);
 
-		devices.emplace_back(std::make_shared<Neuropixels2e>("", hubName, passthroughIndex, context));
+		devices.emplace_back(std::make_shared<Neuropixels2e>("Neuropixels 2.0e", hubName, passthroughIndex, context));
 		devices.emplace_back(std::make_shared<PolledBno055>("BNO055", hubName, passthroughIndex, context));
 	}
 
@@ -152,10 +152,11 @@ void OnixSourceCanvas::populateSourceTabs(CustomTabComponent* tab, OnixDeviceVec
 		}
 		else if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
 		{
-			auto npxv2eInterface = std::make_shared<NeuropixelsV2eInterface>(std::static_pointer_cast<Neuropixels2e>(device), editor, this);
-			std::string substring = " Headstage";
-			std::string hubName = device->getHubName();
-			addInterfaceToTab(hubName.erase(hubName.find(substring), substring.size()), tab, npxv2eInterface);
+			for (int i = 0; i < Neuropixels2e::NumberOfProbes; i++)
+			{
+				auto npxv2eProbeInterface = std::make_shared<NeuropixelsV2eProbeInterface>(std::static_pointer_cast<Neuropixels2e>(device), i, editor, this);
+				addInterfaceToTab(Neuropixels2e::getName(i), tab, npxv2eProbeInterface);
+			}
 		}
 		else if (device->getDeviceType() == OnixDeviceType::POLLEDBNO)
 		{
