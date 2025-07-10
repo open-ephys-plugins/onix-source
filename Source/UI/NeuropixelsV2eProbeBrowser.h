@@ -38,7 +38,22 @@ namespace OnixSourcePlugin
 
 		ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>* getSettings() override
 		{
-			return std::static_pointer_cast<Neuropixels2e>(parent->getDevice())->settings[probeIndex].get();
+			return std::static_pointer_cast<Neuropixels2e>(parent->getDevice())->settings[m_probeIndex].get();
 		}
+
+	protected:
+
+		bool isProbeEnabled() override
+		{
+			auto device = parent->getDevice();
+
+			if (device == nullptr)
+				return false;
+
+			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+
+			return npx->getProbeEnabled(m_probeIndex);
+		}
+
 	};
 }

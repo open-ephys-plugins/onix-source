@@ -27,6 +27,6 @@
 #include "DigitalIOInterface.h"
 #include "HarpSyncInputInterface.h"
 #include "NeuropixelsV1Interface.h"
-#include "NeuropixelsV2eInterface.h"
+#include "NeuropixelsV2eProbeInterface.h"
 #include "OutputClockInterface.h"
 #include "PolledBno055Interface.h"

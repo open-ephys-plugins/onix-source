@@ -162,9 +162,10 @@ namespace OnixSourcePlugin
 
 		static constexpr int BREAKOUT_BOARD_OFFSET = 0;
 
-		void addIndividualStreams(Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
+		void addIndividualStreams(Array<StreamInfo>, OwnedArray<DataStream>*, DeviceInfo*, OwnedArray<ContinuousChannel>*);
+		void addIndividualStream(StreamInfo, OwnedArray<DataStream>*, DeviceInfo*, OwnedArray<ContinuousChannel>*);
 
-		void addCombinedStreams(DataStream::Settings, Array<StreamInfo>, OwnedArray<DataStream>*, OwnedArray<DeviceInfo>*, OwnedArray<ContinuousChannel>*);
+		void addCombinedStreams(DataStream::Settings, Array<StreamInfo>, OwnedArray<DataStream>*, DeviceInfo*, OwnedArray<ContinuousChannel>*);
 
 		std::string createContinuousChannelIdentifier(StreamInfo streamInfo, int channelNumber);
 

@@ -32,19 +32,20 @@ using namespace ColourScheme;
 
 NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuropixels2e> d, int ind, OnixSourceEditor* e, OnixSourceCanvas* c) :
 	SettingsInterface(d, e, c),
-	probeIndex(ind)
+	m_probeIndex(ind)
 {
 	ColourScheme::setColourScheme(ColourSchemeId::PLASMA);
 
 	if (device != nullptr)
 	{
-		auto settings = std::static_pointer_cast<Neuropixels2e>(device)->settings[probeIndex].get();
+		auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+		auto settings = npx->settings[m_probeIndex].get();
 
 		type = SettingsInterface::Type::PROBE_SETTINGS_INTERFACE;
 
 		mode = VisualizationMode::ENABLE_VIEW;
 
-		probeBrowser = std::make_unique<NeuropixelsV2eProbeBrowser>(this, probeIndex);
+		probeBrowser = std::make_unique<NeuropixelsV2eProbeBrowser>(this, m_probeIndex);
 		probeBrowser->setBounds(0, 0, 600, 600);
 		addAndMakeVisible(probeBrowser.get());
 
@@ -59,11 +60,23 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		deviceLabel->setBounds(625, 40, 430, 45);
 		addAndMakeVisible(deviceLabel.get());
 
+		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
+		deviceEnableButton->setFont(fontRegularButton);
+		deviceEnableButton->setRadius(3.0f);
+		deviceEnableButton->setBounds(deviceLabel->getX(), deviceLabel->getBottom() + 3, 100, 22);
+		deviceEnableButton->setClickingTogglesState(true);
+		deviceEnableButton->setTooltip("If disabled, probe will not stream data during acquisition");
+		deviceEnableButton->setToggleState(true, dontSendNotification);
+		deviceEnableButton->addListener(this);
+		addAndMakeVisible(deviceEnableButton.get());
+
 		infoLabel = std::make_unique<Label>("INFO", "INFO");
 		infoLabel->setFont(FontOptions(15.0f));
-		infoLabel->setBounds(deviceLabel->getX(), deviceLabel->getBottom() + 3, deviceLabel->getWidth(), 50);
+		infoLabel->setBounds(deviceEnableButton->getX(), deviceEnableButton->getBottom() + 3, deviceLabel->getWidth(), 50);
 		infoLabel->setJustificationType(Justification::topLeft);
 		addAndMakeVisible(infoLabel.get());
+
+		deviceEnableButton->setToggleState(npx->isEnabled(), sendNotification);
 
 		gainCorrectionFileLabel = std::make_unique<Label>("gainCorrectionFileLabel", "Gain Correction File");
 		gainCorrectionFileLabel->setBounds(infoLabel->getX() + 2, infoLabel->getBottom() + 5, 240, 16);
@@ -138,13 +151,13 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		enableViewButton->setTooltip("View electrode enabled state");
 		addAndMakeVisible(enableViewButton.get());
 
-		enableButton = std::make_unique<UtilityButton>("ENABLE");
-		enableButton->setFont(fontRegularButton);
-		enableButton->setRadius(3.0f);
-		enableButton->setBounds(450, currentHeight, 65, 22);
-		enableButton->addListener(this);
-		enableButton->setTooltip("Enable selected electrodes");
-		addAndMakeVisible(enableButton.get());
+		selectElectrodeButton = std::make_unique<UtilityButton>("ENABLE");
+		selectElectrodeButton->setFont(fontRegularButton);
+		selectElectrodeButton->setRadius(3.0f);
+		selectElectrodeButton->setBounds(450, currentHeight, 65, 22);
+		selectElectrodeButton->addListener(this);
+		selectElectrodeButton->setTooltip("Enable selected electrodes");
+		addAndMakeVisible(selectElectrodeButton.get());
 
 		currentHeight += 58;
 
@@ -332,7 +345,7 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 
 void NeuropixelsV2eProbeInterface::updateInfoString()
 {
-	std::string deviceString, infoString;
+	std::string deviceString = "", infoString = "";
 
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
@@ -342,7 +355,7 @@ void NeuropixelsV2eProbeInterface::updateInfoString()
 
 		infoString += "\n";
 		infoString += "Probe Number: ";
-		infoString += std::to_string(npx->getProbeSerialNumber(probeIndex));
+		infoString += std::to_string(npx->getProbeSerialNumber(m_probeIndex));
 		infoString += "\n";
 		infoString += "\n";
 	}
@@ -363,7 +376,7 @@ void NeuropixelsV2eProbeInterface::comboBoxChanged(ComboBox* comboBox)
 	}
 	else if (comboBox == referenceComboBox.get())
 	{
-		npx->settings[probeIndex]->referenceIndex = referenceComboBox->getSelectedItemIndex();
+		npx->settings[m_probeIndex]->referenceIndex = referenceComboBox->getSelectedItemIndex();
 	}
 
 	repaint();
@@ -372,7 +385,7 @@ void NeuropixelsV2eProbeInterface::comboBoxChanged(ComboBox* comboBox)
 void NeuropixelsV2eProbeInterface::checkForExistingChannelPreset()
 {
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
-	auto settings = npx->settings[probeIndex].get();
+	auto settings = npx->settings[m_probeIndex].get();
 
 	settings->electrodeConfigurationIndex = -1;
 
@@ -401,7 +414,50 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 {
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
-	if (button == enableViewButton.get())
+	if (button == deviceEnableButton.get())
+	{
+		if (!npx->setProbeEnabled(m_probeIndex, deviceEnableButton->getToggleState()))
+		{
+			Onix1::showWarningMessageBoxAsync(
+				"Issue Toggling Probe",
+				"Encountered an issue when trying to toggle " + npx->getName(m_probeIndex)
+			);
+			return;
+		}
+
+		if (canvas->foundInputSource())
+		{
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				Onix1::showWarningMessageBoxAsync(
+					"Unable to Configure " + npx->getName(),
+					e.what());
+				button->setToggleState(!button->getToggleState(), dontSendNotification);
+				return;
+			}
+
+			canvas->resetContext();
+		}
+
+		if (npx->getProbeEnabled(m_probeIndex))
+		{
+			deviceEnableButton->setLabel(enabledButtonText);
+		}
+		else
+		{
+			deviceEnableButton->setLabel(disabledButtonText);
+		}
+
+		updateInfoString();
+		repaint();
+
+		CoreServices::updateSignalChain(editor);
+	}
+	else if (button == enableViewButton.get())
 	{
 		mode = VisualizationMode::ENABLE_VIEW;
 		probeBrowser->stopTimer();
@@ -415,7 +471,7 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 		drawLegend();
 		repaint();
 	}
-	else if (button == enableButton.get())
+	else if (button == selectElectrodeButton.get())
 	{
 		auto selection = getSelectedElectrodes();
 
@@ -434,9 +490,9 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 		{
 			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
-			if (ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings[probeIndex].get()))
+			if (ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings[m_probeIndex].get()))
 			{
-				applyProbeSettings(npx->settings[probeIndex].get());
+				applyProbeSettings(npx->settings[m_probeIndex].get());
 				checkForExistingChannelPreset();
 			}
 		}
@@ -449,7 +505,7 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 		{
 			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
-			if (!ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings[probeIndex].get()))
+			if (!ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings[m_probeIndex].get()))
 				CoreServices::sendStatusMessage("Failed to write probe channel map.");
 			else
 				CoreServices::sendStatusMessage("Successfully wrote probe channel map.");
@@ -492,7 +548,7 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 			gainCorrectionFile->setText("");
 		}
 
-		std::static_pointer_cast<Neuropixels2e>(device)->setGainCorrectionFile(probeIndex, gainCorrectionFile->getText().toStdString());
+		std::static_pointer_cast<Neuropixels2e>(device)->setGainCorrectionFile(m_probeIndex, gainCorrectionFile->getText().toStdString());
 	}
 }
 
@@ -502,9 +558,9 @@ std::vector<int> NeuropixelsV2eProbeInterface::getSelectedElectrodes()
 
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
-	for (int i = 0; i < npx->settings[probeIndex]->electrodeMetadata.size(); i++)
+	for (int i = 0; i < npx->settings[m_probeIndex]->electrodeMetadata.size(); i++)
 	{
-		if (npx->settings[probeIndex]->electrodeMetadata[i].isSelected)
+		if (npx->settings[m_probeIndex]->electrodeMetadata[i].isSelected)
 		{
 			electrodeIndices.emplace_back(i);
 		}
@@ -520,15 +576,15 @@ void NeuropixelsV2eProbeInterface::setReference(int index)
 
 void NeuropixelsV2eProbeInterface::selectElectrodes(std::vector<int> electrodes)
 {
-	std::static_pointer_cast<Neuropixels2e>(device)->settings[probeIndex]->selectElectrodes(electrodes);
+	std::static_pointer_cast<Neuropixels2e>(device)->settings[m_probeIndex]->selectElectrodes(electrodes);
 
 	repaint();
 }
 
 void NeuropixelsV2eProbeInterface::setInterfaceEnabledState(bool enabledState)
 {
-	if (enableButton != nullptr)
-		enableButton->setEnabled(enabledState);
+	if (selectElectrodeButton != nullptr)
+		selectElectrodeButton->setEnabled(enabledState);
 
 	if (electrodeConfigurationComboBox != nullptr)
 		electrodeConfigurationComboBox->setEnabled(enabledState);
@@ -591,10 +647,10 @@ void NeuropixelsV2eProbeInterface::updateSettings()
 
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
 
-	applyProbeSettings(npx->settings[probeIndex].get());
+	applyProbeSettings(npx->settings[m_probeIndex].get());
 	checkForExistingChannelPreset();
 
-	gainCorrectionFile->setText(npx->getGainCorrectionFile(probeIndex) == "None" ? "" : npx->getGainCorrectionFile(probeIndex), dontSendNotification);
+	gainCorrectionFile->setText(npx->getGainCorrectionFile(m_probeIndex) == "None" ? "" : npx->getGainCorrectionFile(m_probeIndex), dontSendNotification);
 }
 
 bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe)
@@ -605,7 +661,7 @@ bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2
 	if (referenceComboBox != 0)
 		referenceComboBox->setSelectedId(p->referenceIndex + 1, dontSendNotification);
 
-	auto settings = std::static_pointer_cast<Neuropixels2e>(device)->settings[probeIndex].get();
+	auto settings = std::static_pointer_cast<Neuropixels2e>(device)->settings[m_probeIndex].get();
 
 	for (int i = 0; i < settings->electrodeMetadata.size(); i++)
 	{
@@ -657,13 +713,13 @@ void NeuropixelsV2eProbeInterface::saveParameters(XmlElement* xml)
 	LOGD("Saving Neuropixels 2.0e settings.");
 
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
-	auto settings = npx->settings[probeIndex].get();
+	auto settings = npx->settings[m_probeIndex].get();
 
-	XmlElement* xmlNode = xml->createNewChildElement("PROBE" + std::to_string(probeIndex));
+	XmlElement* xmlNode = xml->createNewChildElement("PROBE" + std::to_string(m_probeIndex));
 
-	xmlNode->setAttribute("probeSerialNumber", std::to_string(npx->getProbeSerialNumber(probeIndex)));
+	xmlNode->setAttribute("probeSerialNumber", std::to_string(npx->getProbeSerialNumber(m_probeIndex)));
 
-	xmlNode->setAttribute("gainCorrectionFile", npx->getGainCorrectionFile(probeIndex));
+	xmlNode->setAttribute("gainCorrectionFile", npx->getGainCorrectionFile(m_probeIndex));
 
 	XmlElement* probeViewerNode = xmlNode->createNewChildElement("PROBE_VIEWER");
 
@@ -689,13 +745,13 @@ void NeuropixelsV2eProbeInterface::loadParameters(XmlElement* xml)
 	LOGD("Loading Neuropixels 2.0e settings.");
 
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
-	auto settings = npx->settings[probeIndex].get();
+	auto settings = npx->settings[m_probeIndex].get();
 
 	XmlElement* xmlNode = nullptr;
 
 	for (auto* node : xml->getChildIterator())
 	{
-		if (node->hasTagName("PROBE" + std::to_string(probeIndex)))
+		if (node->hasTagName("PROBE" + std::to_string(m_probeIndex)))
 		{
 			xmlNode = node;
 			break;
@@ -704,16 +760,16 @@ void NeuropixelsV2eProbeInterface::loadParameters(XmlElement* xml)
 
 	if (xmlNode == nullptr)
 	{
-		LOGD("No PROBE" + std::to_string(probeIndex) + " element found");
+		LOGD("No PROBE" + std::to_string(m_probeIndex) + " element found");
 		return;
 	}
 
-	if (npx->getProbeSerialNumber(probeIndex) != 0 && xmlNode->getIntAttribute("probeSerialNumber") != npx->getProbeSerialNumber(probeIndex))
+	if (npx->getProbeSerialNumber(m_probeIndex) != 0 && xmlNode->getIntAttribute("probeSerialNumber") != npx->getProbeSerialNumber(m_probeIndex))
 	{
-		LOGC("Different serial numbers found. Current serial number is " + std::to_string(npx->getProbeSerialNumber(probeIndex)) + ", while the saved serial number is " + std::to_string(xmlNode->getIntAttribute("probeSerialNumber")) + ". Updating settings...");
+		LOGC("Different serial numbers found. Current serial number is " + std::to_string(npx->getProbeSerialNumber(m_probeIndex)) + ", while the saved serial number is " + std::to_string(xmlNode->getIntAttribute("probeSerialNumber")) + ". Updating settings...");
 	}
 
-	npx->setGainCorrectionFile(probeIndex, xmlNode->getStringAttribute("gainCorrectionFile").toStdString());
+	npx->setGainCorrectionFile(m_probeIndex, xmlNode->getStringAttribute("gainCorrectionFile").toStdString());
 
 	XmlElement* probeViewerNode = xmlNode->getChildByName("PROBE_VIEWER");
 

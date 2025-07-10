@@ -30,6 +30,7 @@ Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_de
 	INeuropixel(NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
 {
 	probeSN.fill(0);
+	probeEnabled.fill(true);
 
 	for (int i = 0; i < NeuropixelsV2eValues::numberOfSettings; i++)
 	{
@@ -38,6 +39,18 @@ Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_de
 
 	for (int i = 0; i < numFrames; i++)
 		eventCodes[i] = 0;
+}
+
+Neuropixels2e::~Neuropixels2e()
+{
+	if (serializer != nullptr)
+	{
+		selectProbe(ProbeSelected::NoProbe);
+		serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10, DefaultGPO10Config);
+	}
+
+	if (deviceContext != nullptr && deviceContext->isInitialized())
+		deviceContext->setOption(ONIX_OPT_PASSTHROUGH, 0);
 }
 
 void Neuropixels2e::createDataStream(int n)
@@ -61,6 +74,64 @@ void Neuropixels2e::createDataStream(int n)
 int Neuropixels2e::getNumProbes() const
 {
 	return m_numProbes;
+}
+
+std::string Neuropixels2e::getName(int index)
+{
+	switch (index)
+	{
+	case 0: return "Probe0";
+	case 1: return "Probe1";
+	default: return "UNKNOWN";
+	}
+
+	return "";
+}
+
+std::string Neuropixels2e::getName(ProbeSelected probe)
+{
+	switch (probe)
+	{
+	case ProbeSelected::ProbeA: return getName(0);
+	case ProbeSelected::ProbeB: return getName(1);
+	default: return "UNKNOWN";
+	}
+
+	return "";
+}
+
+bool Neuropixels2e::isEnabled() const
+{
+	return std::any_of(probeEnabled.cbegin(), probeEnabled.cend(), [](bool en) { return en; });
+}
+
+bool Neuropixels2e::setProbeEnabled(int index, bool status)
+{
+	try
+	{
+		probeEnabled[index] = status;
+		return true;
+	}
+	catch (const std::out_of_range& ex) // filter for out of range
+	{
+		LOGE("Invalid index given setting probe enable status.");
+	}
+
+	return false;
+}
+
+bool Neuropixels2e::getProbeEnabled(int index)
+{
+	try
+	{
+		return probeEnabled[index];
+	}
+	catch (const std::out_of_range& ex) // filter for out of range
+	{
+		LOGE("Invalid index given getting probe enable status.");
+	}
+
+	return false;
 }
 
 void Neuropixels2e::selectElectrodesInRange(std::vector<int>& selection, int startIndex, int numberOfElectrodes)
@@ -235,22 +306,34 @@ OnixDeviceType Neuropixels2e::getDeviceType()
 int Neuropixels2e::configureDevice()
 {
 	if (deviceContext == nullptr || !deviceContext->isInitialized())
-		throw error_str("Device context is not initialized properly for " + getName());
+		throw error_str("Device context is not initialized properly for " + OnixDevice::getName());
 
-	int rc = deviceContext->writeRegister(deviceIdx, DS90UB9x::ENABLE, isEnabled() ? 1 : 0);
+	int rc = deviceContext->writeRegister(deviceIdx, DS90UB9x::ENABLE, isEnabled() ? 1u : 0u);
 	if (rc != ONI_ESUCCESS)
-		throw error_str("Unable to enable " + getName());
+		throw error_str("Unable to enable passthrough device.");
+
+	if (!isEnabled())
+		return ONI_ESUCCESS;
 
 	configureSerDes();
 	setProbeSupply(true);
 	rc = serializer->set933I2cRate(400e3);
 	if (rc != ONI_ESUCCESS)
-		throw error_str("Unable to set I2C rate for " + getName());
-	probeSN[0] = getProbeSN(ProbeASelected);
-	probeSN[1] = getProbeSN(ProbeBSelected);
+		throw error_str("Unable to set I2C rate for " + OnixDevice::getName());
+
+	probeSN[0] = getProbeSN(ProbeSelected::ProbeA);
+	if (probeSN[0] != 0)
+	{
+		LOGD("Probe A SN: ", probeSN[0]);
+	}
+
+	probeSN[1] = getProbeSN(ProbeSelected::ProbeB);
+	if (probeSN[1] != 0)
+	{
+		LOGD("Probe B SN: ", probeSN[1]);
+	}
+
 	setProbeSupply(false);
-	LOGD("Probe A SN: ", probeSN[0]);
-	LOGD("Probe B SN: ", probeSN[1]);
 
 	if (probeSN[0] == 0 && probeSN[1] == 0)
 	{
@@ -280,7 +363,7 @@ bool Neuropixels2e::updateSettings()
 {
 	for (int i = 0; i < 2; i++)
 	{
-		if (probeSN[i] != 0)
+		if (probeSN[i] != 0 && probeEnabled[i])
 		{
 			if (gainCorrectionFilePath[i] == "None" || gainCorrectionFilePath[i] == "")
 			{
@@ -344,20 +427,59 @@ bool Neuropixels2e::updateSettings()
 	{
 		if (probeSN[i] != 0)
 		{
-			selectProbe(i == 0 ? ProbeASelected : ProbeBSelected);
-			writeConfiguration(settings[i].get());
-			configureProbeStreaming();
+			auto probeSelected = i == 0 ? ProbeSelected::ProbeA: ProbeSelected::ProbeB;
+
+			if (probeEnabled[i])
+			{
+				writeConfiguration(probeSelected, settings[i].get());
+				if (!configureProbeStreaming(probeSelected))
+					return false;
+			}
+			else
+			{
+				if (!disableProbeStreaming(probeSelected))
+					return false;
+			}
 		}
 	}
 
-	selectProbe(NoProbeSelected);
+	selectProbe(ProbeSelected::NoProbe);
 	//IMPORTANT! BNO polling thread must be started after this
 
 	return true;
 }
 
-void Neuropixels2e::configureProbeStreaming()
+bool Neuropixels2e::disableProbeStreaming(ProbeSelected probeSelect)
 {
+	if (probeControl == nullptr)
+	{
+		Onix1::showWarningMessageBoxAsync(
+			"Probe Stream",
+			"Unable to disable " + getName(probeSelect) + " streaming."
+		);
+		return false;
+	}
+
+	selectProbe(probeSelect);
+
+	probeControl->WriteByte(OP_MODE, 1 << 7);
+
+	return true;
+}
+
+bool Neuropixels2e::configureProbeStreaming(ProbeSelected probeSelect)
+{
+	if (probeControl == nullptr)
+	{
+		Onix1::showWarningMessageBoxAsync(
+			"Probe Stream Configuration",
+			"Unable to configure " + getName(probeSelect) + " streaming."
+		);
+		return false;
+	}
+
+	selectProbe(probeSelect);
+
 	// Write super sync bits into ASIC
 	probeControl->WriteByte(SUPERSYNC11, 0b00011000);
 	probeControl->WriteByte(SUPERSYNC10, 0b01100001);
@@ -378,6 +500,8 @@ void Neuropixels2e::configureProbeStreaming()
 	// Set global ADC settings
 	// TODO: Undocumented
 	probeControl->WriteByte(ADC_CONFIG, 0b00001000);
+
+	return true;
 }
 
 void Neuropixels2e::configureSerDes()
@@ -427,12 +551,12 @@ void Neuropixels2e::setProbeSupply(bool en)
 {
 	auto gpo10Config = en ? DefaultGPO10Config | GPO10SupplyMask : DefaultGPO10Config;
 
-	selectProbe(NoProbeSelected);
+	selectProbe(ProbeSelected::NoProbe);
 	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
 	Thread::sleep(20);
 }
 
-void Neuropixels2e::selectProbe(uint8_t probeSelect)
+void Neuropixels2e::selectProbe(ProbeSelected probeSelect)
 {
 	if (serializer == nullptr)
 	{
@@ -440,7 +564,7 @@ void Neuropixels2e::selectProbe(uint8_t probeSelect)
 		return;
 	}
 
-	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO32), probeSelect);
+	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO32), (uint8_t)probeSelect);
 	Thread::sleep(20);
 }
 
@@ -453,7 +577,7 @@ void Neuropixels2e::resetProbes()
 	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
 }
 
-uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
+uint64_t Neuropixels2e::getProbeSN(ProbeSelected probeSelect)
 {
 	if (flex == nullptr)
 	{
@@ -561,8 +685,10 @@ void Neuropixels2e::processFrames()
 	}
 }
 
-void Neuropixels2e::writeConfiguration(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
+void Neuropixels2e::writeConfiguration(ProbeSelected probeSelect, ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
 {
+	selectProbe(probeSelect);
+
 	auto baseBits = makeBaseBits(getReference(settings->referenceIndex));
 	writeShiftRegister(SR_CHAIN5, baseBits[0]);
 	writeShiftRegister(SR_CHAIN6, baseBits[1]);
