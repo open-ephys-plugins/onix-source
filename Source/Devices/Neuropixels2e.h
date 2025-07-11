@@ -53,33 +53,13 @@ namespace OnixSourcePlugin
 	public:
 		Neuropixels2e(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
-		~Neuropixels2e()
-		{
-			if (serializer != nullptr)
-			{
-				selectProbe(NoProbeSelected);
-				serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10, DefaultGPO10Config);
-			}
-
-			if (deviceContext != nullptr && deviceContext->isInitialized())
-				deviceContext->setOption(ONIX_OPT_PASSTHROUGH, 0);
-		}
+		~Neuropixels2e();
 
 		int configureDevice() override;
-
-		/** Update the settings of the device */
 		bool updateSettings() override;
-
-		/** Starts probe data streaming */
 		void startAcquisition() override;
-
-		/** Stops probe data streaming*/
 		void stopAcquisition() override;
-
-		void addFrame(oni_frame_t*) override;
-
 		void processFrames() override;
-
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 
 		int getNumProbes() const;
@@ -101,19 +81,14 @@ namespace OnixSourcePlugin
 		void writeShiftRegister(uint32_t srAddress, std::bitset<N> bits);
 
 		void setGainCorrectionFile(int index, std::string filename);
-
 		std::string getGainCorrectionFile(int index);
 
 		// INeuropixel Methods
 
 		std::vector<int> selectElectrodeConfiguration(int electrodeConfigurationIndex) override;
-
 		uint64_t getProbeSerialNumber(int index) override;
-
 		void defineMetadata(ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>*, int);
-
 		void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index) override;
-
 		static OnixDeviceType getDeviceType();
 
 	private:
@@ -220,8 +195,6 @@ namespace OnixSourcePlugin
 		const uint32_t OFFSET_FLEX_REVISION = 0x11;
 		const uint32_t OFFSET_FLEX_PN = 0x20;
 		const uint32_t OFFSET_PROBE_PN = 0x40;
-
-		Array<oni_frame_t*, CriticalSection, 2 * FramesPerSuperFrame> frameArray;
 
 		static inline const std::array<int, AdcsPerProbe> adcIndices = {
 			0, 1, 2,

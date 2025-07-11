@@ -139,19 +139,6 @@ void MemoryMonitor::startAcquisition()
 	lastPercentUsedValue = 0.0f;
 }
 
-void MemoryMonitor::stopAcquisition()
-{
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
-}
-
-void MemoryMonitor::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
-}
-
 void MemoryMonitor::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
 	sourceBuffers.add(new DataBuffer(streamInfos.getFirst().getNumChannels(), (int)streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
@@ -165,10 +152,10 @@ float MemoryMonitor::getLastPercentUsedValue()
 
 void MemoryMonitor::processFrames()
 {
-	while (!frameArray.isEmpty())
-	{
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
+	oni_frame_t* frame;
 
+	while (frameQueue.try_dequeue(frame))
+	{
 		uint32_t* dataPtr = (uint32_t*)frame->data;
 
 		timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);

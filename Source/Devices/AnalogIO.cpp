@@ -195,22 +195,9 @@ void AnalogIO::startAcquisition()
 	analogInputSamples.fill(0);
 }
 
-void AnalogIO::stopAcquisition()
-{
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
-}
-
-void AnalogIO::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
-}
-
 int AnalogIO::getNumberOfFrames()
 {
-	return frameArray.size();
+	return frameQueue.size_approx();
 }
 
 void AnalogIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
@@ -221,7 +208,10 @@ void AnalogIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 void AnalogIO::processFrame(uint64_t eventWord)
 {
-	oni_frame_t* frame = frameArray.removeAndReturn(0);
+	oni_frame_t* frame;
+	if (!frameQueue.try_dequeue(frame)) { //NB: This method should never be called unless a frame is sure to be there
+		jassertfalse;
+	}
 
 	int16_t* dataPtr = (int16_t*)frame->data;
 
@@ -272,7 +262,7 @@ void AnalogIO::processFrame(uint64_t eventWord)
 
 void AnalogIO::processFrames()
 {
-	while (!frameArray.isEmpty())
+	while (frameQueue.peek() != nullptr )
 	{
 		processFrame();
 	}

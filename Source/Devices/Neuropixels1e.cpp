@@ -266,10 +266,7 @@ void Neuropixels1e::stopAcquisition()
 	serializer->WriteByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio10, DefaultGPO10Config);
 	serializer->WriteByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio32, DefaultGPO32Config);
 
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
+	OnixDevice::stopAcquisition();
 }
 
 void Neuropixels1e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
@@ -285,20 +282,14 @@ void Neuropixels1e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 	}
 }
 
-void Neuropixels1e::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
-}
-
 void Neuropixels1e::processFrames()
 {
 	const float apConversion = (1171.875 / apGain) * -1.0f;
 	const float lfpConversion = (1171.875 / lfpGain) * -1.0f;
 
-	while (!frameArray.isEmpty())
+	oni_frame_t* frame;
+	while (frameQueue.try_dequeue(frame))
 	{
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
-
 		uint16_t* dataPtr = (uint16_t*)frame->data;
 		dataPtr += dataOffset;
 

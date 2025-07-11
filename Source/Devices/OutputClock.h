@@ -45,44 +45,24 @@ namespace OnixSourcePlugin
 	public:
 		OutputClock(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
-		/** Device is always enabled */
 		int configureDevice() override;
-
-		/** Update the settings of the device */
 		bool updateSettings() override;
+		void startAcquisition() override;
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+		void addFrame(oni_frame_t* frame) override;
+		void processFrames() override;
 
-		/** Starts probe data streaming */
-		void startAcquisition() override {};
+		double getFrequencyHz() const;
+		void setFrequencyHz(double frequency);
 
-		/** Stops probe data streaming*/
-		void stopAcquisition() override {};
+		int32_t getDutyCycle() const;
+		void setDutyCycle(int32_t dutyCycle_);
 
-		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
-		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
+		int32_t getDelay() const;
+		void setDelay(int32_t delay_);
 
-		void addFrame(oni_frame_t* frame) override { oni_destroy_frame(frame); }
-
-		void processFrames() override {};
-
-		double getFrequencyHz() const { return frequencyHz; }
-
-		void setFrequencyHz(double frequency) { frequencyHz = frequency; }
-
-		int32_t getDutyCycle() const { return dutyCycle; }
-
-		void setDutyCycle(int32_t dutyCycle_) { dutyCycle = dutyCycle_; }
-
-		int32_t getDelay() const { return delay; }
-
-		void setDelay(int32_t delay_) { delay = delay_; }
-
-		bool getGateRun() const { return gateRun; }
-
-		void setGateRun(bool gate, bool writeToRegister = false)
-		{
-			gateRun = gate;
-			if (writeToRegister) writeGateRunRegister();
-		}
+		bool getGateRun() const;
+		void setGateRun(bool gate, bool writeToRegister = false);
 
 		static OnixDeviceType getDeviceType();
 
@@ -94,7 +74,7 @@ namespace OnixSourcePlugin
 
 		bool gateRun = true;
 
-		void writeGateRunRegister() { deviceContext->writeRegister(deviceIdx, (oni_reg_addr_t)OutputClockRegisters::GATE_RUN, gateRun ? 1 : 0); }
+		void writeGateRunRegister();
 
 		JUCE_LEAK_DETECTOR(OutputClock);
 	};

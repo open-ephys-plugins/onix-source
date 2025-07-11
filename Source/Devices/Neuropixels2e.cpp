@@ -40,6 +40,18 @@ Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_de
 		eventCodes[i] = 0;
 }
 
+Neuropixels2e::~Neuropixels2e()
+{
+	if (serializer != nullptr)
+	{
+		selectProbe(NoProbeSelected);
+		serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10, DefaultGPO10Config);
+	}
+
+	if (deviceContext != nullptr && deviceContext->isInitialized())
+		deviceContext->setOption(ONIX_OPT_PASSTHROUGH, 0);
+}
+
 void Neuropixels2e::createDataStream(int n)
 {
 	StreamInfo apStream = StreamInfo(
@@ -491,15 +503,7 @@ void Neuropixels2e::stopAcquisition()
 {
 	setProbeSupply(false);
 
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
-}
-
-void Neuropixels2e::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
+	OnixDevice::stopAcquisition();
 }
 
 void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
@@ -523,10 +527,9 @@ void Neuropixels2e::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 
 void Neuropixels2e::processFrames()
 {
-	while (!frameArray.isEmpty())
+	oni_frame_t* frame;
+	while (frameQueue.try_dequeue(frame))
 	{
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
-
 		uint16_t* dataPtr = (uint16_t*)frame->data;
 
 		uint16_t probeIndex = *(dataPtr + 4);

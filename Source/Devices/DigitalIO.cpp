@@ -26,7 +26,7 @@
 using namespace OnixSourcePlugin;
 
 DigitalIO::DigitalIO(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, hubName, DigitalIO::getDeviceType(), deviceIdx_, oni_ctx)
+	: OnixDevice(name, hubName, DigitalIO::getDeviceType(), deviceIdx_, oni_ctx), eventWords(64)
 {
 }
 
@@ -66,12 +66,8 @@ void DigitalIO::startAcquisition()
 {
 }
 
-void DigitalIO::stopAcquisition()
+void DigitalIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
 }
 
 EventChannel::Settings DigitalIO::getEventChannelSettings(DataStream* stream)
@@ -88,21 +84,16 @@ EventChannel::Settings DigitalIO::getEventChannelSettings(DataStream* stream)
 	return settings;
 }
 
-void DigitalIO::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
-}
-
 int DigitalIO::getNumberOfWords()
 {
-	return eventWords.size();
+	return eventWords.size_approx();
 }
 
 void DigitalIO::processFrames()
 {
-	while (!frameArray.isEmpty())
+	oni_frame_t* frame;
+	while (frameQueue.try_dequeue(frame))
 	{
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
 
 		uint16_t* dataPtr = (uint16_t*)frame->data;
 		uint64_t timestamp = deviceContext->convertTimestampToSeconds(frame->time);
@@ -113,7 +104,7 @@ void DigitalIO::processFrames()
 		uint64_t buttonState = *(dataPtr + dataOffset + 1);
 
 		uint64_t ttlEventWord = (buttonState & 0x3F) << 8 | (portState & 0xFF);
-		eventWords.add(ttlEventWord);
+		eventWords.enqueue(ttlEventWord);
 
 		oni_destroy_frame(frame);
 	}
@@ -121,13 +112,14 @@ void DigitalIO::processFrames()
 
 uint64_t DigitalIO::getEventWord()
 {
-	if (eventWords.size() != 0)
-		return eventWords.removeAndReturn(0);
+	uint64_t eventWord;
+	if (eventWords.try_dequeue(eventWord))
+		return eventWord;
 
 	return 0;
 }
 
 bool DigitalIO::hasEventWord()
 {
-	return eventWords.size() > 0;
+	return eventWords.peek() != nullptr;
 }

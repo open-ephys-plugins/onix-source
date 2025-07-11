@@ -99,25 +99,11 @@ void PortController::startAcquisition()
 	errorFlag = false;
 }
 
-void PortController::stopAcquisition()
-{
-	while (!frameArray.isEmpty())
-	{
-		oni_destroy_frame(frameArray.removeAndReturn(0));
-	}
-}
-
-void PortController::addFrame(oni_frame_t* frame)
-{
-	frameArray.add(frame);
-}
-
 void PortController::processFrames()
 {
-	while (!frameArray.isEmpty())
+	oni_frame_t* frame;
+	while (frameQueue.try_dequeue(frame))
 	{
-		oni_frame_t* frame = frameArray.removeAndReturn(0);
-
 		int8_t* dataPtr = (int8_t*)frame->data;
 
 		int dataOffset = 8;
