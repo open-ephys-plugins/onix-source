@@ -395,6 +395,16 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				return false;
 			}
 		}
+		else
+		{
+			Onix1::showWarningMessageBoxAsync(
+				"Unkown Hub ID",
+				"Discovered hub ID " + std::to_string(hubId) + " (" + onix_hub_str(hubId) + ") on " + OnixDevice::getPortName(hubIndex) + " which does not match any currently implemented hubs."
+			);
+			devicesFound = false;
+			sources.clear();
+			return false;
+		}
 	}
 
 	// NB: Search for passthrough devices, and initialize any headstages found in passthrough mode
@@ -410,7 +420,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(index, context);
 			uint32_t hsid = EEPROM->GetHeadStageID();
-			LOGD("Detected headstage ", hsid);
+			LOGD("Detected headstage ", onix_hub_str(hsid));
 
 			if (hsid == ONIX_HUB_HSNP2E)
 			{
@@ -477,6 +487,16 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				polledBno->setBnoAxisSign((uint32_t)(PolledBno055::Bno055AxisSign::MirrorX) | (uint32_t)(PolledBno055::Bno055AxisSign::MirrorZ));
 
 				hubNames.insert({ OnixDevice::getOffset(polledBno->getDeviceIdx()), NEUROPIXELSV1E_HEADSTAGE_NAME });
+			}
+			else
+			{
+				Onix1::showWarningMessageBoxAsync(
+					"Unkown Hub ID",
+					"Discovered hub ID " + std::to_string(hsid) + " (" + onix_hub_str(hsid) + ") on " + OnixDevice::getPortName(OnixDevice::getHubIndexFromPassthroughIndex(index)) + " which does not match any currently implemented hubs."
+				);
+				devicesFound = false;
+				sources.clear();
+				return false;
 			}
 		}
 	}

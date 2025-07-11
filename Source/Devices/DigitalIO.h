@@ -74,9 +74,7 @@ namespace OnixSourcePlugin
 		int configureDevice() override;
 		bool updateSettings() override;
 		void startAcquisition() override;
-		void stopAcquisition() override;
-		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override {};
-		void addFrame(oni_frame_t*) override;
+		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
 		void processFrames() override;
 
 		EventChannel::Settings getEventChannelSettings(DataStream* stream);
@@ -92,8 +90,7 @@ namespace OnixSourcePlugin
 		static constexpr int numDigitalInputs = 8;
 		static constexpr int numButtons = 6;
 
-		Array<oni_frame_t*, CriticalSection, 10> frameArray;
-		Array<uint64_t, CriticalSection, 64> eventWords;
+		ReaderWriterQueue<uint64_t> eventWords;
 
 		JUCE_LEAK_DETECTOR(DigitalIO);
 	};

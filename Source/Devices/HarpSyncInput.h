@@ -46,23 +46,10 @@ namespace OnixSourcePlugin
 	public:
 		HarpSyncInput(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> oni_ctx);
 
-		/** Configures the device so that it is ready to stream with default settings */
 		int configureDevice() override;
-
-		/** Update the settings of the device */
 		bool updateSettings() override;
-
-		/** Starts probe data streaming */
 		void startAcquisition() override;
-
-		/** Stops probe data streaming*/
-		void stopAcquisition() override;
-
-		/** Given the sourceBuffers from OnixSource, add all streams for the current device to the array */
 		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
-
-		void addFrame(oni_frame_t* frame) override;
-
 		void processFrames() override;
 
 		static OnixDeviceType getDeviceType();
@@ -72,8 +59,6 @@ namespace OnixSourcePlugin
 		DataBuffer* harpTimeBuffer;
 
 		static const int numFrames = 2;
-
-		Array<oni_frame_t*, CriticalSection, numFrames> frameArray;
 
 		unsigned short currentFrame = 0;
 		int sampleNumber = 0;
