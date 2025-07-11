@@ -107,6 +107,12 @@ void AnalogIOInterface::setInterfaceEnabledState(bool newState)
 		if (channelDirectionComboBoxes[i] != nullptr)
 			channelDirectionComboBoxes[i]->setEnabled(newState);
 	}
+
+	if (saveSettingsButton != nullptr)
+		saveSettingsButton->setEnabled(newState);
+
+	if (loadSettingsButton != nullptr)
+		loadSettingsButton->setEnabled(newState);
 }
 
 void AnalogIOInterface::updateSettings()

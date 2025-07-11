@@ -114,6 +114,12 @@ void OutputClockInterface::setInterfaceEnabledState(bool newState)
 
 	if (gateRunButton != nullptr)
 		gateRunButton->setEnabled(newState);
+
+	if (saveSettingsButton != nullptr)
+		saveSettingsButton->setEnabled(newState);
+
+	if (loadSettingsButton != nullptr)
+		loadSettingsButton->setEnabled(newState);
 }
 
 void OutputClockInterface::updateSettings()

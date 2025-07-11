@@ -544,6 +544,12 @@ void NeuropixelsV2eProbeInterface::setInterfaceEnabledState(bool enabledState)
 
 	if (gainCorrectionFileButton != nullptr)
 		gainCorrectionFileButton->setEnabled(enabledState);
+
+	if (saveSettingsButton != nullptr)
+		saveSettingsButton->setEnabled(enabledState);
+
+	if (loadSettingsButton != nullptr)
+		loadSettingsButton->setEnabled(enabledState);
 }
 
 void NeuropixelsV2eProbeInterface::startAcquisition()
