@@ -118,8 +118,6 @@ namespace OnixSourcePlugin
 
 		std::map<int, std::string> getHubNames();
 
-		std::string getLiboniVersion();
-
 		void updateSourceBuffers();
 
 		// DataThread Methods

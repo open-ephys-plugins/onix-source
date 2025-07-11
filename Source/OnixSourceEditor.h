@@ -122,6 +122,8 @@ namespace OnixSourcePlugin
 
 		std::unique_ptr<Label> liboniVersionLabel;
 
+		std::unique_ptr<Label> blankEditor;
+
 		void setComboBoxSelection(ComboBox* comboBox, std::string headstage);
 		void addHeadstageComboBoxOptions(ComboBox* comboBox);
 		void enableEditorElements(bool);
@@ -132,6 +134,8 @@ namespace OnixSourcePlugin
 		std::unique_ptr<MemoryMonitorUsage> memoryUsage;
 
 		std::unique_ptr<Label> blockReadSizeValue;
+
+		static constexpr int DefaultBlockReadSize = 4096;
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
 	};

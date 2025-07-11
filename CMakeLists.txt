@@ -67,7 +67,6 @@ foreach( src_file IN ITEMS ${SRC_FILES})
 	source_group("${group_name}" FILES "${src_file}")
 endforeach()
 
-
 function(vs_set_all_configurations target_name target_config_name)
     foreach(config ${CMAKE_CONFIGURATION_TYPES})
         string(TOUPPER ${config} config_upper)
@@ -77,7 +76,6 @@ function(vs_set_all_configurations target_name target_config_name)
         )
     endforeach()
 endfunction()
-
 
 # add liboni project
 
@@ -106,6 +104,7 @@ target_link_libraries(${PLUGIN_NAME} "${LIBONI_NAME}")
 set(RIFFA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/liboni/drivers/riffa/windows/lib")
 set(RIFFA_NAME riffa)
 set(RIFFA_PNAME "submodule_${RIFFA_NAME}")
+set(RELEASE_CONFIGURATION "Release")
 
 include_external_msproject (
     ${RIFFA_PNAME}
@@ -113,7 +112,7 @@ include_external_msproject (
     PLATFORM  ${CMAKE_LIBRARY_ARCHITECTURE}
 )
 
-vs_set_all_configurations(${RIFFA_PNAME} "Release")
+vs_set_all_configurations(${RIFFA_PNAME} "${RELEASE_CONFIGURATION}")
 
 # add onidriver_riffa project
 
@@ -127,11 +126,10 @@ include_external_msproject (
     PLATFORM  ${CMAKE_LIBRARY_ARCHITECTURE}
 )
 
-vs_set_all_configurations(${ONIDRIVER_RIFFA_PNAME} "Release")
-
+vs_set_all_configurations(${ONIDRIVER_RIFFA_PNAME} "${RELEASE_CONFIGURATION}")
 
 add_dependencies(${ONIDRIVER_RIFFA_PNAME} ${RIFFA_PNAME}) 
 
 # Ensure needed DLLs are installed to the shared folder
 
-install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/$<CONFIG>/riffa.dll" "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/$<CONFIG>/${ONIDRIVER_RIFFA_NAME}.dll" DESTINATION ${GUI_BIN_DIR}/shared)
+install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/${RELEASE_CONFIGURATION}/riffa.dll" "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/${RELEASE_CONFIGURATION}/${ONIDRIVER_RIFFA_NAME}.dll" DESTINATION ${GUI_BIN_DIR}/shared)

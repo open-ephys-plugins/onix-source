@@ -37,8 +37,6 @@ Onix1::Onix1(int hostIndex)
 	if (rc != ONI_ESUCCESS)
 		throw error_t(rc);
 
-	oni_version(&major, &minor, &patch);
-
 	rc = getOption(ONI_OPT_ACQCLKHZ, &ACQ_CLK_HZ);
 	if (rc != ONI_ESUCCESS)
 		throw error_t(rc);
@@ -155,9 +153,9 @@ int Onix1::issueReset()
 	return rc;
 }
 
-std::string Onix1::getVersion() const 
+std::string Onix1::getVersion()
 { 
-	return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+	return std::to_string(ONI_VERSION_MAJOR) + "." + std::to_string(ONI_VERSION_MINOR) + "." + std::to_string(ONI_VERSION_PATCH);
 }
 
 double Onix1::convertTimestampToSeconds(uint64_t timestamp) const
