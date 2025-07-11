@@ -59,7 +59,7 @@ void OnixSourceCanvas::addHub(std::string hubName, int offset)
 
 	if (context == nullptr || !context->isInitialized())
 	{
-		Onix1::showWarningMessageBoxAsync("Invalid Context", "Unable to find an initialized context when adding hubs to the canvas.");
+		LOGE("Unable to find an initialized context when adding " + hubName + " to the canvas.");
 		return;
 	}
 

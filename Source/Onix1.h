@@ -109,7 +109,7 @@ namespace OnixSourcePlugin
 
 		int issueReset();
 
-		std::string getVersion() const;
+		static std::string getVersion();
 
 		double convertTimestampToSeconds(uint64_t timestamp) const;
 
@@ -129,10 +129,6 @@ namespace OnixSourcePlugin
 
 		CriticalSection registerLock;
 		CriticalSection frameLock;
-
-		int major;
-		int minor;
-		int patch;
 
 		uint32_t ACQ_CLK_HZ;
 
