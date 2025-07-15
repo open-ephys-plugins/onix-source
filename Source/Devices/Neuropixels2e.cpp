@@ -386,10 +386,6 @@ void Neuropixels2e::configureProbeStreaming()
 
 	// Activate recording mode on NP
 	probeControl->WriteByte(OP_MODE, 0b01000000);
-
-	// Set global ADC settings
-	// TODO: Undocumented
-	probeControl->WriteByte(ADC_CONFIG, 0b00001000);
 }
 
 void Neuropixels2e::configureSerDes()
