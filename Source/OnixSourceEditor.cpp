@@ -35,125 +35,135 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	FontOptions fontOptionRegular = FontOptions("Fira Code", 12.0f, Font::plain);
 	FontOptions fontOptionTitle = FontOptions("Fira Code", 15.0f, Font::bold);
 
-	if (source->isContextInitialized())
+	memoryUsage = std::make_unique<MemoryMonitorUsage>(parentNode);
+	memoryUsage->setBounds(8, 28, 14, 80);
+	addAndMakeVisible(memoryUsage.get());
+
+	blockReadSizeValue = std::make_unique<Label>("blockReadSizeValue", std::to_string(DefaultBlockReadSize));
+	blockReadSizeValue->setBounds(memoryUsage->getX() - 4, memoryUsage->getBottom() + 4, 26, 14);
+	blockReadSizeValue->setFont(fontOptionRegular);
+	blockReadSizeValue->setEditable(true);
+	blockReadSizeValue->setColour(Label::textColourId, Colours::black);
+	blockReadSizeValue->setTooltip("Number of bytes read per cycle of the acquisition thread. Smaller values provide lower latency, but can cause the memory monitor to fill up. Larger values may improve processing performance for high-bandwidth data sources.");
+	blockReadSizeValue->addListener(this);
+	blockReadSizeValue->setBorderSize(BorderSize<int>(1));
+	blockReadSizeValue->setJustificationType(Justification::centred);
+	addAndMakeVisible(blockReadSizeValue.get());
+
+	portStatusA = std::make_unique<DrawableRectangle>();
+	portStatusA->setRectangle(Rectangle<float>(memoryUsage->getRight() + 4, memoryUsage->getY(), 10, 10));
+	portStatusA->setCornerSize(Point<float>(5, 5));
+	portStatusA->setFill(fillDisconnected);
+	portStatusA->setStrokeFill(statusIndicatorStrokeColor);
+	portStatusA->setStrokeThickness(statusIndicatorStrokeThickness);
+	addAndMakeVisible(portStatusA.get());
+
+	portLabelA = std::make_unique<Label>("portLabelA", "Port A:");
+	portLabelA->setBounds(portStatusA->getRight(), portStatusA->getY(), 60, 16);
+	portLabelA->setFont(fontOptionTitle);
+	addAndMakeVisible(portLabelA.get());
+
+	headstageComboBoxA = std::make_unique<ComboBox>("headstageComboBoxA");
+	headstageComboBoxA->setBounds(portLabelA->getRight() + 2, portLabelA->getY(), 140, portLabelA->getHeight());
+	headstageComboBoxA->addListener(this);
+	headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
+	addHeadstageComboBoxOptions(headstageComboBoxA.get());
+	addAndMakeVisible(headstageComboBoxA.get());
+
+	portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage:");
+	portVoltageOverrideLabelA->setBounds(portLabelA->getX() + 15, headstageComboBoxA->getBottom() + 4, 62, headstageComboBoxA->getHeight());
+	portVoltageOverrideLabelA->setFont(fontOptionRegular);
+	addAndMakeVisible(portVoltageOverrideLabelA.get());
+
+	portVoltageValueA = std::make_unique<Label>("voltageValueA", "Auto");
+	portVoltageValueA->setBounds(portVoltageOverrideLabelA->getRight() + 3, portVoltageOverrideLabelA->getY(), 40, portVoltageOverrideLabelA->getHeight());
+	portVoltageValueA->setFont(fontOptionRegular);
+	portVoltageValueA->setEditable(true);
+	portVoltageValueA->setColour(Label::textColourId, Colours::black);
+	portVoltageValueA->setColour(Label::backgroundColourId, Colours::lightgrey);
+	portVoltageValueA->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
+	portVoltageValueA->addListener(this);
+	addAndMakeVisible(portVoltageValueA.get());
+
+	lastVoltageSetA = std::make_unique<Label>("lastVoltageSetA", "0 V");
+	lastVoltageSetA->setBounds(portVoltageValueA->getRight() + 5, portVoltageValueA->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
+	lastVoltageSetA->setFont(fontOptionRegular);
+	lastVoltageSetA->setEditable(false);
+	lastVoltageSetA->setTooltip("Records the last voltage set for Port A. Useful for displaying what the automated voltage discovery algorithm settled on.");
+	addAndMakeVisible(lastVoltageSetA.get());
+
+	portStatusB = std::make_unique<DrawableRectangle>();
+	portStatusB->setRectangle(Rectangle<float>(portStatusA->getX(), portVoltageOverrideLabelA->getBottom() + 3, 10, 10));
+	portStatusB->setCornerSize(portStatusA->getCornerSize());
+	portStatusB->setFill(portStatusA->getFill());
+	portStatusB->setStrokeFill(portStatusA->getStrokeFill());
+	portStatusB->setStrokeThickness(statusIndicatorStrokeThickness);
+	addAndMakeVisible(portStatusB.get());
+
+	portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
+	portLabelB->setBounds(portStatusB->getRight(), portStatusB->getY(), portLabelA->getWidth(), portLabelA->getHeight());
+	portLabelB->setFont(fontOptionTitle);
+	addAndMakeVisible(portLabelB.get());
+
+	headstageComboBoxB = std::make_unique<ComboBox>("headstageComboBoxB");
+	headstageComboBoxB->setBounds(portLabelB->getRight(), portLabelB->getY(), headstageComboBoxA->getWidth(), portLabelB->getHeight());
+	headstageComboBoxB->addListener(this);
+	headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
+	addHeadstageComboBoxOptions(headstageComboBoxB.get());
+	addAndMakeVisible(headstageComboBoxB.get());
+
+	portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage:");
+	portVoltageOverrideLabelB->setBounds(portVoltageOverrideLabelA->getX(), headstageComboBoxB->getBottom() + 4, portVoltageOverrideLabelA->getWidth(), portVoltageOverrideLabelA->getHeight());
+	portVoltageOverrideLabelB->setFont(fontOptionRegular);
+	addAndMakeVisible(portVoltageOverrideLabelB.get());
+
+	portVoltageValueB = std::make_unique<Label>("voltageValueB", "Auto");
+	portVoltageValueB->setBounds(portVoltageValueA->getX(), portVoltageOverrideLabelB->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
+	portVoltageValueB->setFont(fontOptionRegular);
+	portVoltageValueB->setEditable(true);
+	portVoltageValueB->setColour(Label::textColourId, Colours::black);
+	portVoltageValueB->setColour(Label::backgroundColourId, Colours::lightgrey);
+	portVoltageValueB->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
+	portVoltageValueB->addListener(this);
+	addAndMakeVisible(portVoltageValueB.get());
+
+	lastVoltageSetB = std::make_unique<Label>("lastVoltageSetB", "0 V");
+	lastVoltageSetB->setBounds(portVoltageValueB->getRight() + 5, portVoltageValueB->getY(), portVoltageValueB->getWidth(), portVoltageValueB->getHeight());
+	lastVoltageSetB->setFont(fontOptionRegular);
+	lastVoltageSetB->setEditable(false);
+	lastVoltageSetB->setTooltip("Records the last voltage set for Port B. Useful for displaying what the automated voltage discovery algorithm settled on.");
+	addAndMakeVisible(lastVoltageSetB.get());
+
+	liboniVersionLabel = std::make_unique<Label>("liboniVersion", "liboni: v" + Onix1::getVersion());
+	liboniVersionLabel->setFont(fontOptionRegular);
+	liboniVersionLabel->setBounds(portLabelB->getX() + 5, portVoltageOverrideLabelB->getBottom() + 5, 95, 22);
+	liboniVersionLabel->setEnabled(false);
+	liboniVersionLabel->setTooltip("Displays the liboni version.");
+	addAndMakeVisible(liboniVersionLabel.get());
+
+	const int connectWidth = 70;
+
+	connectButton = std::make_unique<UtilityButton>("CONNECT");
+	connectButton->setFont(fontOptionRegular);
+	connectButton->setBounds(headstageComboBoxB->getRight() - connectWidth, liboniVersionLabel->getY(), connectWidth, 18);
+	connectButton->setRadius(3.0f);
+	connectButton->setClickingTogglesState(true);
+	connectButton->setToggleState(false, dontSendNotification);
+	connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
+	connectButton->addListener(this);
+	addAndMakeVisible(connectButton.get());
+
+	blankEditor = std::make_unique<Label>("Blank editor", "Context could not be initialized. Ensure no other programs are running that hold an ONI context, and then delete/insert the plugin.");
+	blankEditor->setBounds(2, 22, desiredWidth + 10, 107);
+	blankEditor->setAlwaysOnTop(true);
+	blankEditor->toFront(false);
+	blankEditor->setJustificationType(Justification::centred);
+	blankEditor->setColour(Label::textColourId, Colours::black);
+	blankEditor->setColour(Label::backgroundColourId, findColour(ThemeColours::componentBackground));
+
+	if (!source->isContextInitialized())
 	{
-		memoryUsage = std::make_unique<MemoryMonitorUsage>(parentNode);
-		memoryUsage->setBounds(8, 28, 14, 80);
-		addAndMakeVisible(memoryUsage.get());
-
-		blockReadSizeValue = std::make_unique<Label>("blockReadSizeValue", String(source->getBlockReadSize()));
-		blockReadSizeValue->setBounds(memoryUsage->getX() - 4, memoryUsage->getBottom() + 4, 26, 14);
-		blockReadSizeValue->setFont(fontOptionRegular);
-		blockReadSizeValue->setEditable(true);
-		blockReadSizeValue->setColour(Label::textColourId, Colours::black);
-		blockReadSizeValue->setTooltip("Number of bytes read per cycle of the acquisition thread. Smaller values provide lower latency, but can cause the memory monitor to fill up. Larger values may improve processing performance for high-bandwidth data sources.");
-		blockReadSizeValue->addListener(this);
-		blockReadSizeValue->setBorderSize(BorderSize<int>(1));
-		blockReadSizeValue->setJustificationType(Justification::centred);
-		addAndMakeVisible(blockReadSizeValue.get());
-
-		portStatusA = std::make_unique<DrawableRectangle>();
-		portStatusA->setRectangle(Rectangle<float>(memoryUsage->getRight() + 4, memoryUsage->getY(), 10, 10));
-		portStatusA->setCornerSize(Point<float>(5, 5));
-		portStatusA->setFill(fillDisconnected);
-		portStatusA->setStrokeFill(statusIndicatorStrokeColor);
-		portStatusA->setStrokeThickness(statusIndicatorStrokeThickness);
-		addAndMakeVisible(portStatusA.get());
-
-		portLabelA = std::make_unique<Label>("portLabelA", "Port A:");
-		portLabelA->setBounds(portStatusA->getRight(), portStatusA->getY(), 60, 16);
-		portLabelA->setFont(fontOptionTitle);
-		addAndMakeVisible(portLabelA.get());
-
-		headstageComboBoxA = std::make_unique<ComboBox>("headstageComboBoxA");
-		headstageComboBoxA->setBounds(portLabelA->getRight() + 2, portLabelA->getY(), 140, portLabelA->getHeight());
-		headstageComboBoxA->addListener(this);
-		headstageComboBoxA->setTooltip("Select the headstage connected to port A.");
-		addHeadstageComboBoxOptions(headstageComboBoxA.get());
-		addAndMakeVisible(headstageComboBoxA.get());
-
-		portVoltageOverrideLabelA = std::make_unique<Label>("voltageOverrideLabelA", "Voltage:");
-		portVoltageOverrideLabelA->setBounds(portLabelA->getX() + 15, headstageComboBoxA->getBottom() + 4, 62, headstageComboBoxA->getHeight());
-		portVoltageOverrideLabelA->setFont(fontOptionRegular);
-		addAndMakeVisible(portVoltageOverrideLabelA.get());
-
-		portVoltageValueA = std::make_unique<Label>("voltageValueA", "Auto");
-		portVoltageValueA->setBounds(portVoltageOverrideLabelA->getRight() + 3, portVoltageOverrideLabelA->getY(), 40, portVoltageOverrideLabelA->getHeight());
-		portVoltageValueA->setFont(fontOptionRegular);
-		portVoltageValueA->setEditable(true);
-		portVoltageValueA->setColour(Label::textColourId, Colours::black);
-		portVoltageValueA->setColour(Label::backgroundColourId, Colours::lightgrey);
-		portVoltageValueA->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
-		portVoltageValueA->addListener(this);
-		addAndMakeVisible(portVoltageValueA.get());
-
-		lastVoltageSetA = std::make_unique<Label>("lastVoltageSetA", "0 V");
-		lastVoltageSetA->setBounds(portVoltageValueA->getRight() + 5, portVoltageValueA->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
-		lastVoltageSetA->setFont(fontOptionRegular);
-		lastVoltageSetA->setEditable(false);
-		lastVoltageSetA->setTooltip("Records the last voltage set for Port A. Useful for displaying what the automated voltage discovery algorithm settled on.");
-		addAndMakeVisible(lastVoltageSetA.get());
-
-		portStatusB = std::make_unique<DrawableRectangle>();
-		portStatusB->setRectangle(Rectangle<float>(portStatusA->getX(), portVoltageOverrideLabelA->getBottom() + 3, 10, 10));
-		portStatusB->setCornerSize(portStatusA->getCornerSize());
-		portStatusB->setFill(portStatusA->getFill());
-		portStatusB->setStrokeFill(portStatusA->getStrokeFill());
-		portStatusB->setStrokeThickness(statusIndicatorStrokeThickness);
-		addAndMakeVisible(portStatusB.get());
-
-		portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
-		portLabelB->setBounds(portStatusB->getRight(), portStatusB->getY(), portLabelA->getWidth(), portLabelA->getHeight());
-		portLabelB->setFont(fontOptionTitle);
-		addAndMakeVisible(portLabelB.get());
-
-		headstageComboBoxB = std::make_unique<ComboBox>("headstageComboBoxB");
-		headstageComboBoxB->setBounds(portLabelB->getRight(), portLabelB->getY(), headstageComboBoxA->getWidth(), portLabelB->getHeight());
-		headstageComboBoxB->addListener(this);
-		headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
-		addHeadstageComboBoxOptions(headstageComboBoxB.get());
-		addAndMakeVisible(headstageComboBoxB.get());
-
-		portVoltageOverrideLabelB = std::make_unique<Label>("voltageOverrideLabelB", "Voltage:");
-		portVoltageOverrideLabelB->setBounds(portVoltageOverrideLabelA->getX(), headstageComboBoxB->getBottom() + 4, portVoltageOverrideLabelA->getWidth(), portVoltageOverrideLabelA->getHeight());
-		portVoltageOverrideLabelB->setFont(fontOptionRegular);
-		addAndMakeVisible(portVoltageOverrideLabelB.get());
-
-		portVoltageValueB = std::make_unique<Label>("voltageValueB", "Auto");
-		portVoltageValueB->setBounds(portVoltageValueA->getX(), portVoltageOverrideLabelB->getY(), portVoltageValueA->getWidth(), portVoltageValueA->getHeight());
-		portVoltageValueB->setFont(fontOptionRegular);
-		portVoltageValueB->setEditable(true);
-		portVoltageValueB->setColour(Label::textColourId, Colours::black);
-		portVoltageValueB->setColour(Label::backgroundColourId, Colours::lightgrey);
-		portVoltageValueB->setTooltip("Voltage override. If set, overrides the automated voltage discovery algorithm.");
-		portVoltageValueB->addListener(this);
-		addAndMakeVisible(portVoltageValueB.get());
-
-		lastVoltageSetB = std::make_unique<Label>("lastVoltageSetB", "0 V");
-		lastVoltageSetB->setBounds(portVoltageValueB->getRight() + 5, portVoltageValueB->getY(), portVoltageValueB->getWidth(), portVoltageValueB->getHeight());
-		lastVoltageSetB->setFont(fontOptionRegular);
-		lastVoltageSetB->setEditable(false);
-		lastVoltageSetB->setTooltip("Records the last voltage set for Port B. Useful for displaying what the automated voltage discovery algorithm settled on.");
-		addAndMakeVisible(lastVoltageSetB.get());
-
-		liboniVersionLabel = std::make_unique<Label>("liboniVersion", "liboni: v" + source->getLiboniVersion());
-		liboniVersionLabel->setFont(fontOptionRegular);
-		liboniVersionLabel->setBounds(portLabelB->getX() + 5, portVoltageOverrideLabelB->getBottom() + 5, 95, 22);
-		liboniVersionLabel->setEnabled(false);
-		liboniVersionLabel->setTooltip("Displays the version of liboni running.");
-		addAndMakeVisible(liboniVersionLabel.get());
-
-		const int connectWidth = 70;
-
-		connectButton = std::make_unique<UtilityButton>("CONNECT");
-		connectButton->setFont(fontOptionRegular);
-		connectButton->setBounds(headstageComboBoxB->getRight() - connectWidth, liboniVersionLabel->getY(), connectWidth, 18);
-		connectButton->setRadius(3.0f);
-		connectButton->setClickingTogglesState(true);
-		connectButton->setToggleState(false, dontSendNotification);
-		connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
-		connectButton->addListener(this);
-		addAndMakeVisible(connectButton.get());
+		addAndMakeVisible(blankEditor.get());
 	}
 }
 
@@ -278,7 +288,7 @@ void OnixSourceEditor::setConnectedStatus(bool connected)
 			else
 				source->resetPortLinkFlags(PortName::PortA);
 		}
-		
+
 		if (source->getLastVoltageSet(PortName::PortB) > 0)
 		{
 			if (!isHeadstageSelected(PortName::PortB))
@@ -372,7 +382,7 @@ bool OnixSourceEditor::configureAllDevices()
 		setConnectedStatus(false);
 		return false;
 	}
-	
+
 	if (!source->configureBlockReadSize(source->getContext(), blockReadSizeValue->getText().getIntValue()))
 	{
 		connectButton->setToggleState(false, sendNotification);

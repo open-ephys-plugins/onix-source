@@ -37,31 +37,23 @@ OnixSource::OnixSource(SourceNode* sn) :
 	}
 	catch (const std::system_error& e)
 	{
-		LOGE("Failed to create context. ", e.what());
-		CoreServices::sendStatusMessage("Failed to create context." + std::string(e.what()));
-		AlertWindow::showMessageBox(
-			MessageBoxIconType::WarningIcon,
+		Onix1::showWarningMessageBoxAsync(
 			"Failed to Create Context",
-			"There was an error creating the context. Check the error logs for more details."
+			e.what()
 		);
-		return;
 	}
 	catch (const error_t& e)
 	{
-		LOGE("Failed to initialize context. ", e.what());
-		CoreServices::sendStatusMessage("Failed to create context. " + std::string(e.what()));
-		AlertWindow::showMessageBox(
-			MessageBoxIconType::WarningIcon,
+		Onix1::showWarningMessageBoxAsync(
 			"Failed to Initialize Context",
-			"There was an error initializing the context. Check the error logs for more details."
+			e.what()
 		);
-		return;
 	}
 
 	portA = std::make_shared<PortController>(PortName::PortA, context);
 	portB = std::make_shared<PortController>(PortName::PortB, context);
 
-	if (!context->isInitialized()) { LOGE("Failed to initialize context."); return; }
+	if (context == nullptr || !context->isInitialized()) { LOGE("Failed to initialize context."); return; }
 }
 
 OnixSource::~OnixSource()
@@ -71,14 +63,6 @@ OnixSource::~OnixSource()
 		portA->setVoltageOverride(0.0f, false);
 		portB->setVoltageOverride(0.0f, false);
 	}
-}
-
-std::string OnixSource::getLiboniVersion()
-{
-	if (context != nullptr && context->isInitialized())
-		return context->getVersion();
-	else
-		return "";
 }
 
 void OnixSource::registerParameters()
@@ -161,7 +145,7 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 			Onix1::showWarningMessageBoxAsync(
 				"Invalid Headstage Selection",
 				"Expected to find " + editor->getHeadstageSelected(OnixDevice::getOffset(deviceIdx)) + " on " + OnixDevice::getPortName(deviceIdx) +
-					", but found " + hubName + " instead. Confirm that the correct headstage is selected, and try to connect again.");
+				", but found " + hubName + " instead. Confirm that the correct headstage is selected, and try to connect again.");
 		}
 
 		return false;
@@ -928,7 +912,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 				else
 				{
 					Onix1::showWarningMessageBoxAsync(
-						"Unknown Composite Source", 
+						"Unknown Composite Source",
 						"Found an unknown composite source (" + source->getName() + ") on hub " + source->getHubName() +
 						" at address " + std::to_string(source->getDeviceIdx()));
 				}
@@ -936,7 +920,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 			else
 			{
 				Onix1::showWarningMessageBoxAsync(
-					"Unknown Source", 
+					"Unknown Source",
 					"Found an unknown source (" + source->getName() + ") on hub " + source->getHubName() +
 					" at address " + std::to_string(source->getDeviceIdx()));
 			}
