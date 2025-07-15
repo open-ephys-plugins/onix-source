@@ -892,6 +892,12 @@ void NeuropixelsV1Interface::setInterfaceEnabledState(bool enabledState)
 
 	if (gainCalibrationFileButton != nullptr)
 		gainCalibrationFileButton->setEnabled(enabledState);
+
+	if (saveSettingsButton != nullptr)
+		saveSettingsButton->setEnabled(enabledState);
+
+	if (loadSettingsButton != nullptr)
+		loadSettingsButton->setEnabled(enabledState);
 }
 
 void NeuropixelsV1Interface::startAcquisition()
