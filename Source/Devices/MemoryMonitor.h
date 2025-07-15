@@ -57,22 +57,13 @@ namespace OnixSourcePlugin
 
 		DataBuffer* percentUsedBuffer;
 
-		static const int numFrames = 10;
-
-		unsigned short currentFrame = 0;
-		int sampleNumber = 0;
+		int64_t sampleNumber = 0;
 
 		/** The frequency at which memory use is recorded in Hz. */
 		const uint32_t samplesPerSecond = 100;
 
 		bool shouldAddToBuffer = false;
 
-		float percentUsedSamples[numFrames];
-		float bytesUsedSamples[numFrames];
-
-		double timestamps[numFrames];
-		int64_t sampleNumbers[numFrames];
-		uint64_t eventCodes[numFrames];
 
 		/** The total amount of memory, in 32-bit words, on the hardware that is available for data buffering*/
 		uint32_t totalMemory;

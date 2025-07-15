@@ -91,9 +91,6 @@ MemoryMonitor::MemoryMonitor(std::string name, std::string hubName, const oni_de
 		"percent"
 	);
 	streamInfos.add(percentUsedStream);
-
-	for (int i = 0; i < numFrames; i++)
-		eventCodes[i] = 0;
 }
 
 OnixDeviceType MemoryMonitor::getDeviceType()
@@ -133,9 +130,8 @@ bool MemoryMonitor::updateSettings()
 
 void MemoryMonitor::startAcquisition()
 {
-	currentFrame = 0;
-	sampleNumber = 0;
 
+	sampleNumber = 0;
 	lastPercentUsedValue = 0.0f;
 }
 
@@ -152,34 +148,17 @@ float MemoryMonitor::getLastPercentUsedValue()
 
 void MemoryMonitor::processFrames()
 {
+	static uint64_t ec = 0;
 	oni_frame_t* frame;
 
 	while (frameQueue.try_dequeue(frame))
 	{
 		uint32_t* dataPtr = (uint32_t*)frame->data;
-
-		timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
-
-		percentUsedSamples[currentFrame] = 100.0f * float(*(dataPtr + 2)) / totalMemory;
-
-		lastPercentUsedValue = percentUsedSamples[currentFrame];
-
+		auto t = deviceContext->convertTimestampToSeconds(frame->time);
+		auto p = 100.0f * float(*(dataPtr + 2)) / totalMemory;
+		lastPercentUsedValue = p;
 		oni_destroy_frame(frame);
-
-		sampleNumbers[currentFrame] = sampleNumber++;
-
-		currentFrame++;
-
-		if (currentFrame >= numFrames)
-		{
-			shouldAddToBuffer = true;
-			currentFrame = 0;
-		}
-
-		if (shouldAddToBuffer)
-		{
-			shouldAddToBuffer = false;
-			percentUsedBuffer->addToBuffer(percentUsedSamples, sampleNumbers, timestamps, eventCodes, numFrames);
-		}
+		auto sn = sampleNumber++;
+		percentUsedBuffer->addToBuffer(&p, &sn, &t, &ec, 1);
 	}
 }
