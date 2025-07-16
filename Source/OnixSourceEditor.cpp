@@ -51,7 +51,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	addAndMakeVisible(blockReadSizeValue.get());
 
 	portStatusA = std::make_unique<DrawableRectangle>();
-	portStatusA->setRectangle(Rectangle<float>(memoryUsage->getRight() + 4, memoryUsage->getY(), 10, 10));
+	portStatusA->setRectangle(Rectangle<float>(memoryUsage->getRight() + 4, memoryUsage->getY() + 3, 10, 10));
 	portStatusA->setCornerSize(Point<float>(5, 5));
 	portStatusA->setFill(fillDisconnected);
 	portStatusA->setStrokeFill(statusIndicatorStrokeColor);
@@ -59,7 +59,7 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	addAndMakeVisible(portStatusA.get());
 
 	portLabelA = std::make_unique<Label>("portLabelA", "Port A:");
-	portLabelA->setBounds(portStatusA->getRight(), portStatusA->getY(), 60, 16);
+	portLabelA->setBounds(portStatusA->getRight(), portStatusA->getY(), 60, 14);
 	portLabelA->setFont(fontOptionTitle);
 	addAndMakeVisible(portLabelA.get());
 
@@ -93,7 +93,8 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	addAndMakeVisible(lastVoltageSetA.get());
 
 	portStatusB = std::make_unique<DrawableRectangle>();
-	portStatusB->setRectangle(Rectangle<float>(portStatusA->getX(), portVoltageOverrideLabelA->getBottom() + 3, 10, 10));
+	auto rect = portStatusA->getRectangle();
+	portStatusB->setRectangle(Rectangle<float>(rect.topLeft.getX(), portVoltageValueA->getBottom() + 9, rect.getWidth(), rect.getHeight()));
 	portStatusB->setCornerSize(portStatusA->getCornerSize());
 	portStatusB->setFill(portStatusA->getFill());
 	portStatusB->setStrokeFill(portStatusA->getStrokeFill());
@@ -101,12 +102,12 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	addAndMakeVisible(portStatusB.get());
 
 	portLabelB = std::make_unique<Label>("portLabelB", "Port B:");
-	portLabelB->setBounds(portStatusB->getRight(), portStatusB->getY(), portLabelA->getWidth(), portLabelA->getHeight());
+	portLabelB->setBounds(portLabelA->getX(), portStatusB->getY(), portLabelA->getWidth(), portLabelA->getHeight());
 	portLabelB->setFont(fontOptionTitle);
 	addAndMakeVisible(portLabelB.get());
 
 	headstageComboBoxB = std::make_unique<ComboBox>("headstageComboBoxB");
-	headstageComboBoxB->setBounds(portLabelB->getRight(), portLabelB->getY(), headstageComboBoxA->getWidth(), portLabelB->getHeight());
+	headstageComboBoxB->setBounds(headstageComboBoxA->getX(), portLabelB->getY(), headstageComboBoxA->getWidth(), headstageComboBoxA->getHeight());
 	headstageComboBoxB->addListener(this);
 	headstageComboBoxB->setTooltip("Select the headstage connected to port B.");
 	addHeadstageComboBoxOptions(headstageComboBoxB.get());
@@ -134,24 +135,24 @@ OnixSourceEditor::OnixSourceEditor(GenericProcessor* parentNode, OnixSource* sou
 	lastVoltageSetB->setTooltip("Records the last voltage set for Port B. Useful for displaying what the automated voltage discovery algorithm settled on.");
 	addAndMakeVisible(lastVoltageSetB.get());
 
-	liboniVersionLabel = std::make_unique<Label>("liboniVersion", "liboni: v" + Onix1::getVersion());
-	liboniVersionLabel->setFont(fontOptionRegular);
-	liboniVersionLabel->setBounds(portLabelB->getX() + 5, portVoltageOverrideLabelB->getBottom() + 5, 95, 22);
-	liboniVersionLabel->setEnabled(false);
-	liboniVersionLabel->setTooltip("Displays the liboni version.");
-	addAndMakeVisible(liboniVersionLabel.get());
-
-	const int connectWidth = 70;
-
 	connectButton = std::make_unique<UtilityButton>("CONNECT");
 	connectButton->setFont(fontOptionRegular);
-	connectButton->setBounds(headstageComboBoxB->getRight() - connectWidth, liboniVersionLabel->getY(), connectWidth, 18);
+	connectButton->setBounds(portLabelB->getX(), blockReadSizeValue->getY() - 4, 70, 18);
 	connectButton->setRadius(3.0f);
 	connectButton->setClickingTogglesState(true);
 	connectButton->setToggleState(false, dontSendNotification);
 	connectButton->setTooltip("Press to connect or disconnect from Onix hardware");
 	connectButton->addListener(this);
 	addAndMakeVisible(connectButton.get());
+
+	const int liboniWidth = 90;
+
+	liboniVersionLabel = std::make_unique<Label>("liboniVersion", "liboni: v" + Onix1::getVersion());
+	liboniVersionLabel->setFont(fontOptionRegular);
+	liboniVersionLabel->setBounds(desiredWidth - liboniWidth, blockReadSizeValue->getY(), liboniWidth, connectButton->getHeight());
+	liboniVersionLabel->setEnabled(false);
+	liboniVersionLabel->setTooltip("Displays the liboni version.");
+	addAndMakeVisible(liboniVersionLabel.get());
 
 	blankEditor = std::make_unique<Label>("Blank editor", "Context could not be initialized. Ensure no other programs are running that hold an ONI context, and then delete/insert the plugin.");
 	blankEditor->setBounds(2, 22, desiredWidth + 10, 107);
