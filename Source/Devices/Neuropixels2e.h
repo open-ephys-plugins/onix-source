@@ -124,14 +124,14 @@ namespace OnixSourcePlugin
 		static const int numFrames = 10;
 		static const int numSamples = numberOfChannels * numFrames;
 
-		std::array<float, numSamples> samples;
+		std::array<std::array<float, numSamples>, NumberOfProbes> samples {};
 
-		int64 sampleNumbers[numFrames];
-		double timestamps[numFrames];
-		uint64 eventCodes[numFrames];
+		std::array<std::array<int64_t, numFrames>, NumberOfProbes> sampleNumbers {};
+		std::array<std::array<double, numFrames>, NumberOfProbes> timestamps {};
+		std::array<std::array<uint64_t, numFrames>, NumberOfProbes> eventCodes {};
 
-		int frameCount = 0;
-		int sampleNumber = 0;
+		std::array<int, NumberOfProbes> frameCount;
+		std::array<int64_t, NumberOfProbes> sampleNumber;
 
 		std::unique_ptr<I2CRegisterContext> serializer;
 		std::unique_ptr<I2CRegisterContext> deserializer;
