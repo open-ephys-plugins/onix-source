@@ -95,6 +95,9 @@ namespace OnixSourcePlugin
 
 		static constexpr int NumberOfProbes = 2;
 
+		static constexpr uint16_t NumberOfAdcBins = 4096;
+		static constexpr float DataMidpoint = NumberOfAdcBins / 2;
+
 		DataBuffer* amplifierBuffer[NumberOfProbes];
 
 		std::array<uint64_t, NumberOfProbes> probeSN;

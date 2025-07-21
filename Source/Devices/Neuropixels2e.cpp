@@ -549,7 +549,7 @@ void Neuropixels2e::processFrames()
 				const size_t channelIndex = rawToChannel[j][i];
 
 				samples[probeIndex][channelIndex * numFrames + frameCount[probeIndex]] =
-					(float)(*(amplifierData + adcIndices[j] + adcDataOffset)) * gainCorrection[probeIndex];
+					(float)(*(amplifierData + adcIndices[j] + adcDataOffset)) * gainCorrection[probeIndex] + DataMidpoint;
 			}
 		}
 
