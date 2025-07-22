@@ -30,14 +30,16 @@ Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_de
 	INeuropixel(NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
 {
 	probeSN.fill(0);
+  frameCount.fill(0);
+  sampleNumber.fill(0);
 
 	for (int i = 0; i < NeuropixelsV2eValues::numberOfSettings; i++)
 	{
 		defineMetadata(settings[i].get(), NeuropixelsV2eValues::numberOfShanks);
 	}
 
-	for (int i = 0; i < numFrames; i++)
-		eventCodes[i] = 0;
+	for (int i = 0; i < NumberOfProbes; i++)
+		eventCodes[i].fill(0);
 }
 
 Neuropixels2e::~Neuropixels2e()
@@ -491,8 +493,8 @@ uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 
 void Neuropixels2e::startAcquisition()
 {
-	sampleNumber = 0;
-	frameCount = 0;
+  frameCount.fill(0);
+  sampleNumber.fill(0);
 }
 
 void Neuropixels2e::stopAcquisition()
@@ -531,8 +533,8 @@ void Neuropixels2e::processFrames()
 		uint16_t probeIndex = *(dataPtr + 4);
 		uint16_t* amplifierData = dataPtr + 9;
 
-		sampleNumbers[frameCount] = sampleNumber;
-		timestamps[frameCount] = deviceContext->convertTimestampToSeconds(frame->time);
+		sampleNumbers[probeIndex][frameCount[probeIndex]] = sampleNumber[probeIndex]++;
+		timestamps[probeIndex][frameCount[probeIndex]] = deviceContext->convertTimestampToSeconds(frame->time);
 
 		for (int i = 0; i < FramesPerSuperFrame; i++)
 		{
@@ -542,18 +544,17 @@ void Neuropixels2e::processFrames()
 			{
 				const size_t channelIndex = rawToChannel[j][i];
 
-				samples[channelIndex * numFrames + frameCount] =
-					(float)(*(amplifierData + adcIndices[j] + adcDataOffset)) * gainCorrection[probeIndex];
+				samples[probeIndex][channelIndex * numFrames + frameCount[probeIndex]] =
+					(float)(*(amplifierData + adcIndices[j] + adcDataOffset)) * gainCorrection[probeIndex] + DataMidpoint;
 			}
 		}
 
-		frameCount++;
-		sampleNumber++;
+		frameCount[probeIndex]++;
 
-		if (frameCount >= numFrames)
+		if (frameCount[probeIndex] >= numFrames)
 		{
-			amplifierBuffer[probeIndex]->addToBuffer(samples.data(), sampleNumbers, timestamps, eventCodes, numFrames);
-			frameCount = 0;
+			amplifierBuffer[probeIndex]->addToBuffer(samples[probeIndex].data(), sampleNumbers[probeIndex].data(), timestamps[probeIndex].data(), eventCodes[probeIndex].data(), numFrames);
+			frameCount[probeIndex] = 0;
 		}
 
 		oni_destroy_frame(frame);
