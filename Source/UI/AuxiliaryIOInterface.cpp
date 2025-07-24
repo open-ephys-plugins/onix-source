@@ -35,15 +35,26 @@ AuxiliaryIOInterface::AuxiliaryIOInterface(std::shared_ptr<AuxiliaryIO> d, OnixS
 	{
 		auto auxiliaryIO = std::static_pointer_cast<AuxiliaryIO>(device);
 
-		static int offset = 55;
-		FontOptions font = FontOptions("Fira Code", "Bold", 22.0f);
-
 		analogDigitalLabel = std::make_unique<Label>("analogDigitalLabel", "Analog and Digital IO");
 		analogDigitalLabel->setBounds(20, 20, 350, 35);
-		analogDigitalLabel->setFont(font);
+		analogDigitalLabel->setFont(FontOptions("Fira Code", "Bold", 22.0f));
 		addAndMakeVisible(analogDigitalLabel.get());
 
+		deviceEnableButton = std::make_unique<UtilityButton>(enabledButtonText);
+		deviceEnableButton->setFont(FontOptions("Fira Code", "Regular", 12.0f));
+		deviceEnableButton->setRadius(3.0f);
+		deviceEnableButton->setBounds(20, 60, 100, 22);
+		deviceEnableButton->setClickingTogglesState(true);
+		deviceEnableButton->setTooltip("If disabled, AnalogIO and DigitalIO devices will not stream or receive data during acquisition");
+		deviceEnableButton->setToggleState(true, dontSendNotification);
+		deviceEnableButton->addListener(this);
+		addAndMakeVisible(deviceEnableButton.get());
+		deviceEnableButton->setToggleState(device->isEnabled(), sendNotification);
+
+		const int offset = deviceEnableButton->getBottom() + 5;
+
 		analogInterface = std::make_unique<AnalogIOInterface>(auxiliaryIO->getAnalogIO(), e, c);
+		analogInterface->hideEnableButton();
 		analogViewport = std::make_unique<CustomViewport>(analogInterface.get(), SettingsInterface::Width / 2, SettingsInterface::Height);
 		analogViewport->setBounds(0, offset, SettingsInterface::Width / 2, SettingsInterface::Height);
 		addAndMakeVisible(analogViewport.get());
@@ -52,6 +63,41 @@ AuxiliaryIOInterface::AuxiliaryIOInterface(std::shared_ptr<AuxiliaryIO> d, OnixS
 		digitalViewport = std::make_unique<CustomViewport>(digitalInterface.get(), SettingsInterface::Width / 2, SettingsInterface::Height);
 		digitalViewport->setBounds(SettingsInterface::Width / 2, offset, SettingsInterface::Width / 2, SettingsInterface::Height);
 		//addAndMakeVisible(digitalViewport.get()); // NB: Hide digital interface for now, if the digitalIO UI gets updates that need to be displayed they can be shown here
+	}
+}
+
+void AuxiliaryIOInterface::buttonClicked(Button* b)
+{
+	if (b == deviceEnableButton.get())
+	{
+		device->setEnabled(deviceEnableButton->getToggleState());
+
+		if (canvas->foundInputSource())
+		{
+			try
+			{
+				device->configureDevice();
+			}
+			catch (const error_str& e)
+			{
+				LOGE(e.what());
+				b->setToggleState(!b->getToggleState(), dontSendNotification);
+				return;
+			}
+
+			canvas->resetContext();
+		}
+
+		if (device->isEnabled())
+		{
+			deviceEnableButton->setLabel(enabledButtonText);
+		}
+		else
+		{
+			deviceEnableButton->setLabel(disabledButtonText);
+		}
+
+		CoreServices::updateSignalChain(editor);
 	}
 }
 

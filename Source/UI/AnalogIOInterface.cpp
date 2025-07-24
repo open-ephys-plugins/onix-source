@@ -129,6 +129,11 @@ void AnalogIOInterface::updateSettings()
 	}
 }
 
+void AnalogIOInterface::hideEnableButton()
+{
+	deviceEnableButton->setVisible(false);
+}
+
 void AnalogIOInterface::buttonClicked(Button* button)
 {
 	if (button == deviceEnableButton.get())
