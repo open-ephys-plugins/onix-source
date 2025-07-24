@@ -121,8 +121,8 @@ namespace OnixSourcePlugin
 
 			if (json == var())
 			{
-				Onix1::showWarningMessageBoxAsync("Unable to Parse File", "The file " + file.getFileName().toStdString() + " could not be parsed. " +
-					"Please ensure that the file exists and is readable.");
+				Onix1::showWarningMessageBoxAsync("Unable to Parse File", "The file '" + file.getFileName().toStdString() + "' could not be parsed. " +
+					"Please ensure that the file exists and is in the correct format.");
 				return false;
 			}
 
@@ -136,8 +136,8 @@ namespace OnixSourcePlugin
 
 				if (specification.compare(probeInterfaceSpecification) != 0)
 				{
-					Onix1::showWarningMessageBoxAsync("Invalid Specification", "The specification listed in the Probe Interface file is " + specification +
-						", but it is expected to be " + probeInterfaceSpecification + ".");
+					Onix1::showWarningMessageBoxAsync("Invalid Specification", "The specification listed in the Probe Interface file is '" + specification +
+						"', but it is expected to be '" + probeInterfaceSpecification + "'.");
 					return false;
 				}
 			}
@@ -164,8 +164,8 @@ namespace OnixSourcePlugin
 				{
 					if (!probe->getProperty(Identifier("ndim")).equalsWithSameType(2))
 					{
-						Onix1::showWarningMessageBoxAsync("Invalid Number of Dimensions", "Expected this file to contain two dimensions, but found "
-							+ probe->getProperty(Identifier("ndim")).toString().toStdString() + " instead.");
+						Onix1::showWarningMessageBoxAsync("Invalid Number of Dimensions", "Expected this file to contain two dimensions, but found `"
+							+ probe->getProperty(Identifier("ndim")).toString().toStdString() + "` instead.");
 						return false;
 					}
 				}
@@ -181,8 +181,8 @@ namespace OnixSourcePlugin
 
 					if (!probe->getProperty(Identifier("si_units")).equalsWithSameType(var(um)))
 					{
-						Onix1::showWarningMessageBoxAsync("Unexpected Units Found", "Expected to see units " + um + ", but found "
-							+ probe->getProperty(Identifier("si_units")).toString().toStdString() + " instead.");
+						Onix1::showWarningMessageBoxAsync("Unexpected Units Found", "Expected to see units `" + um + "`, but found `"
+							+ probe->getProperty(Identifier("si_units")).toString().toStdString() + "` instead.");
 						return false;
 					}
 				}
