@@ -31,7 +31,7 @@ AnalogIO::AnalogIO(std::string name, std::string hubName, const oni_dev_idx_t de
 		OnixDevice::createStreamName({ getHubName(), name, "AnalogInput" }),
 		"Analog Input data",
 		getStreamIdentifier(),
-		getNumChannels(),
+		numChannels,
 		getSampleRate(),
 		"AnalogInput",
 		ContinuousChannel::Type::ADC,
@@ -181,11 +181,6 @@ void AnalogIO::setDataType(AnalogIODataType type)
 	dataType = type;
 }
 
-int AnalogIO::getNumChannels()
-{
-	return numChannels;
-}
-
 void AnalogIO::startAcquisition()
 {
 	currentFrame = 0;
@@ -247,22 +242,16 @@ void AnalogIO::processFrame(uint64_t eventWord)
 
 	if (currentFrame >= numFrames)
 	{
-		shouldAddToBuffer = true;
-		currentFrame = 0;
-	}
-
-	if (shouldAddToBuffer)
-	{
-		shouldAddToBuffer = false;
 		analogInputBuffer->addToBuffer(analogInputSamples.data(), sampleNumbers, timestamps, eventCodes, numFrames);
 
 		analogInputSamples.fill(0);
+		currentFrame = 0;
 	}
 }
 
 void AnalogIO::processFrames()
 {
-	while (frameQueue.peek() != nullptr )
+	while (frameQueue.peek() != nullptr)
 	{
 		processFrame();
 	}

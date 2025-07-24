@@ -79,18 +79,30 @@ namespace OnixSourcePlugin
 
 		EventChannel::Settings getEventChannelSettings(DataStream* stream);
 
-		int getNumberOfWords();
-		uint64_t getEventWord();
-		bool hasEventWord();
-
 		static OnixDeviceType getDeviceType();
 
 	private:
 
-		static constexpr int numDigitalInputs = 8;
-		static constexpr int numButtons = 6;
+		DataBuffer* digitalBuffer = nullptr;
 
-		ReaderWriterQueue<uint64_t> eventWords;
+		static float getChannelState(uint8_t state, int channel);
+
+		static constexpr int NumFrames = 25;
+
+		static constexpr int NumDigitalInputs = 8;
+		static constexpr int NumButtons = 6;
+		static constexpr int NumChannels = NumDigitalInputs + NumButtons;
+
+		static constexpr int NumSamples = NumFrames * NumChannels;
+
+		unsigned short currentFrame = 0;
+		int64_t sampleNumber = 0;
+
+		std::array<float, NumSamples> digitalSamples;
+
+		std::array<double, NumFrames> timestamps;
+		std::array<int64_t, NumFrames> sampleNumbers;
+		std::array<uint64_t, NumFrames> eventCodes;
 
 		JUCE_LEAK_DETECTOR(DigitalIO);
 	};

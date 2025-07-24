@@ -36,7 +36,8 @@ namespace OnixSourcePlugin
 	class AnalogIOInterface;
 	class DigitalIOInterface;
 
-	class AuxiliaryIOInterface : public SettingsInterface
+	class AuxiliaryIOInterface : public SettingsInterface,
+		public Button::Listener
 	{
 	public:
 
@@ -49,7 +50,11 @@ namespace OnixSourcePlugin
 
 	private:
 
+		void buttonClicked(Button* b) override;
+
 		void setInterfaceEnabledState(bool newState) override;
+
+		std::unique_ptr<UtilityButton> deviceEnableButton;
 
 		std::unique_ptr<CustomViewport> analogViewport;
 		std::unique_ptr<CustomViewport> digitalViewport;

@@ -242,8 +242,8 @@ void OnixDevice::stopAcquisition()
 	}
 }
 
-CompositeDevice::CompositeDevice(std::string name_, std::string hubName, CompositeDeviceType type_, OnixDeviceVector devices_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name_, hubName, OnixDeviceType::COMPOSITE, devices_.at(0)->getDeviceIdx(), oni_ctx)
+CompositeDevice::CompositeDevice(std::string name_, std::string hubName, CompositeDeviceType type_, const oni_dev_idx_t devIdx, OnixDeviceVector devices_, std::shared_ptr<Onix1> oni_ctx)
+	: OnixDevice(name_, hubName, OnixDeviceType::COMPOSITE, devIdx, oni_ctx)
 {
 	compositeType = type_;
 	devices = devices_;

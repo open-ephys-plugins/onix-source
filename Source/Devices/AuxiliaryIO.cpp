@@ -27,7 +27,7 @@
 using namespace OnixSourcePlugin;
 
 AuxiliaryIO::AuxiliaryIO(std::string name, std::string hubName, const oni_dev_idx_t analogIndex, const oni_dev_idx_t digitalIndex, std::shared_ptr<Onix1> oni_ctx)
-	: CompositeDevice(name, hubName, AuxiliaryIO::getCompositeDeviceType(), createAuxiliaryIODevices(hubName, analogIndex, digitalIndex, oni_ctx), oni_ctx)
+	: CompositeDevice(name, hubName, AuxiliaryIO::getCompositeDeviceType(), analogIndex, createAuxiliaryIODevices(hubName, analogIndex, digitalIndex, oni_ctx), oni_ctx)
 {
 	analogIO = getDevice<AnalogIO>(OnixDeviceType::ANALOGIO);
 	digitalIO = getDevice<DigitalIO>(OnixDeviceType::DIGITALIO);
@@ -43,8 +43,8 @@ OnixDeviceVector AuxiliaryIO::createAuxiliaryIODevices(std::string hubName, cons
 {
 	OnixDeviceVector devices;
 
-	devices.emplace_back(std::make_shared<AnalogIO>("AnalogIO", hubName, analogIndex, oni_ctx));
 	devices.emplace_back(std::make_shared<DigitalIO>("DigitalIO", hubName, digitalIndex, oni_ctx));
+	devices.emplace_back(std::make_shared<AnalogIO>("AnalogIO", hubName, analogIndex, oni_ctx));
 
 	return devices;
 }
@@ -57,18 +57,7 @@ bool AuxiliaryIO::isEnabled() const
 void AuxiliaryIO::processFrames()
 {
 	digitalIO->processFrames();
-
-	while (digitalIO->hasEventWord() && analogIO->getNumberOfFrames() >= AnalogIO::framesToAverage)
-	{
-		auto eventWord = digitalIO->getEventWord();
-
-		for (int i = 0; i < AnalogIO::framesToAverage; i++)
-		{
-			analogIO->processFrame(eventWord);
-		}
-
-		digitalIO->processFrames();
-	}
+	analogIO->processFrames();
 }
 
 OnixDeviceType AuxiliaryIO::getDeviceType()
