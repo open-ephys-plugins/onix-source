@@ -243,7 +243,7 @@ namespace OnixSourcePlugin
 	{
 	public:
 
-		CompositeDevice(std::string name_, std::string hubName, CompositeDeviceType type_, OnixDeviceVector devices_, std::shared_ptr<Onix1> oni_ctx);
+		CompositeDevice(std::string name_, std::string hubName, CompositeDeviceType type_, const oni_dev_idx_t, OnixDeviceVector devices_, std::shared_ptr<Onix1> oni_ctx);
 
 		CompositeDeviceType getCompositeDeviceType() const;
 

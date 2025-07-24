@@ -892,22 +892,46 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				if (compositeDevice->getCompositeDeviceType() == CompositeDeviceType::AUXILIARYIO)
 				{
-					DeviceInfo::Settings deviceSettings{
+					auto auxiliaryIO = std::static_pointer_cast<AuxiliaryIO>(compositeDevice);
+
+					// NB: DigitalIO
+					DeviceInfo::Settings digitalIODeviceSettings{
 						source->getName(),
-						"Auxiliary device containing analog and digital IO data",
-						"auxiliaryio",
+						"DigitalIO",
+						"digitalio",
 						"0000000",
 						""
 					};
 
-					deviceInfos->add(new DeviceInfo(deviceSettings));
+					deviceInfos->add(new DeviceInfo(digitalIODeviceSettings));
 
-					auto auxiliaryIO = std::static_pointer_cast<AuxiliaryIO>(compositeDevice);
+					auto digitalIO = auxiliaryIO->getDigitalIO();
+
+					DataStream::Settings dataStreamSettings{
+						OnixDevice::createStreamName({digitalIO->getHubName(), digitalIO->getName()}),
+						"Digital inputs and buttons",
+						digitalIO->getStreamIdentifier(),
+						digitalIO->streamInfos[0].getSampleRate(),
+						true
+					};
+
+					addCombinedStreams(dataStreamSettings, digitalIO->streamInfos, dataStreams, deviceInfos, continuousChannels);
+
+					auto eventChannelSettings = digitalIO->getEventChannelSettings(dataStreams->getLast());
+					eventChannels->add(new EventChannel(eventChannelSettings));
+
+					// NB: AnalogIO
+					DeviceInfo::Settings analogIODeviceSettings{
+						source->getName(),
+						"AnalogIO",
+						"analogio",
+						"0000000",
+						""
+					};
+
+					deviceInfos->add(new DeviceInfo(analogIODeviceSettings));
 
 					addIndividualStreams(auxiliaryIO->getAnalogIO()->streamInfos, dataStreams, deviceInfos, continuousChannels);
-
-					auto eventChannelSettings = auxiliaryIO->getDigitalIO()->getEventChannelSettings(dataStreams->getLast());
-					eventChannels->add(new EventChannel(eventChannelSettings));
 				}
 				else
 				{
@@ -947,7 +971,12 @@ void OnixSource::addCombinedStreams(DataStream::Settings dataStreamSettings,
 			auto prefix = streamInfo.getChannelPrefix();
 
 			if (suffixes[chan] != "")
-				prefix += "-" + suffixes[chan];
+			{
+				if (prefix != "")
+					prefix += "-" + suffixes[chan];
+				else
+					prefix = suffixes[chan];
+			}
 
 			ContinuousChannel::Settings channelSettings{
 				streamInfo.getChannelType(),

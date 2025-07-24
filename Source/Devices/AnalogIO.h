@@ -89,11 +89,8 @@ namespace OnixSourcePlugin
 		AnalogIODataType getDataType() const;
 		void setDataType(AnalogIODataType type);
 
-		int getNumChannels();
-
 		static OnixDeviceType getDeviceType();
 
-		static constexpr int framesToAverage = 4; // NB: Downsampling from 100 kHz to 25 kHz
 		static int getSampleRate();
 
 		int getNumberOfFrames();
@@ -103,6 +100,7 @@ namespace OnixSourcePlugin
 		DataBuffer* analogInputBuffer = nullptr;
 
 		static constexpr int AnalogIOFrequencyHz = 100000;
+		static constexpr int framesToAverage = 4; // NB: Downsampling from 100 kHz to 25 kHz
 
 		static constexpr int numFrames = 25;
 		static constexpr int numChannels = 12;
@@ -118,8 +116,6 @@ namespace OnixSourcePlugin
 		unsigned short currentFrame = 0;
 		unsigned short currentAverageFrame = 0;
 		int sampleNumber = 0;
-
-		bool shouldAddToBuffer = false;
 
 		std::array<float, numFrames* numChannels> analogInputSamples;
 
