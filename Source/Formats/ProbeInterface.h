@@ -120,7 +120,11 @@ namespace OnixSourcePlugin
 			auto json = JSON::parse(file);
 
 			if (json == var())
+			{
+				Onix1::showWarningMessageBoxAsync("Unable to Parse File", "The file '" + file.getFileName().toStdString() + "' could not be parsed. " +
+					"Please ensure that the file exists and is in the correct format.");
 				return false;
+			}
 
 			DynamicObject::Ptr obj = json.getDynamicObject();
 
@@ -128,18 +132,31 @@ namespace OnixSourcePlugin
 			{
 				std::string specification = obj->getProperty(Identifier("specification")).toString().toStdString();
 
-				if (specification.compare("probeinterface") != 0)
+				const std::string probeInterfaceSpecification = "probeinterface";
+
+				if (specification.compare(probeInterfaceSpecification) != 0)
+				{
+					Onix1::showWarningMessageBoxAsync("Invalid Specification", "The specification listed in the Probe Interface file is '" + specification +
+						"', but it is expected to be '" + probeInterfaceSpecification + "'.");
 					return false;
+				}
 			}
 			else
+			{
+				Onix1::showWarningMessageBoxAsync("No Specification Found", "No specification field was found in the JSON file.");
 				return false;
+			}
 
 			if (obj->hasProperty(Identifier("probes")))
 			{
 				Array<var>* probes = obj->getProperty(Identifier("probes")).getArray();
 
 				if (probes->size() != 1)
+				{
+					Onix1::showWarningMessageBoxAsync("Wrong Number of Probes", "Expected to find one probe listed in this file, but found " +
+						std::to_string(probes->size()) + " probes in the file.");
 					return false;
+				}
 
 				DynamicObject::Ptr probe = probes->getReference(0).getDynamicObject();
 
@@ -147,21 +164,33 @@ namespace OnixSourcePlugin
 				{
 					if (!probe->getProperty(Identifier("ndim")).equalsWithSameType(2))
 					{
+						Onix1::showWarningMessageBoxAsync("Invalid Number of Dimensions", "Expected this file to contain two dimensions, but found `"
+							+ probe->getProperty(Identifier("ndim")).toString().toStdString() + "` instead.");
 						return false;
 					}
 				}
 				else
+				{
+					Onix1::showWarningMessageBoxAsync("No Dimensions Found", "Could not find the number of dimensions in the file.");
 					return false;
+				}
 
 				if (probe->hasProperty(Identifier("si_units")))
 				{
-					if (!probe->getProperty(Identifier("si_units")).equalsWithSameType("um"))
+					const std::string um = "um";
+
+					if (!probe->getProperty(Identifier("si_units")).equalsWithSameType(var(um)))
 					{
+						Onix1::showWarningMessageBoxAsync("Unexpected Units Found", "Expected to see units `" + um + "`, but found `"
+							+ probe->getProperty(Identifier("si_units")).toString().toStdString() + "` instead.");
 						return false;
 					}
 				}
 				else
+				{
+					Onix1::showWarningMessageBoxAsync("No Units Found", "Could not find any units in the file.");
 					return false;
+				}
 
 				Array<var>* contact_positions = nullptr;
 
@@ -170,10 +199,17 @@ namespace OnixSourcePlugin
 					contact_positions = probe->getProperty(Identifier("contact_positions")).getArray();
 
 					if (contact_positions->size() != settings->electrodeMetadata.size())
+					{
+						Onix1::showWarningMessageBoxAsync("Different Number of Contacts", "Expected to find " + std::to_string(settings->electrodeMetadata.size()) +
+							" contacts, but found " + std::to_string(contact_positions->size()) + " contacts instead.");
 						return false;
+					}
 				}
 				else
+				{
+					Onix1::showWarningMessageBoxAsync("No Contacts Found", "Could not find any contacts in the file.");
 					return false;
+				}
 
 				Array<var>* probe_planar_contour = nullptr;
 
@@ -193,10 +229,17 @@ namespace OnixSourcePlugin
 					device_channel_indices = probe->getProperty(Identifier("device_channel_indices")).getArray();
 
 					if (device_channel_indices->size() != settings->electrodeMetadata.size())
+					{
+						Onix1::showWarningMessageBoxAsync("Wrong Number of Indices Found", "Expected to find " + std::to_string(settings->electrodeMetadata.size()) +
+							" device channel indices, but found " + std::to_string(device_channel_indices->size()) + " instead.");
 						return false;
+					}
 				}
 				else
+				{
+					Onix1::showWarningMessageBoxAsync("No Indices Found", "No device channel indices found in the file.");
 					return false;
+				}
 
 				Array<var>* shank_ids = nullptr;
 
@@ -205,10 +248,17 @@ namespace OnixSourcePlugin
 					shank_ids = probe->getProperty(Identifier("shank_ids")).getArray();
 
 					if (shank_ids->size() != settings->electrodeMetadata.size())
+					{
+						Onix1::showWarningMessageBoxAsync("Wrong Number of Shank IDs Found", "Expected to find " + std::to_string(settings->electrodeMetadata.size()) +
+							" shank IDs, but found " + std::to_string(shank_ids->size()) + " instead.");
 						return false;
+					}
 				}
 				else
+				{
+					Onix1::showWarningMessageBoxAsync("No Shank IDs Found", "No shank IDs found in the file.");
 					return false;
+				}
 
 				for (int ch = 0; ch < contact_positions->size(); ch++)
 				{
@@ -249,7 +299,10 @@ namespace OnixSourcePlugin
 				settings->selectElectrodes(selectedChannels);
 			}
 			else
+			{
+				Onix1::showWarningMessageBoxAsync("No Probes Found", "Could not find any probes in the file.");
 				return false;
+			}
 
 			return true;
 		}
