@@ -26,8 +26,37 @@
 using namespace OnixSourcePlugin;
 
 DigitalIO::DigitalIO(std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name, hubName, DigitalIO::getDeviceType(), deviceIdx_, oni_ctx), eventWords(64)
+	: OnixDevice(name, hubName, DigitalIO::getDeviceType(), deviceIdx_, oni_ctx)
 {
+	StreamInfo digitalInputStream = StreamInfo(
+		OnixDevice::createStreamName({ getHubName(), name, "DigitalInputs" }),
+		"Digital Inputs data",
+		getStreamIdentifier(),
+		NumDigitalInputs,
+		AnalogIO::getSampleRate(),
+		"CH",
+		ContinuousChannel::Type::AUX,
+		1.0,
+		"u", // NB: Digital data is unitless by definition
+		{},
+		{ "input" });
+	streamInfos.add(digitalInputStream);
+
+	StreamInfo digitalButtonStream = StreamInfo(
+		OnixDevice::createStreamName({ getHubName(), name, "DigitalButtons" }),
+		"Digital Buttons data",
+		getStreamIdentifier(),
+		NumButtons,
+		AnalogIO::getSampleRate(),
+		"",
+		ContinuousChannel::Type::AUX,
+		1.0,
+		"u", // NB: Digital data is unitless by definition
+		{ "Moon", "Triangle", "X", "Check", "Circle", "Square" },
+		{ "input" });
+	streamInfos.add(digitalButtonStream);
+
+	eventCodes.fill(0);
 }
 
 OnixDeviceType DigitalIO::getDeviceType()
@@ -64,10 +93,16 @@ bool DigitalIO::updateSettings()
 
 void DigitalIO::startAcquisition()
 {
+	currentFrame = 0;
+	sampleNumber = 0;
+
+	digitalSamples.fill(0);
 }
 
 void DigitalIO::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
 {
+	sourceBuffers.add(new DataBuffer(NumChannels, (int)streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
+	digitalBuffer = sourceBuffers.getLast();
 }
 
 EventChannel::Settings DigitalIO::getEventChannelSettings(DataStream* stream)
@@ -78,48 +113,54 @@ EventChannel::Settings DigitalIO::getEventChannelSettings(DataStream* stream)
 		"Digital inputs and breakout button states coming from a DigitalIO device",
 		getStreamIdentifier() + ".event.digital",
 		stream,
-		numButtons + numDigitalInputs
+		NumChannels
 	};
 
 	return settings;
 }
 
-int DigitalIO::getNumberOfWords()
+float DigitalIO::getChannelState(uint8_t state, int channel)
 {
-	return eventWords.size_approx();
-}
+	return (state & (1 << channel)) >> channel; // NB: Return the state of the specified channel
+};
 
 void DigitalIO::processFrames()
 {
 	oni_frame_t* frame;
 	while (frameQueue.try_dequeue(frame))
 	{
+		size_t offset = 0;
 
 		uint16_t* dataPtr = (uint16_t*)frame->data;
-		uint64_t timestamp = deviceContext->convertTimestampToSeconds(frame->time);
 
-		int dataOffset = 4;
+		timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
+		sampleNumbers[currentFrame] = sampleNumber++;
 
-		uint64_t portState = *(dataPtr + dataOffset);
-		uint64_t buttonState = *(dataPtr + dataOffset + 1);
+		constexpr int inputDataOffset = 4;
+		constexpr int buttonDataOffset = inputDataOffset + 1;
 
-		uint64_t ttlEventWord = (buttonState & 0x3F) << 8 | (portState & 0xFF);
-		eventWords.enqueue(ttlEventWord);
+		uint64_t inputState = *(dataPtr + inputDataOffset);
+		uint64_t buttonState = *(dataPtr + buttonDataOffset);
+
+		for (int i = 0; i < NumDigitalInputs; i++)
+		{
+			digitalSamples[currentFrame + offset++ * NumFrames] = getChannelState(inputState, i);
+		}
+
+		for (int i = 0; i < NumButtons; i++)
+		{
+			digitalSamples[currentFrame + offset++ * NumFrames] = getChannelState(buttonState, i);
+		}
+
+		eventCodes[currentFrame] = (buttonState & 0x3F) << 8 | (inputState & 0xFF);
 
 		oni_destroy_frame(frame);
+
+		if (++currentFrame >= NumFrames)
+		{
+			digitalBuffer->addToBuffer(digitalSamples.data(), sampleNumbers.data(), timestamps.data(), eventCodes.data(), NumFrames);
+
+			currentFrame = 0;
+		}
 	}
-}
-
-uint64_t DigitalIO::getEventWord()
-{
-	uint64_t eventWord;
-	if (eventWords.try_dequeue(eventWord))
-		return eventWord;
-
-	return 0;
-}
-
-bool DigitalIO::hasEventWord()
-{
-	return eventWords.peek() != nullptr;
 }

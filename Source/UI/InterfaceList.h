@@ -21,7 +21,6 @@
 */
 
 #include "AnalogIOInterface.h"
-#include "AuxiliaryIOInterface.h"
 #include "Bno055Interface.h"
 #include "CustomViewport.h"
 #include "DigitalIOInterface.h"

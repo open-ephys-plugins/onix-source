@@ -53,8 +53,9 @@ namespace OnixSourcePlugin
 		HARPSYNCINPUT,
 		ANALOGIO,
 		DIGITALIO,
-		COMPOSITE,
 	};
+
+	static const std::string ProbeString = "Probe";
 
 	struct StreamInfo {
 	public:
@@ -201,11 +202,14 @@ namespace OnixSourcePlugin
 		std::string getStreamIdentifier();
 
 		static oni_dev_idx_t getHubIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex);
+		static oni_dev_idx_t getPassthroughIndexFromHubIndex(oni_dev_idx_t hubIndex);
+
+		static const std::map<OnixDeviceType, std::string> TypeString;
 
 	protected:
 
 		oni_dev_idx_t getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex) const;
-		
+
 		ReaderWriterQueue<oni_frame_t*> frameQueue;
 		const oni_dev_idx_t deviceIdx;
 		std::shared_ptr<Onix1> deviceContext;
@@ -227,58 +231,10 @@ namespace OnixSourcePlugin
 			B = 9
 		};
 
+		static bool isValidPassthroughIndex(oni_dev_idx_t);
+
 		JUCE_LEAK_DETECTOR(OnixDevice);
 	};
-
-	enum class CompositeDeviceType {
-		AUXILIARYIO = 0
-	};
-
+  
 	using OnixDeviceVector = std::vector<std::shared_ptr<OnixDevice>>;
-
-	/*
-		Abstract device that contains two or more devices
-	*/
-	class CompositeDevice : public OnixDevice
-	{
-	public:
-
-		CompositeDevice(std::string name_, std::string hubName, CompositeDeviceType type_, OnixDeviceVector devices_, std::shared_ptr<Onix1> oni_ctx);
-
-		CompositeDeviceType getCompositeDeviceType() const;
-
-		bool compareIndex(uint32_t index) override;
-		bool isEnabled() const override;
-		bool isEnabled(uint32_t index);
-		void setEnabled(bool newState) override;
-		void setEnabled(uint32_t index, bool newState);
-		int configureDevice() override;
-		bool updateSettings() override;
-		void startAcquisition() override;
-		void stopAcquisition() override;
-		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
-		void addFrame(oni_frame_t*) override;
-
-		template<class Device>
-		std::shared_ptr<Device> getDevice(OnixDeviceType deviceType)
-		{
-			for (const auto& device : devices)
-			{
-				if (device->getDeviceType() == deviceType)
-					return std::static_pointer_cast<Device>(device);
-			}
-
-			return nullptr;
-		}
-
-	protected:
-
-		OnixDeviceVector devices;
-
-		CompositeDeviceType compositeType;
-
-	private:
-
-		JUCE_LEAK_DETECTOR(CompositeDevice);
-	};
 }

@@ -20,7 +20,6 @@
 
 */
 
-#include "AuxiliaryIO.h"
 #include "AnalogIO.h"
 #include "Bno055.h"
 #include "DigitalIO.h"
