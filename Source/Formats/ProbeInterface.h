@@ -182,7 +182,9 @@ namespace OnixSourcePlugin
 					probe_planar_contour = probe->getProperty(Identifier("probe_planar_contour")).getArray();
 				}
 				else
-					return false;
+				{
+					LOGD("No probe planar contour found.");
+				}
 
 				Array<var>* device_channel_indices = nullptr;
 
@@ -218,11 +220,14 @@ namespace OnixSourcePlugin
 
 				settings->probeMetadata.probeContour.clear();
 
-				for (int i = 0; i < probe_planar_contour->size(); i++)
+				if (probe_planar_contour != nullptr)
 				{
-					Array<var>* point = probe_planar_contour->getReference(i).getArray();
+					for (int i = 0; i < probe_planar_contour->size(); i++)
+					{
+						Array<var>* point = probe_planar_contour->getReference(i).getArray();
 
-					settings->probeMetadata.probeContour.emplace_back(std::array<float, 2>{float(point->getReference(0)), float(point->getReference(1))});
+						settings->probeMetadata.probeContour.emplace_back(std::array<float, 2>{float(point->getReference(0)), float(point->getReference(1))});
+					}
 				}
 
 				for (int ch = 0; ch < shank_ids->size(); ch++)
