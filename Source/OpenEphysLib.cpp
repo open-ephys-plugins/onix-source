@@ -47,7 +47,7 @@ extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 	info->name = "ONIX Source";
 
 	//Version of the library, used only for information
-	info->libVersion = "0.1.0";
+	info->libVersion = "0.1.1";
 	info->numPlugins = NUM_PLUGINS;
 }
 
