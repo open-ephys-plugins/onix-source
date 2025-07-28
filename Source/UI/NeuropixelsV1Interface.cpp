@@ -1034,12 +1034,18 @@ void NeuropixelsV1Interface::saveParameters(XmlElement* xml)
 	probeViewerNode->setAttribute("apFilter", filterComboBox->getText());
 
 	XmlElement* channelsNode = xmlNode->createNewChildElement("SELECTED_CHANNELS");
+	XmlElement* xposNode = xmlNode->createNewChildElement("ELECTRODE_XPOS");
+	XmlElement* yposNode = xmlNode->createNewChildElement("ELECTRODE_YPOS");
 
 	for (int i = 0; i < settings->selectedElectrode.size(); i++)
 	{
 		int globalIndex = settings->selectedElectrode[i];
+		
+		String chId = "CH" + String(i);
+		channelsNode->setAttribute(chId, std::to_string(globalIndex));
 
-		channelsNode->setAttribute("CH" + String(i), std::to_string(globalIndex));
+		xposNode->setAttribute(chId, String(settings->electrodeMetadata[globalIndex].xpos));
+		yposNode->setAttribute(chId, String(settings->electrodeMetadata[globalIndex].ypos));
 	}
 }
 

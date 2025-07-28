@@ -679,12 +679,18 @@ void NeuropixelsV2eProbeInterface::saveParameters(XmlElement* xml)
 	probeViewerNode->setAttribute("referenceChannel", referenceComboBox->getText());
 
 	XmlElement* channelsNode = xmlNode->createNewChildElement("SELECTED_CHANNELS");
+	XmlElement* xposNode = xmlNode->createNewChildElement("ELECTRODE_XPOS");
+	XmlElement* yposNode = xmlNode->createNewChildElement("ELECTRODE_YPOS");
 
 	for (int i = 0; i < settings->selectedElectrode.size(); i++)
 	{
 		int globalIndex = settings->selectedElectrode[i];
 
-		channelsNode->setAttribute(String("CH" + std::to_string(i)), std::to_string(globalIndex));
+		String chId = "CH" + String(i);
+		channelsNode->setAttribute(chId, std::to_string(globalIndex));
+
+		xposNode->setAttribute(chId, String(settings->electrodeMetadata[globalIndex].xpos));
+		yposNode->setAttribute(chId, String(settings->electrodeMetadata[globalIndex].ypos));
 	}
 }
 
