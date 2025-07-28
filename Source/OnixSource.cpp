@@ -159,8 +159,7 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 	}
 	catch (const error_str& e)
 	{
-		LOGE(e.what());
-		AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Configuration Error", e.what());
+		Onix1::showWarningMessageBoxAsync("Configuration Error", e.what());
 
 		return false;
 	}

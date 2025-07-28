@@ -65,8 +65,7 @@ void NeuropixelsV1eBackgroundUpdater::run()
 	}
 	catch (const error_str& e)
 	{
-		LOGE(e.what());
-		AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Error Writing Shift Registers", e.what());
+		Onix1::showWarningMessageBoxAsync("Error Writing Shift Registers", e.what());
 		result = false;
 		return;
 	}
