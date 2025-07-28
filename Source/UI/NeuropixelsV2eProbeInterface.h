@@ -52,6 +52,7 @@ namespace OnixSourcePlugin
 
 		void buttonClicked(Button*) override;
 		void comboBoxChanged(ComboBox*) override;
+		void textEditorTextChanged(TextEditor&) override;
 
 		void startAcquisition() override;
 
@@ -77,6 +78,8 @@ namespace OnixSourcePlugin
 
 		const int probeIndex;
 
+		static constexpr char* GainCalibrationFilename = "_gainCalValues.csv";
+
 		std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
 		std::unique_ptr<ComboBox> referenceComboBox;
 
@@ -85,6 +88,12 @@ namespace OnixSourcePlugin
 		std::unique_ptr<Label> electrodesLabel;
 		std::unique_ptr<Label> electrodePresetLabel;
 		std::unique_ptr<Label> referenceLabel;
+
+		std::unique_ptr<Label> gainCorrectionFolderLabel;
+		std::unique_ptr<ToggleButton> searchForCorrectionFilesButton;
+		std::unique_ptr<FileChooser> gainCorrectionFolderChooser;
+		std::unique_ptr<TextEditor> gainCorrectionFolder;
+		std::unique_ptr<UtilityButton> gainCorrectionFolderButton;
 
 		std::unique_ptr<Label> gainCorrectionFileLabel;
 		std::unique_ptr<UtilityButton> gainCorrectionFileButton;
@@ -127,6 +136,10 @@ namespace OnixSourcePlugin
 		void checkForExistingChannelPreset();
 
 		int getIndexOfComboBoxItem(ComboBox* cb, std::string item);
+
+		void setGainCorrectionFolderEnabledState(bool enabledState);
+
+		static std::string searchDirectoryForCalibrationFile(std::string folder, uint64_t sn);
 
 		JUCE_LEAK_DETECTOR(NeuropixelsV2eProbeInterface);
 	};

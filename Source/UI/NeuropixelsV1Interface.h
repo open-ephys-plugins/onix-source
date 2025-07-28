@@ -51,6 +51,7 @@ namespace OnixSourcePlugin
 
 		void buttonClicked(Button*) override;
 		void comboBoxChanged(ComboBox*) override;
+		void textEditorTextChanged(TextEditor&) override;
 
 		void startAcquisition() override;
 
@@ -77,6 +78,9 @@ namespace OnixSourcePlugin
 
 		bool acquisitionIsActive = false;
 
+		static constexpr char* GainCalibrationFilename = "_gainCalValues.csv";
+		static constexpr char* AdcCalibrationFilename = "_ADCCalibration.csv";
+
 		std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
 		std::unique_ptr<ComboBox> lfpGainComboBox;
 		std::unique_ptr<ComboBox> apGainComboBox;
@@ -93,6 +97,20 @@ namespace OnixSourcePlugin
 		std::unique_ptr<Label> referenceLabel;
 		std::unique_ptr<Label> filterLabel;
 		std::unique_ptr<Label> activityViewLabel;
+
+		std::unique_ptr<Label> calibrationFolderLabel;
+		std::unique_ptr<ToggleButton> searchForCalibrationFilesButton;
+		std::unique_ptr<FileChooser> calibrationFolderChooser;
+		std::unique_ptr<TextEditor> calibrationFolder;
+		std::unique_ptr<UtilityButton> calibrationFolderButton;
+
+		void setCalibrationFolderEnabledState(bool enabledState);
+
+		static std::string searchDirectoryForGainCalibrationFile(std::string folder, uint64_t sn);
+		static std::string searchDirectoryForAdcCalibrationFile(std::string folder, uint64_t sn);
+		static std::string searchDirectoryForCalibrationFile(std::string folder, std::string filename, uint64_t sn);
+
+		void searchForCalibrationFiles(std::string, uint64_t);
 
 		std::unique_ptr<Label> adcCalibrationFileLabel;
 		std::unique_ptr<Label> gainCalibrationFileLabel;
