@@ -718,7 +718,7 @@ void NeuropixelsV2eProbeInterface::updateSettings()
 	gainCorrectionFile->setText(npx->getGainCorrectionFile(probeIndex) == "None" ? "" : npx->getGainCorrectionFile(probeIndex), dontSendNotification);
 }
 
-bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe)
+bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p)
 {
 	if (electrodeConfigurationComboBox != 0)
 		electrodeConfigurationComboBox->setSelectedId(p->electrodeConfigurationIndex + 2, dontSendNotification);
@@ -747,11 +747,6 @@ bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2
 				settings->electrodeMetadata[j].status = ElectrodeStatus::CONNECTED;
 			}
 		}
-	}
-
-	if (shouldUpdateProbe)
-	{
-		CoreServices::saveRecoveryConfig();
 	}
 
 	drawLegend();

@@ -58,7 +58,7 @@ namespace OnixSourcePlugin
 
 		void stopAcquisition() override;
 
-		bool applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe = true);
+		bool applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p);
 
 		void saveParameters(XmlElement* xml) override;
 
