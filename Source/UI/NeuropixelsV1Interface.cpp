@@ -80,7 +80,7 @@ NeuropixelsV1Interface::NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, 
 		searchForCalibrationFilesButton = std::make_unique<ToggleButton>("Search for calibration files automatically");
 		searchForCalibrationFilesButton->setBounds(infoLabel->getX() + 2, infoLabel->getBottom() + 5, 350, 20);
 		searchForCalibrationFilesButton->addListener(this);
-		searchForCalibrationFilesButton->setTooltip("Open a dialog to choose the folder where calibration files exist. This can be a top-level folder which is recursively searched for a matching serial number.");
+		searchForCalibrationFilesButton->setTooltip("Open a file dialog to choose a folder that contains all calibration files. The calibration file(s) that matches your probe will automatically be selected if it exists in this folder.");
 		addAndMakeVisible(searchForCalibrationFilesButton.get());
 
 		calibrationFolderLabel = std::make_unique<Label>("calibrationFolderLabel", "Calibration Folder");
@@ -99,12 +99,10 @@ NeuropixelsV1Interface::NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, 
 		calibrationFolderButton->setBounds(calibrationFolder->getRight() + 3, calibrationFolder->getY(), 26, calibrationFolder->getHeight() + 2);
 		calibrationFolderButton->setRadius(1.0f);
 		calibrationFolderButton->addListener(this);
-		calibrationFolderButton->setTooltip("Open a file dialog to choose the gain calibration folder path to automatically search for probe calibration files.");
+		calibrationFolderButton->setTooltip("Open a file dialog to choose the calibration folder path to automatically search for probe calibration files.");
 		addAndMakeVisible(calibrationFolderButton.get());
 
 		calibrationFolderChooser = std::make_unique<FileChooser>("Select Gain Calibration Folder.", File());
-
-		setCalibrationFolderEnabledState(false);
 
 		adcCalibrationFileLabel = std::make_unique<Label>("adcCalibrationFileLabel", "ADC Calibration File");
 		adcCalibrationFileLabel->setBounds(calibrationFolder->getX(), calibrationFolder->getBottom() + 15, calibrationFolderLabel->getWidth(), calibrationFolderLabel->getHeight());
@@ -536,6 +534,8 @@ NeuropixelsV1Interface::NeuropixelsV1Interface(std::shared_ptr<Neuropixels1> d, 
 		addAndMakeVisible(activityViewComponent.get());
 
 		updateSettings();
+
+		setCalibrationFolderEnabledState(false);
 	}
 
 	drawLegend();
@@ -581,7 +581,7 @@ void NeuropixelsV1Interface::updateInfoString()
 
 	if (searchForCalibrationFilesButton->getToggleState())
 	{
-		searchForCalibrationFiles(calibrationFolder->getText().toStdString(), std::static_pointer_cast<Neuropixels1>(device)->getProbeSerialNumber());
+		searchForCalibrationFiles(calibrationFolder->getText().toStdString(), sn);
 	}
 }
 
@@ -720,7 +720,6 @@ void NeuropixelsV1Interface::buttonClicked(Button* button)
 			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
-		updateInfoString();
 		repaint();
 
 		CoreServices::updateSignalChain(editor);
@@ -893,26 +892,27 @@ std::string NeuropixelsV1Interface::searchDirectoryForCalibrationFile(std::strin
 	if (folder == "" || sn == 0)
 		return "";
 
-	File directory = File(folder);
+	File rootDirectory = File(folder);
 
-	if (!directory.isDirectory())
+	if (!rootDirectory.isDirectory())
 	{
 		Onix1::showWarningMessageBoxAsync("Invalid Directory", "The path given for the calibration files directory is invalid. Please try setting it again.");
 		return "";
 	}
 
-	std::vector<File> calibrationFiles;
-
-	for (DirectoryEntry entry : RangedDirectoryIterator(directory, true, filename, File::findFiles, File::FollowSymlinks::no))
-	{
-		calibrationFiles.emplace_back(entry.getFile());
-		LOGD("Discovered file: ", entry.getFile().getFullPathName());
-	}
+	auto calibrationFiles = searchDirectoryForFile(rootDirectory, filename, NeuropixelsCalibrationFileRecursiveLevels);
 
 	if (calibrationFiles.size() != 1)
 	{
-		Onix1::showWarningMessageBoxAsync("Wrong Number of Calibration Files", "Expected to find 1 file matching '" + filename +
-			"', but found " + std::to_string(calibrationFiles.size()) + " instead. Check logs for all files discovered.");
+		std::string msg = "Expected to find 1 file matching '" + filename +
+			"', but found " + std::to_string(calibrationFiles.size()) + " instead.";
+
+		if (calibrationFiles.size() > 1)
+		{
+			msg += " Check console for all files discovered.";
+		}
+
+		Onix1::showWarningMessageBoxAsync("Wrong Number of Calibration Files", msg);
 		return "";
 	}
 
@@ -921,20 +921,37 @@ std::string NeuropixelsV1Interface::searchDirectoryForCalibrationFile(std::strin
 
 void NeuropixelsV1Interface::setCalibrationFolderEnabledState(bool enabledState)
 {
+	float alphaEnabled = 1.0, alphaDisabled = 0.25;
+
 	if (!enabledState)
 	{
-		calibrationFolder->setAlpha(0.25);
+		calibrationFolder->setAlpha(alphaDisabled);
 		calibrationFolderButton->setEnabled(false);
+
+		adcCalibrationFile->setAlpha(alphaEnabled);
+		adcCalibrationFileButton->setEnabled(true);
+
+		gainCalibrationFile->setAlpha(alphaEnabled);
+		gainCalibrationFileButton->setEnabled(true);
 	}
 	else
 	{
-		calibrationFolder->setAlpha(1.0);
+		calibrationFolder->setAlpha(alphaEnabled);
 		calibrationFolderButton->setEnabled(true);
+
+		adcCalibrationFile->setAlpha(alphaDisabled);
+		adcCalibrationFileButton->setEnabled(false);
+
+		gainCalibrationFile->setAlpha(alphaDisabled);
+		gainCalibrationFileButton->setEnabled(false);
 	}
 }
 
 void NeuropixelsV1Interface::searchForCalibrationFiles(std::string folder, uint64_t sn)
 {
+	if (!device->isEnabled())
+		return;
+
 	auto file = searchDirectoryForGainCalibrationFile(folder, sn);
 
 	if (file != "")

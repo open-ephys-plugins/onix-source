@@ -150,5 +150,36 @@ namespace OnixSourcePlugin
 
 			return rootElement.release();
 		}
+
+    static constexpr int NeuropixelsCalibrationFileRecursiveLevels = 2;
+
+		// Given a File object defining the path to a directory, a filename to search for, and (optionally) the number of recursive levels to
+		// iterate through, return a list of all files that match the given filename in the directory (or directories for recursive searches)
+		static std::vector<File> searchDirectoryForFile(File directory, std::string filename, int recursiveLevels = 0)
+		{
+			std::vector<File> matchingFiles;
+
+			if (!directory.isDirectory())
+				return matchingFiles;
+
+			if (recursiveLevels > 0)
+			{
+				for (DirectoryEntry entry : RangedDirectoryIterator(directory, false, "*", File::findDirectories, File::FollowSymlinks::no))
+				{
+					auto files = searchDirectoryForFile(entry.getFile(), filename, recursiveLevels - 1);
+
+					if (files.size() > 0)
+						matchingFiles.insert(matchingFiles.end(), files.begin(), files.end());
+				}
+			}
+
+			for (DirectoryEntry entry : RangedDirectoryIterator(directory, false, filename, File::findFiles, File::FollowSymlinks::no))
+			{
+				matchingFiles.emplace_back(entry.getFile());
+				LOGC("Discovered file: ", entry.getFile().getFullPathName());
+			}
+
+			return matchingFiles;
+		}
 	};
 }

@@ -102,7 +102,6 @@ void NeuropixelsV2eInterface::buttonClicked(Button* button)
 			deviceEnableButton->setLabel(disabledButtonText);
 		}
 
-		updateInfoString();
 		repaint();
 
 		CoreServices::updateSignalChain(editor);
