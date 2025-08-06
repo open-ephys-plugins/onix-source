@@ -939,6 +939,8 @@ void NeuropixelsV1Interface::searchForCalibrationFiles(std::string folder, uint6
 
 	if (file != "")
 		gainCalibrationFile->setText(file);
+	else
+		return;
 
 	file = searchDirectoryForAdcCalibrationFile(folder, sn);
 
