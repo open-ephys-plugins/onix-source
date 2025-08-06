@@ -78,7 +78,9 @@ int DigitalIO::configureDevice()
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Could not read the base frequency register on the DigitalIO device.");
 
-	uint32_t periodTicks = baseFreqHz / (uint32_t)AnalogIO::getSampleRate();
+	// NB: Two states are not accounted for when comparing clock ticks on the hardware,
+	//	   therefore the periodTicks variable must be decreased by 2 to get the correct sample rate.
+	uint32_t periodTicks = (baseFreqHz / (uint32_t)AnalogIO::getSampleRate()) - 2u;
 	rc = deviceContext->writeRegister(deviceIdx, (uint32_t)DigitalIORegisters::SAMPLE_PERIOD, periodTicks);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Could not write the sample rate for polling to the DigitalIO device.");
