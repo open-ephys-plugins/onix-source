@@ -153,8 +153,9 @@ void MemoryMonitor::processFrames()
 
 	while (frameQueue.try_dequeue(frame))
 	{
+		auto hubClock = (uint64_t*)frame->data;
+		auto t = deviceContext->convertTimestampToSeconds(*hubClock);
 		uint32_t* dataPtr = (uint32_t*)frame->data;
-		auto t = deviceContext->convertTimestampToSeconds(frame->time);
 		auto p = 100.0f * float(*(dataPtr + 2)) / totalMemory;
 		lastPercentUsedValue = p;
 		oni_destroy_frame(frame);

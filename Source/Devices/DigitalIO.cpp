@@ -133,13 +133,15 @@ void DigitalIO::processFrames()
 	{
 		size_t offset = 0;
 
-		uint16_t* dataPtr = (uint16_t*)frame->data;
+		auto hubClock = (uint64_t*)frame->data;
 
-		timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
+		timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(*hubClock);
 		sampleNumbers[currentFrame] = sampleNumber++;
 
 		constexpr int inputDataOffset = 4;
 		constexpr int buttonDataOffset = inputDataOffset + 1;
+
+		uint16_t* dataPtr = (uint16_t*)frame->data;
 
 		uint64_t inputState = *(dataPtr + inputDataOffset);
 		uint64_t buttonState = *(dataPtr + buttonDataOffset);
