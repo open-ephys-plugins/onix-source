@@ -133,13 +133,18 @@ void DigitalIO::processFrames()
     {
         size_t offset = 0;
 
-        uint16_t* dataPtr = (uint16_t*) frame->data;
+        // NB: In ONI v1.0 frame clock is when the frame is created, not necessarily when the data is received.
+        //     For local and passthrough devices, we will instead use the hub clock for the timestamp; in
+        //     ONI v2.0 this behavior may change, and frame->time can be used instead for consistency across devices.
+        auto hubClock = (uint64_t*) frame->data;
 
-        timestamps[currentFrame] = deviceContext->convertTimestampToSeconds (frame->time);
+        timestamps[currentFrame] = deviceContext->convertTimestampToSeconds (*hubClock);
         sampleNumbers[currentFrame] = sampleNumber++;
 
         constexpr int inputDataOffset = 4;
         constexpr int buttonDataOffset = inputDataOffset + 1;
+
+        uint16_t* dataPtr = (uint16_t*) frame->data;
 
         uint64_t inputState = *(dataPtr + inputDataOffset);
         uint64_t buttonState = *(dataPtr + buttonDataOffset);

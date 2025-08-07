@@ -287,11 +287,16 @@ void Neuropixels1e::processFrames()
     oni_frame_t* frame;
     while (frameQueue.try_dequeue (frame))
     {
+        // NB: In ONI v1.0 frame clock is when the frame is created, not necessarily when the data is received.
+        //     For local and passthrough devices, we will instead use the hub clock for the timestamp; in
+        //     ONI v2.0 this behavior may change, and frame->time can be used instead for consistency across devices.
+        auto hubClock = (uint64_t*) frame->data;
+
+        apTimestamps[superFrameCount] = deviceContext->convertTimestampToSeconds (*hubClock);
+        apSampleNumbers[superFrameCount] = apSampleNumber++;
+
         uint16_t* dataPtr = (uint16_t*) frame->data;
         dataPtr += dataOffset;
-
-        apTimestamps[superFrameCount] = deviceContext->convertTimestampToSeconds (frame->time);
-        apSampleNumbers[superFrameCount] = apSampleNumber++;
 
         for (size_t i = 0; i < framesPerSuperFrame; i++)
         {

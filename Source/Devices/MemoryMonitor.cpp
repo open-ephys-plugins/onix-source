@@ -152,8 +152,12 @@ void MemoryMonitor::processFrames()
 
     while (frameQueue.try_dequeue (frame))
     {
+        // NB: In ONI v1.0 frame clock is when the frame is created, not necessarily when the data is received.
+        //     For local and passthrough devices, we will instead use the hub clock for the timestamp; in
+        //     ONI v2.0 this behavior may change, and frame->time can be used instead for consistency across devices.
+        auto hubClock = (uint64_t*) frame->data;
+        auto t = deviceContext->convertTimestampToSeconds (*hubClock);
         uint32_t* dataPtr = (uint32_t*) frame->data;
-        auto t = deviceContext->convertTimestampToSeconds (frame->time);
         auto p = 100.0f * float (*(dataPtr + 2)) / totalMemory;
         lastPercentUsedValue = p;
         oni_destroy_frame (frame);
