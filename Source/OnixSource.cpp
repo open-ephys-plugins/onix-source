@@ -159,8 +159,7 @@ bool OnixSource::configureDevice(OnixDeviceVector& sources,
 	}
 	catch (const error_str& e)
 	{
-		LOGE(e.what());
-		AlertWindow::showMessageBox(MessageBoxIconType::WarningIcon, "Configuration Error", e.what());
+		Onix1::showWarningMessageBoxAsync("Configuration Error", e.what());
 
 		return false;
 	}
@@ -285,7 +284,7 @@ bool OnixSource::checkHubFirmwareCompatibility(std::shared_ptr<Onix1> context, d
 			auto majorVersion = (firmwareVersion & 0xFF00) >> 8;
 			auto minorVersion = firmwareVersion & 0xFF;
 
-			LOGD("Breakout board firmware version: v", majorVersion, ".", minorVersion);
+			LOGC("Breakout board firmware version: v", majorVersion, ".", minorVersion);
 
 			if (majorVersion != RequiredMajorVersion)
 			{
@@ -418,7 +417,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(index, context);
 			uint32_t hsid = EEPROM->GetHeadStageID();
-			LOGD("Detected headstage ", onix_hub_str(hsid));
+			LOGC("Detected headstage ", onix_hub_str(hsid));
 
 			if (hsid == ONIX_HUB_HSNP2E)
 			{

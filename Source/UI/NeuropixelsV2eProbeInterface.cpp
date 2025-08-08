@@ -65,8 +65,35 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		infoLabel->setJustificationType(Justification::topLeft);
 		addAndMakeVisible(infoLabel.get());
 
+		searchForCorrectionFilesButton = std::make_unique<ToggleButton>("Search for calibration files automatically");
+		searchForCorrectionFilesButton->setBounds(infoLabel->getX() + 2, infoLabel->getBottom() + 5, 350, 20);
+		searchForCorrectionFilesButton->addListener(this);
+		searchForCorrectionFilesButton->setTooltip("Open a file dialog to choose a folder that contains all calibration files. The calibration file that matches your probe will automatically be selected if it exists in this folder.");
+		addAndMakeVisible(searchForCorrectionFilesButton.get());
+
+		gainCorrectionFolderLabel = std::make_unique<Label>("gainCorrectionFolderLabel", "Calibration Folder");
+		gainCorrectionFolderLabel->setBounds(searchForCorrectionFilesButton->getX(), searchForCorrectionFilesButton->getBottom() + 5, 240, 16);
+		gainCorrectionFolderLabel->setColour(Label::textColourId, Colours::black);
+		addAndMakeVisible(gainCorrectionFolderLabel.get());
+
+		gainCorrectionFolder = std::make_unique<TextEditor>("GAIN CORRECTION FOLDER");
+		gainCorrectionFolder->setEnabled(false);
+		gainCorrectionFolder->setBounds(gainCorrectionFolderLabel->getX(), gainCorrectionFolderLabel->getBottom() + 2, gainCorrectionFolderLabel->getWidth(), 20);
+		gainCorrectionFolder->setColour(Label::textColourId, Colours::black);
+		gainCorrectionFolder->addListener(this);
+		addAndMakeVisible(gainCorrectionFolder.get());
+
+		gainCorrectionFolderButton = std::make_unique<UtilityButton>("...");
+		gainCorrectionFolderButton->setBounds(gainCorrectionFolder->getRight() + 3, gainCorrectionFolder->getY(), 26, gainCorrectionFolder->getHeight() + 2);
+		gainCorrectionFolderButton->setRadius(1.0f);
+		gainCorrectionFolderButton->addListener(this);
+		gainCorrectionFolderButton->setTooltip("Open a file dialog to choose the gain correction folder path to automatically search for probe calibration files.");
+		addAndMakeVisible(gainCorrectionFolderButton.get());
+
+		gainCorrectionFolderChooser = std::make_unique<FileChooser>("Select Gain Correction Folder.", File());
+
 		gainCorrectionFileLabel = std::make_unique<Label>("gainCorrectionFileLabel", "Gain Correction File");
-		gainCorrectionFileLabel->setBounds(infoLabel->getX() + 2, infoLabel->getBottom() + 5, 240, 16);
+		gainCorrectionFileLabel->setBounds(gainCorrectionFolder->getX(), gainCorrectionFolder->getBottom() + 15, gainCorrectionFolderLabel->getWidth(), gainCorrectionFolderLabel->getHeight());
 		gainCorrectionFileLabel->setColour(Label::textColourId, Colours::black);
 		addAndMakeVisible(gainCorrectionFileLabel.get());
 
@@ -84,7 +111,7 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		gainCorrectionFileButton->setTooltip("Open a file dialog to choose the gain correction file for this probe.");
 		addAndMakeVisible(gainCorrectionFileButton.get());
 
-		gainCorrectionFileChooser = std::make_unique<FileChooser>("Select Gain Correction file.", File(), "*_gainCalValues.csv");
+		gainCorrectionFileChooser = std::make_unique<FileChooser>("Select Gain Correction file.", File(), std::string("*") + GainCalibrationFilename);
 
 		probeInterfaceRectangle = std::make_unique<DrawableRectangle>();
 		probeInterfaceRectangle->setFill(Colours::darkgrey);
@@ -323,6 +350,8 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface(std::shared_ptr<Neuro
 		addAndMakeVisible(activityViewComponent.get());
 
 #pragma endregion
+
+		setGainCorrectionFolderEnabledState(false);
 	}
 
 	drawLegend();
@@ -335,6 +364,7 @@ void NeuropixelsV2eProbeInterface::updateInfoString()
 	std::string deviceString, infoString;
 
 	auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+	auto sn = npx->getProbeSerialNumber(probeIndex);
 
 	if (device != nullptr)
 	{
@@ -342,13 +372,21 @@ void NeuropixelsV2eProbeInterface::updateInfoString()
 
 		infoString += "\n";
 		infoString += "Probe Number: ";
-		infoString += std::to_string(npx->getProbeSerialNumber(probeIndex));
+		infoString += std::to_string(sn);
 		infoString += "\n";
 		infoString += "\n";
 	}
 
 	deviceLabel->setText(deviceString, dontSendNotification);
 	infoLabel->setText(infoString, dontSendNotification);
+
+	if (searchForCorrectionFilesButton->getToggleState() && device->isEnabled())
+	{
+		auto file = searchDirectoryForCalibrationFile(gainCorrectionFolder->getText().toStdString(), sn);
+
+		if (file != "")
+			gainCorrectionFile->setText(file);
+	}
 }
 
 void NeuropixelsV2eProbeInterface::comboBoxChanged(ComboBox* comboBox)
@@ -432,8 +470,6 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 
 		if (fileChooser.browseForFileToOpen())
 		{
-			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
-
 			if (ProbeInterfaceJson::readProbeSettingsFromJson(fileChooser.getResult(), npx->settings[probeIndex].get()))
 			{
 				applyProbeSettings(npx->settings[probeIndex].get());
@@ -447,8 +483,6 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 
 		if (fileChooser.browseForFileToSave(true))
 		{
-			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
-
 			if (!ProbeInterfaceJson::writeProbeSettingsToJson(fileChooser.getResult(), npx->settings[probeIndex].get()))
 				CoreServices::sendStatusMessage("Failed to write probe channel map.");
 			else
@@ -487,12 +521,97 @@ void NeuropixelsV2eProbeInterface::buttonClicked(Button* button)
 		{
 			gainCorrectionFile->setText(gainCorrectionFileChooser->getResult().getFullPathName());
 		}
-		else
+	}
+	else if (button == searchForCorrectionFilesButton.get())
+	{
+		setGainCorrectionFolderEnabledState(button->getToggleState());
+
+		if (button->getToggleState() && device->isEnabled())
 		{
-			gainCorrectionFile->setText("");
+			auto calibrationFile = searchDirectoryForCalibrationFile(gainCorrectionFolder->getText().toStdString(), npx->getProbeSerialNumber(probeIndex));
+
+			if (calibrationFile != "")
+				gainCorrectionFile->setText(calibrationFile);
+		}
+	}
+	else if (button == gainCorrectionFolderButton.get())
+	{
+		if (gainCorrectionFolderChooser->browseForDirectory())
+		{
+			gainCorrectionFolder->setText(gainCorrectionFolderChooser->getResult().getFullPathName());
+
+			if (device->isEnabled())
+			{
+				auto calibrationFile = searchDirectoryForCalibrationFile(gainCorrectionFolder->getText().toStdString(), npx->getProbeSerialNumber(probeIndex));
+
+				if (calibrationFile != "")
+					gainCorrectionFile->setText(calibrationFile);
+			}
+		}
+	}
+}
+
+void NeuropixelsV2eProbeInterface::textEditorTextChanged(TextEditor& editor)
+{
+	if (editor.getName() == gainCorrectionFile->getName())
+	{
+		std::static_pointer_cast<Neuropixels2e>(device)->setGainCorrectionFile(probeIndex, editor.getText().toStdString());
+	}
+}
+
+std::string NeuropixelsV2eProbeInterface::searchDirectoryForCalibrationFile(std::string directory, uint64_t sn)
+{
+	if (directory == "" || sn == 0)
+		return "";
+
+	auto rootDirectory = File(directory);
+
+	if (!rootDirectory.isDirectory())
+	{
+		Onix1::showWarningMessageBoxAsync("Invalid Directory", "The path given for the calibration files directory is invalid. Please try setting it again.");
+		return "";
+	}
+
+	std::string filename = std::to_string(sn) + GainCalibrationFilename;
+
+	auto calibrationFiles = searchDirectoryForFile(rootDirectory, filename, NeuropixelsCalibrationFileRecursiveLevels);
+
+	if (calibrationFiles.size() != 1)
+	{
+		std::string msg = "Expected to find 1 file matching '" + filename +
+			"', but found " + std::to_string(calibrationFiles.size()) + " instead.";
+
+		if (calibrationFiles.size() > 1)
+		{
+			msg += " Check logs for all files discovered.";
 		}
 
-		std::static_pointer_cast<Neuropixels2e>(device)->setGainCorrectionFile(probeIndex, gainCorrectionFile->getText().toStdString());
+		Onix1::showWarningMessageBoxAsync("Wrong Number of Calibration Files", msg);
+		return "";
+	}
+
+	return calibrationFiles[0].getFullPathName().toStdString();
+}
+
+void NeuropixelsV2eProbeInterface::setGainCorrectionFolderEnabledState(bool enabledState)
+{
+	float alphaEnabled = 1.0, alphaDisabled = 0.25;
+
+	if (!enabledState)
+	{
+		gainCorrectionFolder->setAlpha(alphaDisabled);
+		gainCorrectionFolderButton->setEnabled(false);
+
+		gainCorrectionFile->setAlpha(alphaEnabled);
+		gainCorrectionFileButton->setEnabled(true);
+	}
+	else
+	{
+		gainCorrectionFolder->setAlpha(alphaEnabled);
+		gainCorrectionFolderButton->setEnabled(true);
+
+		gainCorrectionFile->setAlpha(alphaDisabled);
+		gainCorrectionFileButton->setEnabled(false);
 	}
 }
 
@@ -550,6 +669,12 @@ void NeuropixelsV2eProbeInterface::setInterfaceEnabledState(bool enabledState)
 
 	if (loadSettingsButton != nullptr)
 		loadSettingsButton->setEnabled(enabledState);
+
+	if (gainCorrectionFolderButton != nullptr)
+		gainCorrectionFolderButton->setEnabled(enabledState);
+
+	if (searchForCorrectionFilesButton != nullptr)
+		searchForCorrectionFilesButton->setEnabled(enabledState);
 }
 
 void NeuropixelsV2eProbeInterface::startAcquisition()
@@ -603,7 +728,7 @@ void NeuropixelsV2eProbeInterface::updateSettings()
 	gainCorrectionFile->setText(npx->getGainCorrectionFile(probeIndex) == "None" ? "" : npx->getGainCorrectionFile(probeIndex), dontSendNotification);
 }
 
-bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p, bool shouldUpdateProbe)
+bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p)
 {
 	if (electrodeConfigurationComboBox != 0)
 		electrodeConfigurationComboBox->setSelectedId(p->electrodeConfigurationIndex + 2, dontSendNotification);
@@ -632,11 +757,6 @@ bool NeuropixelsV2eProbeInterface::applyProbeSettings(ProbeSettings<Neuropixels2
 				settings->electrodeMetadata[j].status = ElectrodeStatus::CONNECTED;
 			}
 		}
-	}
-
-	if (shouldUpdateProbe)
-	{
-		CoreServices::saveRecoveryConfig();
 	}
 
 	drawLegend();
@@ -668,6 +788,10 @@ void NeuropixelsV2eProbeInterface::saveParameters(XmlElement* xml)
 	XmlElement* xmlNode = xml->createNewChildElement("PROBE" + std::to_string(probeIndex));
 
 	xmlNode->setAttribute("probeSerialNumber", std::to_string(npx->getProbeSerialNumber(probeIndex)));
+
+	xmlNode->setAttribute("searchForCorrectionFiles", searchForCorrectionFilesButton->getToggleState());
+
+	xmlNode->setAttribute("gainCorrectionFolder", gainCorrectionFolder->getText());
 
 	xmlNode->setAttribute("gainCorrectionFile", npx->getGainCorrectionFile(probeIndex));
 
@@ -718,6 +842,10 @@ void NeuropixelsV2eProbeInterface::loadParameters(XmlElement* xml)
 	{
 		LOGC("Different serial numbers found. Current serial number is " + std::to_string(npx->getProbeSerialNumber(probeIndex)) + ", while the saved serial number is " + std::to_string(xmlNode->getIntAttribute("probeSerialNumber")) + ". Updating settings...");
 	}
+
+	searchForCorrectionFilesButton->setToggleState(xmlNode->getBoolAttribute("searchForCorrectionFiles", false), sendNotification);
+
+	gainCorrectionFolder->setText(xmlNode->getStringAttribute("gainCorrectionFolder", ""));
 
 	npx->setGainCorrectionFile(probeIndex, xmlNode->getStringAttribute("gainCorrectionFile").toStdString());
 
