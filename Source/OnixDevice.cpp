@@ -24,6 +24,20 @@
 
 using namespace OnixSourcePlugin;
 
+const std::map<OnixDeviceType, std::string> OnixDevice::TypeString = {
+	{OnixDeviceType::BNO, "BNO055"},
+	{OnixDeviceType::POLLEDBNO, "BNO055"},
+	{OnixDeviceType::NEUROPIXELSV1E, "Neuropixels 1.0e"},
+	{OnixDeviceType::NEUROPIXELSV1F, "Neuropixels 1.0f"},
+	{OnixDeviceType::NEUROPIXELSV2E, "Neuropixels 2.0"},
+	{OnixDeviceType::PORT_CONTROL, "Port Control"},
+	{OnixDeviceType::MEMORYMONITOR, "Memory Monitor"},
+	{OnixDeviceType::OUTPUTCLOCK, "Output Clock"},
+	{OnixDeviceType::HARPSYNCINPUT, "Harp Sync Input"},
+	{OnixDeviceType::ANALOGIO, "Analog IO"},
+	{OnixDeviceType::DIGITALIO, "Digital IO"}
+};
+
 OnixDevice::OnixDevice(std::string name_, std::string hubName, OnixDeviceType type_, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx, bool passthrough)
 	: type(type_), deviceIdx(deviceIdx_), frameQueue(32)
 {
@@ -57,22 +71,40 @@ std::string OnixDevice::createStreamName(std::vector<std::string> names)
 	return streamName;
 }
 
+bool OnixDevice::isValidPassthroughIndex(oni_dev_idx_t passthroughIndex)
+{
+	return passthroughIndex == (uint32_t)PassthroughIndex::A || passthroughIndex == (uint32_t)PassthroughIndex::B;
+}
+
 oni_dev_idx_t OnixDevice::getHubIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex)
 {
-	if (passthroughIndex != (uint32_t)PassthroughIndex::A && passthroughIndex != (uint32_t)PassthroughIndex::B)
+	if (!isValidPassthroughIndex(passthroughIndex))
 	{
-		LOGE("Invalid passthrough index given. Value was ", passthroughIndex);
+		Onix1::showWarningMessageBoxAsync("Invalid Index", "Invalid passthrough index given. Value was " + std::to_string(passthroughIndex));
 		return 0;
 	}
 
 	return (passthroughIndex - 7) << 8;
 }
 
+oni_dev_idx_t OnixDevice::getPassthroughIndexFromHubIndex(oni_dev_idx_t hubIndex)
+{
+	auto index = (hubIndex >> 8) + 7;
+
+	if (!isValidPassthroughIndex(index))
+	{
+		Onix1::showWarningMessageBoxAsync("Invalid Index", "Invalid hub index given. Value was " + std::to_string(hubIndex));
+		return 0;
+	}
+
+	return index;
+}
+
 oni_dev_idx_t OnixDevice::getDeviceIndexFromPassthroughIndex(oni_dev_idx_t passthroughIndex) const
 {
-	if (passthroughIndex != (uint32_t)PassthroughIndex::A && passthroughIndex != (uint32_t)PassthroughIndex::B)
+	if (!isValidPassthroughIndex(passthroughIndex))
 	{
-		LOGE("Invalid passthrough index given. Value was ", passthroughIndex);
+		Onix1::showWarningMessageBoxAsync("Invalid Index", "Invalid passthrough index given. Value was " + std::to_string(passthroughIndex));
 		return 0;
 	}
 
@@ -203,8 +235,8 @@ std::vector<int> OnixDevice::getUniqueOffsets(OnixDeviceMap devices, bool ignore
 {
 	std::vector<int> indices;
 
-	for (const auto& [key, _] : devices) 
-	{ 
+	for (const auto& [key, _] : devices)
+	{
 		indices.emplace_back(key);
 	}
 
@@ -239,143 +271,5 @@ void OnixDevice::stopAcquisition()
 	while (frameQueue.try_dequeue(frame))
 	{
 		oni_destroy_frame(frame);
-	}
-}
-
-CompositeDevice::CompositeDevice(std::string name_, std::string hubName, CompositeDeviceType type_, OnixDeviceVector devices_, std::shared_ptr<Onix1> oni_ctx)
-	: OnixDevice(name_, hubName, OnixDeviceType::COMPOSITE, devices_.at(0)->getDeviceIdx(), oni_ctx)
-{
-	compositeType = type_;
-	devices = devices_;
-}
-
-CompositeDeviceType CompositeDevice::getCompositeDeviceType() const
-{
-	return compositeType;
-}
-
-bool CompositeDevice::compareIndex(uint32_t index)
-{
-	for (const auto& device : devices)
-	{
-		if (device->getDeviceIdx() == index)
-			return true;
-	}
-
-	return false;
-}
-
-bool CompositeDevice::isEnabled() const
-{
-	bool enabled = true;
-
-	for (const auto& device : devices)
-	{
-		enabled &= device->isEnabled();
-	}
-
-	return enabled;
-}
-
-bool CompositeDevice::isEnabled(uint32_t index)
-{
-	for (const auto& device : devices)
-	{
-		if (device->compareIndex(index))
-			return device->isEnabled();
-	}
-
-	Onix1::showWarningMessageBoxAsync(
-		"Unknown Index",
-		"Could not get the enabled status of a device at index " + std::to_string(index) + ", it was not found in " + getName()
-	);
-
-	return false;
-}
-
-void CompositeDevice::setEnabled(bool newState)
-{
-	for (const auto& device : devices)
-	{
-		device->setEnabled(newState);
-	}
-}
-
-void CompositeDevice::setEnabled(uint32_t index, bool newState)
-{
-	for (const auto& device : devices)
-	{
-		if (device->compareIndex(index))
-		{
-			device->setEnabled(newState);
-			return;
-		}
-	}
-
-	Onix1::showWarningMessageBoxAsync(
-		"Unknown Index",
-		"Could not set the enabled status of a device at index " + std::to_string(index) + ", it was not found in " + getName()
-	);
-
-	return;
-}
-
-int CompositeDevice::configureDevice()
-{
-	int result = ONI_ESUCCESS;
-
-	for (const auto& device : devices)
-	{
-		result |= device->configureDevice();
-	}
-
-	return result;
-}
-
-bool CompositeDevice::updateSettings()
-{
-	bool result = true;
-
-	for (const auto& device : devices)
-	{
-		result &= device->updateSettings();
-	}
-
-	return result;
-}
-
-void CompositeDevice::startAcquisition()
-{
-	for (const auto& device : devices)
-	{
-		device->startAcquisition();
-	}
-}
-
-void CompositeDevice::stopAcquisition()
-{
-	for (const auto& device : devices)
-	{
-		device->stopAcquisition();
-	}
-}
-
-void CompositeDevice::addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers)
-{
-	for (const auto& device : devices)
-	{
-		device->addSourceBuffers(sourceBuffers);
-	}
-}
-
-void CompositeDevice::addFrame(oni_frame_t* frame)
-{
-	for (const auto& device : devices)
-	{
-		if (device->compareIndex(frame->dev_idx))
-		{
-			device->addFrame(frame);
-			return;
-		}
 	}
 }

@@ -46,6 +46,8 @@ namespace OnixSourcePlugin
 		void comboBoxChanged(ComboBox* cb) override;
 		void setInterfaceEnabledState(bool newState) override;
 
+		void hideEnableButton();
+
 	private:
 
 		static const int numChannels = 12;

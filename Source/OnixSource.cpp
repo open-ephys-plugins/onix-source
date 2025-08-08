@@ -335,29 +335,37 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 		{
 			hubNames.insert({ hubIndex, BREAKOUT_BOARD_NAME });
 
-			devicesFound = configureDevice<OutputClock>(sources, editor, "Output Clock", BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + 5, context);
+			static constexpr int OutputClockOffset = 5, AnalogIOOffset = 6, DigitalIOOffset = 7, MemoryMonitorOffset = 10, HarpSyncInputOffset = 12;
+
+			devicesFound = configureDevice<OutputClock>(sources, editor, OnixDevice::TypeString.at(OutputClock::getDeviceType()), BREAKOUT_BOARD_NAME, OutputClock::getDeviceType(), hubIndex + OutputClockOffset, context);
 			if (!devicesFound)
 			{
 				sources.clear();
 				return false;
 			}
 
-			// NB: Configures AnalogIO and DigitalIO
-			devicesFound = configureDevice<AuxiliaryIO>(sources, editor, "Auxiliary IO", BREAKOUT_BOARD_NAME, AuxiliaryIO::getDeviceType(), hubIndex + 6, context);
+			devicesFound = configureDevice<DigitalIO>(sources, editor, OnixDevice::TypeString.at(DigitalIO::getDeviceType()), BREAKOUT_BOARD_NAME, DigitalIO::getDeviceType(), hubIndex + DigitalIOOffset, context);
 			if (!devicesFound)
 			{
 				sources.clear();
 				return false;
 			}
 
-			devicesFound = configureDevice<MemoryMonitor>(sources, editor, "Memory Monitor", BREAKOUT_BOARD_NAME, MemoryMonitor::getDeviceType(), hubIndex + 10, context);
+			devicesFound = configureDevice<AnalogIO>(sources, editor, OnixDevice::TypeString.at(AnalogIO::getDeviceType()), BREAKOUT_BOARD_NAME, AnalogIO::getDeviceType(), hubIndex + AnalogIOOffset, context);
 			if (!devicesFound)
 			{
 				sources.clear();
 				return false;
 			}
 
-			devicesFound = configureDevice<HarpSyncInput>(sources, editor, "Harp Sync Input", BREAKOUT_BOARD_NAME, HarpSyncInput::getDeviceType(), hubIndex + 12, context);
+			devicesFound = configureDevice<MemoryMonitor>(sources, editor, OnixDevice::TypeString.at(MemoryMonitor::getDeviceType()), BREAKOUT_BOARD_NAME, MemoryMonitor::getDeviceType(), hubIndex + MemoryMonitorOffset, context);
+			if (!devicesFound)
+			{
+				sources.clear();
+				return false;
+			}
+
+			devicesFound = configureDevice<HarpSyncInput>(sources, editor, OnixDevice::TypeString.at(HarpSyncInput::getDeviceType()), BREAKOUT_BOARD_NAME, HarpSyncInput::getDeviceType(), hubIndex + HarpSyncInputOffset, context);
 			if (!devicesFound)
 			{
 				sources.clear();
@@ -370,7 +378,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 
 			for (int i = 0; i < 2; i++)
 			{
-				devicesFound = configureDevice<Neuropixels1f>(sources, editor, "Probe" + std::to_string(i), NEUROPIXELSV1F_HEADSTAGE_NAME, Neuropixels1f::getDeviceType(), hubIndex + i, context);
+				devicesFound = configureDevice<Neuropixels1f>(sources, editor, ProbeString + std::to_string(i), NEUROPIXELSV1F_HEADSTAGE_NAME, Neuropixels1f::getDeviceType(), hubIndex + i, context);
 				if (!devicesFound)
 				{
 					sources.clear();
@@ -378,7 +386,7 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 				}
 			}
 
-			devicesFound = configureDevice<Bno055>(sources, editor, "BNO055", NEUROPIXELSV1F_HEADSTAGE_NAME, Bno055::getDeviceType(), hubIndex + 2, context);
+			devicesFound = configureDevice<Bno055>(sources, editor, OnixDevice::TypeString.at(Bno055::getDeviceType()), NEUROPIXELSV1F_HEADSTAGE_NAME, Bno055::getDeviceType(), hubIndex + 2, context);
 			if (!devicesFound)
 			{
 				sources.clear();
@@ -416,14 +424,14 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 			{
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
-				devicesFound = configureDevice<Neuropixels2e>(sources, editor, "Neuropixels 2.0", NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
+				devicesFound = configureDevice<Neuropixels2e>(sources, editor, ProbeString, NEUROPIXELSV2E_HEADSTAGE_NAME, Neuropixels2e::getDeviceType(), hubIndex, context);
 				if (!devicesFound)
 				{
 					sources.clear();
 					return false;
 				}
 
-				devicesFound = configureDevice<PolledBno055>(sources, editor, "BNO055", NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
+				devicesFound = configureDevice<PolledBno055>(sources, editor, OnixDevice::TypeString.at(PolledBno055::getDeviceType()), NEUROPIXELSV2E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
 				if (!devicesFound)
 				{
 					sources.clear();
@@ -449,14 +457,14 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 			{
 				auto hubIndex = OnixDevice::getHubIndexFromPassthroughIndex(index);
 
-				devicesFound = configureDevice<Neuropixels1e>(sources, editor, "Probe", NEUROPIXELSV1E_HEADSTAGE_NAME, Neuropixels1e::getDeviceType(), hubIndex, context);
+				devicesFound = configureDevice<Neuropixels1e>(sources, editor, ProbeString, NEUROPIXELSV1E_HEADSTAGE_NAME, Neuropixels1e::getDeviceType(), hubIndex, context);
 				if (!devicesFound)
 				{
 					sources.clear();
 					return false;
 				}
 
-				devicesFound = configureDevice<PolledBno055>(sources, editor, "BNO055", NEUROPIXELSV1E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
+				devicesFound = configureDevice<PolledBno055>(sources, editor, OnixDevice::TypeString.at(PolledBno055::getDeviceType()), NEUROPIXELSV1E_HEADSTAGE_NAME, PolledBno055::getDeviceType(), hubIndex + 1, context);
 				if (!devicesFound)
 				{
 					sources.clear();
@@ -790,7 +798,9 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 		{
 			if (!source->isEnabled()) continue;
 
-			if (source->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
+			auto type = source->getDeviceType();
+
+			if (type == OnixDeviceType::NEUROPIXELSV1F)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -804,7 +814,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->getDeviceType() == OnixDeviceType::BNO || source->getDeviceType() == OnixDeviceType::POLLEDBNO)
+			else if (type == OnixDeviceType::BNO || type == OnixDeviceType::POLLEDBNO)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -826,7 +836,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addCombinedStreams(dataStreamSettings, source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
+			else if (type == OnixDeviceType::NEUROPIXELSV2E)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -840,7 +850,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->getDeviceType() == OnixDeviceType::MEMORYMONITOR)
+			else if (type == OnixDeviceType::MEMORYMONITOR)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -854,7 +864,7 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->getDeviceType() == OnixDeviceType::HARPSYNCINPUT)
+			else if (type == OnixDeviceType::HARPSYNCINPUT)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -868,7 +878,46 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E)
+			else if (type == OnixDeviceType::DIGITALIO)
+			{
+				DeviceInfo::Settings digitalIODeviceSettings{
+					source->getName(),
+					"DigitalIO",
+					"digitalio",
+					"0000000",
+					""
+				};
+
+				deviceInfos->add(new DeviceInfo(digitalIODeviceSettings));
+
+				DataStream::Settings dataStreamSettings{
+					OnixDevice::createStreamName({source->getHubName(), source->getName()}),
+					"Digital inputs and buttons",
+					source->getStreamIdentifier(),
+					source->streamInfos[0].getSampleRate(),
+					true
+				};
+
+				addCombinedStreams(dataStreamSettings, source->streamInfos, dataStreams, deviceInfos, continuousChannels);
+
+				auto eventChannelSettings = std::static_pointer_cast<DigitalIO>(source)->getEventChannelSettings(dataStreams->getLast());
+				eventChannels->add(new EventChannel(eventChannelSettings));
+			}
+			else if (type == OnixDeviceType::ANALOGIO)
+			{
+				DeviceInfo::Settings analogIODeviceSettings{
+					source->getName(),
+					"AnalogIO",
+					"analogio",
+					"0000000",
+					""
+				};
+
+				deviceInfos->add(new DeviceInfo(analogIODeviceSettings));
+
+				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
+			}
+			else if (type == OnixDeviceType::NEUROPIXELSV1E)
 			{
 				DeviceInfo::Settings deviceSettings{
 					source->getName(),
@@ -882,40 +931,9 @@ void OnixSource::updateSettings(OwnedArray<ContinuousChannel>* continuousChannel
 
 				addIndividualStreams(source->streamInfos, dataStreams, deviceInfos, continuousChannels);
 			}
-			else if (source->getDeviceType() == OnixDeviceType::OUTPUTCLOCK)
+			else if (type == OnixDeviceType::OUTPUTCLOCK)
 			{
 				continue;
-			}
-			else if (source->getDeviceType() == OnixDeviceType::COMPOSITE)
-			{
-				auto compositeDevice = std::static_pointer_cast<CompositeDevice>(source);
-
-				if (compositeDevice->getCompositeDeviceType() == CompositeDeviceType::AUXILIARYIO)
-				{
-					DeviceInfo::Settings deviceSettings{
-						source->getName(),
-						"Auxiliary device containing analog and digital IO data",
-						"auxiliaryio",
-						"0000000",
-						""
-					};
-
-					deviceInfos->add(new DeviceInfo(deviceSettings));
-
-					auto auxiliaryIO = std::static_pointer_cast<AuxiliaryIO>(compositeDevice);
-
-					addIndividualStreams(auxiliaryIO->getAnalogIO()->streamInfos, dataStreams, deviceInfos, continuousChannels);
-
-					auto eventChannelSettings = auxiliaryIO->getDigitalIO()->getEventChannelSettings(dataStreams->getLast());
-					eventChannels->add(new EventChannel(eventChannelSettings));
-				}
-				else
-				{
-					Onix1::showWarningMessageBoxAsync(
-						"Unknown Composite Source",
-						"Found an unknown composite source (" + source->getName() + ") on hub " + source->getHubName() +
-						" at address " + std::to_string(source->getDeviceIdx()));
-				}
 			}
 			else
 			{
@@ -947,7 +965,12 @@ void OnixSource::addCombinedStreams(DataStream::Settings dataStreamSettings,
 			auto prefix = streamInfo.getChannelPrefix();
 
 			if (suffixes[chan] != "")
-				prefix += "-" + suffixes[chan];
+			{
+				if (prefix != "")
+					prefix += "-" + suffixes[chan];
+				else
+					prefix = suffixes[chan];
+			}
 
 			ContinuousChannel::Settings channelSettings{
 				streamInfo.getChannelType(),
