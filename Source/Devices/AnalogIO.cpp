@@ -231,7 +231,9 @@ void AnalogIO::processFrame(uint64_t eventWord)
 
 		currentAverageFrame = 0;
 
-		timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(frame->time);
+		auto hubClock = (uint64_t*)frame->data;
+
+		timestamps[currentFrame] = deviceContext->convertTimestampToSeconds(*hubClock);
 		sampleNumbers[currentFrame] = sampleNumber++;
 		eventCodes[currentFrame] = eventWord;
 
