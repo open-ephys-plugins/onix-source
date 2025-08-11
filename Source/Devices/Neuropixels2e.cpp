@@ -30,8 +30,8 @@ Neuropixels2e::Neuropixels2e(std::string name, std::string hubName, const oni_de
 	INeuropixel(NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
 {
 	probeSN.fill(0);
-  frameCount.fill(0);
-  sampleNumber.fill(0);
+	frameCount.fill(0);
+	sampleNumber.fill(0);
 
 	for (int i = 0; i < NeuropixelsV2eValues::numberOfSettings; i++)
 	{
@@ -493,8 +493,8 @@ uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
 
 void Neuropixels2e::startAcquisition()
 {
-  frameCount.fill(0);
-  sampleNumber.fill(0);
+	frameCount.fill(0);
+	sampleNumber.fill(0);
 }
 
 void Neuropixels2e::stopAcquisition()
@@ -534,7 +534,13 @@ void Neuropixels2e::processFrames()
 		uint16_t* amplifierData = dataPtr + 9;
 
 		sampleNumbers[probeIndex][frameCount[probeIndex]] = sampleNumber[probeIndex]++;
-		timestamps[probeIndex][frameCount[probeIndex]] = deviceContext->convertTimestampToSeconds(frame->time);
+
+		// NB: In ONI v1.0 frame clock is when the frame is created, not necessarily when the data is received.
+		//     For local and passthrough devices, we will instead use the hub clock for the timestamp; in
+		//     ONI v2.0 this behavior may change, and frame->time can be used instead for consistency across devices.
+		auto hubClock = (uint64_t*)frame->data;
+
+		timestamps[probeIndex][frameCount[probeIndex]] = deviceContext->convertTimestampToSeconds(*hubClock);
 
 		for (int i = 0; i < FramesPerSuperFrame; i++)
 		{
