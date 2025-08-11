@@ -137,6 +137,8 @@ namespace OnixSourcePlugin
 
 		static constexpr int DefaultBlockReadSize = 4096;
 
+		static constexpr char* missingCanvasErrorMessage = "The canvas for this plugin could not be found. Some functionality may not work as expected, and you may not be able to acquire or record data. Try removing and replacing the plugin.";
+
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSourceEditor);
 	};
 }

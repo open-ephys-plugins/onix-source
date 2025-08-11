@@ -416,6 +416,12 @@ void OnixSourceEditor::comboBoxChanged(ComboBox* cb)
 
 void OnixSourceEditor::updateComboBox(ComboBox* cb)
 {
+	if (canvas == nullptr)
+	{
+		Onix1::showWarningMessageBoxAsync("Missing Canvas", missingCanvasErrorMessage);
+		return;
+	}
+
 	bool isPortA = cb == headstageComboBoxA.get();
 
 	PortName currentPort = isPortA ? PortName::PortA : PortName::PortB;
@@ -432,6 +438,7 @@ void OnixSourceEditor::updateComboBox(ComboBox* cb)
 		std::string headstage = isPortA ? headstageComboBoxA->getText().toStdString() : headstageComboBoxB->getText().toStdString();
 
 		source->updateDiscoveryParameters(currentPort, PortController::getHeadstageDiscoveryParameters(headstage));
+
 		canvas->addHub(headstage, PortController::getPortOffset(currentPort));
 
 		if (headstage == NEUROPIXELSV2E_HEADSTAGE_NAME || headstage == NEUROPIXELSV1E_HEADSTAGE_NAME)
@@ -631,6 +638,12 @@ void OnixSourceEditor::setComboBoxSelection(ComboBox* comboBox, std::string head
 
 void OnixSourceEditor::refreshComboBoxSelection()
 {
+	if (canvas == nullptr)
+	{
+		Onix1::showWarningMessageBoxAsync("Missing Canvas", missingCanvasErrorMessage);
+		return;
+	}
+
 	Array<CustomTabComponent*> hubTabs = canvas->getHubTabs();
 
 	bool resetPortA = true, resetPortB = true;
@@ -657,6 +670,12 @@ void OnixSourceEditor::refreshComboBoxSelection()
 
 OnixDeviceMap OnixSourceEditor::createTabMapFromCanvas()
 {
+	if (canvas == nullptr)
+	{
+		Onix1::showWarningMessageBoxAsync("Missing Canvas", missingCanvasErrorMessage);
+		return OnixDeviceMap{};
+	}
+
 	return canvas->getSelectedDevices(canvas->settingsInterfaces);
 }
 
@@ -675,6 +694,8 @@ void OnixSourceEditor::saveVisualizerEditorParameters(XmlElement* xml)
 
 void OnixSourceEditor::loadVisualizerEditorParameters(XmlElement* xml)
 {
+	checkForCanvas();
+
 	LOGD("Loading OnixSourceEditor settings.");
 
 	if (xml->hasAttribute("headstagePortA"))
