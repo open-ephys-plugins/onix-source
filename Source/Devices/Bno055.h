@@ -1,22 +1,22 @@
 /*
-	------------------------------------------------------------------
+    ------------------------------------------------------------------
 
-	Copyright (C) Open Ephys
+    Copyright (C) Open Ephys
 
-	------------------------------------------------------------------
+    ------------------------------------------------------------------
 
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -26,53 +26,51 @@
 
 namespace OnixSourcePlugin
 {
-	enum class Bno055Registers
-	{
-		ENABLE = 0x00
-	};
+enum class Bno055Registers
+{
+    ENABLE = 0x00
+};
 
-	/*
-		Configures and streams data from a BNO055 device
-	*/
-	class Bno055 : public OnixDevice
-	{
-	public:
+/*
+    Configures and streams data from a BNO055 device
+*/
+class Bno055 : public OnixDevice
+{
+public:
+    /** Constructor */
+    Bno055 (std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
 
-		/** Constructor */
-		Bno055(std::string name, std::string hubName, const oni_dev_idx_t, std::shared_ptr<Onix1> ctx);
+    int configureDevice() override;
+    bool updateSettings() override;
+    void startAcquisition() override;
+    void processFrames() override;
+    void addSourceBuffers (OwnedArray<DataBuffer>& sourceBuffers) override;
 
-		int configureDevice() override;
-		bool updateSettings() override;
-		void startAcquisition() override;
-		void processFrames() override;
-		void addSourceBuffers(OwnedArray<DataBuffer>& sourceBuffers) override;
+    static OnixDeviceType getDeviceType();
 
-		static OnixDeviceType getDeviceType();
+private:
+    DataBuffer* bnoBuffer;
 
-	private:
+    const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
+    const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
+    const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
 
-		DataBuffer* bnoBuffer;
+    static const int numFrames = 2;
 
-		const float eulerAngleScale = 1.0f / 16; // 1 degree = 16 LSB
-		const float quaternionScale = 1.0f / (1 << 14); // 1 = 2^14 LSB
-		const float accelerationScale = 1.0f / 100; // 1m / s^2 = 100 LSB
+    bool shouldAddToBuffer = false;
 
-		static const int numFrames = 2;
+    static const int numberOfChannels = 3 + 3 + 4 + 3 + 1 + 4;
+    static constexpr float sampleRate = 100.0f;
 
-		bool shouldAddToBuffer = false;
+    std::array<float, numberOfChannels * numFrames> bnoSamples;
 
-		static const int numberOfChannels = 3 + 3 + 4 + 3 + 1 + 4;
-		static constexpr float sampleRate = 100.0f;
+    double bnoTimestamps[numFrames];
+    int64 sampleNumbers[numFrames];
+    uint64 eventCodes[numFrames];
 
-		std::array<float, numberOfChannels * numFrames> bnoSamples;
+    unsigned short currentFrame = 0;
+    int sampleNumber = 0;
 
-		double bnoTimestamps[numFrames];
-		int64 sampleNumbers[numFrames];
-		uint64 eventCodes[numFrames];
-
-		unsigned short currentFrame = 0;
-		int sampleNumber = 0;
-
-		JUCE_LEAK_DETECTOR(Bno055);
-	};
-}
+    JUCE_LEAK_DETECTOR (Bno055);
+};
+} // namespace OnixSourcePlugin
