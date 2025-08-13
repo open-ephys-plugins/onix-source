@@ -55,7 +55,6 @@ extern "C" EXPORT int getPluginInfo(int index, Plugin::PluginInfo* info)
 {
 	switch (index)
 	{
-		//one case per plugin. This example is for a processor which connects directly to the signal chain
 	case 0:
 		info->type = Plugin::DATA_THREAD;
 		info->dataThread.name = "ONIX Source";
