@@ -837,7 +837,7 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                 deviceInfos->add (new DeviceInfo (deviceSettings));
 
                 DataStream::Settings dataStreamSettings {
-                    OnixDevice::createStreamName ({ OnixDevice::getPortName (source->getDeviceIdx()), source->getHubName(), source->getName() }),
+                    source->createStreamName(),
                     "Continuous data from a Bno055 9-axis IMU",
                     source->getStreamIdentifier(),
                     source->streamInfos[0].getSampleRate(),
@@ -901,7 +901,7 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                 deviceInfos->add (new DeviceInfo (digitalIODeviceSettings));
 
                 DataStream::Settings dataStreamSettings {
-                    OnixDevice::createStreamName ({ source->getHubName(), source->getName() }),
+                    source->createStreamName ("", false),
                     "Digital inputs and buttons",
                     source->getStreamIdentifier(),
                     source->streamInfos[0].getSampleRate(),

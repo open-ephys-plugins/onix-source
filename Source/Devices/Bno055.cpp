@@ -31,7 +31,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
 
     std::string port = getPortName (deviceIdx);
     StreamInfo eulerAngleStream = StreamInfo (
-        OnixDevice::createStreamName ({ port, getHubName(), getName(), "Euler" }),
+        createStreamName ("Euler"),
         "Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",
         streamIdentifier,
         3,
@@ -46,7 +46,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
     streamInfos.add (eulerAngleStream);
 
     StreamInfo quaternionStream = StreamInfo (
-        OnixDevice::createStreamName ({ port, getHubName(), getName(), "Quaternion" }),
+        createStreamName ("Quaternion"),
         "Bosch Bno055 9-axis inertial measurement unit (IMU) Quaternion",
         streamIdentifier,
         4,
@@ -61,7 +61,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
     streamInfos.add (quaternionStream);
 
     StreamInfo accelerationStream = StreamInfo (
-        OnixDevice::createStreamName ({ port, getHubName(), getName(), "Acceleration" }),
+        createStreamName ("Acceleration"),
         "Bosch Bno055 9-axis inertial measurement unit (IMU) Acceleration",
         streamIdentifier,
         3,
@@ -76,7 +76,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
     streamInfos.add (accelerationStream);
 
     StreamInfo gravityStream = StreamInfo (
-        OnixDevice::createStreamName ({ port, getHubName(), getName(), "Gravity" }),
+        createStreamName ("Gravity"),
         "Bosch Bno055 9-axis inertial measurement unit (IMU) Gravity",
         streamIdentifier,
         3,
@@ -91,7 +91,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
     streamInfos.add (gravityStream);
 
     StreamInfo temperatureStream = StreamInfo (
-        OnixDevice::createStreamName ({ port, getHubName(), getName(), "Temperature" }),
+        createStreamName ("Temperature"),
         "Bosch Bno055 9-axis inertial measurement unit (IMU) Temperature",
         streamIdentifier,
         1,
@@ -105,7 +105,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
     streamInfos.add (temperatureStream);
 
     StreamInfo calibrationStatusStream = StreamInfo (
-        OnixDevice::createStreamName ({ port, getHubName(), getName(), "Calibration" }),
+        createStreamName ("Calibration"),
         "Bosch Bno055 9-axis inertial measurement unit (IMU) Calibration status",
         streamIdentifier,
         4,

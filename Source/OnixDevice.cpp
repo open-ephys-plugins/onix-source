@@ -72,6 +72,22 @@ std::string OnixDevice::createStreamName (std::vector<std::string> names)
     return streamName;
 }
 
+std::string OnixDevice::createStreamName (std::string suffix, bool usePort)
+{
+    std::vector<std::string> names;
+
+    if (usePort)
+        names.push_back (getPortName (getDeviceIdx()));
+
+    names.push_back (getHubName());
+    names.push_back (getName());
+
+    if (suffix != "")
+        names.push_back (suffix);
+
+    return createStreamName (names);
+}
+
 bool OnixDevice::isValidPassthroughIndex (oni_dev_idx_t passthroughIndex)
 {
     return passthroughIndex == (uint32_t) PassthroughIndex::A || passthroughIndex == (uint32_t) PassthroughIndex::B;
@@ -126,10 +142,13 @@ std::string OnixDevice::getStreamIdentifier()
 {
     std::string streamIdentifier = "onix";
 
-    // Insert the headstage or breakout board
     if (getHubName() == NEUROPIXELSV1F_HEADSTAGE_NAME)
     {
         streamIdentifier += ".npx1f";
+    }
+    else if (getHubName() == NEUROPIXELSV1E_HEADSTAGE_NAME)
+    {
+        streamIdentifier += ".npx1e";
     }
     else if (getHubName() == NEUROPIXELSV2E_HEADSTAGE_NAME)
     {
@@ -141,10 +160,10 @@ std::string OnixDevice::getStreamIdentifier()
     }
     else
     {
+        LOGD ("Unknown hub name found when creating the stream identifier: " + getHubName());
         streamIdentifier += ".headstage";
     }
 
-    // Insert the device
     if (getDeviceType() == OnixDeviceType::ANALOGIO)
     {
         streamIdentifier += ".analogio";
@@ -169,12 +188,17 @@ std::string OnixDevice::getStreamIdentifier()
     {
         streamIdentifier += ".npx1f";
     }
+    else if (getDeviceType() == OnixDeviceType::NEUROPIXELSV1E)
+    {
+        streamIdentifier += ".npx1e";
+    }
     else if (getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
     {
         streamIdentifier += ".npx2e";
     }
     else
     {
+        LOGD ("Unknown device type found when creating the stream identifier.");
         streamIdentifier += ".device";
     }
 

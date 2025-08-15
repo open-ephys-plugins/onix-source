@@ -78,7 +78,7 @@ MemoryMonitor::MemoryMonitor (std::string name, std::string hubName, const oni_d
     : OnixDevice (name, hubName, MemoryMonitor::getDeviceType(), deviceIdx_, oni_ctx)
 {
     StreamInfo percentUsedStream = StreamInfo (
-        OnixDevice::createStreamName ({ getHubName(), getName(), "PercentUsed" }),
+        createStreamName ("PercentUsed", false),
         "Percent of available memory that is currently used",
         getStreamIdentifier(),
         1,
