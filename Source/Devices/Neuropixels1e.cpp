@@ -80,7 +80,7 @@ Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_de
 {
 	std::string port = getPortName(getDeviceIdx());
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHubName(), getName(), STREAM_NAME_AP }),
+		createStreamName(STREAM_NAME_AP),
 		"Neuropixels 1.0 AP band data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
@@ -95,7 +95,7 @@ Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_de
 	streamInfos.add(apStream);
 
 	StreamInfo lfpStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHubName(), getName(), STREAM_NAME_LFP }),
+		createStreamName(STREAM_NAME_LFP),
 		"Neuropixels 1.0 LFP band data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
