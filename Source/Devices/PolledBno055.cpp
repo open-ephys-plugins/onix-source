@@ -148,10 +148,10 @@ int PolledBno055::configureDevice()
 
 	deserializer = std::make_unique<I2CRegisterContext>(DS90UB9x::DES_ADDR, deviceIdx, deviceContext);
 	uint32_t alias = Bno055Address << 1;
-	int rc = deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID4, alias);
+	int rc = deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID4, alias);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error while writing bytes for " + getName());
-	rc = deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias4, alias);
+	rc = deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias4, alias);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error while writing bytes for " + getName());
 
@@ -162,22 +162,22 @@ bool PolledBno055::updateSettings()
 {
 	if (!isEnabled()) return true;
 
-	int rc = WriteByte(0x3E, 0x00); // Power mode normal
+	int rc = writeByte(0x3E, 0x00); // Power mode normal
 	if (rc != ONI_ESUCCESS) return false;
 
-	rc = WriteByte(0x07, 0x00); // Page ID address 0
+	rc = writeByte(0x07, 0x00); // Page ID address 0
 	if (rc != ONI_ESUCCESS) return false;
 
-	rc = WriteByte(0x3F, 0x00); // Internal oscillator
+	rc = writeByte(0x3F, 0x00); // Internal oscillator
 	if (rc != ONI_ESUCCESS) return false;
 
-	rc = WriteByte(0x41, (uint32_t)axisMap);  // Axis map config
+	rc = writeByte(0x41, (uint32_t)axisMap);  // Axis map config
 	if (rc != ONI_ESUCCESS) return false;
 
-	rc = WriteByte(0x42, (uint32_t)axisSign); // Axis sign
+	rc = writeByte(0x42, (uint32_t)axisSign); // Axis sign
 	if (rc != ONI_ESUCCESS) return false;
 
-	rc = WriteByte(0x3D, 0x0C); // Operation mode is NDOF
+	rc = writeByte(0x3D, 0x0C); // Operation mode is NDOF
 	if (rc != ONI_ESUCCESS) return false;
 
 	rc = set933I2cRate(I2cRate);
@@ -251,38 +251,38 @@ void PolledBno055::pollFrame()
 
 
 	// Euler
-	ReadWord(EulerHeadingLsbAddress, 4, &value);
+	readWord(EulerHeadingLsbAddress, 4, &value);
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * EulerAngleScale;
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * EulerAngleScale;
 
-	ReadWord(EulerHeadingLsbAddress + 4, 4, &value);
+	readWord(EulerHeadingLsbAddress + 4, 4, &value);
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * EulerAngleScale;
 
 	// Quaternion
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * QuaternionScale;
 
-	ReadWord(EulerHeadingLsbAddress + 8, 4, &value);
+	readWord(EulerHeadingLsbAddress + 8, 4, &value);
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * QuaternionScale;
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * QuaternionScale;
 
-	ReadWord(EulerHeadingLsbAddress + 12, 4, &value);
+	readWord(EulerHeadingLsbAddress + 12, 4, &value);
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * QuaternionScale;
 
 	// Acceleration
 
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * AccelerationScale;
 
-	ReadWord(EulerHeadingLsbAddress + 16, 4, &value);
+	readWord(EulerHeadingLsbAddress + 16, 4, &value);
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * AccelerationScale;
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * AccelerationScale;
 
 	// Gravity
 
-	ReadWord(EulerHeadingLsbAddress + 20, 4, &value);
+	readWord(EulerHeadingLsbAddress + 20, 4, &value);
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * AccelerationScale;
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, false) * AccelerationScale;
 
-	ReadWord(EulerHeadingLsbAddress + 24, 4, &value);
+	readWord(EulerHeadingLsbAddress + 24, 4, &value);
 	bnoSamples[offset++ * NumFrames + currentFrame] = getInt16FromUint32(value, true) * AccelerationScale;
 
 	// Temperature
@@ -322,7 +322,7 @@ void PolledBno055::pollFrame()
 int16_t PolledBno055::readInt16(uint32_t startAddress)
 {
 	uint32_t value = 0;
-	int rc = ReadWord(startAddress, 2, &value);
+	int rc = readWord(startAddress, 2, &value);
 
 	if (rc != ONI_ESUCCESS)
 		return 0;

@@ -412,8 +412,8 @@ bool OnixSource::initializeDevices(device_map_t deviceTable, bool updateStreamIn
 			LOGD("Passthrough device detected");
 
 			auto serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, index, context);
-			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
-			serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
+			serializer->writeByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLHIGH, 20);
+			serializer->writeByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::SCLLOW, 20);
 
 			auto EEPROM = std::make_unique<HeadStageEEPROM>(index, context);
 			uint32_t hsid = EEPROM->GetHeadStageID();

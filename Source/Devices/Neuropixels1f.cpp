@@ -156,19 +156,19 @@ int Neuropixels1f::configureDevice()
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Unable to activate streaming for device at address " + std::to_string(deviceIdx));
 
-	rc = WriteByte((uint32_t)NeuropixelsV1Registers::CAL_MOD, (uint32_t)NeuropixelsV1CalibrationRegisterValues::CAL_OFF);
+	rc = writeByte((uint32_t)NeuropixelsV1Registers::CAL_MOD, (uint32_t)NeuropixelsV1CalibrationRegisterValues::CAL_OFF);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
-	rc = WriteByte((uint32_t)NeuropixelsV1Registers::SYNC, (uint32_t)0);
+	rc = writeByte((uint32_t)NeuropixelsV1Registers::SYNC, (uint32_t)0);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
-	rc = WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::DIG_CH_RESET);
+	rc = writeByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::DIG_CH_RESET);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
-	rc = WriteByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
+	rc = writeByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
@@ -209,7 +209,7 @@ void Neuropixels1f::startAcquisition()
 	lfpOffsetCalculated = false;
 	apOffsetCalculated = false;
 
-	WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::ACTIVE);
+	writeByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::ACTIVE);
 
 	superFrameCount = 0;
 	ultraFrameCount = 0;
@@ -219,7 +219,7 @@ void Neuropixels1f::startAcquisition()
 
 void Neuropixels1f::stopAcquisition()
 {
-	WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::RESET_ALL);
+	writeByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::RESET_ALL);
 
 	OnixDevice::stopAcquisition();
 }
@@ -313,15 +313,15 @@ void Neuropixels1f::writeShiftRegisters()
 
 	auto shankBytes = toBitReversedBytes<shankConfigurationBitCount>(shankBits);
 
-	int rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
+	int rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
 	if (rc != ONI_ESUCCESS) return;
 
-	rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
+	rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
 	if (rc != ONI_ESUCCESS) return;
 
 	for (auto b : shankBytes)
 	{
-		rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_CHAIN1, b);
+		rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_CHAIN1, b);
 		if (rc != ONI_ESUCCESS) return;
 	}
 
@@ -335,21 +335,21 @@ void Neuropixels1f::writeShiftRegisters()
 		{
 			auto baseBytes = toBitReversedBytes<BaseConfigurationBitCount>(configBits[i]);
 
-			rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100);
+			rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100);
 			if (rc != ONI_ESUCCESS) return;
 
-			rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100);
+			rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100);
 			if (rc != ONI_ESUCCESS) return;
 
 			for (auto b : baseBytes)
 			{
-				rc = WriteByte(srAddress, b);
+				rc = writeByte(srAddress, b);
 				if (rc != ONI_ESUCCESS) return;
 			}
 		}
 
 		oni_reg_val_t value;
-		rc = ReadByte((uint32_t)NeuropixelsV1Registers::STATUS, &value);
+		rc = readByte((uint32_t)NeuropixelsV1Registers::STATUS, &value);
 
 		if (rc != ONI_ESUCCESS || value != shiftRegisterSuccess)
 		{

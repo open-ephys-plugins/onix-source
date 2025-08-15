@@ -47,7 +47,7 @@ Neuropixels2e::~Neuropixels2e()
 	if (serializer != nullptr)
 	{
 		selectProbe(NoProbeSelected);
-		serializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10, DefaultGPO10Config);
+		serializer->writeByte((uint32_t)DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10, DefaultGPO10Config);
 	}
 
 	if (deviceContext != nullptr && deviceContext->isInitialized())
@@ -373,21 +373,21 @@ bool Neuropixels2e::updateSettings()
 void Neuropixels2e::configureProbeStreaming()
 {
 	// Write super sync bits into ASIC
-	probeControl->WriteByte(SUPERSYNC11, 0b00011000);
-	probeControl->WriteByte(SUPERSYNC10, 0b01100001);
-	probeControl->WriteByte(SUPERSYNC9, 0b10000110);
-	probeControl->WriteByte(SUPERSYNC8, 0b00011000);
-	probeControl->WriteByte(SUPERSYNC7, 0b01100001);
-	probeControl->WriteByte(SUPERSYNC6, 0b10000110);
-	probeControl->WriteByte(SUPERSYNC5, 0b00011000);
-	probeControl->WriteByte(SUPERSYNC4, 0b01100001);
-	probeControl->WriteByte(SUPERSYNC3, 0b10000110);
-	probeControl->WriteByte(SUPERSYNC2, 0b00011000);
-	probeControl->WriteByte(SUPERSYNC1, 0b01100001);
-	probeControl->WriteByte(SUPERSYNC0, 0b10111001);
+	probeControl->writeByte(SUPERSYNC11, 0b00011000);
+	probeControl->writeByte(SUPERSYNC10, 0b01100001);
+	probeControl->writeByte(SUPERSYNC9, 0b10000110);
+	probeControl->writeByte(SUPERSYNC8, 0b00011000);
+	probeControl->writeByte(SUPERSYNC7, 0b01100001);
+	probeControl->writeByte(SUPERSYNC6, 0b10000110);
+	probeControl->writeByte(SUPERSYNC5, 0b00011000);
+	probeControl->writeByte(SUPERSYNC4, 0b01100001);
+	probeControl->writeByte(SUPERSYNC3, 0b10000110);
+	probeControl->writeByte(SUPERSYNC2, 0b00011000);
+	probeControl->writeByte(SUPERSYNC1, 0b01100001);
+	probeControl->writeByte(SUPERSYNC0, 0b10111001);
 
 	// Activate recording mode on NP
-	probeControl->WriteByte(OP_MODE, 0b01000000);
+	probeControl->writeByte(OP_MODE, 0b01000000);
 }
 
 void Neuropixels2e::configureSerDes()
@@ -411,22 +411,22 @@ void Neuropixels2e::configureSerDes()
 	deviceContext->writeRegister(deviceIdx, DS90UB9x::DATALINES1, 0xFFFFF97B); // NP B
 
 	deserializer = std::make_unique<I2CRegisterContext>(DS90UB9x::DES_ADDR, deviceIdx, deviceContext);
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::PortSel, 0x01);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::PortSel, 0x01);
 	int coaxMode = 0x4 + (uint32_t)(DS90UB9x::DS90UB9xMode::Raw12BitHighFrequency); // 0x4 maintains coax mode
-	deserializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::PortMode), coaxMode);
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::I2CConfig, 0b01011000);
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SerAlias, DS90UB9x::SER_ADDR << 1);
+	deserializer->writeByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::PortMode), coaxMode);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::I2CConfig, 0b01011000);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SerAlias, DS90UB9x::SER_ADDR << 1);
 
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl0, 0x10);
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl1, 0x32);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl0, 0x10);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl1, 0x32);
 
 	int alias = ProbeI2CAddress << 1;
-	deserializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID1), alias);
-	deserializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias1), alias);
+	deserializer->writeByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID1), alias);
+	deserializer->writeByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias1), alias);
 
 	alias = FlexAddress << 1;
-	deserializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID2), alias);
-	deserializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias2), alias);
+	deserializer->writeByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID2), alias);
+	deserializer->writeByte((uint32_t)(DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias2), alias);
 
 	serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, deviceIdx, deviceContext);
 	flex = std::make_unique<I2CRegisterContext>(FlexAddress, deviceIdx, deviceContext);
@@ -438,7 +438,7 @@ void Neuropixels2e::setProbeSupply(bool en)
 	auto gpo10Config = en ? DefaultGPO10Config | GPO10SupplyMask : DefaultGPO10Config;
 
 	selectProbe(NoProbeSelected);
-	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
+	serializer->writeByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
 	Thread::sleep(20);
 }
 
@@ -450,7 +450,7 @@ void Neuropixels2e::selectProbe(uint8_t probeSelect)
 		return;
 	}
 
-	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO32), probeSelect);
+	serializer->writeByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO32), probeSelect);
 	Thread::sleep(20);
 }
 
@@ -458,9 +458,9 @@ void Neuropixels2e::resetProbes()
 {
 	auto gpo10Config = DefaultGPO10Config | GPO10SupplyMask;
 	gpo10Config &= ~GPO10ResetMask;
-	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
+	serializer->writeByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
 	gpo10Config |= GPO10ResetMask;
-	serializer->WriteByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
+	serializer->writeByte((uint32_t)(DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
 }
 
 uint64_t Neuropixels2e::getProbeSN(uint8_t probeSelect)
@@ -581,20 +581,20 @@ void Neuropixels2e::writeShiftRegister(uint32_t srAddress, std::bitset<N> bits)
 
 	for (int i = 2; i > 0; i -= 1)
 	{
-		WriteByte(SOFT_RESET, 0xFF);
-		WriteByte(SOFT_RESET, 0x00);
+		writeByte(SOFT_RESET, 0xFF);
+		writeByte(SOFT_RESET, 0x00);
 
-		WriteByte(SR_LENGTH1, (uint32_t)(bytes.size() % 0x100));
-		WriteByte(SR_LENGTH2, (uint32_t)(bytes.size() / 0x100));
+		writeByte(SR_LENGTH1, (uint32_t)(bytes.size() % 0x100));
+		writeByte(SR_LENGTH2, (uint32_t)(bytes.size() / 0x100));
 
 		for (auto b : bytes)
 		{
-			WriteByte(srAddress, b);
+			writeByte(srAddress, b);
 		}
 	}
 
 	uint32_t status;
-	ReadByte(STATUS, &status);
+	readByte(STATUS, &status);
 	if (status != (uint32_t)NeuropixelsV2Status::SR_OK)
 	{
 		LOGE("Warning: Shift register ", srAddress, " status check failed. ", getShankName(srAddress), " may be damaged.");
