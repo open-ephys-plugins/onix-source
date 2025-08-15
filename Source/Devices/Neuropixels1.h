@@ -25,6 +25,7 @@
 #include "../OnixDevice.h"
 #include "../NeuropixelsComponents.h"
 #include "../I2CRegisterContext.h"
+#include "NeuropixelsProbeMetadata.h"
 
 namespace OnixSourcePlugin
 {
@@ -54,6 +55,9 @@ namespace OnixSourcePlugin
 		std::vector<int> selectElectrodeConfiguration(int electrodeConfigurationIndex) override;
 
 		uint64_t getProbeSerialNumber(int index = 0) override;
+		std::string getProbePartNumber(int index = 0) override;
+		std::string getFlexPartNumber(int index = 0) override;
+		std::string getFlexVersion(int index = 0) override;
 
 		void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index = 0) override;
 
@@ -71,11 +75,12 @@ namespace OnixSourcePlugin
 		double apGainCorrection = 0;
 		double lfpGainCorrection = 0;
 
-		uint64_t probeNumber = 0;
+		NeuropixelsProbeMetadata probeMetadata;
 
 		const uint32_t ENABLE = 0x8000;
 
 		static constexpr int ProbeI2CAddress = 0x70;
+		static constexpr int FlexEepromI2CAddress = 0x50;
 
 		static constexpr int superFramesPerUltraFrame = 12;
 		static constexpr int framesPerSuperFrame = 13;

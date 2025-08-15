@@ -25,6 +25,7 @@
 #include "../OnixDevice.h"
 #include "../I2CRegisterContext.h"
 #include "../NeuropixelsComponents.h"
+#include "NeuropixelsProbeMetadata.h"
 #include "DS90UB9x.h"
 
 namespace OnixSourcePlugin
@@ -87,7 +88,10 @@ namespace OnixSourcePlugin
 
 		std::vector<int> selectElectrodeConfiguration(int electrodeConfigurationIndex) override;
 		uint64_t getProbeSerialNumber(int index) override;
-		void defineMetadata(ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>*, int);
+		std::string getProbePartNumber(int index) override;
+		std::string getFlexPartNumber(int index) override;
+		std::string getFlexVersion(int index) override;
+		void defineMetadata(ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>*) override;
 		void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index) override;
 		static OnixDeviceType getDeviceType();
 
@@ -100,18 +104,19 @@ namespace OnixSourcePlugin
 
 		DataBuffer* amplifierBuffer[NumberOfProbes];
 
-		std::array<uint64_t, NumberOfProbes> probeSN;
+		std::array<NeuropixelsProbeMetadata, NumberOfProbes> probeMetadata;
 		std::array<float, NumberOfProbes> gainCorrection;
 		std::array<std::string, NumberOfProbes> gainCorrectionFilePath;
 
 		void createDataStream(int n);
 
-		uint64_t getProbeSN(uint8_t probeSelect);
 		void configureSerDes();
 		void setProbeSupply(bool);
 		void resetProbes();
 
-		void selectProbe(uint8_t probeSelect);
+		static NeuropixelsProbeMetadata readProbeMetadata(I2CRegisterContext* serializer, I2CRegisterContext* flex, uint8_t probeSelect);
+		static void selectProbe(I2CRegisterContext* serializer, uint8_t probeSelect);
+		
 		void configureProbeStreaming();
 		void writeConfiguration(ProbeSettings<numberOfChannels, numberOfElectrodes>*);
 
@@ -192,12 +197,6 @@ namespace OnixSourcePlugin
 		static const uint32_t SR_LENGTH1 = 0x1D;
 		static const uint32_t PROBE_ID = 0x1E;
 		static const uint32_t SOFT_RESET = 0x1F;
-
-		const uint32_t OFFSET_PROBE_SN = 0x00;
-		const uint32_t OFFSET_FLEX_VERSION = 0x10;
-		const uint32_t OFFSET_FLEX_REVISION = 0x11;
-		const uint32_t OFFSET_FLEX_PN = 0x20;
-		const uint32_t OFFSET_PROBE_PN = 0x40;
 
 		static inline const std::array<int, AdcsPerProbe> adcIndices = {
 			0, 1, 2,

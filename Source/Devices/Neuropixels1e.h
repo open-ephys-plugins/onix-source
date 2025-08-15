@@ -52,14 +52,6 @@ namespace OnixSourcePlugin
 		static constexpr char* STREAM_NAME_AP = "AP";
 		static constexpr char* STREAM_NAME_LFP = "LFP";
 
-		static constexpr int FlexEepromI2CAddress = 0x50;
-
-		static constexpr uint32_t OFFSET_ID = 0;
-		static constexpr uint32_t OFFSET_VERSION = 10;
-		static constexpr uint32_t OFFSET_REVISION = 11;
-		static constexpr uint32_t OFFSET_FLEXPN = 20;
-		static constexpr uint32_t OFFSET_PROBEPN = 40;
-
 		static constexpr uint8_t DefaultGPO10Config = 0b00010001; // GPIO0 Low, NP in MUX reset
 		static constexpr uint8_t DefaultGPO32Config = 0b10010001; // LED off, GPIO1 Low
 		static constexpr uint32_t Gpo10ResetMask = 1 << 3; // Used to issue mux reset command to probe
