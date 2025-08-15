@@ -30,6 +30,11 @@ I2CRegisterContext::I2CRegisterContext (uint32_t address_, const oni_dev_idx_t d
     i2cContext = ctx_;
 }
 
+oni_dev_idx_t I2CRegisterContext::getDeviceIndex() const
+{
+    return deviceIndex;
+}
+
 int I2CRegisterContext::WriteByte (uint32_t address, uint32_t value, bool sixteenBitAddress)
 {
     uint32_t registerAddress = (address << 7) | (i2cAddress & 0x7F);
@@ -41,6 +46,25 @@ int I2CRegisterContext::WriteByte (uint32_t address, uint32_t value, bool sixtee
 int I2CRegisterContext::ReadByte (uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress)
 {
     return ReadWord (address, 1, value, sixteenBitAddress);
+}
+
+int I2CRegisterContext::readBytes (uint32_t address, int count, std::vector<oni_reg_val_t>& value, bool sixteenBitAddress)
+{
+    value.clear();
+
+    oni_reg_val_t val;
+    int rc = 0;
+
+    for (uint16_t i = 0; i < count; i++)
+    {
+        rc = ReadByte (address + i, &val, sixteenBitAddress);
+        if (rc != ONI_ESUCCESS)
+            return rc;
+
+        value.push_back (val);
+    }
+
+    return rc;
 }
 
 int I2CRegisterContext::ReadWord (uint32_t address, uint32_t numBytes, uint32_t* value, bool sixteenBitAddress)
@@ -56,6 +80,26 @@ int I2CRegisterContext::ReadWord (uint32_t address, uint32_t numBytes, uint32_t*
     registerAddress |= (numBytes - 1) << 28;
 
     return i2cContext->readRegister (deviceIndex, registerAddress, value);
+}
+
+int I2CRegisterContext::readString (uint32_t address, int count, std::string& str, bool sixteenBitAddress)
+{
+    std::vector<oni_dev_idx_t> data;
+    str = "";
+
+    int rc = readBytes (address, count, data, sixteenBitAddress);
+
+    if (rc != ONI_ESUCCESS)
+    {
+        Onix1::showWarningMessageBoxAsync ("Error Reading String", "Could not read the string at address " + std::to_string (address));
+        return rc;
+    }
+
+    auto it = std::find (data.begin(), data.end(), 0u);
+    size_t len = (it != data.end()) ? (size_t) std::distance (data.begin(), it) : data.size();
+    str = std::string (data.begin(), data.begin() + len);
+
+    return ONI_ESUCCESS;
 }
 
 int I2CRegisterContext::set933I2cRate (double rate)
