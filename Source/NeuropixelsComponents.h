@@ -352,9 +352,6 @@ class INeuropixel
 public:
     INeuropixel (int numSettings, int numShanks) : numberOfShanks (numShanks)
     {
-        if (numSettings > 2)
-            return;
-
         for (int i = 0; i < numSettings; i++)
         {
             settings.emplace_back (std::make_unique<ProbeSettings<ch, e>>());
@@ -367,13 +364,41 @@ public:
 
     std::vector<std::unique_ptr<ProbeSettings<numberOfChannels, numberOfElectrodes>>> settings;
 
-    virtual void setSettings (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index) { return; }
+    virtual void setSettings (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index) = 0;
+    virtual void defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings) = 0;
+    virtual uint64_t getProbeSerialNumber (int index) = 0;
+    virtual std::string getProbePartNumber (int index) = 0;
+    virtual std::string getFlexPartNumber (int index) = 0;
+    virtual std::string getFlexVersion (int index) = 0;
+    virtual std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex) = 0;
 
-    virtual void defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings) { return; }
+    bool saveProbeInterfaceFile (File recordingDirectory, std::string streamName, int probeIndex = 0)
+    {
+        if (streamName != "")
+        {
+            File filename = ProbeInterfaceJson::createFileName (recordingDirectory, streamName);
 
-    virtual uint64_t getProbeSerialNumber (int index) { return 0; }
+            LOGC ("Saving " + filename.getFullPathName());
 
-    virtual std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex) { return {}; }
+            try
+            {
+                ProbeInterfaceJson::writeProbeSettingsToJson (filename, settings[probeIndex].get());
+            }
+            catch (const error_str& e)
+            {
+                Onix1::showWarningMessageBoxAsync ("Unable to Save Probe JSON File", e.what());
+                return false;
+            }
+        }
+        else
+        {
+            Onix1::showWarningMessageBoxAsync ("No Valid Stream",
+                                               "Could not find a valid data stream when writing the Probe Interface file.");
+            return false;
+        }
+
+        return true;
+    }
 };
 
 static constexpr int shankConfigurationBitCount = 968;

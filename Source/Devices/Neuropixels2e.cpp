@@ -29,13 +29,12 @@ Neuropixels2e::Neuropixels2e (std::string name, std::string hubName, const oni_d
       I2CRegisterContext (ProbeI2CAddress, deviceIdx_, ctx_),
       INeuropixel (NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
 {
-    probeSN.fill (0);
     frameCount.fill (0);
     sampleNumber.fill (0);
 
     for (int i = 0; i < NeuropixelsV2eValues::numberOfSettings; i++)
     {
-        defineMetadata (settings[i].get(), NeuropixelsV2eValues::numberOfShanks);
+        defineMetadata (settings[i].get());
     }
 
     for (int i = 0; i < NumberOfProbes; i++)
@@ -46,7 +45,7 @@ Neuropixels2e::~Neuropixels2e()
 {
     if (serializer != nullptr)
     {
-        selectProbe (NoProbeSelected);
+        selectProbe (serializer.get(), NoProbeSelected);
         serializer->WriteByte ((uint32_t) DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10, DefaultGPO10Config);
     }
 
@@ -231,7 +230,7 @@ uint64_t Neuropixels2e::getProbeSerialNumber (int index)
 {
     try
     {
-        return probeSN.at (index);
+        return probeMetadata.at (index).getProbeSerialNumber();
     }
     catch (const std::out_of_range& ex) // filter for out of range
     {
@@ -239,6 +238,48 @@ uint64_t Neuropixels2e::getProbeSerialNumber (int index)
     }
 
     return 0ull;
+}
+
+std::string Neuropixels2e::getProbePartNumber (int index)
+{
+    try
+    {
+        return probeMetadata.at (index).getProbePartNumber();
+    }
+    catch (const std::out_of_range& ex) // filter for out of range
+    {
+        LOGE ("Invalid index given requesting probe serial number.");
+    }
+
+    return "";
+}
+
+std::string Neuropixels2e::getFlexPartNumber (int index)
+{
+    try
+    {
+        return probeMetadata.at (index).getFlexPartNumber();
+    }
+    catch (const std::out_of_range& ex) // filter for out of range
+    {
+        LOGE ("Invalid index given requesting probe serial number.");
+    }
+
+    return "";
+}
+
+std::string Neuropixels2e::getFlexVersion (int index)
+{
+    try
+    {
+        return probeMetadata.at (index).getFlexVersion();
+    }
+    catch (const std::out_of_range& ex) // filter for out of range
+    {
+        LOGE ("Invalid index given requesting probe serial number.");
+    }
+
+    return "";
 }
 
 OnixDeviceType Neuropixels2e::getDeviceType()
@@ -260,18 +301,18 @@ int Neuropixels2e::configureDevice()
     rc = serializer->set933I2cRate (400e3);
     if (rc != ONI_ESUCCESS)
         throw error_str ("Unable to set I2C rate for " + getName());
-    probeSN[0] = getProbeSN (ProbeASelected);
-    probeSN[1] = getProbeSN (ProbeBSelected);
+    probeMetadata[0] = readProbeMetadata (serializer.get(), flex.get(), ProbeASelected);
+    probeMetadata[1] = readProbeMetadata (serializer.get(), flex.get(), ProbeBSelected);
     setProbeSupply (false);
-    LOGD ("Probe A SN: ", probeSN[0]);
-    LOGD ("Probe B SN: ", probeSN[1]);
+    LOGD ("Probe A SN: ", probeMetadata[0].getProbeSerialNumber());
+    LOGD ("Probe B SN: ", probeMetadata[1].getProbeSerialNumber());
 
-    if (probeSN[0] == 0 && probeSN[1] == 0)
+    if (probeMetadata[0].getProbeSerialNumber() == 0 && probeMetadata[1].getProbeSerialNumber() == 0)
     {
         m_numProbes = 0;
         throw error_str ("No probes were found connected at address " + std::to_string (getDeviceIdx()));
     }
-    else if (probeSN[0] != 0 && probeSN[1] != 0)
+    else if (probeMetadata[0].getProbeSerialNumber() != 0 && probeMetadata[1].getProbeSerialNumber() != 0)
     {
         m_numProbes = 2;
     }
@@ -294,11 +335,11 @@ bool Neuropixels2e::updateSettings()
 {
     for (int i = 0; i < 2; i++)
     {
-        if (probeSN[i] != 0)
+        if (probeMetadata[i].getProbeSerialNumber() != 0)
         {
             if (gainCorrectionFilePath[i] == "None" || gainCorrectionFilePath[i] == "")
             {
-                Onix1::showWarningMessageBoxAsync ("Missing File", "Missing gain correction file for probe " + std::to_string (probeSN[i]));
+                Onix1::showWarningMessageBoxAsync ("Missing File", "Missing gain correction file for probe " + std::to_string (probeMetadata[i].getProbeSerialNumber()));
                 return false;
             }
 
@@ -306,7 +347,7 @@ bool Neuropixels2e::updateSettings()
 
             if (! gainCorrectionFile.existsAsFile())
             {
-                Onix1::showWarningMessageBoxAsync ("Missing File", "The gain correction file \"" + gainCorrectionFilePath[i] + "\" for probe " + std::to_string (probeSN[i]) + " does not exist.");
+                Onix1::showWarningMessageBoxAsync ("Missing File", "The gain correction file \"" + gainCorrectionFilePath[i] + "\" for probe " + std::to_string (probeMetadata[i].getProbeSerialNumber()) + " does not exist.");
                 return false;
             }
 
@@ -317,9 +358,9 @@ bool Neuropixels2e::updateSettings()
 
             auto gainSN = std::stoull (fileLines[0].toStdString());
 
-            if (gainSN != probeSN[i])
+            if (gainSN != probeMetadata[i].getProbeSerialNumber())
             {
-                Onix1::showWarningMessageBoxAsync ("Invalid Serial Number", "Gain correction serial number (" + std::to_string (gainSN) + ") does not match probe serial number (" + std::to_string (probeSN[i]) + ").");
+                Onix1::showWarningMessageBoxAsync ("Invalid Serial Number", "Gain correction serial number (" + std::to_string (gainSN) + ") does not match probe serial number (" + std::to_string (probeMetadata[i].getProbeSerialNumber()) + ").");
                 return false;
             }
 
@@ -340,7 +381,7 @@ bool Neuropixels2e::updateSettings()
 
                 if (std::stoi (calibrationValues[0].toStdString()) != j || std::stod (calibrationValues[1].toStdString()) != correctionValue)
                 {
-                    Onix1::showWarningMessageBoxAsync ("File Format Invalid", "Calibration file is incorrectly formatted for probe " + std::to_string (probeSN[i]));
+                    Onix1::showWarningMessageBoxAsync ("File Format Invalid", "Calibration file is incorrectly formatted for probe " + std::to_string (probeMetadata[i].getProbeSerialNumber()));
                     return false;
                 }
             }
@@ -356,15 +397,15 @@ bool Neuropixels2e::updateSettings()
 
     for (int i = 0; i < NumberOfProbes; i++)
     {
-        if (probeSN[i] != 0)
+        if (probeMetadata[i].getProbeSerialNumber() != 0)
         {
-            selectProbe (i == 0 ? ProbeASelected : ProbeBSelected);
+            selectProbe (serializer.get(), i == 0 ? ProbeASelected : ProbeBSelected);
             writeConfiguration (settings[i].get());
             configureProbeStreaming();
         }
     }
 
-    selectProbe (NoProbeSelected);
+    selectProbe (serializer.get(), NoProbeSelected);
     // IMPORTANT! BNO polling thread must be started after this
 
     return true;
@@ -437,12 +478,12 @@ void Neuropixels2e::setProbeSupply (bool en)
 {
     auto gpo10Config = en ? DefaultGPO10Config | GPO10SupplyMask : DefaultGPO10Config;
 
-    selectProbe (NoProbeSelected);
+    selectProbe (serializer.get(), NoProbeSelected);
     serializer->WriteByte ((uint32_t) (DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
     Thread::sleep (20);
 }
 
-void Neuropixels2e::selectProbe (uint8_t probeSelect)
+void Neuropixels2e::selectProbe (I2CRegisterContext* serializer, uint8_t probeSelect)
 {
     if (serializer == nullptr)
     {
@@ -463,33 +504,17 @@ void Neuropixels2e::resetProbes()
     serializer->WriteByte ((uint32_t) (DS90UB9x::DS90UB9xSerializerI2CRegister::GPIO10), gpo10Config);
 }
 
-uint64_t Neuropixels2e::getProbeSN (uint8_t probeSelect)
+NeuropixelsProbeMetadata Neuropixels2e::readProbeMetadata (I2CRegisterContext* serializer, I2CRegisterContext* flex, uint8_t probeSelect)
 {
+    if (serializer == nullptr)
+        throw error_str ("Serializer was not initialized when trying to read Neuropixels probe metadata.");
+
     if (flex == nullptr)
-    {
-        LOGE ("Flex is not initialized for Neuropixels 2.0");
-        return 0ull;
-    }
+        throw error_str ("Flex was not initialized when trying to read Neuropixels probe metadata.");
 
-    selectProbe (probeSelect);
-    uint64_t probeSN = 0ull;
-    int errorCode = 0, rc;
-    for (unsigned int i = 0; i < sizeof (probeSN); i++)
-    {
-        oni_reg_addr_t reg_addr = OFFSET_PROBE_SN + i;
-        oni_reg_val_t val;
+    selectProbe (serializer, probeSelect);
 
-        rc = flex->ReadByte (reg_addr, &val);
-
-        if (rc != ONI_ESUCCESS)
-            return 0ull;
-
-        if (val <= 0xFF)
-        {
-            probeSN |= (((uint64_t) val) << (i * 8));
-        }
-    }
-    return probeSN;
+    return NeuropixelsProbeMetadata (flex, OnixDeviceType::NEUROPIXELSV2E);
 }
 
 void Neuropixels2e::startAcquisition()
@@ -510,7 +535,7 @@ void Neuropixels2e::addSourceBuffers (OwnedArray<DataBuffer>& sourceBuffers)
     if (m_numProbes == 1)
     {
         sourceBuffers.add (new DataBuffer (streamInfos.getFirst().getNumChannels(), (int) streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
-        auto bufferIndex = probeSN[0] != 0 ? 0 : 1;
+        auto bufferIndex = probeMetadata[0].getProbeSerialNumber() != 0 ? 0 : 1;
         amplifierBuffer[bufferIndex] = sourceBuffers.getLast();
     }
     else
@@ -741,8 +766,10 @@ void Neuropixels2e::setSettings (ProbeSettings<NeuropixelsV2eValues::numberOfCha
     settings[index]->updateProbeSettings (settings_);
 }
 
-void Neuropixels2e::defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings, int shankCount)
+void Neuropixels2e::defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
 {
+    auto shankCount = NeuropixelsV2eValues::numberOfShanks;
+
     settings->probeType = ProbeType::NPX_V2;
     settings->probeMetadata.name = "Neuropixels 2.0e" + (shankCount == 1) ? " - Single Shank" : " - Quad Shank";
 

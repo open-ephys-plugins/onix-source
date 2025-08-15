@@ -74,7 +74,7 @@ NeuropixelsV1Interface::NeuropixelsV1Interface (std::shared_ptr<Neuropixels1> d,
 
         infoLabel = std::make_unique<Label> ("INFO", "INFO");
         infoLabel->setFont (FontOptions (15.0f));
-        infoLabel->setBounds (deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, deviceLabel->getWidth(), 50);
+        infoLabel->setBounds (deviceEnableButton->getX(), deviceEnableButton->getBottom() + 10, deviceLabel->getWidth(), 80);
         infoLabel->setJustificationType (Justification::topLeft);
         addAndMakeVisible (infoLabel.get());
 
@@ -534,9 +534,14 @@ void NeuropixelsV1Interface::updateInfoString()
         deviceString = "Neuropixels 1.0 Probe";
 
         infoString += "\n";
-        infoString += "Probe Number: ";
+        infoString += "Probe Serial Number: ";
         infoString += std::to_string (sn);
         infoString += "\n";
+        infoString += "Probe Part Number: ";
+        infoString += npx->getProbePartNumber();
+        infoString += "\n";
+        infoString += "Flex: ";
+        infoString += npx->getFlexPartNumber();
         infoString += "\n";
     }
 
@@ -694,7 +699,7 @@ void NeuropixelsV1Interface::buttonClicked (Button* button)
     }
     else if (button == loadJsonButton.get())
     {
-        FileChooser fileChooser ("Select an probeinterface JSON file to load.", File(), "*.json");
+        FileChooser fileChooser ("Select an probeinterface JSON file to load.", File(), "*" + std::string (ProbeInterfaceJson::FileExtension));
 
         if (fileChooser.browseForFileToOpen())
         {
@@ -709,16 +714,21 @@ void NeuropixelsV1Interface::buttonClicked (Button* button)
     }
     else if (button == saveJsonButton.get())
     {
-        FileChooser fileChooser ("Save channel map to a probeinterface JSON file.", File(), "*.json");
+        FileChooser fileChooser ("Save channel map to a probeinterface JSON file.", File(), "*" + std::string (ProbeInterfaceJson::FileExtension));
 
         if (fileChooser.browseForFileToSave (true))
         {
             auto npx = std::static_pointer_cast<Neuropixels1> (device);
 
-            if (! ProbeInterfaceJson::writeProbeSettingsToJson (fileChooser.getResult(), npx->settings[0].get()))
-                CoreServices::sendStatusMessage ("Failed to write probe channel map.");
-            else
-                CoreServices::sendStatusMessage ("Successfully wrote probe channel map.");
+            try
+            {
+                ProbeInterfaceJson::writeProbeSettingsToJson (fileChooser.getResult(), npx->settings[0].get());
+            }
+            catch (const error_str& e)
+            {
+                Onix1::showWarningMessageBoxAsync ("Unable to Save Probe JSON File", e.what());
+                return;
+            }
         }
     }
     else if (button == saveSettingsButton.get())
@@ -1076,6 +1086,9 @@ void NeuropixelsV1Interface::saveParameters (XmlElement* xml)
     xmlNode->setAttribute ("name", npx->getName());
     xmlNode->setAttribute ("idx", (int) npx->getDeviceIdx());
     xmlNode->setAttribute ("probeSerialNumber", std::to_string (npx->getProbeSerialNumber()));
+    xmlNode->setAttribute ("probePartNumber", npx->getProbePartNumber());
+    xmlNode->setAttribute ("flexPartNumber", npx->getFlexPartNumber());
+    xmlNode->setAttribute ("flexVersion", npx->getFlexVersion());
 
     xmlNode->setAttribute ("isEnabled", bool (device->isEnabled()));
 

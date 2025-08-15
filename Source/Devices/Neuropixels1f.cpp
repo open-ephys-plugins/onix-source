@@ -105,8 +105,6 @@ Neuropixels1f::Neuropixels1f (std::string name, std::string hubName, const oni_d
         apEventCodes[i] = 0;
         lfpEventCodes[i] = 0;
     }
-
-    probeNumber = 0;
 }
 
 int Neuropixels1f::configureDevice()
@@ -123,32 +121,11 @@ int Neuropixels1f::configureDevice()
         return ONI_ESUCCESS;
     }
 
-    // Get Probe SN
-    uint32_t eepromOffset = 0;
-    uint32_t i2cAddr = 0x50;
-    int errorCode = 0;
+    // Get Probe Metadata
+    auto flex = std::make_unique<I2CRegisterContext> (FlexEepromI2CAddress, deviceIdx, deviceContext);
+    probeMetadata = NeuropixelsProbeMetadata (flex.get(), OnixDeviceType::NEUROPIXELSV1F);
 
-    for (int i = 0; i < 8; i++)
-    {
-        oni_reg_addr_t reg_addr = ((eepromOffset + i) << 7) | i2cAddr;
-
-        oni_reg_val_t reg_val;
-        rc = deviceContext->readRegister (deviceIdx, reg_addr, &reg_val);
-
-        if (rc != ONI_ESUCCESS)
-        {
-            LOGE (oni_error_str (rc));
-            throw error_str ("Could not communicate with " + getName() + " on " + getHubName()
-                             + ". Ensure that the flex connection is properly seated, or disable the device if it is not connected.");
-        }
-
-        if (reg_val <= 0xFF)
-        {
-            probeNumber |= (((uint64_t) reg_val) << (i * 8));
-        }
-    }
-
-    LOGD ("Probe SN: ", probeNumber);
+    LOGD ("Probe SN: ", probeMetadata.getProbeSerialNumber());
 
     // Enable device streaming
     rc = deviceContext->writeRegister (deviceIdx, 0x8000, 1);

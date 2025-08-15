@@ -117,8 +117,6 @@ Neuropixels1e::Neuropixels1e (std::string name, std::string hubName, const oni_d
         apEventCodes[i] = 0;
         lfpEventCodes[i] = 0;
     }
-
-    probeNumber = 0;
 }
 
 int Neuropixels1e::configureDevice()
@@ -132,25 +130,10 @@ int Neuropixels1e::configureDevice()
     if (rc != ONI_ESUCCESS)
         throw error_str ("Unable to set I2C rate for " + getName());
 
-    // Get Probe SN
+    // Get Probe Metadata
+    probeMetadata = NeuropixelsProbeMetadata (flex.get(), OnixDeviceType::NEUROPIXELSV1E);
 
-    int errorCode = 0;
-
-    for (int i = 0; i < 8; i++)
-    {
-        oni_reg_val_t reg_val;
-        rc = flex->ReadByte (OFFSET_ID + i, &reg_val);
-
-        if (rc != ONI_ESUCCESS)
-            throw error_str ("Unable to read the probe serial number for device at address " + getDeviceIdx());
-
-        if (reg_val <= 0xFF)
-        {
-            probeNumber |= (((uint64_t) reg_val) << (i * 8));
-        }
-    }
-
-    LOGD ("Probe SN: ", probeNumber);
+    LOGD ("Probe SN: ", probeMetadata.getProbeSerialNumber());
 
     return ONI_ESUCCESS;
 }
