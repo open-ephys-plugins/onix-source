@@ -29,6 +29,9 @@
 #include "OnixSourceEditor.h"
 #include "FrameReader.h"
 #include "Devices/PortController.h"
+#include "Formats/ProbeInterface.h"
+
+#define PLUGIN_NAME "ONIX Source"
 
 namespace OnixSourcePlugin
 {
@@ -72,6 +75,8 @@ namespace OnixSourcePlugin
 
 		/** Stops data transfer.*/
 		bool stopAcquisition() override;
+
+		void startRecording();
 
 		void updateDiscoveryParameters(PortName port, DiscoveryParameters parameters);
 
@@ -176,6 +181,8 @@ namespace OnixSourcePlugin
 
 		/** This method is expected to be called in a separate thread, and waits for acquisition to stop before gracefully disconnecting all devices */
 		static void disconnectDevicesAfterAcquisition(OnixSourceEditor* editor);
+
+		static bool dataStreamExists(std::string streamName, Array<const DataStream*> dataStreams);
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OnixSource);
 	};
