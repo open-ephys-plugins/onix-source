@@ -53,6 +53,7 @@ namespace OnixSourcePlugin
 		HARPSYNCINPUT,
 		ANALOGIO,
 		DIGITALIO,
+		UNKNOWN
 	};
 
 	static const std::string ProbeString = "Probe";
@@ -173,8 +174,10 @@ namespace OnixSourcePlugin
 		virtual void setEnabled(bool newState) { enabled = newState; }
 		oni_dev_idx_t getDeviceIdx(bool getPassthroughIndex = false);
 
-		/** Creates a stream name using the provided inputs, returning a string following the pattern: name[0]-name[1]-name[2]-etc., with all spaces removed */
+		/** Static method that creates a stream name using the provided inputs, returning a string following the pattern: name[0]-name[1]-name[2]-etc., with all spaces removed */
 		static std::string createStreamName(std::vector<std::string> names);
+		/** Instance method that automatically generates a stream with the hub name and device name by calling the static version of this method. */
+		std::string createStreamName(std::string suffix = "", bool usePort = true);
 
 		Array<StreamInfo> streamInfos;
 

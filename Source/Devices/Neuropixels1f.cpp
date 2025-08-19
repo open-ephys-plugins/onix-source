@@ -68,7 +68,7 @@ Neuropixels1f::Neuropixels1f(std::string name, std::string hubName, const oni_de
 {
 	std::string port = getPortName(deviceIdx);
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHubName(), getName(), STREAM_NAME_AP }),
+		createStreamName(STREAM_NAME_AP),
 		"Neuropixels 1.0 AP band data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
@@ -83,7 +83,7 @@ Neuropixels1f::Neuropixels1f(std::string name, std::string hubName, const oni_de
 	streamInfos.add(apStream);
 
 	StreamInfo lfpStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHubName(), getName(), STREAM_NAME_LFP }),
+		createStreamName(STREAM_NAME_LFP),
 		"Neuropixels 1.0 LFP band data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
@@ -107,8 +107,6 @@ Neuropixels1f::Neuropixels1f(std::string name, std::string hubName, const oni_de
 		apEventCodes[i] = 0;
 		lfpEventCodes[i] = 0;
 	}
-
-	probeNumber = 0;
 }
 
 int Neuropixels1f::configureDevice()
@@ -125,50 +123,30 @@ int Neuropixels1f::configureDevice()
 		return ONI_ESUCCESS;
 	}
 
-	// Get Probe SN
-	uint32_t eepromOffset = 0;
-	uint32_t i2cAddr = 0x50;
-	int errorCode = 0;
+	// Get Probe Metadata
+	auto flex = std::make_unique<I2CRegisterContext>(FlexEepromI2CAddress, deviceIdx, deviceContext);
+	probeMetadata = NeuropixelsProbeMetadata(flex.get(), OnixDeviceType::NEUROPIXELSV1F);
 
-	for (int i = 0; i < 8; i++)
-	{
-		oni_reg_addr_t reg_addr = ((eepromOffset + i) << 7) | i2cAddr;
-
-		oni_reg_val_t reg_val;
-		rc = deviceContext->readRegister(deviceIdx, reg_addr, &reg_val);
-
-		if (rc != ONI_ESUCCESS)
-		{
-			LOGE(oni_error_str(rc));
-			throw error_str("Could not communicate with " + getName() + " on " + getHubName() + ". Ensure that the flex connection is properly seated, or disable the device if it is not connected.");
-		}
-
-		if (reg_val <= 0xFF)
-		{
-			probeNumber |= (((uint64_t)reg_val) << (i * 8));
-		}
-	}
-
-	LOGD("Probe SN: ", probeNumber);
+	LOGD("Probe SN: ", probeMetadata.getProbeSerialNumber());
 
 	// Enable device streaming
 	rc = deviceContext->writeRegister(deviceIdx, 0x8000, 1);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Unable to activate streaming for device at address " + std::to_string(deviceIdx));
 
-	rc = WriteByte((uint32_t)NeuropixelsV1Registers::CAL_MOD, (uint32_t)NeuropixelsV1CalibrationRegisterValues::CAL_OFF);
+	rc = writeByte((uint32_t)NeuropixelsV1Registers::CAL_MOD, (uint32_t)NeuropixelsV1CalibrationRegisterValues::CAL_OFF);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
-	rc = WriteByte((uint32_t)NeuropixelsV1Registers::SYNC, (uint32_t)0);
+	rc = writeByte((uint32_t)NeuropixelsV1Registers::SYNC, (uint32_t)0);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
-	rc = WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::DIG_CH_RESET);
+	rc = writeByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::DIG_CH_RESET);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
-	rc = WriteByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
+	rc = writeByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Error configuring device at address " + std::to_string(deviceIdx));
 
@@ -209,7 +187,7 @@ void Neuropixels1f::startAcquisition()
 	lfpOffsetCalculated = false;
 	apOffsetCalculated = false;
 
-	WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::ACTIVE);
+	writeByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::ACTIVE);
 
 	superFrameCount = 0;
 	ultraFrameCount = 0;
@@ -219,7 +197,7 @@ void Neuropixels1f::startAcquisition()
 
 void Neuropixels1f::stopAcquisition()
 {
-	WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::RESET_ALL);
+	writeByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::RESET_ALL);
 
 	OnixDevice::stopAcquisition();
 }
@@ -313,15 +291,15 @@ void Neuropixels1f::writeShiftRegisters()
 
 	auto shankBytes = toBitReversedBytes<shankConfigurationBitCount>(shankBits);
 
-	int rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
+	int rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
 	if (rc != ONI_ESUCCESS) return;
 
-	rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
+	rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
 	if (rc != ONI_ESUCCESS) return;
 
 	for (auto b : shankBytes)
 	{
-		rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_CHAIN1, b);
+		rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_CHAIN1, b);
 		if (rc != ONI_ESUCCESS) return;
 	}
 
@@ -335,21 +313,21 @@ void Neuropixels1f::writeShiftRegisters()
 		{
 			auto baseBytes = toBitReversedBytes<BaseConfigurationBitCount>(configBits[i]);
 
-			rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100);
+			rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100);
 			if (rc != ONI_ESUCCESS) return;
 
-			rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100);
+			rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100);
 			if (rc != ONI_ESUCCESS) return;
 
 			for (auto b : baseBytes)
 			{
-				rc = WriteByte(srAddress, b);
+				rc = writeByte(srAddress, b);
 				if (rc != ONI_ESUCCESS) return;
 			}
 		}
 
 		oni_reg_val_t value;
-		rc = ReadByte((uint32_t)NeuropixelsV1Registers::STATUS, &value);
+		rc = readByte((uint32_t)NeuropixelsV1Registers::STATUS, &value);
 
 		if (rc != ONI_ESUCCESS || value != shiftRegisterSuccess)
 		{

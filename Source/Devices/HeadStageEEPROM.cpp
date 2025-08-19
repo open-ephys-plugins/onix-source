@@ -22,7 +22,6 @@
 
 #include "HeadStageEEPROM.h"
 #include "DS90UB9x.h"
-#include <iostream>
 
 using namespace OnixSourcePlugin;
 
@@ -31,9 +30,9 @@ HeadStageEEPROM::HeadStageEEPROM(const oni_dev_idx_t dev_id, std::shared_ptr<Oni
 {
 	auto deserializer = std::make_unique<I2CRegisterContext>(DS90UB9x::DES_ADDR, dev_id, ctx);
 	uint32_t alias = HeadStageEEPROM::EEPROM_ADDRESS << 1;
-	int rc = deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID7, alias);
+	int rc = deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID7, alias);
 	if (rc != ONI_ESUCCESS) return;
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias7, alias);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias7, alias);
 	if (rc != ONI_ESUCCESS) return;
 }
 
@@ -44,7 +43,7 @@ uint32_t HeadStageEEPROM::GetHeadStageID()
 	for (unsigned int i = 0; i < sizeof(uint32_t); i++)
 	{
 		oni_reg_val_t val;
-		rc = ReadByte(DEVID_START_ADDR + i, &val, true);
+		rc = readByte(DEVID_START_ADDR + i, &val, true);
 		if (rc != ONI_ESUCCESS) return data;
 		data += (val & 0xFF) << (8 * i);
 	}

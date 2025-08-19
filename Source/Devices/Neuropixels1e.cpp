@@ -49,15 +49,15 @@ void NeuropixelsV1eBackgroundUpdater::run()
 
 	setProgress(0.5);
 	
-	device->WriteByte((uint32_t)NeuropixelsV1Registers::CAL_MOD, (uint32_t)NeuropixelsV1CalibrationRegisterValues::CAL_OFF);
-	device->WriteByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG1, 0);
-	device->WriteByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG2, 0);
-	device->WriteByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG3, 0);
-	device->WriteByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG4, 0);
-	device->WriteByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG5, 0);
-	device->WriteByte((uint32_t)NeuropixelsV1Registers::SYNC, 0);
-	device->WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::ACTIVE);
-	device->WriteByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
+	device->writeByte((uint32_t)NeuropixelsV1Registers::CAL_MOD, (uint32_t)NeuropixelsV1CalibrationRegisterValues::CAL_OFF);
+	device->writeByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG1, 0);
+	device->writeByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG2, 0);
+	device->writeByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG3, 0);
+	device->writeByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG4, 0);
+	device->writeByte((uint32_t)NeuropixelsV1Registers::TEST_CONFIG5, 0);
+	device->writeByte((uint32_t)NeuropixelsV1Registers::SYNC, 0);
+	device->writeByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::ACTIVE);
+	device->writeByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
 
 	try
 	{
@@ -80,7 +80,7 @@ Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_de
 {
 	std::string port = getPortName(getDeviceIdx());
 	StreamInfo apStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHubName(), getName(), STREAM_NAME_AP }),
+		createStreamName(STREAM_NAME_AP),
 		"Neuropixels 1.0 AP band data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
@@ -95,7 +95,7 @@ Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_de
 	streamInfos.add(apStream);
 
 	StreamInfo lfpStream = StreamInfo(
-		OnixDevice::createStreamName({ port, getHubName(), getName(), STREAM_NAME_LFP }),
+		createStreamName(STREAM_NAME_LFP),
 		"Neuropixels 1.0 LFP band data stream",
 		getStreamIdentifier(),
 		numberOfChannels,
@@ -119,8 +119,6 @@ Neuropixels1e::Neuropixels1e(std::string name, std::string hubName, const oni_de
 		apEventCodes[i] = 0;
 		lfpEventCodes[i] = 0;
 	}
-
-	probeNumber = 0;
 }
 
 int Neuropixels1e::configureDevice()
@@ -134,25 +132,10 @@ int Neuropixels1e::configureDevice()
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Unable to set I2C rate for " + getName());
 
-	// Get Probe SN
+	// Get Probe Metadata
+	probeMetadata = NeuropixelsProbeMetadata(flex.get(), OnixDeviceType::NEUROPIXELSV1E);
 
-	int errorCode = 0;
-
-	for (int i = 0; i < 8; i++)
-	{
-		oni_reg_val_t reg_val;
-		rc = flex->ReadByte(OFFSET_ID + i, &reg_val);
-
-		if (rc != ONI_ESUCCESS)
-			throw error_str("Unable to read the probe serial number for device at address " + getDeviceIdx());
-
-		if (reg_val <= 0xFF)
-		{
-			probeNumber |= (((uint64_t)reg_val) << (i * 8));
-		}
-	}
-
-	LOGD("Probe SN: ", probeNumber);
+	LOGD("Probe SN: ", probeMetadata.getProbeSerialNumber());
 
 	return ONI_ESUCCESS;
 }
@@ -184,22 +167,22 @@ void Neuropixels1e::configureSerDes()
 	std::this_thread::sleep_for(100ms); // Empirical. The gateware seems to need some milliseconds to get i2c initialized.
 
 	deserializer = std::make_unique<I2CRegisterContext>(DS90UB9x::DES_ADDR, deviceIdx, deviceContext);
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::PortSel, 0x01); // Enable port 0
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::PortSel, 0x01); // Enable port 0
 	int coaxMode = 0x4 + (uint32_t)(DS90UB9x::DS90UB9xMode::Raw12BitHighFrequency); // 0x4 maintains coax mode
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::PortMode, coaxMode); // 0x4 maintains coax mode
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::I2CConfig, 0b01011000); // 7: i2c pass all (0), 6: i2c pass (1), 5: auto_ack (0), 4: BC enable (1), 3: BC crc en (1), 2: reserved (0) 1:0: bc freq (00) 2.5Mbps
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SerAlias, DS90UB9x::SER_ADDR << 1);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::PortMode, coaxMode); // 0x4 maintains coax mode
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::I2CConfig, 0b01011000); // 7: i2c pass all (0), 6: i2c pass (1), 5: auto_ack (0), 4: BC enable (1), 3: BC crc en (1), 2: reserved (0) 1:0: bc freq (00) 2.5Mbps
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SerAlias, DS90UB9x::SER_ADDR << 1);
 	// Enable backchannel GPIO on deserializer. It is then the serializer task to decide if using them or use manual output
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl0, 0x10);
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl1, 0x32);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl0, 0x10);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::GpioCtrl1, 0x32);
 
 	auto alias = ProbeI2CAddress << 1;
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID1, alias);
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias1, alias);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID1, alias);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias1, alias);
 
 	alias = FlexEepromI2CAddress << 1;
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID2, alias);
-	deserializer->WriteByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias2, alias);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveID2, alias);
+	deserializer->writeByte((uint32_t)DS90UB9x::DS90UB9xDeserializerI2CRegister::SlaveAlias2, alias);
 
 	serializer = std::make_unique<I2CRegisterContext>(DS90UB9x::SER_ADDR, deviceIdx, deviceContext);
 	flex = std::make_unique<I2CRegisterContext>(FlexEepromI2CAddress, deviceIdx, deviceContext);
@@ -208,10 +191,10 @@ void Neuropixels1e::configureSerDes()
 void Neuropixels1e::resetProbe()
 {
 	auto gpo10Config = DefaultGPO10Config & ~Gpo10ResetMask;
-	serializer->WriteByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio10, gpo10Config);
+	serializer->writeByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio10, gpo10Config);
 	std::this_thread::sleep_for(1ms);
 	gpo10Config |= Gpo10ResetMask;
-	serializer->WriteByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio10, gpo10Config);
+	serializer->writeByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio10, gpo10Config);
 }
 
 bool Neuropixels1e::updateSettings()
@@ -245,13 +228,13 @@ void Neuropixels1e::startAcquisition()
 
 	// WONTFIX: Soft reset inside settings.WriteShiftRegisters() above puts probe in reset set that
 	// needs to be undone here
-	WriteByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
-	WriteByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::ACTIVE);
+	writeByte((uint32_t)NeuropixelsV1Registers::OP_MODE, (uint32_t)NeuropixelsV1OperationRegisterValues::RECORD);
+	writeByte((uint32_t)NeuropixelsV1Registers::REC_MOD, (uint32_t)NeuropixelsV1RecordRegisterValues::ACTIVE);
 
 	if (ledEnabled)
 	{
 		auto gpo23Config = DefaultGPO32Config & ~Gpo32LedMask;
-		serializer->WriteByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio32, gpo23Config);
+		serializer->writeByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio32, gpo23Config);
 	}
 
 	superFrameCount = 0;
@@ -262,8 +245,8 @@ void Neuropixels1e::startAcquisition()
 
 void Neuropixels1e::stopAcquisition()
 {
-	serializer->WriteByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio10, DefaultGPO10Config);
-	serializer->WriteByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio32, DefaultGPO32Config);
+	serializer->writeByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio10, DefaultGPO10Config);
+	serializer->writeByte((uint32_t)DS90UB9x::DS90UB933SerializerI2CRegister::Gpio32, DefaultGPO32Config);
 
 	OnixDevice::stopAcquisition();
 }
@@ -359,17 +342,17 @@ void Neuropixels1e::writeShiftRegisters()
 
 	auto shankBytes = toBitReversedBytes<shankConfigurationBitCount>(shankBits);
 
-	int rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
+	int rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)shankBytes.size() % 0x100);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Could not set shift register length.");
 
-	rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
+	rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)shankBytes.size() / 0x100);
 	if (rc != ONI_ESUCCESS)
 		throw error_str("Could not set shift register length.");
 
 	for (auto b : shankBytes)
 	{
-		rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_CHAIN1, b);
+		rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_CHAIN1, b);
 		if (rc != ONI_ESUCCESS)
 			throw error_str("Could not write byte for shift register chain for shank configuration.");
 	}
@@ -388,29 +371,29 @@ void Neuropixels1e::writeShiftRegisters()
 			// to droop and mess up internal state. Or that MCLK is just not good enough to
 			// prevent metastability in some logic in the ASIC that is only entered in between
 			// SR accesses.
-			WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SOFT_RESET, 0xFF);
-			WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SOFT_RESET, 0x00);
+			writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SOFT_RESET, 0xFF);
+			writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SOFT_RESET, 0x00);
 
 			auto baseBytes = toBitReversedBytes<BaseConfigurationBitCount>(configBits[i]);
 
-			rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100);
+			rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH1, (uint32_t)baseBytes.size() % 0x100);
 			if (rc != ONI_ESUCCESS)
 				throw error_str("Could not set shift register length.");
 
-			rc = WriteByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100);
+			rc = writeByte((uint32_t)NeuropixelsV1ShiftRegisters::SR_LENGTH2, (uint32_t)baseBytes.size() / 0x100);
 			if (rc != ONI_ESUCCESS)
 				throw error_str("Could not set shift register length.");
 
 			for (auto b : baseBytes)
 			{
-				rc = WriteByte(srAddress, b);
+				rc = writeByte(srAddress, b);
 				if (rc != ONI_ESUCCESS)
 					throw error_str("Could not set write byte to shift register for base configuration.");
 			}
 		}
 
 		oni_reg_val_t value;
-		rc = ReadByte((uint32_t)NeuropixelsV1Registers::STATUS, &value);
+		rc = readByte((uint32_t)NeuropixelsV1Registers::STATUS, &value);
 
 		if (rc != ONI_ESUCCESS || value != shiftRegisterSuccess)
 		{
