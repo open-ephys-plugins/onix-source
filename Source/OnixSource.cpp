@@ -1204,6 +1204,90 @@ bool OnixSource::stopAcquisition()
     return true;
 }
 
+bool OnixSource::dataStreamExists(std::string streamName, Array<const DataStream*> dataStreams)
+{
+	for (const auto& stream : dataStreams)
+	{
+		if (stream->getName().contains(streamName))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void OnixSource::startRecording()
+{
+	OnixDeviceVector devicesWithProbeInterface;
+
+	for (const auto& device : getEnabledDataSources())
+	{
+		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E
+			|| device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F
+			|| device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
+		{
+			devicesWithProbeInterface.emplace_back(device);
+		}
+	}
+
+	if (devicesWithProbeInterface.empty())
+		return;
+
+	File recPath = CoreServices::getRecordingParentDirectory();
+
+	int recordNodeId = CoreServices::getAvailableRecordNodeIds().getFirst();
+	int experimentNumber = CoreServices::RecordNode::getExperimentNumber(recordNodeId);
+
+	auto dir = File(
+		recPath.getFullPathName() + File::getSeparatorString() +
+		CoreServices::getRecordingDirectoryName() + File::getSeparatorString() +
+		PLUGIN_NAME + " " + String(sn->getNodeId()) + File::getSeparatorString() +
+		"experiment" + String(experimentNumber));
+
+	if (!dir.exists())
+	{
+		auto result = dir.createDirectory();
+
+		if (result.failed())
+		{
+			Onix1::showWarningMessageBoxAsync("Unable to Create ONIX Source Folder",
+				"The plugin was unable to create a recording directory at '" + dir.getFullPathName().toStdString() + "'. No Probe Interface files will be saved for this recording, please stop recording and determine why the directory could not be created.");
+			return;
+		}
+	}
+
+	for (const auto& device : devicesWithProbeInterface)
+	{
+		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E || device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
+		{
+			auto npx = std::static_pointer_cast<Neuropixels1>(device);
+			auto streamName = npx->createStreamName(); // NB: Create the automatic stream name, without any suffixes and including the port name
+
+			auto streamExists = dataStreamExists(streamName, sn->getDataStreams());
+
+			if (!streamExists)
+				return;
+
+			if (!npx->saveProbeInterfaceFile(dir, streamName))
+				return;
+		}
+		else if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
+		{
+			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+			auto streamName = npx->createStreamName(); // NB: Create the automatic stream name, without any suffixes and including the port name
+
+			auto streamExists = dataStreamExists(streamName, sn->getDataStreams());
+
+			if (!streamExists)
+				return;
+
+			if (!npx->saveProbeInterfaceFile(dir, streamName))
+				return;
+		}
+	}
+}
+
 bool OnixSource::updateBuffer()
 {
     for (const auto& source : enabledSources)
