@@ -1,172 +1,168 @@
 /*
-	------------------------------------------------------------------
+    ------------------------------------------------------------------
 
-	Copyright (C) Open Ephys
+    Copyright (C) Open Ephys
 
-	------------------------------------------------------------------
+    ------------------------------------------------------------------
 
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
 #pragma once
 
-#include "../OnixDevice.h"
-#include "../NeuropixelsComponents.h"
 #include "../I2CRegisterContext.h"
+#include "../NeuropixelsComponents.h"
+#include "../OnixDevice.h"
 
 namespace OnixSourcePlugin
 {
-	class Neuropixels1 : public INeuropixel<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>,
-		public OnixDevice,
-		public I2CRegisterContext
-	{
-	public:
+class Neuropixels1 : public INeuropixel<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>,
+                     public OnixDevice,
+                     public I2CRegisterContext
+{
+public:
+    Neuropixels1 (std::string, std::string, OnixDeviceType, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
-		Neuropixels1(std::string, std::string, OnixDeviceType, const oni_dev_idx_t, std::shared_ptr<Onix1>);
+    NeuropixelsV1Gain getGainEnum (int index);
 
-		NeuropixelsV1Gain getGainEnum(int index);
+    int getGainValue (NeuropixelsV1Gain);
 
-		int getGainValue(NeuropixelsV1Gain);
+    NeuropixelsV1Reference getReference (int index);
 
-		NeuropixelsV1Reference getReference(int index);
+    std::string getAdcCalibrationFilePath();
+    void setAdcCalibrationFilePath (std::string filepath);
+    std::string getGainCalibrationFilePath();
+    void setGainCalibrationFilePath (std::string filepath);
 
-		std::string getAdcCalibrationFilePath();
-		void setAdcCalibrationFilePath(std::string filepath);
-		std::string getGainCalibrationFilePath();
-		void setGainCalibrationFilePath(std::string filepath);
+    // INeuropixels methods
+    void defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings) override;
 
-		// INeuropixels methods
-		void defineMetadata(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings) override;
+    /** Select a preset electrode configuration, based on the index of the given enum */
+    std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex) override;
 
-		/** Select a preset electrode configuration, based on the index of the given enum */
-		std::vector<int> selectElectrodeConfiguration(int electrodeConfigurationIndex) override;
+    uint64_t getProbeSerialNumber (int index = 0) override;
 
-		uint64_t getProbeSerialNumber(int index = 0) override;
+    void setSettings (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index = 0) override;
 
-		void setSettings(ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index = 0) override;
+    bool parseGainCalibrationFile();
+    bool parseAdcCalibrationFile();
 
-		bool parseGainCalibrationFile();
-		bool parseAdcCalibrationFile();
+protected:
+    DataBuffer* apBuffer;
+    DataBuffer* lfpBuffer;
 
-	protected:
+    std::string adcCalibrationFilePath;
+    std::string gainCalibrationFilePath;
 
-		DataBuffer* apBuffer;
-		DataBuffer* lfpBuffer;
+    double apGainCorrection = 0;
+    double lfpGainCorrection = 0;
 
-		std::string adcCalibrationFilePath;
-		std::string gainCalibrationFilePath;
+    uint64_t probeNumber = 0;
 
-		double apGainCorrection = 0;
-		double lfpGainCorrection = 0;
+    const uint32_t ENABLE = 0x8000;
 
-		uint64_t probeNumber = 0;
+    static constexpr int ProbeI2CAddress = 0x70;
 
-		const uint32_t ENABLE = 0x8000;
+    static constexpr int superFramesPerUltraFrame = 12;
+    static constexpr int framesPerSuperFrame = 13;
+    static constexpr int framesPerUltraFrame = superFramesPerUltraFrame * framesPerSuperFrame;
+    static constexpr int numUltraFrames = 12;
+    static constexpr int dataOffset = 4 + 1; // NB: 4 bytes [hubClock] + 1 byte [probeIndex]
 
-		static constexpr int ProbeI2CAddress = 0x70;
+    static constexpr uint16_t NumberOfAdcBins = 1024;
+    static constexpr float DataMidpoint = NumberOfAdcBins / 2;
 
-		static constexpr int superFramesPerUltraFrame = 12;
-		static constexpr int framesPerSuperFrame = 13;
-		static constexpr int framesPerUltraFrame = superFramesPerUltraFrame * framesPerSuperFrame;
-		static constexpr int numUltraFrames = 12;
-		static constexpr int dataOffset = 4 + 1; // NB: 4 bytes [hubClock] + 1 byte [probeIndex]
+    static constexpr int secondsToSettle = 5;
+    static constexpr int samplesToAverage = 100;
 
-		static constexpr uint16_t NumberOfAdcBins = 1024;
-		static constexpr float DataMidpoint = NumberOfAdcBins / 2;
+    static constexpr uint32_t numLfpSamples = 384 * numUltraFrames;
+    static constexpr uint32_t numApSamples = 384 * numUltraFrames * superFramesPerUltraFrame;
 
-		static constexpr int secondsToSettle = 5;
-		static constexpr int samplesToAverage = 100;
+    static constexpr float lfpSampleRate = 2500.0f;
+    static constexpr float apSampleRate = 30000.0f;
 
-		static constexpr uint32_t numLfpSamples = 384 * numUltraFrames;
-		static constexpr uint32_t numApSamples = 384 * numUltraFrames * superFramesPerUltraFrame;
+    bool lfpOffsetCalculated = false;
+    bool apOffsetCalculated = false;
 
-		static constexpr float lfpSampleRate = 2500.0f;
-		static constexpr float apSampleRate = 30000.0f;
+    std::array<float, numberOfChannels> apOffsets;
+    std::array<float, numberOfChannels> lfpOffsets;
 
-		bool lfpOffsetCalculated = false;
-		bool apOffsetCalculated = false;
+    std::vector<std::vector<float>> apOffsetValues;
+    std::vector<std::vector<float>> lfpOffsetValues;
 
-		std::array<float, numberOfChannels> apOffsets;
-		std::array<float, numberOfChannels> lfpOffsets;
+    std::array<float, numLfpSamples> lfpSamples;
+    std::array<float, numApSamples> apSamples;
 
-		std::vector<std::vector<float>> apOffsetValues;
-		std::vector<std::vector<float>> lfpOffsetValues;
+    int64 apSampleNumbers[numUltraFrames * superFramesPerUltraFrame];
+    double apTimestamps[numUltraFrames * superFramesPerUltraFrame];
+    uint64 apEventCodes[numUltraFrames * superFramesPerUltraFrame];
 
-		std::array<float, numLfpSamples> lfpSamples;
-		std::array<float, numApSamples> apSamples;
+    int64 lfpSampleNumbers[numUltraFrames];
+    double lfpTimestamps[numUltraFrames];
+    uint64 lfpEventCodes[numUltraFrames];
 
-		int64 apSampleNumbers[numUltraFrames * superFramesPerUltraFrame];
-		double apTimestamps[numUltraFrames * superFramesPerUltraFrame];
-		uint64 apEventCodes[numUltraFrames * superFramesPerUltraFrame];
+    int superFrameCount = 0;
+    int ultraFrameCount = 0;
 
-		int64 lfpSampleNumbers[numUltraFrames];
-		double lfpTimestamps[numUltraFrames];
-		uint64 lfpEventCodes[numUltraFrames];
+    int apSampleNumber = 0;
+    int lfpSampleNumber = 0;
 
-		int superFrameCount = 0;
-		int ultraFrameCount = 0;
+    int apGain = 1000;
+    int lfpGain = 50;
 
-		int apSampleNumber = 0;
-		int lfpSampleNumber = 0;
+    std::vector<NeuropixelsV1Adc> adcValues;
 
-		int apGain = 1000;
-		int lfpGain = 50;
+    void updateLfpOffsets (std::array<float, numLfpSamples>&, int64);
+    void updateApOffsets (std::array<float, numApSamples>&, int64);
 
-		std::vector<NeuropixelsV1Adc> adcValues;
+    enum class ElectrodeConfiguration : int32_t
+    {
+        BankA = 0,
+        BankB = 1,
+        BankC = 2,
+        SingleColumn = 3,
+        Tetrodes = 4
+    };
 
-		void updateLfpOffsets(std::array<float, numLfpSamples>&, int64);
-		void updateApOffsets(std::array<float, numApSamples>&, int64);
+    std::map<ElectrodeConfiguration, std::string> electrodeConfiguration = {
+        {        ElectrodeConfiguration::BankA,        "Bank A" },
+        {        ElectrodeConfiguration::BankB,        "Bank B" },
+        {        ElectrodeConfiguration::BankC,        "Bank C" },
+        { ElectrodeConfiguration::SingleColumn, "Single Column" },
+        {     ElectrodeConfiguration::Tetrodes,      "Tetrodes" }
+    };
 
-		enum class ElectrodeConfiguration : int32_t
-		{
-			BankA = 0,
-			BankB = 1,
-			BankC = 2,
-			SingleColumn = 3,
-			Tetrodes = 4
-		};
+    JUCE_LEAK_DETECTOR (Neuropixels1);
+};
 
-		std::map<ElectrodeConfiguration, std::string> electrodeConfiguration = {
-			{ElectrodeConfiguration::BankA, "Bank A"},
-			{ElectrodeConfiguration::BankB, "Bank B"},
-			{ElectrodeConfiguration::BankC, "Bank C"},
-			{ElectrodeConfiguration::SingleColumn, "Single Column"},
-			{ElectrodeConfiguration::Tetrodes, "Tetrodes"}
-		};
+/*
+    A thread that updates Neuropixels 1.0 probe settings in the background and shows a progress bar
+*/
+class NeuropixelsV1BackgroundUpdater : public ThreadWithProgressWindow
+{
+public:
+    NeuropixelsV1BackgroundUpdater (Neuropixels1* d);
 
-		JUCE_LEAK_DETECTOR(Neuropixels1);
-	};
+    bool updateSettings();
 
-	/*
-		A thread that updates Neuropixels 1.0 probe settings in the background and shows a progress bar
-	*/
-	class NeuropixelsV1BackgroundUpdater : public ThreadWithProgressWindow
-	{
-	public:
-		NeuropixelsV1BackgroundUpdater(Neuropixels1* d);
+protected:
+    Neuropixels1* device;
 
-		bool updateSettings();
+    std::atomic<bool> result = false;
 
-	protected:
-
-		Neuropixels1* device;
-
-		std::atomic<bool> result = false;
-
-	private:
-
-		JUCE_LEAK_DETECTOR(NeuropixelsV1BackgroundUpdater);
-	};
-}
+private:
+    JUCE_LEAK_DETECTOR (NeuropixelsV1BackgroundUpdater);
+};
+} // namespace OnixSourcePlugin
