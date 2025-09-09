@@ -100,7 +100,7 @@ void OnixSourceCanvas::addHub (std::string hubName, int offset)
 
         tab = addTopLevelTab (getTopLevelTabName (port, hubName), (int) port);
 
-        devices.emplace_back (std::make_shared<Neuropixels2e> (ProbeString, hubName, passthroughIndex, context));
+        devices.emplace_back (std::make_shared<Neuropixels2e> (OnixDevice::TypeString.at (OnixDeviceType::NEUROPIXELSV2E), hubName, passthroughIndex, context));
         devices.emplace_back (std::make_shared<PolledBno055> (OnixDevice::TypeString.at (OnixDeviceType::POLLEDBNO), hubName, passthroughIndex, context));
     }
 

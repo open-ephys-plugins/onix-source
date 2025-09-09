@@ -57,8 +57,6 @@ enum class OnixDeviceType
     UNKNOWN
 };
 
-static const std::string ProbeString = "Probe";
-
 struct StreamInfo
 {
 public:

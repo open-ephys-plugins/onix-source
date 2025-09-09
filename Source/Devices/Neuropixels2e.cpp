@@ -53,10 +53,15 @@ Neuropixels2e::~Neuropixels2e()
         deviceContext->setOption (ONIX_OPT_PASSTHROUGH, 0);
 }
 
+std::string Neuropixels2e::createStreamName (int n)
+{
+    return OnixDevice::createStreamName (ProbeString + std::to_string (n));
+}
+
 void Neuropixels2e::createDataStream (int n)
 {
     StreamInfo apStream = StreamInfo (
-        createStreamName ("Probe" + std::to_string (n)),
+        createStreamName (n),
         "Neuropixels 2.0 data stream",
         getStreamIdentifier(),
         numberOfChannels,

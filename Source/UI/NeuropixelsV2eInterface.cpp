@@ -33,11 +33,11 @@ NeuropixelsV2eInterface::NeuropixelsV2eInterface (std::shared_ptr<Neuropixels2e>
     topLevelTabComponent = std::make_unique<CustomTabComponent> (true);
     addAndMakeVisible (topLevelTabComponent.get());
 
-    probeInterfaces[0] = std::make_unique<NeuropixelsV2eProbeInterface> (d, 0, e, c);
-    topLevelTabComponent->addTab ("Probe0", Colours::grey, CustomViewport::createCustomViewport (probeInterfaces[0].get()), true, 0);
-
-    probeInterfaces[1] = std::make_unique<NeuropixelsV2eProbeInterface> (d, 1, e, c);
-    topLevelTabComponent->addTab ("Probe1", Colours::grey, CustomViewport::createCustomViewport (probeInterfaces[1].get()), true, 1);
+    for (int i = 0; i < numProbes; i++)
+    {
+        probeInterfaces[i] = std::make_unique<NeuropixelsV2eProbeInterface> (d, i, e, c);
+        topLevelTabComponent->addTab (ProbeString + std::to_string (i), Colours::grey, CustomViewport::createCustomViewport (probeInterfaces[i].get()), true, i);
+    }
 
     deviceComponent = std::make_unique<Component>();
     deviceComponent->setBounds (0, 0, 600, 40);

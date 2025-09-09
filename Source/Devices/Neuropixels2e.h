@@ -61,6 +61,7 @@ public:
     void stopAcquisition() override;
     void processFrames() override;
     void addSourceBuffers (OwnedArray<DataBuffer>& sourceBuffers) override;
+    std::string createStreamName (int);
 
     int getNumProbes() const;
 

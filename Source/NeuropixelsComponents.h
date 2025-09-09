@@ -346,6 +346,8 @@ std::vector<unsigned char> toBitReversedBytes (std::bitset<N> bits)
     return bytes;
 }
 
+static const std::string ProbeString = "Probe";
+
 template <int ch, int e>
 class INeuropixel
 {

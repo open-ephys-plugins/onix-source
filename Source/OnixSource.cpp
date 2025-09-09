@@ -1262,7 +1262,7 @@ void OnixSource::startRecording()
 		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E || device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
 		{
 			auto npx = std::static_pointer_cast<Neuropixels1>(device);
-			auto streamName = npx->createStreamName(); // NB: Create the automatic stream name, without any suffixes and including the port name
+			auto streamName = npx->createStreamName();
 
 			auto streamExists = dataStreamExists(streamName, sn->getDataStreams());
 
@@ -1275,15 +1275,19 @@ void OnixSource::startRecording()
 		else if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
 		{
 			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
-			auto streamName = npx->createStreamName(); // NB: Create the automatic stream name, without any suffixes and including the port name
 
-			auto streamExists = dataStreamExists(streamName, sn->getDataStreams());
+			for (int i = 0; i < npx->getNumProbes(); i++)
+			{
+				auto streamName = npx->createStreamName(i);
 
-			if (!streamExists)
-				return;
+				auto streamExists = dataStreamExists(streamName, sn->getDataStreams());
 
-			if (!npx->saveProbeInterfaceFile(dir, streamName))
-				return;
+				if (!streamExists)
+					return;
+
+				if (!npx->saveProbeInterfaceFile(dir, streamName))
+					return;
+			}
 		}
 	}
 }
