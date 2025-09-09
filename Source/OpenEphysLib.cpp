@@ -47,7 +47,7 @@ extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 	info->name = PLUGIN_NAME;
 
 	//Version of the library, used only for information
-	info->libVersion = "0.2.1";
+	info->libVersion = "0.3.0";
 	info->numPlugins = NUM_PLUGINS;
 }
 
