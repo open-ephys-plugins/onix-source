@@ -1285,7 +1285,7 @@ void OnixSource::startRecording()
 				if (!streamExists)
 					return;
 
-				if (!npx->saveProbeInterfaceFile(dir, streamName))
+				if (!npx->saveProbeInterfaceFile(dir, streamName, i))
 					return;
 			}
 		}
