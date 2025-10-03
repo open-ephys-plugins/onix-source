@@ -133,6 +133,8 @@ protected:
     void updateLfpOffsets (std::array<float, numLfpSamples>&, int64);
     void updateApOffsets (std::array<float, numApSamples>&, int64);
 
+    bool validateProbeTypeAndPartNumber ();
+
     enum class ElectrodeConfiguration : int32_t
     {
         BankA = 0,

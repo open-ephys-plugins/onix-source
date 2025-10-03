@@ -197,6 +197,9 @@ void Neuropixels1e::resetProbe()
 
 bool Neuropixels1e::updateSettings()
 {
+    if (! validateProbeTypeAndPartNumber())
+        return false;
+
     auto updater = NeuropixelsV1eBackgroundUpdater (this);
 
     return updater.updateSettings() && adcValues.size() == NeuropixelsV1Values::AdcCount;

@@ -86,6 +86,39 @@ NeuropixelsProbeMetadata::NeuropixelsProbeMetadata(I2CRegisterContext* flex, Oni
 	}
 }
 
+bool NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (ProbeType probeType, std::string partNumber)
+{
+    if (probeType == ProbeType::NONE)
+        return false;
+
+    else if (probeType == ProbeType::NPX_V1)
+    {
+        if (partNumber == "PRB_1_4_0480_1" || partNumber == "PRB_1_4_0480_1_C" || partNumber == "PRB_1_2_0480_2")
+            return true;
+
+        else
+            return false;
+    }
+    else if (probeType == ProbeType::NPX_V2_SINGLE_SHANK)
+    {
+        if (partNumber == "NP2003" || partNumber == "NP2004")
+            return true;
+
+        else
+            return false;
+    }
+    else if (probeType == ProbeType::NPX_V2_QUAD_SHANK)
+    {
+        if (partNumber == "NP2013" || partNumber == "NP2014")
+            return true;
+
+        else
+            return false;
+    }
+    else
+        return false;
+}
+
 const uint64_t NeuropixelsProbeMetadata::getProbeSerialNumber() const
 {
 	return probeSerialNumber;

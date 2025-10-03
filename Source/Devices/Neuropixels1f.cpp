@@ -153,6 +153,9 @@ int Neuropixels1f::configureDevice()
 
 bool Neuropixels1f::updateSettings()
 {
+    if (! validateProbeTypeAndPartNumber())
+        return false;
+
     auto updater = NeuropixelsV1fBackgroundUpdater (this);
 
     return updater.updateSettings() && adcValues.size() == NeuropixelsV1Values::AdcCount;

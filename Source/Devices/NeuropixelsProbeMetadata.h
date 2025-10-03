@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../I2CRegisterContext.h"
+#include "../NeuropixelsComponents.h"
 #include "../OnixDevice.h"
 
 namespace OnixSourcePlugin
@@ -37,6 +38,8 @@ namespace OnixSourcePlugin
 		const std::string getProbePartNumber() const;
 		const std::string getFlexPartNumber() const;
 		const std::string getFlexVersion() const;
+
+		static bool validateProbeTypeAndPartNumber (ProbeType probeType, std::string partNumber);
 
 	private:
 		OnixDeviceType deviceType = OnixDeviceType::UNKNOWN;

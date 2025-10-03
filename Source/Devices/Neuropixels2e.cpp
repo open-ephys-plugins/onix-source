@@ -342,6 +342,12 @@ bool Neuropixels2e::updateSettings()
     {
         if (probeMetadata[i].getProbeSerialNumber() != 0)
         {
+            if (! NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (settings[i]->probeType, probeMetadata[i].getProbePartNumber()))
+            {
+                Onix1::showWarningMessageBoxAsync ("Probe Type / Number Mismatch", "The selected probe type is " + ProbeTypeString.at (settings[i]->probeType) + ", but the probe part number is " + probeMetadata[i].getProbePartNumber() + ".");
+                return false;
+            }
+
             if (gainCorrectionFilePath[i] == "None" || gainCorrectionFilePath[i] == "")
             {
                 Onix1::showWarningMessageBoxAsync ("Missing File", "Missing gain correction file for probe " + std::to_string (probeMetadata[i].getProbeSerialNumber()));

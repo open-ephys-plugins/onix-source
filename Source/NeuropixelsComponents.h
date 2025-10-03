@@ -39,6 +39,13 @@ enum class ProbeType
     NPX_V2_QUAD_SHANK,
 };
 
+const std::map<ProbeType, std::string> ProbeTypeString = {
+    {               ProbeType::NONE,                           "None"},
+    {             ProbeType::NPX_V1,                "Neuropixels 1.0"},
+    {ProbeType::NPX_V2_SINGLE_SHANK, "Neuropixels 2.0 - single shank"},
+    {  ProbeType::NPX_V2_QUAD_SHANK,   "Neuropixels 2.0 - multishank"},
+};
+
 enum class Bank
 {
     NONE = -1,
@@ -212,7 +219,14 @@ public:
     const int threshold;
 
     NeuropixelsV1Adc (int compP_ = 16, int compN_ = 16, int slope_ = 0, int coarse_ = 0, int fine_ = 0, int cfix_ = 0, int offset_ = 0, int threshold_ = 512)
-        : compP (compP_), compN (compN_), slope (slope_), coarse (coarse_), fine (fine_), cfix (cfix_), offset (offset_), threshold (threshold_)
+        : compP (compP_),
+          compN (compN_),
+          slope (slope_),
+          coarse (coarse_),
+          fine (fine_),
+          cfix (cfix_),
+          offset (offset_),
+          threshold (threshold_)
     {
     }
 };
@@ -241,9 +255,10 @@ struct NeuropixelsV2eValues
 
 struct ProbeSettings
 {
-    ProbeSettings (int numChannels, int numElectrodes, ProbeType type) : numberOfChannels (numChannels), numberOfElectrodes (numElectrodes)
+    ProbeSettings (int numChannels, int numElectrodes, ProbeType type) : numberOfChannels (numChannels),
+                                                                         numberOfElectrodes (numElectrodes)
     {
-        selectedBank = std::vector<Bank>(numChannels, Bank::A);
+        selectedBank = std::vector<Bank> (numChannels, Bank::A);
         selectedShank = std::vector<int> (numChannels, 0);
         selectedElectrode = std::vector<int> (numChannels);
 
