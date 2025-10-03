@@ -35,7 +35,8 @@ enum class ProbeType
 {
     NONE = 1,
     NPX_V1,
-    NPX_V2,
+    NPX_V2_SINGLE_SHANK,
+    NPX_V2_QUAD_SHANK,
 };
 
 enum class Bank
@@ -231,21 +232,40 @@ struct NeuropixelsV2eValues
 {
     static constexpr int numberOfChannels = 384;
     static constexpr int electrodesPerShank = 1280;
-    static constexpr int numberOfShanks = 4;
-    static constexpr int numberOfElectrodes = numberOfShanks * electrodesPerShank;
+    static constexpr int quadShankCount = 4;
+    static constexpr int numberOfQuadShankElectrodes = electrodesPerShank * quadShankCount;
+    static constexpr int singleShankCount = 1;
+    static constexpr int numberOfSingleShankElectrodes = electrodesPerShank;
     static constexpr int numberOfSettings = 2;
 };
 
-template <int numChannels, int numElectrodes>
 struct ProbeSettings
 {
+    ProbeSettings (int numChannels, int numElectrodes, ProbeType type) : numberOfChannels (numChannels), numberOfElectrodes (numElectrodes)
+    {
+        selectedBank = std::vector<Bank>(numChannels, Bank::A);
+        selectedShank = std::vector<int> (numChannels, 0);
+        selectedElectrode = std::vector<int> (numChannels);
+
+        for (int i = 0; i < numChannels; i++)
+        {
+            selectedElectrode[i] = i;
+        }
+
+        electrodeMetadata = std::vector<ElectrodeMetadata> (numElectrodes);
+
+        probeType = type;
+    }
+
+    const int numberOfChannels;
+    const int numberOfElectrodes;
+
     void updateProbeSettings (ProbeSettings* newSettings)
     {
         availableElectrodeConfigurations = newSettings->availableElectrodeConfigurations;
         availableApGains = newSettings->availableApGains;
         availableLfpGains = newSettings->availableLfpGains;
         availableReferences = newSettings->availableReferences;
-        availableBanks = newSettings->availableBanks;
 
         electrodeConfigurationIndex = newSettings->electrodeConfigurationIndex;
         apGainIndex = newSettings->apGainIndex;
@@ -262,13 +282,6 @@ struct ProbeSettings
 
         probeMetadata = newSettings->probeMetadata;
     };
-
-    void clearElectrodeSelection()
-    {
-        selectedBank.fill (Bank::A);
-        selectedShank.fill (0);
-        selectedElectrode.fill (-1);
-    }
 
     void selectElectrodes (std::vector<int> electrodes)
     {
@@ -310,24 +323,21 @@ struct ProbeSettings
     Array<float> availableApGains; // Available AP gain values for each channel (if any)
     Array<float> availableLfpGains; // Available LFP gain values for each channel (if any)
     Array<std::string> availableReferences; // reference types
-    Array<Bank> availableBanks; // bank inds
 
-    int electrodeConfigurationIndex;
-    int apGainIndex;
-    int lfpGainIndex;
-    int referenceIndex;
-    bool apFilterState;
+    int electrodeConfigurationIndex = 0;
+    int apGainIndex = 0;
+    int lfpGainIndex = 0;
+    int referenceIndex = 0;
+    bool apFilterState = false;
 
-    std::array<Bank, numChannels> selectedBank;
-    std::array<int, numChannels> selectedShank;
-    std::array<int, numChannels> selectedElectrode;
-    std::array<ElectrodeMetadata, numElectrodes> electrodeMetadata;
+    std::vector<Bank> selectedBank;
+    std::vector<int> selectedShank;
+    std::vector<int> selectedElectrode;
+    std::vector<ElectrodeMetadata> electrodeMetadata;
 
-    ProbeType probeType;
+    ProbeType probeType = ProbeType::NONE;
 
     ProbeMetadata probeMetadata;
-
-    bool isValid = false;
 };
 
 template <int N>
@@ -356,7 +366,7 @@ public:
     {
         for (int i = 0; i < numSettings; i++)
         {
-            settings.emplace_back (std::make_unique<ProbeSettings<ch, e>>());
+            settings.emplace_back (std::make_unique<ProbeSettings> (ch, e, ProbeType::NONE));
         }
     }
 
@@ -364,10 +374,10 @@ public:
     static const int numberOfElectrodes = e;
     const int numberOfShanks;
 
-    std::vector<std::unique_ptr<ProbeSettings<numberOfChannels, numberOfElectrodes>>> settings;
+    std::vector<std::unique_ptr<ProbeSettings>> settings;
 
-    virtual void setSettings (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index) = 0;
-    virtual void defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings) = 0;
+    virtual void setSettings (ProbeSettings* settings_, int index) = 0;
+    virtual void defineMetadata (ProbeSettings* settings, ProbeType probeType) = 0;
     virtual uint64_t getProbeSerialNumber (int index) = 0;
     virtual std::string getProbePartNumber (int index) = 0;
     virtual std::string getFlexPartNumber (int index) = 0;
@@ -412,7 +422,7 @@ using ConfigBitsArray = std::array<std::bitset<BaseConfigurationBitCount>, 2>;
 static class NeuropixelsV1
 {
 public:
-    ShankBitset static makeShankBits (NeuropixelsV1Reference reference, std::array<int, NeuropixelsV1Values::numberOfChannels> channelMap)
+    ShankBitset static makeShankBits (NeuropixelsV1Reference reference, std::vector<int> channelMap)
     {
         constexpr int shankBitExt1 = 965;
         constexpr int shankBitExt2 = 2;

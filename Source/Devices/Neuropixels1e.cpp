@@ -107,7 +107,7 @@ Neuropixels1e::Neuropixels1e (std::string name, std::string hubName, const oni_d
         "lfp");
     streamInfos.add (lfpStream);
 
-    defineMetadata (settings[0].get());
+    defineMetadata (settings[0].get(), ProbeType::NPX_V1);
 
     adcCalibrationFilePath = "None";
     gainCalibrationFilePath = "None";

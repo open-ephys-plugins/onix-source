@@ -45,7 +45,7 @@ class NeuropixelsV2eProbeInterface : public SettingsInterface,
                                      public TextEditor::Listener
 {
 public:
-    friend class ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>;
+    friend class ProbeBrowser;
     friend class NeuropixelsV2eInterface;
 
     NeuropixelsV2eProbeInterface (std::shared_ptr<Neuropixels2e> d, int ind, OnixSourceEditor* e, OnixSourceCanvas* c);
@@ -60,7 +60,7 @@ public:
     void updateInfoString() override;
     void updateSettings() override;
 
-    bool applyProbeSettings (ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p);
+    bool applyProbeSettings (ProbeSettings* p);
 
     void setReference (int index);
     void selectElectrodes (std::vector<int> electrodes);
@@ -104,7 +104,7 @@ private:
     std::unique_ptr<UtilityButton> loadJsonButton;
     std::unique_ptr<UtilityButton> saveJsonButton;
 
-    std::unique_ptr<ProbeBrowser<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>> probeBrowser;
+    std::unique_ptr<ProbeBrowser> probeBrowser;
 
     std::unique_ptr<Component> enableViewComponent;
     std::unique_ptr<Component> referenceViewComponent;

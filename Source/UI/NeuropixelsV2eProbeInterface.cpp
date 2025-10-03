@@ -436,7 +436,9 @@ void NeuropixelsV2eProbeInterface::buttonClicked (Button* button)
 
         if (fileChooser.browseForFileToOpen())
         {
-            if (ProbeInterfaceJson::readProbeSettingsFromJson (fileChooser.getResult(), npx->settings[probeIndex].get()))
+            auto settings = npx->settings[probeIndex].get();
+
+            if (ProbeInterfaceJson::readProbeSettingsFromJson (fileChooser.getResult(), settings))
             {
                 applyProbeSettings (npx->settings[probeIndex].get());
                 checkForExistingChannelPreset();
@@ -451,7 +453,9 @@ void NeuropixelsV2eProbeInterface::buttonClicked (Button* button)
         {
             try
             {
-                ProbeInterfaceJson::writeProbeSettingsToJson (fileChooser.getResult(), npx->settings[probeIndex].get());
+                auto settings = npx->settings[probeIndex].get();
+
+                ProbeInterfaceJson::writeProbeSettingsToJson (fileChooser.getResult(), settings);
             }
             catch (const error_str& e)
             {
@@ -691,7 +695,7 @@ void NeuropixelsV2eProbeInterface::updateSettings()
     gainCorrectionFile->setText (npx->getGainCorrectionFile (probeIndex) == "None" ? "" : npx->getGainCorrectionFile (probeIndex), dontSendNotification);
 }
 
-bool NeuropixelsV2eProbeInterface::applyProbeSettings (ProbeSettings<Neuropixels2e::numberOfChannels, Neuropixels2e::numberOfElectrodes>* p)
+bool NeuropixelsV2eProbeInterface::applyProbeSettings (ProbeSettings* p)
 {
     if (electrodeConfigurationComboBox != 0)
         electrodeConfigurationComboBox->setSelectedId (p->electrodeConfigurationIndex + 2, dontSendNotification);
@@ -756,6 +760,8 @@ void NeuropixelsV2eProbeInterface::saveParameters (XmlElement* xml)
     xmlNode->setAttribute ("flexPartNumber", npx->getFlexPartNumber (probeIndex));
     xmlNode->setAttribute ("flexVersion", npx->getFlexVersion (probeIndex));
 
+    xmlNode->setAttribute ("probeType", (int) settings->probeType);
+
     xmlNode->setAttribute ("searchForCorrectionFiles", searchForCorrectionFilesButton->getToggleState());
 
     xmlNode->setAttribute ("gainCorrectionFolder", gainCorrectionFolder->getText());
@@ -810,6 +816,8 @@ void NeuropixelsV2eProbeInterface::loadParameters (XmlElement* xml)
     {
         LOGC ("Different serial numbers found. Current serial number is " + std::to_string (npx->getProbeSerialNumber (probeIndex)) + ", while the saved serial number is " + std::to_string (xmlNode->getIntAttribute ("probeSerialNumber")) + ". Updating settings...");
     }
+
+    settings->probeType = (ProbeType) xmlNode->getIntAttribute ("probeType", (int) ProbeType::NPX_V2_QUAD_SHANK);
 
     searchForCorrectionFilesButton->setToggleState (xmlNode->getBoolAttribute ("searchForCorrectionFiles", false), sendNotification);
 

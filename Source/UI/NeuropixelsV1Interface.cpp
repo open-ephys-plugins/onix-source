@@ -1016,7 +1016,7 @@ void NeuropixelsV1Interface::drawLegend()
     }
 }
 
-bool NeuropixelsV1Interface::applyProbeSettings (ProbeSettings<Neuropixels1::numberOfChannels, Neuropixels1::numberOfElectrodes>* p)
+bool NeuropixelsV1Interface::applyProbeSettings (ProbeSettings* p)
 {
     auto npx = std::static_pointer_cast<Neuropixels1> (device);
 
@@ -1090,6 +1090,8 @@ void NeuropixelsV1Interface::saveParameters (XmlElement* xml)
     xmlNode->setAttribute ("flexPartNumber", npx->getFlexPartNumber());
     xmlNode->setAttribute ("flexVersion", npx->getFlexVersion());
 
+    xmlNode->setAttribute ("probeType", (int) settings->probeType);
+
     xmlNode->setAttribute ("isEnabled", bool (device->isEnabled()));
 
     xmlNode->setAttribute ("searchForCalibrationFiles", searchForCalibrationFilesButton->getToggleState());
@@ -1161,6 +1163,8 @@ void NeuropixelsV1Interface::loadParameters (XmlElement* xml)
     {
         LOGC ("Different serial numbers found. Current serial number is " + std::to_string (npx->getProbeSerialNumber()) + ", while the saved serial number is " + std::to_string (xmlNode->getIntAttribute ("probeSerialNumber")) + ". Updating settings...");
     }
+
+    settings->probeType = (ProbeType) xmlNode->getIntAttribute ("probeType", (int) ProbeType::NPX_V1);
 
     npx->setEnabled (xmlNode->getBoolAttribute ("isEnabled"));
 

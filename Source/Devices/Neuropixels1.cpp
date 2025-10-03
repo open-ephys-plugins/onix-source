@@ -47,7 +47,7 @@ Neuropixels1::Neuropixels1 (std::string name, std::string hubName, OnixDeviceTyp
 {
 }
 
-void Neuropixels1::setSettings (ProbeSettings<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>* settings_, int index)
+void Neuropixels1::setSettings (ProbeSettings* settings_, int index)
 {
     if (index >= settings.size())
     {
@@ -169,9 +169,9 @@ void Neuropixels1::updateLfpOffsets (std::array<float, numLfpSamples>& samples, 
     }
 }
 
-void Neuropixels1::defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
+void Neuropixels1::defineMetadata (ProbeSettings* settings, ProbeType probeType)
 {
-    settings->probeType = ProbeType::NPX_V1;
+    settings->probeType = probeType;
     settings->probeMetadata.name = "Neuropixels 1.0";
 
     std::vector<std::array<float, 2>> shankOutline {
@@ -199,13 +199,6 @@ void Neuropixels1::defineMetadata (ProbeSettings<numberOfChannels, numberOfElect
     settings->probeMetadata.probeContour = probeContour;
     settings->probeMetadata.num_adcs = 32; // NB: Is this right for 1.0e?
     settings->probeMetadata.adc_bits = 10; // NB: Is this right for 1.0e?
-
-    settings->availableBanks = {
-        Bank::A,
-        Bank::B,
-        Bank::C,
-        Bank::NONE // disconnected
-    };
 
     Array<float> xpositions = { 27.0f, 59.0f, 11.0f, 43.0f };
 
@@ -296,8 +289,6 @@ void Neuropixels1::defineMetadata (ProbeSettings<numberOfChannels, numberOfElect
     settings->electrodeConfigurationIndex = (int32_t) ElectrodeConfiguration::BankA;
     auto selection = selectElectrodeConfiguration (settings->electrodeConfigurationIndex);
     settings->selectElectrodes (selection);
-
-    settings->isValid = true;
 }
 
 uint64_t Neuropixels1::getProbeSerialNumber (int index)

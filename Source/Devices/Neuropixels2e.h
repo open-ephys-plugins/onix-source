@@ -46,7 +46,7 @@ enum class NeuropixelsV2Status : uint32_t
 /*
     Configures and streams data from a Neuropixels 2.0e device (aka a configured raw deserializer)
 */
-class Neuropixels2e : public INeuropixel<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>,
+class Neuropixels2e : public INeuropixel<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfQuadShankElectrodes>,
                       public OnixDevice,
                       public I2CRegisterContext
 {
@@ -76,7 +76,7 @@ public:
     using ShankBitsArray = std::array<std::bitset<registersPerShank>, 4>;
 
     BaseBitsArray static makeBaseBits (NeuropixelsV2Reference reference);
-    ShankBitsArray static makeShankBits (NeuropixelsV2Reference reference, std::array<ElectrodeMetadata, NeuropixelsV2eValues::numberOfElectrodes> channelMap);
+    ShankBitsArray static makeShankBits (NeuropixelsV2Reference reference, std::vector<ElectrodeMetadata> channelMap);
 
     template <int N>
     void writeShiftRegister (uint32_t srAddress, std::bitset<N> bits);
@@ -91,8 +91,8 @@ public:
     std::string getProbePartNumber (int index) override;
     std::string getFlexPartNumber (int index) override;
     std::string getFlexVersion (int index) override;
-    void defineMetadata (ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>*) override;
-    void setSettings (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index) override;
+    void defineMetadata (ProbeSettings* settings, ProbeType probeType) override;
+    void setSettings (ProbeSettings* settings_, int index) override;
     static OnixDeviceType getDeviceType();
 
 private:
@@ -120,7 +120,7 @@ private:
     static void selectProbe (I2CRegisterContext* serializer, uint8_t probeSelect);
 
     void configureProbeStreaming();
-    void writeConfiguration (ProbeSettings<numberOfChannels, numberOfElectrodes>*);
+    void writeConfiguration (ProbeSettings*);
 
     void selectElectrodesInRange (std::vector<int>& selection, int startIndex, int numberOfElectrodes);
     void selectElectrodesAcrossShanks (std::vector<int>& selection, int startIndex, int numberOfElectrodes);

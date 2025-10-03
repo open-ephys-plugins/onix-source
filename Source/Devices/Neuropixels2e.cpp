@@ -27,14 +27,14 @@ using namespace OnixSourcePlugin;
 Neuropixels2e::Neuropixels2e (std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_)
     : OnixDevice (name, hubName, Neuropixels2e::getDeviceType(), deviceIdx_, ctx_, true),
       I2CRegisterContext (ProbeI2CAddress, deviceIdx_, ctx_),
-      INeuropixel (NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
+      INeuropixel (NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::quadShankCount)
 {
     frameCount.fill (0);
     sampleNumber.fill (0);
 
     for (int i = 0; i < NeuropixelsV2eValues::numberOfSettings; i++)
     {
-        defineMetadata (settings[i].get());
+        defineMetadata (settings[i].get(), ProbeType::NPX_V2_QUAD_SHANK);
     }
 
     for (int i = 0; i < NumberOfProbes; i++)
@@ -598,7 +598,7 @@ void Neuropixels2e::processFrames()
     }
 }
 
-void Neuropixels2e::writeConfiguration (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
+void Neuropixels2e::writeConfiguration (ProbeSettings* settings)
 {
     auto baseBits = makeBaseBits (getReference (settings->referenceIndex));
     writeShiftRegister (SR_CHAIN5, baseBits[0]);
@@ -716,7 +716,7 @@ Neuropixels2e::BaseBitsArray Neuropixels2e::makeBaseBits (NeuropixelsV2Reference
     return baseBits;
 }
 
-Neuropixels2e::ShankBitsArray Neuropixels2e::makeShankBits (NeuropixelsV2Reference reference, std::array<ElectrodeMetadata, numberOfElectrodes> channelMap)
+Neuropixels2e::ShankBitsArray Neuropixels2e::makeShankBits (NeuropixelsV2Reference reference, std::vector<ElectrodeMetadata> channelMap)
 {
     ShankBitsArray shankBits;
 
@@ -766,7 +766,7 @@ Neuropixels2e::ShankBitsArray Neuropixels2e::makeShankBits (NeuropixelsV2Referen
     return shankBits;
 }
 
-void Neuropixels2e::setSettings (ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>* settings_, int index)
+void Neuropixels2e::setSettings (ProbeSettings* settings_, int index)
 {
     if (index >= settings.size())
     {
@@ -777,12 +777,13 @@ void Neuropixels2e::setSettings (ProbeSettings<NeuropixelsV2eValues::numberOfCha
     settings[index]->updateProbeSettings (settings_);
 }
 
-void Neuropixels2e::defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
+void Neuropixels2e::defineMetadata (ProbeSettings* settings, ProbeType probeType)
 {
-    auto shankCount = NeuropixelsV2eValues::numberOfShanks;
+    settings->probeType = probeType;
 
-    settings->probeType = ProbeType::NPX_V2;
-    settings->probeMetadata.name = "Neuropixels 2.0e" + (shankCount == 1) ? " - Single Shank" : " - Quad Shank";
+    auto shankCount = probeType == ProbeType::NPX_V2_QUAD_SHANK ? NeuropixelsV2eValues::quadShankCount : NeuropixelsV2eValues::singleShankCount;
+
+    settings->probeMetadata.name = "Neuropixels 2.0e" + (probeType == ProbeType::NPX_V2_QUAD_SHANK) ? " - Single Shank" : " - Quad Shank";
 
     constexpr float shankTipY = 0.0f;
     constexpr float shankBaseY = 155.0f;
@@ -793,8 +794,8 @@ void Neuropixels2e::defineMetadata (ProbeSettings<numberOfChannels, numberOfElec
     constexpr float shankPitchX = 250.0f;
 
     std::vector<std::array<float, 2>> probeContour {
-        { 0, probeLengthY },
-        { 0, shankLengthY },
+        {0, probeLengthY},
+        {0, shankLengthY},
     };
 
     for (int i = 0; i < shankCount; i++)
@@ -811,11 +812,11 @@ void Neuropixels2e::defineMetadata (ProbeSettings<numberOfChannels, numberOfElec
     probeContour.emplace_back (std::array<float, 2> { 0.0f, probeLengthY });
 
     std::vector<std::array<float, 2>> shankOutline {
-        {      27,  31 },
-        {      27, 514 },
-        {  27 + 5, 522 },
-        { 27 + 10, 514 },
-        { 27 + 10,  31 }
+        {     27,  31},
+        {     27, 514},
+        { 27 + 5, 522},
+        {27 + 10, 514},
+        {27 + 10,  31}
     };
 
     settings->probeMetadata.shank_count = shankCount;
@@ -826,14 +827,6 @@ void Neuropixels2e::defineMetadata (ProbeSettings<numberOfChannels, numberOfElec
     settings->probeMetadata.probeContour = probeContour;
     settings->probeMetadata.num_adcs = 24;
     settings->probeMetadata.adc_bits = 12;
-
-    settings->availableBanks = {
-        Bank::A,
-        Bank::B,
-        Bank::C,
-        Bank::D,
-        Bank::NONE // disconnected
-    };
 
     for (int i = 0; i < settings->probeMetadata.electrodes_per_shank * settings->probeMetadata.shank_count; i++)
     {

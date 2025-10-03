@@ -28,7 +28,7 @@
 
 namespace OnixSourcePlugin
 {
-class NeuropixelsV1ProbeBrowser : public ProbeBrowser<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>
+class NeuropixelsV1ProbeBrowser : public ProbeBrowser
 {
 public:
     NeuropixelsV1ProbeBrowser (SettingsInterface* parent_, int probeIndex_) : ProbeBrowser (parent_, probeIndex_)
@@ -36,7 +36,7 @@ public:
         setDrawingSettings();
     }
 
-    ProbeSettings<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>* getSettings() override
+    ProbeSettings* getSettings() override
     {
         if (parent->getDevice()->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E)
             return std::static_pointer_cast<Neuropixels1e> (parent->getDevice())->settings[0].get();
