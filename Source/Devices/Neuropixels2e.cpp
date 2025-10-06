@@ -98,13 +98,11 @@ void Neuropixels2e::selectElectrodesAcrossShanks (std::vector<int>& selection, i
     }
 }
 
-std::vector<int> Neuropixels2e::selectElectrodeConfiguration (int electrodeConfigurationIndex)
+std::vector<int> Neuropixels2e::selectElectrodeConfiguration (int electrodeConfigurationIndex, ProbeType probeType)
 {
-    static int numberOfElectrodesAcrossShanks = 96;
-
     std::vector<int> selection;
 
-    if (numberOfShanks == 1)
+    if (probeType == ProbeType::NPX_V2_SINGLE_SHANK)
     {
         if (electrodeConfigurationIndex == (int32_t) ElectrodeConfigurationSingleShank::BankA)
         {
@@ -124,8 +122,10 @@ std::vector<int> Neuropixels2e::selectElectrodeConfiguration (int electrodeConfi
             selectElectrodesInRange (selection, bankDOffset, numberOfChannels);
         }
     }
-    else if (numberOfShanks == 4)
+    else if (probeType == ProbeType::NPX_V2_QUAD_SHANK)
     {
+        static int numberOfElectrodesAcrossShanks = 96;
+
         if (electrodeConfigurationIndex == (int32_t) ElectrodeConfigurationQuadShank::Shank1BankA)
         {
             selectElectrodesInRange (selection, 0, numberOfChannels);
@@ -226,6 +226,10 @@ std::vector<int> Neuropixels2e::selectElectrodeConfiguration (int electrodeConfi
         {
             selectElectrodesAcrossShanks (selection, numberOfElectrodesAcrossShanks * 12, numberOfElectrodesAcrossShanks);
         }
+    }
+    else
+    {
+        LOGE ("Invalid probe type given for a Neuropixels 2.0 device: ", ProbeTypeString.at(probeType));
     }
 
     return selection;
@@ -344,7 +348,7 @@ bool Neuropixels2e::updateSettings()
         {
             if (! NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (settings[i]->probeType, probeMetadata[i].getProbePartNumber()))
             {
-                Onix1::showWarningMessageBoxAsync ("Probe Type / Number Mismatch", "The selected probe type is " + ProbeTypeString.at (settings[i]->probeType) + ", but the probe part number is " + probeMetadata[i].getProbePartNumber() + ".");
+                Onix1::showWarningMessageBoxAsync ("Probe Type Mismatch", "The selected probe type is '" + ProbeTypeString.at (settings[i]->probeType) + "', but the connected probe is '" + NeuropixelsProbeMetadata::getProbeTypeString (probeMetadata[i].getProbePartNumber()) + "'. Please select the correct probe type to match the connected probe.");
                 return false;
             }
 
@@ -1098,14 +1102,18 @@ void Neuropixels2e::defineMetadata (ProbeSettings* settings, ProbeType probeType
     settings->apFilterState = false;
 
     settings->electrodeConfigurationIndex = (int32_t) ElectrodeConfigurationSingleShank::BankA;
-    auto selection = selectElectrodeConfiguration (settings->electrodeConfigurationIndex);
+    auto selection = selectElectrodeConfiguration (settings->electrodeConfigurationIndex, probeType);
     settings->selectElectrodes (selection);
 
     settings->availableReferences.add ("Ext");
-    settings->availableReferences.add ("Tip1");
 
-    if (shankCount == 4)
+    if (probeType == ProbeType::NPX_V2_SINGLE_SHANK)
     {
+        settings->availableReferences.add ("Tip");
+    }
+    else if (probeType == ProbeType::NPX_V2_QUAD_SHANK)
+    {
+        settings->availableReferences.add ("Tip1");
         settings->availableReferences.add ("Tip2");
         settings->availableReferences.add ("Tip3");
         settings->availableReferences.add ("Tip4");

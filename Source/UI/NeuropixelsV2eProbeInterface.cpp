@@ -36,284 +36,286 @@ NeuropixelsV2eProbeInterface::NeuropixelsV2eProbeInterface (std::shared_ptr<Neur
 {
     ColourScheme::setColourScheme (ColourSchemeId::PLASMA);
 
-    if (device != nullptr)
-    {
-        auto settings = std::static_pointer_cast<Neuropixels2e> (device)->settings[probeIndex].get();
+    auto settings = std::static_pointer_cast<Neuropixels2e> (device)->settings[probeIndex].get();
 
-        type = SettingsInterface::Type::PROBE_SETTINGS_INTERFACE;
+    type = SettingsInterface::Type::PROBE_SETTINGS_INTERFACE;
 
-        mode = VisualizationMode::ENABLE_VIEW;
+    mode = VisualizationMode::ENABLE_VIEW;
 
-        probeBrowser = std::make_unique<NeuropixelsV2eProbeBrowser> (this, probeIndex);
-        probeBrowser->setBounds (0, 0, 600, 600);
-        addAndMakeVisible (probeBrowser.get());
+    probeBrowser = std::make_unique<NeuropixelsV2eProbeBrowser> (this, probeIndex);
+    probeBrowser->setBounds (0, 0, 600, 600);
+    addAndMakeVisible (probeBrowser.get());
 
-        int currentHeight = 55;
+    int currentHeight = 55;
 
-        FontOptions fontName = FontOptions ("Fira Code", "Medium", 30.0f);
-        FontOptions fontRegularButton = FontOptions ("Fira Code", "Regular", 12.0f);
-        FontOptions fontRegularLabel = FontOptions ("Fira Code", "Regular", 13.0f);
+    FontOptions fontName = FontOptions ("Fira Code", "Medium", 30.0f);
+    FontOptions fontRegularButton = FontOptions ("Fira Code", "Regular", 12.0f);
+    FontOptions fontRegularLabel = FontOptions ("Fira Code", "Regular", 13.0f);
 
-        deviceLabel = std::make_unique<Label> ("deviceLabel", "Device Name");
-        deviceLabel->setFont (fontName);
-        deviceLabel->setBounds (625, 40, 430, 45);
-        addAndMakeVisible (deviceLabel.get());
+    deviceLabel = std::make_unique<Label> ("deviceLabel", "Device Name");
+    deviceLabel->setFont (fontName);
+    deviceLabel->setBounds (625, 40, 430, 45);
+    addAndMakeVisible (deviceLabel.get());
 
-        infoLabel = std::make_unique<Label> ("INFO", "INFO");
-        infoLabel->setFont (FontOptions (15.0f));
-        infoLabel->setBounds (deviceLabel->getX(), deviceLabel->getBottom() + 3, deviceLabel->getWidth(), 80);
-        infoLabel->setJustificationType (Justification::topLeft);
-        addAndMakeVisible (infoLabel.get());
+    infoLabel = std::make_unique<Label> ("INFO", "INFO");
+    infoLabel->setFont (FontOptions (15.0f));
+    infoLabel->setBounds (deviceLabel->getX(), deviceLabel->getBottom() + 3, deviceLabel->getWidth(), 80);
+    infoLabel->setJustificationType (Justification::topLeft);
+    addAndMakeVisible (infoLabel.get());
 
-        searchForCorrectionFilesButton = std::make_unique<ToggleButton> ("Search for calibration files automatically");
-        searchForCorrectionFilesButton->setBounds (infoLabel->getX() + 2, infoLabel->getBottom() + 5, 350, 20);
-        searchForCorrectionFilesButton->addListener (this);
-        searchForCorrectionFilesButton->setTooltip ("Open a file dialog to choose a folder that contains all calibration files. The calibration file that matches your probe will automatically be selected if it exists in this folder.");
-        addAndMakeVisible (searchForCorrectionFilesButton.get());
+    searchForCorrectionFilesButton = std::make_unique<ToggleButton> ("Search for calibration files automatically");
+    searchForCorrectionFilesButton->setBounds (infoLabel->getX() + 2, infoLabel->getBottom() + 5, 350, 20);
+    searchForCorrectionFilesButton->addListener (this);
+    searchForCorrectionFilesButton->setTooltip ("Open a file dialog to choose a folder that contains all calibration files. The calibration file that matches your probe will automatically be selected if it exists in this folder.");
+    addAndMakeVisible (searchForCorrectionFilesButton.get());
 
-        gainCorrectionFolderLabel = std::make_unique<Label> ("gainCorrectionFolderLabel", "Calibration Folder");
-        gainCorrectionFolderLabel->setBounds (searchForCorrectionFilesButton->getX(), searchForCorrectionFilesButton->getBottom() + 5, 240, 16);
-        gainCorrectionFolderLabel->setColour (Label::textColourId, Colours::black);
-        addAndMakeVisible (gainCorrectionFolderLabel.get());
+    gainCorrectionFolderLabel = std::make_unique<Label> ("gainCorrectionFolderLabel", "Calibration Folder");
+    gainCorrectionFolderLabel->setBounds (searchForCorrectionFilesButton->getX(), searchForCorrectionFilesButton->getBottom() + 5, 240, 16);
+    gainCorrectionFolderLabel->setColour (Label::textColourId, Colours::black);
+    addAndMakeVisible (gainCorrectionFolderLabel.get());
 
-        gainCorrectionFolder = std::make_unique<TextEditor> ("GAIN CORRECTION FOLDER");
-        gainCorrectionFolder->setEnabled (false);
-        gainCorrectionFolder->setBounds (gainCorrectionFolderLabel->getX(), gainCorrectionFolderLabel->getBottom() + 2, gainCorrectionFolderLabel->getWidth(), 20);
-        gainCorrectionFolder->setColour (Label::textColourId, Colours::black);
-        gainCorrectionFolder->addListener (this);
-        addAndMakeVisible (gainCorrectionFolder.get());
+    gainCorrectionFolder = std::make_unique<TextEditor> ("GAIN CORRECTION FOLDER");
+    gainCorrectionFolder->setEnabled (false);
+    gainCorrectionFolder->setBounds (gainCorrectionFolderLabel->getX(), gainCorrectionFolderLabel->getBottom() + 2, gainCorrectionFolderLabel->getWidth(), 20);
+    gainCorrectionFolder->setColour (Label::textColourId, Colours::black);
+    gainCorrectionFolder->addListener (this);
+    addAndMakeVisible (gainCorrectionFolder.get());
 
-        gainCorrectionFolderButton = std::make_unique<UtilityButton> ("...");
-        gainCorrectionFolderButton->setBounds (gainCorrectionFolder->getRight() + 3, gainCorrectionFolder->getY(), 26, gainCorrectionFolder->getHeight() + 2);
-        gainCorrectionFolderButton->setRadius (1.0f);
-        gainCorrectionFolderButton->addListener (this);
-        gainCorrectionFolderButton->setTooltip ("Open a file dialog to choose the gain correction folder path to automatically search for probe calibration files.");
-        addAndMakeVisible (gainCorrectionFolderButton.get());
+    gainCorrectionFolderButton = std::make_unique<UtilityButton> ("...");
+    gainCorrectionFolderButton->setBounds (gainCorrectionFolder->getRight() + 3, gainCorrectionFolder->getY(), 26, gainCorrectionFolder->getHeight() + 2);
+    gainCorrectionFolderButton->setRadius (1.0f);
+    gainCorrectionFolderButton->addListener (this);
+    gainCorrectionFolderButton->setTooltip ("Open a file dialog to choose the gain correction folder path to automatically search for probe calibration files.");
+    addAndMakeVisible (gainCorrectionFolderButton.get());
 
-        gainCorrectionFolderChooser = std::make_unique<FileChooser> ("Select Gain Correction Folder.", File());
+    gainCorrectionFolderChooser = std::make_unique<FileChooser> ("Select Gain Correction Folder.", File());
 
-        gainCorrectionFileLabel = std::make_unique<Label> ("gainCorrectionFileLabel", "Gain Correction File");
-        gainCorrectionFileLabel->setBounds (gainCorrectionFolder->getX(), gainCorrectionFolder->getBottom() + 15, gainCorrectionFolderLabel->getWidth(), gainCorrectionFolderLabel->getHeight());
-        gainCorrectionFileLabel->setColour (Label::textColourId, Colours::black);
-        addAndMakeVisible (gainCorrectionFileLabel.get());
+    gainCorrectionFileLabel = std::make_unique<Label> ("gainCorrectionFileLabel", "Gain Correction File");
+    gainCorrectionFileLabel->setBounds (gainCorrectionFolder->getX(), gainCorrectionFolder->getBottom() + 15, gainCorrectionFolderLabel->getWidth(), gainCorrectionFolderLabel->getHeight());
+    gainCorrectionFileLabel->setColour (Label::textColourId, Colours::black);
+    addAndMakeVisible (gainCorrectionFileLabel.get());
 
-        gainCorrectionFile = std::make_unique<TextEditor> ("GAIN CORRECTION FILE");
-        gainCorrectionFile->setEnabled (false);
-        gainCorrectionFile->setBounds (gainCorrectionFileLabel->getX(), gainCorrectionFileLabel->getBottom() + 2, gainCorrectionFileLabel->getWidth(), 20);
-        gainCorrectionFile->setColour (Label::textColourId, Colours::black);
-        gainCorrectionFile->addListener (this);
-        addAndMakeVisible (gainCorrectionFile.get());
+    gainCorrectionFile = std::make_unique<TextEditor> ("GAIN CORRECTION FILE");
+    gainCorrectionFile->setEnabled (false);
+    gainCorrectionFile->setBounds (gainCorrectionFileLabel->getX(), gainCorrectionFileLabel->getBottom() + 2, gainCorrectionFileLabel->getWidth(), 20);
+    gainCorrectionFile->setColour (Label::textColourId, Colours::black);
+    gainCorrectionFile->addListener (this);
+    addAndMakeVisible (gainCorrectionFile.get());
 
-        gainCorrectionFileButton = std::make_unique<UtilityButton> ("...");
-        gainCorrectionFileButton->setBounds (gainCorrectionFile->getRight() + 3, gainCorrectionFile->getY(), 26, gainCorrectionFile->getHeight() + 2);
-        gainCorrectionFileButton->setRadius (1.0f);
-        gainCorrectionFileButton->addListener (this);
-        gainCorrectionFileButton->setTooltip ("Open a file dialog to choose the gain correction file for this probe.");
-        addAndMakeVisible (gainCorrectionFileButton.get());
+    gainCorrectionFileButton = std::make_unique<UtilityButton> ("...");
+    gainCorrectionFileButton->setBounds (gainCorrectionFile->getRight() + 3, gainCorrectionFile->getY(), 26, gainCorrectionFile->getHeight() + 2);
+    gainCorrectionFileButton->setRadius (1.0f);
+    gainCorrectionFileButton->addListener (this);
+    gainCorrectionFileButton->setTooltip ("Open a file dialog to choose the gain correction file for this probe.");
+    addAndMakeVisible (gainCorrectionFileButton.get());
 
-        gainCorrectionFileChooser = std::make_unique<FileChooser> ("Select Gain Correction file.", File(), std::string ("*") + GainCalibrationFilename);
+    gainCorrectionFileChooser = std::make_unique<FileChooser> ("Select Gain Correction file.", File(), std::string ("*") + GainCalibrationFilename);
 
-        probeInterfaceRectangle = std::make_unique<DrawableRectangle>();
-        probeInterfaceRectangle->setFill (Colours::darkgrey);
-        probeInterfaceRectangle->setRectangle (Rectangle<float> (gainCorrectionFile->getX(), gainCorrectionFile->getBottom() + 15, 250, 50));
-        addAndMakeVisible (probeInterfaceRectangle.get());
+    probeInterfaceRectangle = std::make_unique<DrawableRectangle>();
+    probeInterfaceRectangle->setFill (Colours::darkgrey);
+    probeInterfaceRectangle->setRectangle (Rectangle<float> (gainCorrectionFile->getX(), gainCorrectionFile->getBottom() + 15, 250, 50));
+    addAndMakeVisible (probeInterfaceRectangle.get());
 
-        probeInterfaceLabel = std::make_unique<Label> ("probeInterfaceLabel", "Probe Interface");
-        probeInterfaceLabel->setFont (fontRegularLabel);
-        probeInterfaceLabel->setBounds (probeInterfaceRectangle->getX(), probeInterfaceRectangle->getY(), 90, 18);
-        probeInterfaceLabel->setColour (Label::textColourId, Colours::black);
-        addAndMakeVisible (probeInterfaceLabel.get());
+    probeInterfaceLabel = std::make_unique<Label> ("probeInterfaceLabel", "Probe Interface");
+    probeInterfaceLabel->setFont (fontRegularLabel);
+    probeInterfaceLabel->setBounds (probeInterfaceRectangle->getX(), probeInterfaceRectangle->getY(), 90, 18);
+    probeInterfaceLabel->setColour (Label::textColourId, Colours::black);
+    addAndMakeVisible (probeInterfaceLabel.get());
 
-        saveJsonButton = std::make_unique<UtilityButton> ("Save to JSON");
-        saveJsonButton->setRadius (3.0f);
-        saveJsonButton->setBounds (probeInterfaceRectangle->getX() + 3, probeInterfaceRectangle->getY() + 20, 120, 22);
-        saveJsonButton->addListener (this);
-        saveJsonButton->setTooltip ("Save channel map to ProbeInterface .json file");
-        addAndMakeVisible (saveJsonButton.get());
+    saveJsonButton = std::make_unique<UtilityButton> ("Save to JSON");
+    saveJsonButton->setRadius (3.0f);
+    saveJsonButton->setBounds (probeInterfaceRectangle->getX() + 3, probeInterfaceRectangle->getY() + 20, 120, 22);
+    saveJsonButton->addListener (this);
+    saveJsonButton->setTooltip ("Save channel map to ProbeInterface .json file");
+    addAndMakeVisible (saveJsonButton.get());
 
-        loadJsonButton = std::make_unique<UtilityButton> ("Load from JSON");
-        loadJsonButton->setRadius (3.0f);
-        loadJsonButton->setBounds (saveJsonButton->getRight() + 5, saveJsonButton->getY(), 120, 22);
-        loadJsonButton->addListener (this);
-        loadJsonButton->setTooltip ("Load channel map from ProbeInterface .json file");
-        addAndMakeVisible (loadJsonButton.get());
+    loadJsonButton = std::make_unique<UtilityButton> ("Load from JSON");
+    loadJsonButton->setRadius (3.0f);
+    loadJsonButton->setBounds (saveJsonButton->getRight() + 5, saveJsonButton->getY(), 120, 22);
+    loadJsonButton->addListener (this);
+    loadJsonButton->setTooltip ("Load channel map from ProbeInterface .json file");
+    addAndMakeVisible (loadJsonButton.get());
 
-        saveSettingsButton = std::make_unique<UtilityButton> ("Save Settings");
-        saveSettingsButton->setRadius (3.0f);
-        saveSettingsButton->setBounds (saveJsonButton->getX(), probeBrowser->getBottom() - 80, 120, 22);
-        saveSettingsButton->addListener (this);
-        saveSettingsButton->setTooltip ("Save all Neuropixels settings to file.");
-        addAndMakeVisible (saveSettingsButton.get());
+    saveSettingsButton = std::make_unique<UtilityButton> ("Save Settings");
+    saveSettingsButton->setRadius (3.0f);
+    saveSettingsButton->setBounds (saveJsonButton->getX(), probeBrowser->getBottom() - 80, 120, 22);
+    saveSettingsButton->addListener (this);
+    saveSettingsButton->setTooltip ("Save all Neuropixels settings to file.");
+    addAndMakeVisible (saveSettingsButton.get());
 
-        loadSettingsButton = std::make_unique<UtilityButton> ("Load Settings");
-        loadSettingsButton->setRadius (3.0f);
-        loadSettingsButton->setBounds (saveSettingsButton->getRight() + 5, saveSettingsButton->getY(), saveSettingsButton->getWidth(), saveSettingsButton->getHeight());
-        loadSettingsButton->addListener (this);
-        loadSettingsButton->setTooltip ("Load all Neuropixels settings from a file.");
-        addAndMakeVisible (loadSettingsButton.get());
+    loadSettingsButton = std::make_unique<UtilityButton> ("Load Settings");
+    loadSettingsButton->setRadius (3.0f);
+    loadSettingsButton->setBounds (saveSettingsButton->getRight() + 5, saveSettingsButton->getY(), saveSettingsButton->getWidth(), saveSettingsButton->getHeight());
+    loadSettingsButton->addListener (this);
+    loadSettingsButton->setTooltip ("Load all Neuropixels settings from a file.");
+    addAndMakeVisible (loadSettingsButton.get());
 
-        electrodesLabel = std::make_unique<Label> ("ELECTRODES", "ELECTRODES");
-        electrodesLabel->setFont (FontOptions ("Inter", "Regular", 13.0f));
-        electrodesLabel->setBounds (446, currentHeight - 20, 100, 20);
-        addAndMakeVisible (electrodesLabel.get());
+    electrodesLabel = std::make_unique<Label> ("ELECTRODES", "ELECTRODES");
+    electrodesLabel->setFont (FontOptions ("Inter", "Regular", 13.0f));
+    electrodesLabel->setBounds (446, currentHeight - 20, 100, 20);
+    addAndMakeVisible (electrodesLabel.get());
 
-        enableViewButton = std::make_unique<UtilityButton> ("VIEW");
-        enableViewButton->setFont (fontRegularButton);
-        enableViewButton->setRadius (3.0f);
-        enableViewButton->setBounds (530, currentHeight + 2, 45, 18);
-        enableViewButton->addListener (this);
-        enableViewButton->setTooltip ("View electrode enabled state");
-        addAndMakeVisible (enableViewButton.get());
+    enableViewButton = std::make_unique<UtilityButton> ("VIEW");
+    enableViewButton->setFont (fontRegularButton);
+    enableViewButton->setRadius (3.0f);
+    enableViewButton->setBounds (530, currentHeight + 2, 45, 18);
+    enableViewButton->addListener (this);
+    enableViewButton->setTooltip ("View electrode enabled state");
+    addAndMakeVisible (enableViewButton.get());
 
-        enableButton = std::make_unique<UtilityButton> ("ENABLE");
-        enableButton->setFont (fontRegularButton);
-        enableButton->setRadius (3.0f);
-        enableButton->setBounds (450, currentHeight, 65, 22);
-        enableButton->addListener (this);
-        enableButton->setTooltip ("Enable selected electrodes");
-        addAndMakeVisible (enableButton.get());
+    enableButton = std::make_unique<UtilityButton> ("ENABLE");
+    enableButton->setFont (fontRegularButton);
+    enableButton->setRadius (3.0f);
+    enableButton->setBounds (450, currentHeight, 65, 22);
+    enableButton->addListener (this);
+    enableButton->setTooltip ("Enable selected electrodes");
+    addAndMakeVisible (enableButton.get());
 
-        currentHeight += 58;
+    currentHeight += 58;
 
-        electrodePresetLabel = std::make_unique<Label> ("ELECTRODE PRESET", "ELECTRODE PRESET");
-        electrodePresetLabel->setFont (fontRegularLabel);
-        electrodePresetLabel->setBounds (446, currentHeight - 20, 150, 20);
-        addAndMakeVisible (electrodePresetLabel.get());
+    electrodePresetLabel = std::make_unique<Label> ("ELECTRODE PRESET", "ELECTRODE PRESET");
+    electrodePresetLabel->setFont (fontRegularLabel);
+    electrodePresetLabel->setBounds (446, currentHeight - 20, 150, 20);
+    addAndMakeVisible (electrodePresetLabel.get());
 
-        electrodeConfigurationComboBox = std::make_unique<ComboBox> ("electrodeConfigurationComboBox");
-        electrodeConfigurationComboBox->setBounds (450, currentHeight, 135, 22);
-        electrodeConfigurationComboBox->addListener (this);
-        electrodeConfigurationComboBox->setTooltip ("Enable a pre-configured set of electrodes");
-        electrodeConfigurationComboBox->addItem ("Select a preset...", 1);
-        electrodeConfigurationComboBox->setItemEnabled (1, false);
-        electrodeConfigurationComboBox->addSeparator();
+    electrodeConfigurationComboBox = std::make_unique<ComboBox> ("electrodeConfigurationComboBox");
+    electrodeConfigurationComboBox->setBounds (450, currentHeight, 135, 22);
+    electrodeConfigurationComboBox->addListener (this);
+    electrodeConfigurationComboBox->setTooltip ("Enable a pre-configured set of electrodes");
 
-        for (int i = 0; i < settings->availableElectrodeConfigurations.size(); i++)
-        {
-            electrodeConfigurationComboBox->addItem (settings->availableElectrodeConfigurations[i], i + 2);
-        }
+    updateChannelPresets (settings);
 
-        checkForExistingChannelPreset();
+    addAndMakeVisible (electrodeConfigurationComboBox.get());
 
-        addAndMakeVisible (electrodeConfigurationComboBox.get());
+    currentHeight += 55;
 
-        currentHeight += 55;
+    probeTypeLabel = std::make_unique<Label> ("PROBE TYPE", "PROBE TYPE");
+    probeTypeLabel->setFont (fontRegularLabel);
+    probeTypeLabel->setBounds (446, currentHeight - 20, 150, 20);
+    addAndMakeVisible (probeTypeLabel.get());
 
-        if (settings->availableReferences.size() > 0)
-        {
-            referenceComboBox = std::make_unique<ComboBox> ("ReferenceComboBox");
-            referenceComboBox->setBounds (450, currentHeight, 65, 22);
-            referenceComboBox->addListener (this);
+    probeTypeComboBox = std::make_unique<ComboBox> ("probeTypeComboBox");
+    probeTypeComboBox->setBounds (450, currentHeight, 135, 22);
+    probeTypeComboBox->addListener (this);
+    probeTypeComboBox->setTooltip ("Choose which probe type is connected to the headstage.");
 
-            for (int i = 0; i < settings->availableReferences.size(); i++)
-            {
-                referenceComboBox->addItem (settings->availableReferences[i], i + 1);
-            }
+    probeTypeComboBox->addItem (String (ProbeTypeString.at (ProbeType::NPX_V2_QUAD_SHANK)), (int) ProbeType::NPX_V2_QUAD_SHANK);
+    probeTypeComboBox->addItem (String (ProbeTypeString.at (ProbeType::NPX_V2_SINGLE_SHANK)), (int) ProbeType::NPX_V2_SINGLE_SHANK);
 
-            referenceComboBox->setSelectedId (settings->referenceIndex + 1, dontSendNotification);
-            addAndMakeVisible (referenceComboBox.get());
+    probeTypeComboBox->setSelectedId ((int) ProbeType::NPX_V2_QUAD_SHANK, dontSendNotification);
 
-            referenceViewButton = std::make_unique<UtilityButton> ("VIEW");
-            referenceViewButton->setFont (fontRegularButton);
-            referenceViewButton->setRadius (3.0f);
-            referenceViewButton->setBounds (530, currentHeight + 2, 45, 18);
-            referenceViewButton->addListener (this);
-            referenceViewButton->setTooltip ("View reference of each channel");
-            addAndMakeVisible (referenceViewButton.get());
+    addAndMakeVisible (probeTypeComboBox.get());
 
-            referenceLabel = std::make_unique<Label> ("REFERENCE", "REFERENCE");
-            referenceLabel->setFont (fontRegularLabel);
-            referenceLabel->setBounds (446, currentHeight - 20, 100, 20);
-            addAndMakeVisible (referenceLabel.get());
+    currentHeight += 55;
 
-            currentHeight += 55;
-        }
+    referenceComboBox = std::make_unique<ComboBox> ("ReferenceComboBox");
+    referenceComboBox->setBounds (450, currentHeight, 65, 22);
+    referenceComboBox->addListener (this);
+
+    updateReferences (settings);
+
+    addAndMakeVisible (referenceComboBox.get());
+
+    referenceViewButton = std::make_unique<UtilityButton> ("VIEW");
+    referenceViewButton->setFont (fontRegularButton);
+    referenceViewButton->setRadius (3.0f);
+    referenceViewButton->setBounds (530, currentHeight + 2, 45, 18);
+    referenceViewButton->addListener (this);
+    referenceViewButton->setTooltip ("View reference of each channel");
+    addAndMakeVisible (referenceViewButton.get());
+
+    referenceLabel = std::make_unique<Label> ("REFERENCE", "REFERENCE");
+    referenceLabel->setFont (fontRegularLabel);
+    referenceLabel->setBounds (446, currentHeight - 20, 100, 20);
+    addAndMakeVisible (referenceLabel.get());
+
+    currentHeight += 55;
+
 #pragma region Draw Legends
 
-        // ENABLE View
-        Colour colour = Colour (55, 55, 55);
-        float fontSize = 16.0f;
+    // ENABLE View
+    Colour colour = Colour (55, 55, 55);
+    float fontSize = 16.0f;
 
-        enableViewComponent = std::make_unique<Component> ("enableViewComponent");
-        enableViewComponent->setBounds (450, 430, 120, 200);
+    enableViewComponent = std::make_unique<Component> ("enableViewComponent");
+    enableViewComponent->setBounds (450, 430, 120, 200);
 
-        enableViewLabels.push_back (std::make_unique<Label> ("enableViewLabel", "ENABLED?"));
-        enableViewLabels[0]->setJustificationType (Justification::centredLeft);
-        enableViewLabels[0]->setFont (FontOptions (fontSize));
-        enableViewLabels[0]->setColour (Label::ColourIds::textColourId, colour);
-        enableViewLabels[0]->setBounds (0, 0, 110, 15);
-        enableViewComponent->addAndMakeVisible (enableViewLabels[0].get());
+    enableViewLabels.push_back (std::make_unique<Label> ("enableViewLabel", "ENABLED?"));
+    enableViewLabels[0]->setJustificationType (Justification::centredLeft);
+    enableViewLabels[0]->setFont (FontOptions (fontSize));
+    enableViewLabels[0]->setColour (Label::ColourIds::textColourId, colour);
+    enableViewLabels[0]->setBounds (0, 0, 110, 15);
+    enableViewComponent->addAndMakeVisible (enableViewLabels[0].get());
 
-        std::vector<Colour> colors = { Colours::yellow, Colours::darkgrey, Colours::black };
-        StringArray legendLabels = { "YES", "NO", "REFERENCE" };
+    std::vector<Colour> colors = { Colours::yellow, Colours::darkgrey, Colours::black };
+    StringArray legendLabels = { "YES", "NO", "REFERENCE" };
 
-        for (int i = 0; i < colors.size(); i++)
-        {
-            enableViewRectangles.push_back (std::make_unique<DrawableRectangle>());
-            enableViewRectangles[i]->setFill (colors[i]);
-            enableViewRectangles[i]->setRectangle (Rectangle<float> (enableViewLabels[0]->getX() + 6, enableViewLabels[i]->getBottom() + 1, 12, 12));
-            enableViewComponent->addAndMakeVisible (enableViewRectangles[i].get());
+    for (int i = 0; i < colors.size(); i++)
+    {
+        enableViewRectangles.push_back (std::make_unique<DrawableRectangle>());
+        enableViewRectangles[i]->setFill (colors[i]);
+        enableViewRectangles[i]->setRectangle (Rectangle<float> (enableViewLabels[0]->getX() + 6, enableViewLabels[i]->getBottom() + 1, 12, 12));
+        enableViewComponent->addAndMakeVisible (enableViewRectangles[i].get());
 
-            enableViewLabels.push_back (std::make_unique<Label> ("enableViewLabel", legendLabels[i]));
-            int labelInd = i + 1;
-            enableViewLabels[labelInd]->setJustificationType (Justification::centredLeft);
-            enableViewLabels[labelInd]->setFont (FontOptions (fontSize));
-            enableViewLabels[labelInd]->setColour (Label::ColourIds::textColourId, colour);
-            enableViewLabels[labelInd]->setBounds (enableViewRectangles[i]->getRight() + 2, enableViewRectangles[i]->getY(), 100, 17);
-            enableViewComponent->addAndMakeVisible (enableViewLabels[labelInd].get());
-        }
+        enableViewLabels.push_back (std::make_unique<Label> ("enableViewLabel", legendLabels[i]));
+        int labelInd = i + 1;
+        enableViewLabels[labelInd]->setJustificationType (Justification::centredLeft);
+        enableViewLabels[labelInd]->setFont (FontOptions (fontSize));
+        enableViewLabels[labelInd]->setColour (Label::ColourIds::textColourId, colour);
+        enableViewLabels[labelInd]->setBounds (enableViewRectangles[i]->getRight() + 2, enableViewRectangles[i]->getY(), 100, 17);
+        enableViewComponent->addAndMakeVisible (enableViewLabels[labelInd].get());
+    }
 
-        addAndMakeVisible (enableViewComponent.get());
+    addAndMakeVisible (enableViewComponent.get());
 
-        // REFERENCE View
-        referenceViewComponent = std::make_unique<Component> ("referenceViewComponent");
-        referenceViewComponent->setBounds (enableViewComponent->getX(), enableViewComponent->getY(), 120, 300);
+    // REFERENCE View
+    referenceViewComponent = std::make_unique<Component> ("referenceViewComponent");
+    referenceViewComponent->setBounds (enableViewComponent->getX(), enableViewComponent->getY(), 120, 300);
 
-        referenceViewLabels.push_back (std::make_unique<Label> ("referenceViewLabel", "REFERENCE"));
-        referenceViewLabels[0]->setJustificationType (Justification::centredLeft);
-        referenceViewLabels[0]->setFont (FontOptions (fontSize));
-        referenceViewLabels[0]->setColour (Label::ColourIds::textColourId, colour);
-        referenceViewLabels[0]->setBounds (0, 0, 110, 15);
-        referenceViewComponent->addAndMakeVisible (referenceViewLabels[0].get());
+    referenceViewLabels.push_back (std::make_unique<Label> ("referenceViewLabel", "REFERENCE"));
+    referenceViewLabels[0]->setJustificationType (Justification::centredLeft);
+    referenceViewLabels[0]->setFont (FontOptions (fontSize));
+    referenceViewLabels[0]->setColour (Label::ColourIds::textColourId, colour);
+    referenceViewLabels[0]->setBounds (0, 0, 110, 15);
+    referenceViewComponent->addAndMakeVisible (referenceViewLabels[0].get());
 
-        colors.clear();
-        legendLabels.clear();
+    colors.clear();
+    legendLabels.clear();
 
-        for (int i = 0; i < referenceComboBox->getNumItems(); i++)
-        {
-            String ref = referenceComboBox->getItemText (i);
+    for (int i = 0; i < referenceComboBox->getNumItems(); i++)
+    {
+        String ref = referenceComboBox->getItemText (i);
 
-            if (ref.contains ("Ext"))
-                colors.push_back (Colours::pink);
-            else if (ref.contains ("Tip"))
-                colors.push_back (Colours::orange);
-            else
-                colors.push_back (Colours::purple);
+        if (ref.contains ("Ext"))
+            colors.push_back (Colours::pink);
+        else if (ref.contains ("Tip"))
+            colors.push_back (Colours::orange);
+        else
+            colors.push_back (Colours::purple);
 
-            legendLabels.add (referenceComboBox->getItemText (i));
-        }
+        legendLabels.add (referenceComboBox->getItemText (i));
+    }
 
-        for (int i = 0; i < colors.size(); i++)
-        {
-            referenceViewRectangles.push_back (std::make_unique<DrawableRectangle>());
-            referenceViewRectangles[i]->setFill (colors[i]);
-            referenceViewRectangles[i]->setRectangle (Rectangle<float> (referenceViewLabels[0]->getX() + 6, referenceViewLabels[i]->getBottom() + 1, 12, 12));
-            referenceViewComponent->addAndMakeVisible (referenceViewRectangles[i].get());
+    for (int i = 0; i < colors.size(); i++)
+    {
+        referenceViewRectangles.push_back (std::make_unique<DrawableRectangle>());
+        referenceViewRectangles[i]->setFill (colors[i]);
+        referenceViewRectangles[i]->setRectangle (Rectangle<float> (referenceViewLabels[0]->getX() + 6, referenceViewLabels[i]->getBottom() + 1, 12, 12));
+        referenceViewComponent->addAndMakeVisible (referenceViewRectangles[i].get());
 
-            referenceViewLabels.push_back (std::make_unique<Label> ("referenceViewLabel", legendLabels[i]));
-            int labelInd = i + 1;
-            referenceViewLabels[labelInd]->setJustificationType (Justification::centredLeft);
-            referenceViewLabels[labelInd]->setFont (FontOptions (fontSize));
-            referenceViewLabels[labelInd]->setColour (Label::ColourIds::textColourId, colour);
-            referenceViewLabels[labelInd]->setBounds (referenceViewRectangles[i]->getRight() + 2, referenceViewRectangles[i]->getY(), 100, 17);
-            referenceViewComponent->addAndMakeVisible (referenceViewLabels[labelInd].get());
-        }
+        referenceViewLabels.push_back (std::make_unique<Label> ("referenceViewLabel", legendLabels[i]));
+        int labelInd = i + 1;
+        referenceViewLabels[labelInd]->setJustificationType (Justification::centredLeft);
+        referenceViewLabels[labelInd]->setFont (FontOptions (fontSize));
+        referenceViewLabels[labelInd]->setColour (Label::ColourIds::textColourId, colour);
+        referenceViewLabels[labelInd]->setBounds (referenceViewRectangles[i]->getRight() + 2, referenceViewRectangles[i]->getY(), 100, 17);
+        referenceViewComponent->addAndMakeVisible (referenceViewLabels[labelInd].get());
+    }
 
-        addAndMakeVisible (referenceViewComponent.get());
+    addAndMakeVisible (referenceViewComponent.get());
 #pragma endregion
 
-        setGainCorrectionFolderEnabledState (false);
-    }
+    setGainCorrectionFolderEnabledState (false);
 
     drawLegend();
 
@@ -361,7 +363,7 @@ void NeuropixelsV2eProbeInterface::comboBoxChanged (ComboBox* comboBox)
 
     if (comboBox == electrodeConfigurationComboBox.get())
     {
-        auto selection = npx->selectElectrodeConfiguration (electrodeConfigurationComboBox->getSelectedItemIndex() - 1);
+        auto selection = npx->selectElectrodeConfiguration (electrodeConfigurationComboBox->getSelectedItemIndex() - 1, npx->settings[probeIndex]->probeType);
 
         selectElectrodes (selection);
     }
@@ -369,8 +371,74 @@ void NeuropixelsV2eProbeInterface::comboBoxChanged (ComboBox* comboBox)
     {
         npx->settings[probeIndex]->referenceIndex = referenceComboBox->getSelectedItemIndex();
     }
+    else if (comboBox == probeTypeComboBox.get())
+    {
+        if (comboBox->getSelectedId() == 0)
+        {
+            LOGD ("Invalid ProbeType selected in the drop-down menu. ID = 0");
+            return;
+        }
+
+        auto settings = npx->settings[probeIndex].get();
+
+        saveProbeSettings (settings);
+
+        loadProbeSettings (settings, (ProbeType) comboBox->getSelectedId());
+
+        updateSettings();
+    }
 
     repaint();
+}
+
+void NeuropixelsV2eProbeInterface::saveProbeSettings (ProbeSettings* settings)
+{
+    getProbeSetting (settings->probeType)->updateProbeSettings (settings);
+}
+
+void NeuropixelsV2eProbeInterface::loadProbeSettings (ProbeSettings* settings, ProbeType probeType)
+{
+    settings->updateProbeSettings (getProbeSetting (probeType));
+}
+
+ProbeSettings* NeuropixelsV2eProbeInterface::getProbeSetting (ProbeType probeType)
+{
+    if (probeSettings.find (probeType) == probeSettings.end())
+    {
+        auto numElectrodes = probeType == ProbeType::NPX_V2_QUAD_SHANK ? NeuropixelsV2eValues::numberOfQuadShankElectrodes : NeuropixelsV2eValues::numberOfSingleShankElectrodes;
+        probeSettings.emplace (probeType, std::make_unique<ProbeSettings> (NeuropixelsV2eValues::numberOfChannels, numElectrodes, probeType));
+        std::static_pointer_cast<Neuropixels2e> (device)->defineMetadata (probeSettings[probeType].get(), probeType);
+    }
+
+    return probeSettings[probeType].get();
+}
+
+void NeuropixelsV2eProbeInterface::updateChannelPresets (ProbeSettings* settings)
+{
+    electrodeConfigurationComboBox->clear (dontSendNotification);
+
+    electrodeConfigurationComboBox->addItem ("Select a preset...", 1);
+    electrodeConfigurationComboBox->setItemEnabled (1, false);
+    electrodeConfigurationComboBox->addSeparator();
+
+    for (int i = 0; i < settings->availableElectrodeConfigurations.size(); i++)
+    {
+        electrodeConfigurationComboBox->addItem (settings->availableElectrodeConfigurations[i], i + 2);
+    }
+
+    checkForExistingChannelPreset();
+}
+
+void NeuropixelsV2eProbeInterface::updateReferences (ProbeSettings* settings)
+{
+    referenceComboBox->clear();
+
+    for (int i = 0; i < settings->availableReferences.size(); i++)
+    {
+        referenceComboBox->addItem (settings->availableReferences[i], i + 1);
+    }
+
+    referenceComboBox->setSelectedId (settings->referenceIndex + 1, dontSendNotification);
 }
 
 void NeuropixelsV2eProbeInterface::checkForExistingChannelPreset()
@@ -382,7 +450,7 @@ void NeuropixelsV2eProbeInterface::checkForExistingChannelPreset()
 
     for (int i = 0; i < settings->availableElectrodeConfigurations.size(); i++)
     {
-        auto selection = npx->selectElectrodeConfiguration (i);
+        auto selection = npx->selectElectrodeConfiguration (i, settings->probeType);
         std::vector<int> channelMap;
         channelMap.assign (NeuropixelsV2eValues::numberOfChannels, 0);
 
@@ -688,21 +756,21 @@ void NeuropixelsV2eProbeInterface::updateSettings()
         return;
 
     auto npx = std::static_pointer_cast<Neuropixels2e> (device);
+    auto settings = npx->settings[probeIndex].get();
 
-    applyProbeSettings (npx->settings[probeIndex].get());
-    checkForExistingChannelPreset();
+    probeBrowser->setDrawingSettings();
+    applyProbeSettings (settings);
+    updateChannelPresets (settings);
+    updateReferences (settings);
 
     gainCorrectionFile->setText (npx->getGainCorrectionFile (probeIndex) == "None" ? "" : npx->getGainCorrectionFile (probeIndex), dontSendNotification);
 }
 
 bool NeuropixelsV2eProbeInterface::applyProbeSettings (ProbeSettings* p)
 {
-    if (electrodeConfigurationComboBox != 0)
-        electrodeConfigurationComboBox->setSelectedId (p->electrodeConfigurationIndex + 2, dontSendNotification);
+    electrodeConfigurationComboBox->setSelectedId (p->electrodeConfigurationIndex + 2, dontSendNotification);
 
-    if (referenceComboBox != 0)
-        referenceComboBox->setSelectedId (p->referenceIndex + 1, dontSendNotification);
-
+    referenceComboBox->setSelectedId (p->referenceIndex + 1, dontSendNotification);
     auto settings = std::static_pointer_cast<Neuropixels2e> (device)->settings[probeIndex].get();
 
     for (int i = 0; i < settings->electrodeMetadata.size(); i++)

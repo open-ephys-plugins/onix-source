@@ -50,7 +50,7 @@ public:
     void defineMetadata (ProbeSettings* settings, ProbeType probeType) override;
 
     /** Select a preset electrode configuration, based on the index of the given enum */
-    std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex) override;
+    std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex, ProbeType probeType = ProbeType::NPX_V1) override;
 
     void setSettings (ProbeSettings* settings_, int index = 0) override;
 

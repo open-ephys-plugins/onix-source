@@ -86,7 +86,7 @@ public:
 
     // INeuropixel Methods
 
-    std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex) override;
+    std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex, ProbeType probeType) override;
     uint64_t getProbeSerialNumber (int index) override;
     std::string getProbePartNumber (int index) override;
     std::string getFlexPartNumber (int index) override;

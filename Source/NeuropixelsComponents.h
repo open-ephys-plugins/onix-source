@@ -397,7 +397,7 @@ public:
     virtual std::string getProbePartNumber (int index) = 0;
     virtual std::string getFlexPartNumber (int index) = 0;
     virtual std::string getFlexVersion (int index) = 0;
-    virtual std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex) = 0;
+    virtual std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex, ProbeType probeType) = 0;
 
     bool saveProbeInterfaceFile (File recordingDirectory, std::string streamName, int probeIndex = 0)
     {

@@ -75,12 +75,14 @@ private:
     static constexpr char* GainCalibrationFilename = "_gainCalValues.csv";
 
     std::unique_ptr<ComboBox> electrodeConfigurationComboBox;
+    std::unique_ptr<ComboBox> probeTypeComboBox;
     std::unique_ptr<ComboBox> referenceComboBox;
 
     std::unique_ptr<Label> deviceLabel;
     std::unique_ptr<Label> infoLabel;
     std::unique_ptr<Label> electrodesLabel;
     std::unique_ptr<Label> electrodePresetLabel;
+    std::unique_ptr<Label> probeTypeLabel;
     std::unique_ptr<Label> referenceLabel;
 
     std::unique_ptr<Label> gainCorrectionFolderLabel;
@@ -118,19 +120,29 @@ private:
     std::unique_ptr<UtilityButton> saveSettingsButton;
     std::unique_ptr<UtilityButton> loadSettingsButton;
 
+    std::unordered_map<ProbeType, std::unique_ptr<ProbeSettings>> probeSettings;
+
     void drawLegend();
 
     std::vector<int> getSelectedElectrodes();
 
     void setInterfaceEnabledState (bool enabledState) override;
 
+    void updateChannelPresets (ProbeSettings* settings);
     void checkForExistingChannelPreset();
+
+    void updateReferences (ProbeSettings* settings);
 
     int getIndexOfComboBoxItem (ComboBox* cb, std::string item);
 
     void setGainCorrectionFolderEnabledState (bool enabledState);
 
     static std::string searchDirectoryForCalibrationFile (std::string folder, uint64_t sn);
+
+    void saveProbeSettings (ProbeSettings* settings);
+    void loadProbeSettings (ProbeSettings* settings, ProbeType probeType);
+
+    ProbeSettings* getProbeSetting (ProbeType probeType);
 
     JUCE_LEAK_DETECTOR (NeuropixelsV2eProbeInterface);
 };
