@@ -1109,7 +1109,7 @@ void NeuropixelsV1Interface::saveParameters (XmlElement* xml)
     probeViewerNode->setAttribute ("referenceChannel", referenceComboBox->getText());
     probeViewerNode->setAttribute ("apFilter", filterComboBox->getText());
 
-    XmlElement* channelsNode = xmlNode->createNewChildElement ("SELECTED_CHANNELS");
+    XmlElement* channelsNode = xmlNode->createNewChildElement ("SELECTED_ELECTRODES");
 
     for (int i = 0; i < settings->selectedElectrode.size(); i++)
     {
@@ -1215,11 +1215,11 @@ void NeuropixelsV1Interface::loadParameters (XmlElement* xml)
     else
         settings->apFilterState = idx == 1 ? true : false;
 
-    XmlElement* channelsNode = xmlNode->getChildByName ("SELECTED_CHANNELS");
+    XmlElement* channelsNode = xmlNode->getChildByName ("SELECTED_ELECTRODES");
 
     if (channelsNode == nullptr)
     {
-        LOGE ("No SELECTED_CHANNELS element found.");
+        LOGE ("No SELECTED_ELECTRODES element found.");
         return;
     }
 
