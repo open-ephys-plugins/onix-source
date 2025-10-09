@@ -229,7 +229,7 @@ std::vector<int> Neuropixels2e::selectElectrodeConfiguration (int electrodeConfi
     }
     else
     {
-        LOGE ("Invalid probe type given for a Neuropixels 2.0 device: ", ProbeTypeString.at(probeType));
+        LOGE ("Invalid probe type given for a Neuropixels 2.0 device: ", ProbeTypeString.at (probeType));
     }
 
     return selection;
@@ -346,9 +346,13 @@ bool Neuropixels2e::updateSettings()
     {
         if (probeMetadata[i].getProbeSerialNumber() != 0)
         {
-            if (! NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (settings[i]->probeType, probeMetadata[i].getProbePartNumber()))
+            if (! NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (settings[i]->probeType, probeMetadata[i]))
             {
-                Onix1::showWarningMessageBoxAsync ("Probe Type Mismatch", "The selected probe type is '" + ProbeTypeString.at (settings[i]->probeType) + "', but the connected probe is '" + NeuropixelsProbeMetadata::getProbeTypeString (probeMetadata[i].getProbePartNumber()) + "'. Please select the correct probe type to match the connected probe.");
+                Onix1::showWarningMessageBoxAsync ("Probe Type Mismatch",
+                                                   "The selected probe type is '" + ProbeTypeString.at (settings[i]->probeType)
+                                                       + "', but the connected probe is '" + NeuropixelsProbeMetadata::getProbeTypeString (probeMetadata[i].getProbePartNumber())
+                                                       + "'. Please select the correct probe type to match the connected probe."
+                                                       + ".\n\nProbe serial number: " + std::to_string (probeMetadata[i].getProbeSerialNumber()));
                 return false;
             }
 
@@ -804,8 +808,8 @@ void Neuropixels2e::defineMetadata (ProbeSettings* settings, ProbeType probeType
     constexpr float shankPitchX = 250.0f;
 
     std::vector<std::array<float, 2>> probeContour {
-        {0, probeLengthY},
-        {0, shankLengthY},
+        { 0, probeLengthY },
+        { 0, shankLengthY },
     };
 
     for (int i = 0; i < shankCount; i++)
@@ -822,11 +826,11 @@ void Neuropixels2e::defineMetadata (ProbeSettings* settings, ProbeType probeType
     probeContour.emplace_back (std::array<float, 2> { 0.0f, probeLengthY });
 
     std::vector<std::array<float, 2>> shankOutline {
-        {     27,  31},
-        {     27, 514},
-        { 27 + 5, 522},
-        {27 + 10, 514},
-        {27 + 10,  31}
+        {      27,  31 },
+        {      27, 514 },
+        {  27 + 5, 522 },
+        { 27 + 10, 514 },
+        { 27 + 10,  31 }
     };
 
     settings->probeMetadata.shank_count = shankCount;

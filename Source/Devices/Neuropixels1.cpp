@@ -183,20 +183,20 @@ void Neuropixels1::defineMetadata (ProbeSettings* settings, ProbeType probeType)
     settings->probeMetadata.name = "Neuropixels 1.0";
 
     std::vector<std::array<float, 2>> shankOutline {
-        {     27,  31},
-        {     27, 514},
-        { 27 + 5, 522},
-        {27 + 10, 514},
-        {27 + 10,  31}
+        {      27,  31 },
+        {      27, 514 },
+        {  27 + 5, 522 },
+        { 27 + 10, 514 },
+        { 27 + 10,  31 }
     };
 
     std::vector<std::array<float, 2>> probeContour {
-        { 0,  155},
-        {35,    0},
-        {70,  155},
-        {70, 9770},
-        { 0, 9770},
-        { 0,  155}
+        {  0,  155 },
+        { 35,    0 },
+        { 70,  155 },
+        { 70, 9770 },
+        {  0, 9770 },
+        {  0,  155 }
     };
 
     settings->probeMetadata.shank_count = 1;
@@ -531,9 +531,13 @@ void Neuropixels1::setGainCalibrationFilePath (std::string filepath)
 
 bool Neuropixels1::validateProbeTypeAndPartNumber()
 {
-    if (! NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (settings[0]->probeType, probeMetadata.getProbePartNumber()))
+    if (! NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (settings[0]->probeType, probeMetadata))
     {
-        Onix1::showWarningMessageBoxAsync ("Probe Type / Number Mismatch", "The selected probe type is " + ProbeTypeString.at (settings[0]->probeType) + ", but the probe part number is " + probeMetadata.getProbePartNumber() + ".");
+        Onix1::showWarningMessageBoxAsync ("Probe Type / Number Mismatch",
+                                           "The selected probe type is " + ProbeTypeString.at (settings[0]->probeType)
+                                               + "', but the connected probe is '" + NeuropixelsProbeMetadata::getProbeTypeString (probeMetadata.getProbePartNumber())
+                                               + "'. Please select the correct probe type to match the connected probe."
+                                               + ".\n\nProbe serial number: " + std::to_string (probeMetadata.getProbeSerialNumber()));
         return false;
     }
 

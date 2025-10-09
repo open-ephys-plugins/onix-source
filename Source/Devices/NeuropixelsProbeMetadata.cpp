@@ -86,8 +86,10 @@ NeuropixelsProbeMetadata::NeuropixelsProbeMetadata (I2CRegisterContext* flex, On
     }
 }
 
-bool NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (ProbeType probeType, std::string partNumber)
+bool NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (ProbeType probeType, NeuropixelsProbeMetadata probeMetadata)
 {
+    std::string partNumber = probeMetadata.getProbePartNumber();
+
     if (probeType == ProbeType::NONE)
         return false;
 

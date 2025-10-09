@@ -39,7 +39,7 @@ public:
     const std::string getFlexPartNumber() const;
     const std::string getFlexVersion() const;
 
-    static bool validateProbeTypeAndPartNumber (ProbeType probeType, std::string partNumber);
+    static bool validateProbeTypeAndPartNumber (ProbeType probeType, NeuropixelsProbeMetadata probeMetadata);
     static std::string getProbeTypeString (std::string partNumber);
 
 private:
