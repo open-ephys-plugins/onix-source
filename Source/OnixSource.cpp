@@ -275,7 +275,7 @@ bool OnixSource::checkHubFirmwareCompatibility (std::shared_ptr<Onix1> context, 
 
     for (const auto& [hubIndex, hubId] : hubIds)
     {
-        if (hubId == ONIX_HUB_FMCHOST) // NB: Breakout Board
+        if (hubId == ONIX_HUB_FMCHOST)
         {
             static constexpr int RequiredMajorVersion = 2;
             uint32_t firmwareVersion = 0;
@@ -287,16 +287,16 @@ bool OnixSource::checkHubFirmwareCompatibility (std::shared_ptr<Onix1> context, 
             auto majorVersion = (firmwareVersion & 0xFF00) >> 8;
             auto minorVersion = firmwareVersion & 0xFF;
 
-            LOGC ("Breakout board firmware version: v", majorVersion, ".", minorVersion);
+            LOGC ("PCIe Host firmware version: v", majorVersion, ".", minorVersion);
 
             if (majorVersion != RequiredMajorVersion)
             {
                 Onix1::showWarningMessageBoxAsync (
                     "Invalid Firmware Version",
-                    "The breakout board firmware major version is v"
+                    "The PCIe Host firmware major version is v"
                         + std::to_string (majorVersion) + ", but this plugin is only compatible with v"
-                        + std::to_string (RequiredMajorVersion) + ". To use this plugin, upgrade the firmware"
-                        + " to a version that supports the breakout board v" + std::to_string (majorVersion));
+                        + std::to_string (RequiredMajorVersion) + ". To use this plugin, modify the firmware"
+                        + " to version v" + std::to_string (majorVersion));
                 return false;
             }
         }
@@ -336,7 +336,7 @@ bool OnixSource::initializeDevices (device_map_t deviceTable, bool updateStreamI
     // NB: Search through all hubs, and initialize devices
     for (const auto& [hubIndex, hubId] : hubIds)
     {
-        if (hubId == ONIX_HUB_FMCHOST) // NB: Breakout Board
+        if (hubId == ONIX_HUB_FMCHOST)
         {
             hubNames.insert ({ hubIndex, BREAKOUT_BOARD_NAME });
 
