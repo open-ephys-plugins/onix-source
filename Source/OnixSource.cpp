@@ -820,7 +820,20 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                     "imec"
                 };
 
-                deviceInfos->add (new DeviceInfo (deviceSettings));
+                auto device = new DeviceInfo (deviceSettings);
+
+                MetadataDescriptor descriptor (MetadataDescriptor::MetadataType::UINT16,
+                                               1,
+                                               "num_adcs",
+                                               "Number of analog-to-digital converter for this probe",
+                                               "neuropixels.adcs");
+
+                MetadataValue value (MetadataDescriptor::MetadataType::UINT16, 1);
+                value.setValue ((uint16) std::static_pointer_cast<Neuropixels1f> (source)->settings[0]->probeMetadata.num_adcs);
+
+                device->addMetadata (descriptor, value);
+
+                deviceInfos->add (device);
 
                 addIndividualStreams (source->streamInfos, dataStreams, deviceInfos, continuousChannels);
             }
@@ -856,7 +869,20 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                     "imec"
                 };
 
-                deviceInfos->add (new DeviceInfo (deviceSettings));
+                auto device = new DeviceInfo (deviceSettings);
+
+                MetadataDescriptor descriptor (MetadataDescriptor::MetadataType::UINT16,
+                                               1,
+                                               "num_adcs",
+                                               "Number of analog-to-digital converter for this probe",
+                                               "neuropixels.adcs");
+
+                MetadataValue value (MetadataDescriptor::MetadataType::UINT16, 1);
+                value.setValue ((uint16) std::static_pointer_cast<Neuropixels2e> (source)->settings[0]->probeMetadata.num_adcs);
+
+                device->addMetadata (descriptor, value);
+
+                deviceInfos->add (device);
 
                 addIndividualStreams (source->streamInfos, dataStreams, deviceInfos, continuousChannels);
             }
@@ -937,7 +963,20 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                     "imec"
                 };
 
-                deviceInfos->add (new DeviceInfo (deviceSettings));
+                auto device = new DeviceInfo (deviceSettings);
+
+                MetadataDescriptor descriptor (MetadataDescriptor::MetadataType::UINT16,
+                                               1,
+                                               "num_adcs",
+                                               "Number of analog-to-digital converter for this probe",
+                                               "neuropixels.adcs");
+
+                MetadataValue value (MetadataDescriptor::MetadataType::UINT16, 1);
+                value.setValue ((uint16) std::static_pointer_cast<Neuropixels1e> (source)->settings[0]->probeMetadata.num_adcs);
+
+                device->addMetadata (descriptor, value);
+
+                deviceInfos->add (device);
 
                 addIndividualStreams (source->streamInfos, dataStreams, deviceInfos, continuousChannels);
             }
