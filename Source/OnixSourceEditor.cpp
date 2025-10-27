@@ -237,6 +237,8 @@ void OnixSourceEditor::labelTextChanged (Label* l)
             readSize = maxReadSize;
         }
 
+        readSize = (readSize + 3) & ~3; // NB: Round up to the next multiple of four to align with word boundaries in liboni
+
         source->setBlockReadSize (readSize);
         l->setText (String (source->getBlockReadSize()), dontSendNotification);
     }
