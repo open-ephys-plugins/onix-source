@@ -401,7 +401,7 @@ bool OnixSource::initializeDevices (device_map_t deviceTable, bool updateStreamI
         else
         {
             Onix1::showWarningMessageBoxAsync (
-                "Unkown Hub ID",
+                "Unknown Hub ID",
                 "Discovered hub ID " + std::to_string (hubId) + " (" + onix_hub_str (hubId) + ") on " + OnixDevice::getPortName (hubIndex) + " which does not match any currently implemented hubs.");
             devicesFound = false;
             sources.clear();
@@ -493,7 +493,7 @@ bool OnixSource::initializeDevices (device_map_t deviceTable, bool updateStreamI
             else
             {
                 Onix1::showWarningMessageBoxAsync (
-                    "Unkown Hub ID",
+                    "Unknown Hub ID",
                     "Discovered hub ID " + std::to_string (hsid) + " (" + onix_hub_str (hsid) + ") on " + OnixDevice::getPortName (OnixDevice::getHubIndexFromPassthroughIndex (index)) + " which does not match any currently implemented hubs.");
                 devicesFound = false;
                 sources.clear();
