@@ -27,14 +27,14 @@ using namespace OnixSourcePlugin;
 Neuropixels2e::Neuropixels2e (std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> ctx_)
     : OnixDevice (name, hubName, Neuropixels2e::getDeviceType(), deviceIdx_, ctx_, true),
       I2CRegisterContext (ProbeI2CAddress, deviceIdx_, ctx_),
-      INeuropixel (NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::numberOfShanks)
+      INeuropixel (NeuropixelsV2eValues::numberOfSettings, NeuropixelsV2eValues::quadShankCount)
 {
     frameCount.fill (0);
     sampleNumber.fill (0);
 
     for (int i = 0; i < NeuropixelsV2eValues::numberOfSettings; i++)
     {
-        defineMetadata (settings[i].get());
+        defineMetadata (settings[i].get(), ProbeType::NPX_V2_QUAD_SHANK);
     }
 
     for (int i = 0; i < NumberOfProbes; i++)
@@ -98,13 +98,11 @@ void Neuropixels2e::selectElectrodesAcrossShanks (std::vector<int>& selection, i
     }
 }
 
-std::vector<int> Neuropixels2e::selectElectrodeConfiguration (int electrodeConfigurationIndex)
+std::vector<int> Neuropixels2e::selectElectrodeConfiguration (int electrodeConfigurationIndex, ProbeType probeType)
 {
-    static int numberOfElectrodesAcrossShanks = 96;
-
     std::vector<int> selection;
 
-    if (numberOfShanks == 1)
+    if (probeType == ProbeType::NPX_V2_SINGLE_SHANK)
     {
         if (electrodeConfigurationIndex == (int32_t) ElectrodeConfigurationSingleShank::BankA)
         {
@@ -124,8 +122,10 @@ std::vector<int> Neuropixels2e::selectElectrodeConfiguration (int electrodeConfi
             selectElectrodesInRange (selection, bankDOffset, numberOfChannels);
         }
     }
-    else if (numberOfShanks == 4)
+    else if (probeType == ProbeType::NPX_V2_QUAD_SHANK)
     {
+        static int numberOfElectrodesAcrossShanks = 96;
+
         if (electrodeConfigurationIndex == (int32_t) ElectrodeConfigurationQuadShank::Shank1BankA)
         {
             selectElectrodesInRange (selection, 0, numberOfChannels);
@@ -226,6 +226,10 @@ std::vector<int> Neuropixels2e::selectElectrodeConfiguration (int electrodeConfi
         {
             selectElectrodesAcrossShanks (selection, numberOfElectrodesAcrossShanks * 12, numberOfElectrodesAcrossShanks);
         }
+    }
+    else
+    {
+        LOGE ("Invalid probe type given for a Neuropixels 2.0 device: ", ProbeTypeString.at (probeType));
     }
 
     return selection;
@@ -342,6 +346,16 @@ bool Neuropixels2e::updateSettings()
     {
         if (probeMetadata[i].getProbeSerialNumber() != 0)
         {
+            if (! NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (settings[i]->probeType, probeMetadata[i]))
+            {
+                Onix1::showWarningMessageBoxAsync ("Probe Type Mismatch",
+                                                   "The selected probe type is '" + ProbeTypeString.at (settings[i]->probeType)
+                                                       + "', but the connected probe is '" + NeuropixelsProbeMetadata::getProbeTypeString (probeMetadata[i].getProbePartNumber())
+                                                       + "'. Please select the correct probe type to match the connected probe."
+                                                       + ".\n\nProbe serial number: " + std::to_string (probeMetadata[i].getProbeSerialNumber()));
+                return false;
+            }
+
             if (gainCorrectionFilePath[i] == "None" || gainCorrectionFilePath[i] == "")
             {
                 Onix1::showWarningMessageBoxAsync ("Missing File", "Missing gain correction file for probe " + std::to_string (probeMetadata[i].getProbeSerialNumber()));
@@ -598,7 +612,7 @@ void Neuropixels2e::processFrames()
     }
 }
 
-void Neuropixels2e::writeConfiguration (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
+void Neuropixels2e::writeConfiguration (ProbeSettings* settings)
 {
     auto baseBits = makeBaseBits (getReference (settings->referenceIndex));
     writeShiftRegister (SR_CHAIN5, baseBits[0]);
@@ -716,7 +730,7 @@ Neuropixels2e::BaseBitsArray Neuropixels2e::makeBaseBits (NeuropixelsV2Reference
     return baseBits;
 }
 
-Neuropixels2e::ShankBitsArray Neuropixels2e::makeShankBits (NeuropixelsV2Reference reference, std::array<ElectrodeMetadata, numberOfElectrodes> channelMap)
+Neuropixels2e::ShankBitsArray Neuropixels2e::makeShankBits (NeuropixelsV2Reference reference, std::vector<ElectrodeMetadata> channelMap)
 {
     ShankBitsArray shankBits;
 
@@ -766,7 +780,7 @@ Neuropixels2e::ShankBitsArray Neuropixels2e::makeShankBits (NeuropixelsV2Referen
     return shankBits;
 }
 
-void Neuropixels2e::setSettings (ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>* settings_, int index)
+void Neuropixels2e::setSettings (ProbeSettings* settings_, int index)
 {
     if (index >= settings.size())
     {
@@ -777,12 +791,13 @@ void Neuropixels2e::setSettings (ProbeSettings<NeuropixelsV2eValues::numberOfCha
     settings[index]->updateProbeSettings (settings_);
 }
 
-void Neuropixels2e::defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
+void Neuropixels2e::defineMetadata (ProbeSettings* settings, ProbeType probeType)
 {
-    auto shankCount = NeuropixelsV2eValues::numberOfShanks;
+    settings->probeType = probeType;
 
-    settings->probeType = ProbeType::NPX_V2;
-    settings->probeMetadata.name = "Neuropixels 2.0e" + (shankCount == 1) ? " - Single Shank" : " - Quad Shank";
+    auto shankCount = probeType == ProbeType::NPX_V2_QUAD_SHANK ? NeuropixelsV2eValues::quadShankCount : NeuropixelsV2eValues::singleShankCount;
+
+    settings->probeMetadata.name = "Neuropixels 2.0e" + (probeType == ProbeType::NPX_V2_QUAD_SHANK) ? " - Single Shank" : " - Quad Shank";
 
     constexpr float shankTipY = 0.0f;
     constexpr float shankBaseY = 155.0f;
@@ -826,14 +841,6 @@ void Neuropixels2e::defineMetadata (ProbeSettings<numberOfChannels, numberOfElec
     settings->probeMetadata.probeContour = probeContour;
     settings->probeMetadata.num_adcs = 24;
     settings->probeMetadata.adc_bits = 12;
-
-    settings->availableBanks = {
-        Bank::A,
-        Bank::B,
-        Bank::C,
-        Bank::D,
-        Bank::NONE // disconnected
-    };
 
     for (int i = 0; i < settings->probeMetadata.electrodes_per_shank * settings->probeMetadata.shank_count; i++)
     {
@@ -1099,14 +1106,18 @@ void Neuropixels2e::defineMetadata (ProbeSettings<numberOfChannels, numberOfElec
     settings->apFilterState = false;
 
     settings->electrodeConfigurationIndex = (int32_t) ElectrodeConfigurationSingleShank::BankA;
-    auto selection = selectElectrodeConfiguration (settings->electrodeConfigurationIndex);
+    auto selection = selectElectrodeConfiguration (settings->electrodeConfigurationIndex, probeType);
     settings->selectElectrodes (selection);
 
     settings->availableReferences.add ("Ext");
-    settings->availableReferences.add ("Tip1");
 
-    if (shankCount == 4)
+    if (probeType == ProbeType::NPX_V2_SINGLE_SHANK)
     {
+        settings->availableReferences.add ("Tip");
+    }
+    else if (probeType == ProbeType::NPX_V2_QUAD_SHANK)
+    {
+        settings->availableReferences.add ("Tip1");
         settings->availableReferences.add ("Tip2");
         settings->availableReferences.add ("Tip3");
         settings->availableReferences.add ("Tip4");

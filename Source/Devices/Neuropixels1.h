@@ -47,12 +47,12 @@ public:
     void setGainCalibrationFilePath (std::string filepath);
 
     // INeuropixels methods
-    void defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings) override;
+    void defineMetadata (ProbeSettings* settings, ProbeType probeType) override;
 
     /** Select a preset electrode configuration, based on the index of the given enum */
-    std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex) override;
+    std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex, ProbeType probeType = ProbeType::NPX_V1) override;
 
-    void setSettings (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index = 0) override;
+    void setSettings (ProbeSettings* settings_, int index = 0) override;
 
     uint64_t getProbeSerialNumber (int index = 0) override;
     std::string getProbePartNumber (int index = 0) override;
@@ -132,6 +132,8 @@ protected:
 
     void updateLfpOffsets (std::array<float, numLfpSamples>&, int64);
     void updateApOffsets (std::array<float, numApSamples>&, int64);
+
+    bool validateProbeTypeAndPartNumber ();
 
     enum class ElectrodeConfiguration : int32_t
     {

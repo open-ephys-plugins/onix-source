@@ -47,7 +47,7 @@ Neuropixels1::Neuropixels1 (std::string name, std::string hubName, OnixDeviceTyp
 {
 }
 
-void Neuropixels1::setSettings (ProbeSettings<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>* settings_, int index)
+void Neuropixels1::setSettings (ProbeSettings* settings_, int index)
 {
     if (index >= settings.size())
     {
@@ -58,46 +58,54 @@ void Neuropixels1::setSettings (ProbeSettings<NeuropixelsV1Values::numberOfChann
     settings[index]->updateProbeSettings (settings_);
 }
 
-std::vector<int> Neuropixels1::selectElectrodeConfiguration (int electrodeConfigurationIndex)
+std::vector<int> Neuropixels1::selectElectrodeConfiguration (int electrodeConfigurationIndex, ProbeType probeType)
 {
     std::vector<int> selection;
 
-    if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::BankA)
+    if (probeType == ProbeType::NPX_V1)
     {
-        for (int i = 0; i < 384; i++)
-            selection.emplace_back (i);
-    }
-    else if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::BankB)
-    {
-        for (int i = 384; i < 768; i++)
-            selection.emplace_back (i);
-    }
-    else if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::BankC)
-    {
-        for (int i = 576; i < 960; i++)
-            selection.emplace_back (i);
-    }
-    else if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::SingleColumn)
-    {
-        for (int i = 0; i < 384; i += 2)
-            selection.emplace_back (i);
-
-        for (int i = 385; i < 768; i += 2)
-            selection.emplace_back (i);
-    }
-    else if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::Tetrodes)
-    {
-        for (int i = 0; i < 384; i += 8)
+        if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::BankA)
         {
-            for (int j = 0; j < 4; j++)
-                selection.emplace_back (i + j);
+            for (int i = 0; i < 384; i++)
+                selection.emplace_back (i);
         }
-
-        for (int i = 388; i < 768; i += 8)
+        else if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::BankB)
         {
-            for (int j = 0; j < 4; j++)
-                selection.emplace_back (i + j);
+            for (int i = 384; i < 768; i++)
+                selection.emplace_back (i);
         }
+        else if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::BankC)
+        {
+            for (int i = 576; i < 960; i++)
+                selection.emplace_back (i);
+        }
+        else if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::SingleColumn)
+        {
+            for (int i = 0; i < 384; i += 2)
+                selection.emplace_back (i);
+
+            for (int i = 385; i < 768; i += 2)
+                selection.emplace_back (i);
+        }
+        else if (electrodeConfigurationIndex == (int32_t) ElectrodeConfiguration::Tetrodes)
+        {
+            for (int i = 0; i < 384; i += 8)
+            {
+                for (int j = 0; j < 4; j++)
+                    selection.emplace_back (i + j);
+            }
+
+            for (int i = 388; i < 768; i += 8)
+            {
+                for (int j = 0; j < 4; j++)
+                    selection.emplace_back (i + j);
+            }
+        }
+    }
+    else
+    {
+        LOGE ("Invalid probe type given for a Neuropixels 2.0 device: ", ProbeTypeString.at (probeType));
+        return selection;
     }
 
     assert (selection.size() == numberOfChannels && "Invalid number of selected channels.");
@@ -169,9 +177,9 @@ void Neuropixels1::updateLfpOffsets (std::array<float, numLfpSamples>& samples, 
     }
 }
 
-void Neuropixels1::defineMetadata (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings)
+void Neuropixels1::defineMetadata (ProbeSettings* settings, ProbeType probeType)
 {
-    settings->probeType = ProbeType::NPX_V1;
+    settings->probeType = probeType;
     settings->probeMetadata.name = "Neuropixels 1.0";
 
     std::vector<std::array<float, 2>> shankOutline {
@@ -199,13 +207,6 @@ void Neuropixels1::defineMetadata (ProbeSettings<numberOfChannels, numberOfElect
     settings->probeMetadata.probeContour = probeContour;
     settings->probeMetadata.num_adcs = 32; // NB: Is this right for 1.0e?
     settings->probeMetadata.adc_bits = 10; // NB: Is this right for 1.0e?
-
-    settings->availableBanks = {
-        Bank::A,
-        Bank::B,
-        Bank::C,
-        Bank::NONE // disconnected
-    };
 
     Array<float> xpositions = { 27.0f, 59.0f, 11.0f, 43.0f };
 
@@ -296,8 +297,6 @@ void Neuropixels1::defineMetadata (ProbeSettings<numberOfChannels, numberOfElect
     settings->electrodeConfigurationIndex = (int32_t) ElectrodeConfiguration::BankA;
     auto selection = selectElectrodeConfiguration (settings->electrodeConfigurationIndex);
     settings->selectElectrodes (selection);
-
-    settings->isValid = true;
 }
 
 uint64_t Neuropixels1::getProbeSerialNumber (int index)
@@ -529,3 +528,19 @@ void Neuropixels1::setGainCalibrationFilePath (std::string filepath)
 {
     gainCalibrationFilePath = filepath;
 }
+
+bool Neuropixels1::validateProbeTypeAndPartNumber()
+{
+    if (! NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (settings[0]->probeType, probeMetadata))
+    {
+        Onix1::showWarningMessageBoxAsync ("Probe Type / Number Mismatch",
+                                           "The selected probe type is " + ProbeTypeString.at (settings[0]->probeType)
+                                               + "', but the connected probe is '" + NeuropixelsProbeMetadata::getProbeTypeString (probeMetadata.getProbePartNumber())
+                                               + "'. Please select the correct probe type to match the connected probe."
+                                               + ".\n\nProbe serial number: " + std::to_string (probeMetadata.getProbeSerialNumber()));
+        return false;
+    }
+
+    return true;
+}
+

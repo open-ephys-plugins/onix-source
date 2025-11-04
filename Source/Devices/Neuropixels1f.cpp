@@ -95,7 +95,7 @@ Neuropixels1f::Neuropixels1f (std::string name, std::string hubName, const oni_d
         "lfp");
     streamInfos.add (lfpStream);
 
-    defineMetadata (settings[0].get());
+    defineMetadata (settings[0].get(), ProbeType::NPX_V1);
 
     adcCalibrationFilePath = "None";
     gainCalibrationFilePath = "None";
@@ -153,6 +153,9 @@ int Neuropixels1f::configureDevice()
 
 bool Neuropixels1f::updateSettings()
 {
+    if (! validateProbeTypeAndPartNumber())
+        return false;
+
     auto updater = NeuropixelsV1fBackgroundUpdater (this);
 
     return updater.updateSettings() && adcValues.size() == NeuropixelsV1Values::AdcCount;

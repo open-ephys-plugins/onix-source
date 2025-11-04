@@ -45,7 +45,7 @@ class NeuropixelsV1Interface : public SettingsInterface,
                                public TextEditor::Listener
 {
 public:
-    friend class ProbeBrowser<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>;
+    friend class ProbeBrowser;
 
     NeuropixelsV1Interface (std::shared_ptr<Neuropixels1> d, OnixSourceEditor* e, OnixSourceCanvas* c);
 
@@ -59,7 +59,7 @@ public:
     void updateInfoString() override;
     void updateSettings() override;
 
-    bool applyProbeSettings (ProbeSettings<NeuropixelsV1Values::numberOfChannels, NeuropixelsV1Values::numberOfElectrodes>* p);
+    bool applyProbeSettings (ProbeSettings* p);
 
     void selectElectrodes (std::vector<int> electrodes);
 

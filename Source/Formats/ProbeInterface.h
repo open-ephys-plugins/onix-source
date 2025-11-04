@@ -37,8 +37,7 @@ public:
         return File (recordingDirectory.getFullPathName() + File::getSeparatorString() + String (name) + String (ProbeInterfaceJson::FileExtension));
     }
 
-    template <int numChannels, int numElectrodes>
-    static bool writeProbeSettingsToJson (File& file, ProbeSettings<numChannels, numElectrodes>* settings)
+    static bool writeProbeSettingsToJson (File& file, ProbeSettings* settings)
     {
         DynamicObject output;
 
@@ -88,8 +87,7 @@ public:
         DynamicObject::Ptr probe = new DynamicObject();
         DynamicObject::Ptr annotations = new DynamicObject();
         annotations->setProperty (Identifier ("manufacturer"), "imec");
-        auto probeName = getProbeName (settings->probeType);
-        annotations->setProperty (Identifier ("name"), String (probeName));
+        annotations->setProperty (Identifier ("name"), String (settings->probeMetadata.name));
 
         probe->setProperty (Identifier ("ndim"), 2);
         probe->setProperty (Identifier ("si_units"), "um");
@@ -127,8 +125,7 @@ public:
         return true;
     }
 
-    template <int numChannels, int numElectrodes>
-    static bool readProbeSettingsFromJson (File& file, ProbeSettings<numChannels, numElectrodes>* settings)
+    static bool readProbeSettingsFromJson (File& file, ProbeSettings* settings)
     {
         auto json = JSON::parse (file);
 
@@ -290,7 +287,6 @@ public:
                 settings->electrodeMetadata[ch].shank = int (shank_ids->getReference (ch));
             }
 
-            settings->clearElectrodeSelection();
             std::vector<int> selectedChannels {};
 
             for (int ch = 0; ch < device_channel_indices->size(); ch++)
@@ -310,21 +306,6 @@ public:
         }
 
         return true;
-    }
-
-    static std::string getProbeName (ProbeType type)
-    {
-        switch (type)
-        {
-            case OnixSourcePlugin::ProbeType::NONE:
-                return "";
-            case OnixSourcePlugin::ProbeType::NPX_V1:
-                return "Neuropixels 1.0";
-            case OnixSourcePlugin::ProbeType::NPX_V2:
-                return "Neuropixels 2.0";
-            default:
-                return "";
-        }
     }
 };
 } // namespace OnixSourcePlugin

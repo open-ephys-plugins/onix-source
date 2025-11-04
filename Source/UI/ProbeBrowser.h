@@ -28,7 +28,6 @@
 
 namespace OnixSourcePlugin
 {
-template <int ch, int e>
 class ProbeBrowser : public Component,
                      public Timer
 {
@@ -560,12 +559,12 @@ public:
         }
     }
 
-    int getZoomHeight()
+    int getZoomHeight() const
     {
         return zoomHeight;
     }
 
-    int getZoomOffset()
+    int getZoomOffset() const
     {
         return zoomOffset;
     }
@@ -586,7 +585,7 @@ protected:
 
     int probeIndex;
 
-    virtual ProbeSettings<ch, e>* getSettings() { return nullptr; }
+    virtual ProbeSettings* getSettings() { return nullptr; }
 
 private:
     const int leftEdgeOffset = 220;
