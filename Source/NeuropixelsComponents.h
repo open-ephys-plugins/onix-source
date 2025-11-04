@@ -562,4 +562,64 @@ public:
         return baseConfigs;
     }
 };
+
+static class NeuropixelsHelpers
+{
+public:
+    /** Set all channel metadata, starting with the last (most recently added) channel and working backwards over all selected electrodes */
+    static void setChannelMetadata (OwnedArray<ContinuousChannel>* continuousChannels, const std::vector<std::unique_ptr<ProbeSettings>>& probeSettings)
+    {
+        ContinuousChannel** channels = continuousChannels->end();
+        channels--;
+
+        for (auto it = probeSettings.rbegin(); it != probeSettings.rend(); it++)
+        {
+            ProbeSettings* probeSetting = it->get();
+
+            for (int i = probeSetting->numberOfChannels - 1; i >= 0; i--)
+            {
+                auto channel = *channels--;
+
+                int globalIndex = probeSetting->selectedElectrode[i];
+                int shankIndex = probeSetting->electrodeMetadata[globalIndex].shank;
+
+                float xpos = probeSetting->electrodeMetadata[globalIndex].xpos;
+                float ypos = probeSetting->electrodeMetadata[globalIndex].ypos;
+
+                // NB: Depth must be a unique value for compatibility with legacy LFP viewer channel sorting algorithm
+                float depth = ypos + (float)shankIndex * 10000.0f + xpos * 0.001f;
+
+                channel->position.x = xpos;
+                channel->position.y = depth;
+
+                channel->group.name = "Shank " + String (shankIndex + 1);
+                channel->group.number = shankIndex;
+
+                // NB: Add real Y position as a metadata descriptor
+                MetadataDescriptor yposDescriptor (MetadataDescriptor::MetadataType::FLOAT,
+                                                   1,
+                                                   "ypos",
+                                                   "Channel y-position (relative to shank tip)",
+                                                   "channel.ypos");
+
+                MetadataValue yposValue (MetadataDescriptor::MetadataType::FLOAT, 1);
+                yposValue.setValue (ypos);
+
+                channel->addMetadata (yposDescriptor, yposValue);
+
+                // NB: Add electrode index as metadata
+                MetadataDescriptor selectedElectrodeDescriptor (MetadataDescriptor::MetadataType::UINT16,
+                                                                1,
+                                                                "electrode_index",
+                                                                "Electrode index for this channel",
+                                                                "neuropixels.electrode_index");
+
+                MetadataValue selectedElectrodeValue (MetadataDescriptor::MetadataType::UINT16, 1);
+                selectedElectrodeValue.setValue ((uint16) globalIndex);
+
+                channel->addMetadata (selectedElectrodeDescriptor, selectedElectrodeValue);
+            }
+        }
+    }
+};
 } // namespace OnixSourcePlugin

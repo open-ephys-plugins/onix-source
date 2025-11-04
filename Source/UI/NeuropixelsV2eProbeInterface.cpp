@@ -682,6 +682,8 @@ void NeuropixelsV2eProbeInterface::selectElectrodes (std::vector<int> electrodes
 {
     std::static_pointer_cast<Neuropixels2e> (device)->settings[probeIndex]->selectElectrodes (electrodes);
 
+    CoreServices::updateSignalChain (editor);
+
     repaint();
 }
 
