@@ -29,6 +29,14 @@ namespace OnixSourcePlugin
 class ProbeInterfaceJson
 {
 public:
+    static constexpr char* FileExtension = ".json";
+
+    /** Given a directory and a file name, with no extension, return a filepath that follows the format: <recordingDirectory>/<name>.json*/
+    static File createFileName (File recordingDirectory, std::string name)
+    {
+        return File (recordingDirectory.getFullPathName() + File::getSeparatorString() + String (name) + String (ProbeInterfaceJson::FileExtension));
+    }
+
     template <int numChannels, int numElectrodes>
     static bool writeProbeSettingsToJson (File& file, ProbeSettings<numChannels, numElectrodes>* settings)
     {
@@ -110,6 +118,11 @@ public:
         options = options.withSpacing (JSON::Spacing::multiLine);
 
         output.writeAsJSON (f, options);
+
+        auto& result = f.getStatus();
+
+        if (result.failed())
+            throw error_str ("Failed to open the file '" + file.getFullPathName().toStdString() + "' for writing. Reason: " + result.getErrorMessage().toStdString());
 
         return true;
     }

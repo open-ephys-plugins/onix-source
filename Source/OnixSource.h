@@ -25,10 +25,13 @@
 #include <DataThreadHeaders.h>
 
 #include "Devices/PortController.h"
+#include "Formats/ProbeInterface.h"
 #include "FrameReader.h"
 #include "Onix1.h"
 #include "OnixDevice.h"
 #include "OnixSourceEditor.h"
+
+#define PLUGIN_NAME "ONIX Source"
 
 namespace OnixSourcePlugin
 {
@@ -71,6 +74,8 @@ public:
 
     /** Stops data transfer.*/
     bool stopAcquisition() override;
+
+    void startRecording();
 
     void updateDiscoveryParameters (PortName port, DiscoveryParameters parameters);
 
@@ -174,6 +179,8 @@ private:
 
     /** This method is expected to be called in a separate thread, and waits for acquisition to stop before gracefully disconnecting all devices */
     static void disconnectDevicesAfterAcquisition (OnixSourceEditor* editor);
+
+    static bool dataStreamExists (std::string streamName, Array<const DataStream*> dataStreams);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OnixSource);
 };

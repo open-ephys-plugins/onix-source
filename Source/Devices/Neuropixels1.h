@@ -24,7 +24,7 @@
 
 #include "../I2CRegisterContext.h"
 #include "../NeuropixelsComponents.h"
-#include "../OnixDevice.h"
+#include "NeuropixelsProbeMetadata.h"
 
 namespace OnixSourcePlugin
 {
@@ -52,9 +52,12 @@ public:
     /** Select a preset electrode configuration, based on the index of the given enum */
     std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex) override;
 
-    uint64_t getProbeSerialNumber (int index = 0) override;
-
     void setSettings (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index = 0) override;
+
+    uint64_t getProbeSerialNumber (int index = 0) override;
+    std::string getProbePartNumber (int index = 0) override;
+    std::string getFlexPartNumber (int index = 0) override;
+    std::string getFlexVersion (int index = 0) override;
 
     bool parseGainCalibrationFile();
     bool parseAdcCalibrationFile();
@@ -73,7 +76,7 @@ protected:
 
     const uint32_t ENABLE = 0x8000;
 
-    static constexpr int ProbeI2CAddress = 0x70;
+    NeuropixelsProbeMetadata probeMetadata;
 
     static constexpr int superFramesPerUltraFrame = 12;
     static constexpr int framesPerSuperFrame = 13;
@@ -83,6 +86,9 @@ protected:
 
     static constexpr uint16_t NumberOfAdcBins = 1024;
     static constexpr float DataMidpoint = NumberOfAdcBins / 2;
+
+    static constexpr int ProbeI2CAddress = 0x70;
+    static constexpr int FlexEepromI2CAddress = 0x50;
 
     static constexpr int secondsToSettle = 5;
     static constexpr int samplesToAverage = 100;

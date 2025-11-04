@@ -302,14 +302,29 @@ void Neuropixels1::defineMetadata (ProbeSettings<numberOfChannels, numberOfElect
 
 uint64_t Neuropixels1::getProbeSerialNumber (int index)
 {
-    return probeNumber;
+    return probeMetadata.getProbeSerialNumber();
+}
+
+std::string Neuropixels1::getProbePartNumber (int index)
+{
+    return probeMetadata.getProbePartNumber();
+}
+
+std::string Neuropixels1::getFlexPartNumber (int index)
+{
+    return probeMetadata.getFlexPartNumber();
+}
+
+std::string Neuropixels1::getFlexVersion (int index)
+{
+    return probeMetadata.getFlexVersion();
 }
 
 bool Neuropixels1::parseGainCalibrationFile()
 {
     if (gainCalibrationFilePath == "None" || gainCalibrationFilePath == "")
     {
-        Onix1::showWarningMessageBoxAsync ("Missing File", "Missing gain calibration file for probe " + std::to_string (probeNumber));
+        Onix1::showWarningMessageBoxAsync ("Missing File", "Missing gain calibration file for probe " + std::to_string (probeMetadata.getProbeSerialNumber()));
         return false;
     }
 
@@ -317,7 +332,7 @@ bool Neuropixels1::parseGainCalibrationFile()
 
     if (! gainFile.existsAsFile())
     {
-        Onix1::showWarningMessageBoxAsync ("Invalid File", "Invalid gain calibration file for probe " + std::to_string (probeNumber));
+        Onix1::showWarningMessageBoxAsync ("Invalid File", "Invalid gain calibration file for probe " + std::to_string (probeMetadata.getProbeSerialNumber()));
         return false;
     }
 
@@ -328,9 +343,9 @@ bool Neuropixels1::parseGainCalibrationFile()
 
     LOGD ("Gain calibration file SN = ", gainSN);
 
-    if (gainSN != probeNumber)
+    if (gainSN != probeMetadata.getProbeSerialNumber())
     {
-        Onix1::showWarningMessageBoxAsync ("Serial Number Mismatch", "Gain calibration file serial number (" + std::to_string (gainSN) + ") does not match probe serial number (" + std::to_string (probeNumber) + ").");
+        Onix1::showWarningMessageBoxAsync ("Serial Number Mismatch", "Gain calibration file serial number (" + std::to_string (gainSN) + ") does not match probe serial number (" + std::to_string (probeMetadata.getProbeSerialNumber()) + ").");
         return false;
     }
 
@@ -366,7 +381,7 @@ bool Neuropixels1::parseAdcCalibrationFile()
 {
     if (adcCalibrationFilePath == "None" || adcCalibrationFilePath == "")
     {
-        Onix1::showWarningMessageBoxAsync ("Missing File", "Missing ADC calibration file for probe " + std::to_string (probeNumber));
+        Onix1::showWarningMessageBoxAsync ("Missing File", "Missing ADC calibration file for probe " + std::to_string (probeMetadata.getProbeSerialNumber()));
         return false;
     }
 
@@ -374,7 +389,7 @@ bool Neuropixels1::parseAdcCalibrationFile()
 
     if (! adcFile.existsAsFile())
     {
-        Onix1::showWarningMessageBoxAsync ("Invalid File", "Invalid ADC calibration file for probe " + std::to_string (probeNumber));
+        Onix1::showWarningMessageBoxAsync ("Invalid File", "Invalid ADC calibration file for probe " + std::to_string (probeMetadata.getProbeSerialNumber()));
         return false;
     }
 
@@ -385,9 +400,9 @@ bool Neuropixels1::parseAdcCalibrationFile()
 
     LOGD ("ADC calibration file SN = ", adcSN);
 
-    if (adcSN != probeNumber)
+    if (adcSN != probeMetadata.getProbeSerialNumber())
     {
-        Onix1::showWarningMessageBoxAsync ("Serial Number Mismatch", "ADC calibration serial number (" + std::to_string (adcSN) + ") does not match probe serial number (" + std::to_string (probeNumber) + ").");
+        Onix1::showWarningMessageBoxAsync ("Serial Number Mismatch", "ADC calibration serial number (" + std::to_string (adcSN) + ") does not match probe serial number (" + std::to_string (probeMetadata.getProbeSerialNumber()) + ").");
         return false;
     }
 

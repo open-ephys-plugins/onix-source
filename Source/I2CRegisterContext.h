@@ -37,18 +37,23 @@ public:
     I2CRegisterContext (uint32_t address, const oni_dev_idx_t, std::shared_ptr<Onix1>);
 
     int WriteByte (uint32_t address, uint32_t value, bool sixteenBitAddress = false);
-    int WriteWord (uint32_t address, uint32_t value, uint32_t numBytes, bool sixteenBitAddress = false);
+
     int ReadByte (uint32_t address, oni_reg_val_t* value, bool sixteenBitAddress = false);
+    int readBytes (uint32_t address, int count, std::vector<oni_reg_val_t>& value, bool sixteenBitAddress = false);
     int ReadWord (uint32_t address, uint32_t numBytes, uint32_t* value, bool sixteenBitAddress = false);
 
+    int readString (uint32_t address, int count, std::string& str, bool sixteenBitAddress = false);
+
     int set933I2cRate (double);
+
+    oni_dev_idx_t getDeviceIndex() const;
 
 protected:
     std::shared_ptr<Onix1> i2cContext;
 
 private:
-    const oni_dev_idx_t deviceIndex;
 
+    const oni_dev_idx_t deviceIndex;
     const uint32_t i2cAddress;
 
     JUCE_LEAK_DETECTOR (I2CRegisterContext);

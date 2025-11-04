@@ -24,8 +24,8 @@
 
 #include "../I2CRegisterContext.h"
 #include "../NeuropixelsComponents.h"
-#include "../OnixDevice.h"
 #include "DS90UB9x.h"
+#include "NeuropixelsProbeMetadata.h"
 
 namespace OnixSourcePlugin
 {
@@ -61,6 +61,7 @@ public:
     void stopAcquisition() override;
     void processFrames() override;
     void addSourceBuffers (OwnedArray<DataBuffer>& sourceBuffers) override;
+    std::string createStreamName (int);
 
     int getNumProbes() const;
 
@@ -87,7 +88,10 @@ public:
 
     std::vector<int> selectElectrodeConfiguration (int electrodeConfigurationIndex) override;
     uint64_t getProbeSerialNumber (int index) override;
-    void defineMetadata (ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>*, int);
+    std::string getProbePartNumber (int index) override;
+    std::string getFlexPartNumber (int index) override;
+    std::string getFlexVersion (int index) override;
+    void defineMetadata (ProbeSettings<NeuropixelsV2eValues::numberOfChannels, NeuropixelsV2eValues::numberOfElectrodes>*) override;
     void setSettings (ProbeSettings<numberOfChannels, numberOfElectrodes>* settings_, int index) override;
     static OnixDeviceType getDeviceType();
 
@@ -99,23 +103,24 @@ private:
 
     DataBuffer* amplifierBuffer[NumberOfProbes];
 
-    std::array<uint64_t, NumberOfProbes> probeSN;
+    void createDataStream (int n);
+
+    std::array<NeuropixelsProbeMetadata, NumberOfProbes> probeMetadata;
     std::array<float, NumberOfProbes> gainCorrection;
     std::array<std::string, NumberOfProbes> gainCorrectionFilePath;
 
-    void createDataStream (int n);
+    NeuropixelsV2Reference getReference (int);
+    static std::string getShankName (uint32_t shiftRegisterAddress);
 
-    uint64_t getProbeSN (uint8_t probeSelect);
     void configureSerDes();
     void setProbeSupply (bool);
     void resetProbes();
 
-    void selectProbe (uint8_t probeSelect);
+    static NeuropixelsProbeMetadata readProbeMetadata (I2CRegisterContext* serializer, I2CRegisterContext* flex, uint8_t probeSelect);
+    static void selectProbe (I2CRegisterContext* serializer, uint8_t probeSelect);
+
     void configureProbeStreaming();
     void writeConfiguration (ProbeSettings<numberOfChannels, numberOfElectrodes>*);
-
-    NeuropixelsV2Reference getReference (int);
-    static std::string getShankName (uint32_t shiftRegisterAddress);
 
     void selectElectrodesInRange (std::vector<int>& selection, int startIndex, int numberOfElectrodes);
     void selectElectrodesAcrossShanks (std::vector<int>& selection, int startIndex, int numberOfElectrodes);
@@ -227,7 +232,7 @@ private:
 
     static inline const std::array<std::array<int, FramesPerSuperFrame>, AdcsPerProbe> rawToChannel = {
         {
-            { 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30 }, // Data Index 9, ADC 0
+         { 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30 }, // Data Index 9, ADC 0
             { 128, 130, 132, 134, 136, 138, 140, 142, 144, 146, 148, 150, 152, 154, 156, 158 }, // Data Index 10, ADC 8
             { 256, 258, 260, 262, 264, 266, 268, 270, 272, 274, 276, 278, 280, 282, 284, 286 }, // Data Index 11, ADC 16
 

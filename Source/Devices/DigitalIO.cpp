@@ -29,7 +29,7 @@ DigitalIO::DigitalIO (std::string name, std::string hubName, const oni_dev_idx_t
     : OnixDevice (name, hubName, DigitalIO::getDeviceType(), deviceIdx_, oni_ctx)
 {
     StreamInfo digitalInputStream = StreamInfo (
-        OnixDevice::createStreamName ({ getHubName(), name, "DigitalInputs" }),
+        createStreamName ({ getHubName(), name, "DigitalInputs" }),
         "Digital Inputs data",
         getStreamIdentifier(),
         NumDigitalInputs,
@@ -43,7 +43,7 @@ DigitalIO::DigitalIO (std::string name, std::string hubName, const oni_dev_idx_t
     streamInfos.add (digitalInputStream);
 
     StreamInfo digitalButtonStream = StreamInfo (
-        OnixDevice::createStreamName ({ getHubName(), name, "DigitalButtons" }),
+        createStreamName ({ getHubName(), name, "DigitalButtons" }),
         "Digital Buttons data",
         getStreamIdentifier(),
         NumButtons,
@@ -111,7 +111,7 @@ EventChannel::Settings DigitalIO::getEventChannelSettings (DataStream* stream)
 {
     EventChannel::Settings settings {
         EventChannel::Type::TTL,
-        OnixDevice::createStreamName ({ getHubName(), getName(), "Events" }),
+        createStreamName ("Events", false),
         "Digital inputs and breakout button states coming from a DigitalIO device",
         getStreamIdentifier() + ".event.digital",
         stream,

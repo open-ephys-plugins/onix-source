@@ -28,7 +28,7 @@ AnalogIO::AnalogIO (std::string name, std::string hubName, const oni_dev_idx_t d
     : OnixDevice (name, hubName, AnalogIO::getDeviceType(), deviceIdx_, oni_ctx)
 {
     StreamInfo analogInputStream = StreamInfo (
-        OnixDevice::createStreamName ({ getHubName(), name, "AnalogInput" }),
+        createStreamName ("AnalogInput", false),
         "Analog Input data",
         getStreamIdentifier(),
         numChannels,

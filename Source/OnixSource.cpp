@@ -850,7 +850,7 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                 deviceInfos->add (new DeviceInfo (deviceSettings));
 
                 DataStream::Settings dataStreamSettings {
-                    OnixDevice::createStreamName ({ OnixDevice::getPortName (source->getDeviceIdx()), source->getHubName(), source->getName() }),
+                    source->createStreamName(),
                     "Continuous data from a Bno055 9-axis IMU",
                     source->getStreamIdentifier(),
                     source->streamInfos[0].getSampleRate(),
@@ -927,7 +927,7 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                 deviceInfos->add (new DeviceInfo (digitalIODeviceSettings));
 
                 DataStream::Settings dataStreamSettings {
-                    OnixDevice::createStreamName ({ source->getHubName(), source->getName() }),
+                    source->createStreamName ("", false),
                     "Digital inputs and buttons",
                     source->getStreamIdentifier(),
                     source->streamInfos[0].getSampleRate(),
@@ -1241,6 +1241,94 @@ bool OnixSource::stopAcquisition()
     }
 
     return true;
+}
+
+bool OnixSource::dataStreamExists(std::string streamName, Array<const DataStream*> dataStreams)
+{
+	for (const auto& stream : dataStreams)
+	{
+		if (stream->getName().contains(streamName))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void OnixSource::startRecording()
+{
+	OnixDeviceVector devicesWithProbeInterface;
+
+	for (const auto& device : getEnabledDataSources())
+	{
+		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E
+			|| device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F
+			|| device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
+		{
+			devicesWithProbeInterface.emplace_back(device);
+		}
+	}
+
+	if (devicesWithProbeInterface.empty())
+		return;
+
+	File recPath = CoreServices::getRecordingParentDirectory();
+
+	int recordNodeId = CoreServices::getAvailableRecordNodeIds().getFirst();
+	int experimentNumber = CoreServices::RecordNode::getExperimentNumber(recordNodeId);
+
+	auto dir = File(
+		recPath.getFullPathName() + File::getSeparatorString() +
+		CoreServices::getRecordingDirectoryName() + File::getSeparatorString() +
+		PLUGIN_NAME + " " + String(sn->getNodeId()) + File::getSeparatorString() +
+		"experiment" + String(experimentNumber));
+
+	if (!dir.exists())
+	{
+		auto result = dir.createDirectory();
+
+		if (result.failed())
+		{
+			Onix1::showWarningMessageBoxAsync("Unable to Create ONIX Source Folder",
+				"The plugin was unable to create a recording directory at '" + dir.getFullPathName().toStdString() + "'. No Probe Interface files will be saved for this recording, please stop recording and determine why the directory could not be created.");
+			return;
+		}
+	}
+
+	for (const auto& device : devicesWithProbeInterface)
+	{
+		if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1E || device->getDeviceType() == OnixDeviceType::NEUROPIXELSV1F)
+		{
+			auto npx = std::static_pointer_cast<Neuropixels1>(device);
+			auto streamName = npx->createStreamName();
+
+			auto streamExists = dataStreamExists(streamName, sn->getDataStreams());
+
+			if (!streamExists)
+				return;
+
+			if (!npx->saveProbeInterfaceFile(dir, streamName))
+				return;
+		}
+		else if (device->getDeviceType() == OnixDeviceType::NEUROPIXELSV2E)
+		{
+			auto npx = std::static_pointer_cast<Neuropixels2e>(device);
+
+			for (int i = 0; i < npx->getNumProbes(); i++)
+			{
+				auto streamName = npx->createStreamName(i);
+
+				auto streamExists = dataStreamExists(streamName, sn->getDataStreams());
+
+				if (!streamExists)
+					return;
+
+				if (!npx->saveProbeInterfaceFile(dir, streamName, i))
+					return;
+			}
+		}
+	}
 }
 
 bool OnixSource::updateBuffer()
