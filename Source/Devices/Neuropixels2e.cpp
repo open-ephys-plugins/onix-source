@@ -535,7 +535,13 @@ void Neuropixels2e::processFrames()
         uint16_t* amplifierData = dataPtr + 9;
 
         sampleNumbers[probeIndex][frameCount[probeIndex]] = sampleNumber[probeIndex]++;
-        timestamps[probeIndex][frameCount[probeIndex]] = deviceContext->convertTimestampToSeconds (frame->time);
+
+        // NB: In ONI v1.0 frame clock is when the frame is created, not necessarily when the data is received.
+        //     For local and passthrough devices, we will instead use the hub clock for the timestamp; in
+        //     ONI v2.0 this behavior may change, and frame->time can be used instead for consistency across devices.
+        auto hubClock = (uint64_t*) frame->data;
+
+        timestamps[probeIndex][frameCount[probeIndex]] = deviceContext->convertTimestampToSeconds (*hubClock);
 
         for (int i = 0; i < FramesPerSuperFrame; i++)
         {
