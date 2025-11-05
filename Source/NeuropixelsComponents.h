@@ -287,6 +287,7 @@ struct ProbeSettings
         lfpGainIndex = newSettings->lfpGainIndex;
         referenceIndex = newSettings->referenceIndex;
         apFilterState = newSettings->apFilterState;
+        connected = newSettings->connected;
 
         selectedBank = newSettings->selectedBank;
         selectedShank = newSettings->selectedShank;
@@ -344,6 +345,7 @@ struct ProbeSettings
     int lfpGainIndex = 0;
     int referenceIndex = 0;
     bool apFilterState = false;
+    bool connected = false;
 
     std::vector<Bank> selectedBank;
     std::vector<int> selectedShank;
@@ -575,6 +577,9 @@ public:
         for (auto it = probeSettings.rbegin(); it != probeSettings.rend(); it++)
         {
             ProbeSettings* probeSetting = it->get();
+
+            if (! probeSetting->connected)
+                continue;
 
             for (int i = probeSetting->numberOfChannels - 1; i >= 0; i--)
             {

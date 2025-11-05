@@ -127,6 +127,8 @@ int Neuropixels1f::configureDevice()
 
     LOGD ("Probe SN: ", probeMetadata.getProbeSerialNumber());
 
+    settings[0]->connected = probeMetadata.getProbeSerialNumber() != 0;
+
     // Enable device streaming
     rc = deviceContext->writeRegister (deviceIdx, 0x8000, 1);
     if (rc != ONI_ESUCCESS)

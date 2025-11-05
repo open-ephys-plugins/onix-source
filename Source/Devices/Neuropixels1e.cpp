@@ -135,6 +135,8 @@ int Neuropixels1e::configureDevice()
 
     LOGD ("Probe SN: ", probeMetadata.getProbeSerialNumber());
 
+    settings[0]->connected = probeMetadata.getProbeSerialNumber() != 0;
+
     return ONI_ESUCCESS;
 }
 
