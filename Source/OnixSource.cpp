@@ -991,6 +991,7 @@ void OnixSource::addCombinedStreams (DataStream::Settings dataStreamSettings,
             };
             continuousChannels->add (new ContinuousChannel (channelSettings));
             continuousChannels->getLast()->setUnits (streamInfo.getUnits());
+            continuousChannels->getLast()->inputRange = streamInfo.getChannelInputRange (chan);
         }
     }
 }

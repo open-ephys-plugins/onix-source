@@ -67,7 +67,9 @@ void Neuropixels2e::createDataStream (int n)
         0.195f,
         "uV",
         {},
-        "ap");
+        "ap",
+        {},
+        {});
     streamInfos.add (apStream);
 }
 

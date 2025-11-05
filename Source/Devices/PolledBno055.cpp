@@ -31,6 +31,10 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
 {
     auto streamIdentifier = getStreamIdentifier();
 
+    const ContinuousChannel::InputRange eulerYawRange { 0.0f, 360.0f };
+    const ContinuousChannel::InputRange eulerRollRange { -180.0f, 180.0f };
+    const ContinuousChannel::InputRange eulerPitchRange { -90.0f, 90.0f };
+
     std::string port = getPortName (deviceIdx);
     StreamInfo eulerAngleStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Euler" }),
@@ -44,8 +48,11 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "Degrees",
         { "Y", "R", "P" },
         "euler",
-        { "y", "r", "p" });
+        { "y", "r", "p" },
+        { eulerYawRange, eulerRollRange, eulerPitchRange });
     streamInfos.add (eulerAngleStream);
+
+    const ContinuousChannel::InputRange quaternionRange { -1.0f, 1.0f };
 
     StreamInfo quaternionStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Quaternion" }),
@@ -59,8 +66,11 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "",
         { "W", "X", "Y", "Z" },
         "quaternion",
-        { "w", "x", "y", "z" });
+        { "w", "x", "y", "z" },
+        { quaternionRange });
     streamInfos.add (quaternionStream);
+
+    const ContinuousChannel::InputRange accelerationRange { -100.0f, 100.0f };
 
     StreamInfo accelerationStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Acceleration" }),
@@ -74,8 +84,11 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "m / s ^ 2",
         { "X", "Y", "Z" },
         "acceleration",
-        { "x", "y", "z" });
+        { "x", "y", "z" },
+        { accelerationRange });
     streamInfos.add (accelerationStream);
+
+    const ContinuousChannel::InputRange gravityRange { -10.0f, 10.0f };
 
     StreamInfo gravityStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Gravity" }),
@@ -89,8 +102,11 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "m/s^2",
         { "X", "Y", "Z" },
         "gravity",
-        { "x", "y", "z" });
+        { "x", "y", "z" },
+        { gravityRange });
     streamInfos.add (gravityStream);
+
+    const ContinuousChannel::InputRange temperatureRange { 0.0f, 100.0f };
 
     StreamInfo temperatureStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Temperature" }),
@@ -103,8 +119,12 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         1.0f,
         "Celsius",
         { "" },
-        "temperature");
+        "temperature",
+        {},
+        { temperatureRange });
     streamInfos.add (temperatureStream);
+
+    const ContinuousChannel::InputRange calibrationRange { 0.0f, 3.0f };
 
     StreamInfo calibrationStatusStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Calibration" }),
@@ -118,7 +138,8 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "",
         { "Mag", "Acc", "Gyr", "Sys" },
         "calibration",
-        { "magnetometer", "acceleration", "gyroscope", "system" });
+        { "magnetometer", "acceleration", "gyroscope", "system" },
+        { calibrationRange });
     streamInfos.add (calibrationStatusStream);
 
     for (int i = 0; i < NumFrames; i++)

@@ -30,6 +30,11 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
     auto streamIdentifier = getStreamIdentifier();
 
     std::string port = getPortName (deviceIdx);
+
+    const ContinuousChannel::InputRange eulerYawRange { 0.0f, 360.0f };
+    const ContinuousChannel::InputRange eulerRollRange { -180.0f, 180.0f };
+    const ContinuousChannel::InputRange eulerPitchRange { -90.0f, 90.0f };
+
     StreamInfo eulerAngleStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Euler" }),
         "Bosch Bno055 9-axis inertial measurement unit (IMU) Euler angle",
@@ -42,8 +47,11 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         "Degrees",
         { "Y", "R", "P" },
         "euler",
-        { "y", "r", "p" });
+        { "y", "r", "p" },
+        { eulerYawRange, eulerRollRange, eulerPitchRange });
     streamInfos.add (eulerAngleStream);
+
+    const ContinuousChannel::InputRange quaternionRange { -1.0f, 1.0f };
 
     StreamInfo quaternionStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Quaternion" }),
@@ -57,8 +65,11 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         "u", // NB: Quaternion data is unitless by definition
         { "W", "X", "Y", "Z" },
         "quaternion",
-        { "w", "x", "y", "z" });
+        { "w", "x", "y", "z" },
+        { quaternionRange });
     streamInfos.add (quaternionStream);
+
+    const ContinuousChannel::InputRange accelerationRange { -100.0f, 100.0f };
 
     StreamInfo accelerationStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Acceleration" }),
@@ -72,8 +83,11 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         "m/s^2",
         { "X", "Y", "Z" },
         "acceleration",
-        { "x", "y", "z" });
+        { "x", "y", "z" },
+        { accelerationRange });
     streamInfos.add (accelerationStream);
+
+    const ContinuousChannel::InputRange gravityRange { -10.0f, 10.0f };
 
     StreamInfo gravityStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Gravity" }),
@@ -87,8 +101,11 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         "m/s^2",
         { "X", "Y", "Z" },
         "gravity",
-        { "x", "y", "z" });
+        { "x", "y", "z" },
+        { gravityRange });
     streamInfos.add (gravityStream);
+
+    const ContinuousChannel::InputRange temperatureRange { 0.0f, 100.0f };
 
     StreamInfo temperatureStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Temperature" }),
@@ -101,8 +118,12 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         1.0f,
         "Celsius",
         { "" },
-        "temperature");
+        "temperature",
+        {},
+        { temperatureRange });
     streamInfos.add (temperatureStream);
+
+    const ContinuousChannel::InputRange calibrationRange { 0.0f, 3.0f };
 
     StreamInfo calibrationStatusStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Calibration" }),
@@ -116,7 +137,8 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         "",
         { "Mag", "Acc", "Gyr", "Sys" },
         "calibration",
-        { "magnetometer", "acceleration", "gyroscope", "system" });
+        { "magnetometer", "acceleration", "gyroscope", "system" },
+        { calibrationRange });
     streamInfos.add (calibrationStatusStream);
 
     for (int i = 0; i < numFrames; i++)

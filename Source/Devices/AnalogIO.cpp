@@ -27,6 +27,8 @@ using namespace OnixSourcePlugin;
 AnalogIO::AnalogIO (std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
     : OnixDevice (name, hubName, AnalogIO::getDeviceType(), deviceIdx_, oni_ctx)
 {
+    const ContinuousChannel::InputRange inputRange { -10.0f, 10.0f };
+
     StreamInfo analogInputStream = StreamInfo (
         OnixDevice::createStreamName ({ getHubName(), name, "AnalogInput" }),
         "Analog Input data",
@@ -38,7 +40,9 @@ AnalogIO::AnalogIO (std::string name, std::string hubName, const oni_dev_idx_t d
         getVoltsPerDivision (AnalogIOVoltageRange::TenVolts), // NB: +/- 10 Volts
         "V",
         {},
-        { "input" });
+        { "input" },
+        {},
+        { inputRange });
     streamInfos.add (analogInputStream);
 
     for (int i = 0; i < numFrames; i++)

@@ -78,7 +78,9 @@ Neuropixels1f::Neuropixels1f (std::string name, std::string hubName, const oni_d
         0.195f,
         "uV",
         {},
-        "ap");
+        "ap",
+        {},
+        {});
     streamInfos.add (apStream);
 
     StreamInfo lfpStream = StreamInfo (
@@ -92,7 +94,9 @@ Neuropixels1f::Neuropixels1f (std::string name, std::string hubName, const oni_d
         0.195f,
         "uV",
         {},
-        "lfp");
+        "lfp",
+        {},
+        {});
     streamInfos.add (lfpStream);
 
     defineMetadata (settings[0].get());

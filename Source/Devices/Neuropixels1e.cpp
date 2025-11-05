@@ -79,6 +79,7 @@ Neuropixels1e::Neuropixels1e (std::string name, std::string hubName, const oni_d
     : Neuropixels1 (name, hubName, OnixDeviceType::NEUROPIXELSV1E, deviceIdx_, ctx_)
 {
     std::string port = getPortName (getDeviceIdx());
+
     StreamInfo apStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), STREAM_NAME_AP }),
         "Neuropixels 1.0 AP band data stream",
@@ -90,7 +91,9 @@ Neuropixels1e::Neuropixels1e (std::string name, std::string hubName, const oni_d
         0.195f,
         "uV",
         {},
-        "ap");
+        "ap",
+        {},
+        {});
     streamInfos.add (apStream);
 
     StreamInfo lfpStream = StreamInfo (
@@ -104,7 +107,9 @@ Neuropixels1e::Neuropixels1e (std::string name, std::string hubName, const oni_d
         0.195f,
         "uV",
         {},
-        "lfp");
+        "lfp",
+        {},
+        {});
     streamInfos.add (lfpStream);
 
     defineMetadata (settings[0].get());
