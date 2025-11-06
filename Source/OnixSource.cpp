@@ -836,6 +836,8 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                 deviceInfos->add (device);
 
                 addIndividualStreams (source->streamInfos, dataStreams, deviceInfos, continuousChannels);
+
+                NeuropixelsHelpers::setChannelMetadata (continuousChannels, std::static_pointer_cast<Neuropixels1f> (source)->settings);
             }
             else if (type == OnixDeviceType::BNO || type == OnixDeviceType::POLLEDBNO)
             {
@@ -885,6 +887,8 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                 deviceInfos->add (device);
 
                 addIndividualStreams (source->streamInfos, dataStreams, deviceInfos, continuousChannels);
+
+                NeuropixelsHelpers::setChannelMetadata (continuousChannels, std::static_pointer_cast<Neuropixels2e> (source)->settings);
             }
             else if (type == OnixDeviceType::MEMORYMONITOR)
             {
@@ -979,6 +983,8 @@ void OnixSource::updateSettings (OwnedArray<ContinuousChannel>* continuousChanne
                 deviceInfos->add (device);
 
                 addIndividualStreams (source->streamInfos, dataStreams, deviceInfos, continuousChannels);
+
+                NeuropixelsHelpers::setChannelMetadata (continuousChannels, std::static_pointer_cast<Neuropixels1e> (source)->settings);
             }
             else if (type == OnixDeviceType::OUTPUTCLOCK)
             {

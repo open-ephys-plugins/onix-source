@@ -316,18 +316,22 @@ int Neuropixels2e::configureDevice()
     LOGD ("Probe A SN: ", probeMetadata[0].getProbeSerialNumber());
     LOGD ("Probe B SN: ", probeMetadata[1].getProbeSerialNumber());
 
-    if (probeMetadata[0].getProbeSerialNumber() == 0 && probeMetadata[1].getProbeSerialNumber() == 0)
+    m_numProbes = 0;
+
+    for(int i = 0; i < NumberOfProbes; i++)
     {
-        m_numProbes = 0;
+        if (probeMetadata[i].getProbeSerialNumber() != 0)
+        {
+            settings[i]->connected = true;
+            m_numProbes++;
+        }
+        else
+            settings[i]->connected = false;
+    }
+
+    if (m_numProbes == 0)
+    {
         throw error_str ("No probes were found connected at address " + std::to_string (getDeviceIdx()));
-    }
-    else if (probeMetadata[0].getProbeSerialNumber() != 0 && probeMetadata[1].getProbeSerialNumber() != 0)
-    {
-        m_numProbes = 2;
-    }
-    else
-    {
-        m_numProbes = 1;
     }
 
     streamInfos.clear();
@@ -342,9 +346,9 @@ int Neuropixels2e::configureDevice()
 
 bool Neuropixels2e::updateSettings()
 {
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < NumberOfProbes; i++)
     {
-        if (probeMetadata[i].getProbeSerialNumber() != 0)
+        if (settings[i]->connected)
         {
             if (! NeuropixelsProbeMetadata::validateProbeTypeAndPartNumber (settings[i]->probeType, probeMetadata[i]))
             {
@@ -416,7 +420,7 @@ bool Neuropixels2e::updateSettings()
 
     for (int i = 0; i < NumberOfProbes; i++)
     {
-        if (probeMetadata[i].getProbeSerialNumber() != 0)
+        if (settings[i]->connected)
         {
             selectProbe (serializer.get(), i == 0 ? ProbeASelected : ProbeBSelected);
             writeConfiguration (settings[i].get());
@@ -554,7 +558,7 @@ void Neuropixels2e::addSourceBuffers (OwnedArray<DataBuffer>& sourceBuffers)
     if (m_numProbes == 1)
     {
         sourceBuffers.add (new DataBuffer (streamInfos.getFirst().getNumChannels(), (int) streamInfos.getFirst().getSampleRate() * bufferSizeInSeconds));
-        auto bufferIndex = probeMetadata[0].getProbeSerialNumber() != 0 ? 0 : 1;
+        auto bufferIndex = settings[0]->connected ? 0 : 1;
         amplifierBuffer[bufferIndex] = sourceBuffers.getLast();
     }
     else

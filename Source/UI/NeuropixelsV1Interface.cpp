@@ -925,6 +925,8 @@ void NeuropixelsV1Interface::selectElectrodes (std::vector<int> electrodes)
 {
     std::static_pointer_cast<Neuropixels1> (device)->settings[0]->selectElectrodes (electrodes);
 
+    CoreServices::updateSignalChain (editor);
+
     repaint();
 }
 
