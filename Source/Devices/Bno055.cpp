@@ -31,7 +31,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
 
     std::string port = getPortName (deviceIdx);
 
-    const ContinuousChannel::InputRange eulerYawRange { 0.0f, 360.0f };
+    const ContinuousChannel::InputRange eulerYawRange { -360.0f, 360.0f };
     const ContinuousChannel::InputRange eulerRollRange { -180.0f, 180.0f };
     const ContinuousChannel::InputRange eulerPitchRange { -90.0f, 90.0f };
 
@@ -105,7 +105,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         { gravityRange });
     streamInfos.add (gravityStream);
 
-    const ContinuousChannel::InputRange temperatureRange { 0.0f, 100.0f };
+    const ContinuousChannel::InputRange temperatureRange { -100.0f, 100.0f };
 
     StreamInfo temperatureStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Temperature" }),
@@ -123,7 +123,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         { temperatureRange });
     streamInfos.add (temperatureStream);
 
-    const ContinuousChannel::InputRange calibrationRange { 0.0f, 3.0f };
+    const ContinuousChannel::InputRange calibrationRange { -3.0f, 3.0f };
 
     StreamInfo calibrationStatusStream = StreamInfo (
         OnixDevice::createStreamName ({ port, getHubName(), getName(), "Calibration" }),
