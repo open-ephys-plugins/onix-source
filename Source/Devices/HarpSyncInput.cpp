@@ -29,8 +29,6 @@ HarpSyncInput::HarpSyncInput (std::string name, std::string hubName, const oni_d
 {
     setEnabled (false);
 
-    const ContinuousChannel::InputRange harpTimeRange { 0.0f, 1000.0f };
-
     StreamInfo harpTimeStream = StreamInfo (
         OnixDevice::createStreamName ({ getHubName(), getName(), "HarpTime" }),
         "Harp clock time corresponding to the local acquisition ONIX clock count",
@@ -44,7 +42,7 @@ HarpSyncInput::HarpSyncInput (std::string name, std::string hubName, const oni_d
         { "" },
         "harptime",
         {},
-        { harpTimeRange });
+        {});
     streamInfos.add (harpTimeStream);
 
     for (int i = 0; i < numFrames; i++)

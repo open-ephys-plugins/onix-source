@@ -77,7 +77,7 @@ void MemoryMonitorUsage::stopAcquisition()
 MemoryMonitor::MemoryMonitor (std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
     : OnixDevice (name, hubName, MemoryMonitor::getDeviceType(), deviceIdx_, oni_ctx)
 {
-    const ContinuousChannel::InputRange percentRange { 0.0f, 100.0f };
+    const ContinuousChannel::InputRange percentRange { -100.0f, 100.0f };
 
     StreamInfo percentUsedStream = StreamInfo (
         OnixDevice::createStreamName ({ getHubName(), getName(), "PercentUsed" }),
