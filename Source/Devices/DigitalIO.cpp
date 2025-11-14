@@ -28,6 +28,8 @@ using namespace OnixSourcePlugin;
 DigitalIO::DigitalIO (std::string name, std::string hubName, const oni_dev_idx_t deviceIdx_, std::shared_ptr<Onix1> oni_ctx)
     : OnixDevice (name, hubName, DigitalIO::getDeviceType(), deviceIdx_, oni_ctx)
 {
+    const ContinuousChannel::InputRange digitalRange { 0.0f, 1.0f };
+
     StreamInfo digitalInputStream = StreamInfo (
         createStreamName ({ getHubName(), name, "DigitalInputs" }),
         "Digital Inputs data",
@@ -39,7 +41,9 @@ DigitalIO::DigitalIO (std::string name, std::string hubName, const oni_dev_idx_t
         1.0,
         "u", // NB: Digital data is unitless by definition
         {},
-        { "input" });
+        { "input" },
+        {},
+        { digitalRange });
     streamInfos.add (digitalInputStream);
 
     StreamInfo digitalButtonStream = StreamInfo (
@@ -53,7 +57,9 @@ DigitalIO::DigitalIO (std::string name, std::string hubName, const oni_dev_idx_t
         1.0,
         "u", // NB: Digital data is unitless by definition
         { "Moon", "Triangle", "X", "Check", "Circle", "Square" },
-        { "input" });
+        { "input" },
+        {},
+        { digitalRange });
     streamInfos.add (digitalButtonStream);
 
     eventCodes.fill (0);
