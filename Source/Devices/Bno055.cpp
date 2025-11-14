@@ -44,7 +44,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         "Eul",
         ContinuousChannel::Type::AUX,
         eulerAngleScale,
-        "Degrees",
+        "Deg.",
         { "Y", "R", "P" },
         "euler",
         { "y", "r", "p" },
@@ -62,7 +62,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         "Quat",
         ContinuousChannel::Type::AUX,
         quaternionScale,
-        "u", // NB: Quaternion data is unitless by definition
+        "", // NB: Quaternion data is unitless by definition
         { "W", "X", "Y", "Z" },
         "quaternion",
         { "w", "x", "y", "z" },
@@ -116,7 +116,7 @@ Bno055::Bno055 (std::string name, std::string hubName, const oni_dev_idx_t devic
         "Temp",
         ContinuousChannel::Type::AUX,
         1.0f,
-        "Celsius",
+        String::fromUTF8 ("\xc2\xb0") + String ("C"), // NB: "\xc2\xb0" --> degree symbol
         { "" },
         "temperature",
         {},

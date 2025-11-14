@@ -71,7 +71,7 @@ public:
                 std::string channelPrefix,
                 ContinuousChannel::Type channelType,
                 float bitVolts,
-                std::string units,
+                String units,
                 std::vector<std::string> channelNameSuffixes,
                 std::string channelIdentifierDataType,
                 std::vector<std::string> channelIdentifierSubTypes,
@@ -161,7 +161,7 @@ public:
     std::string getChannelPrefix() const { return m_channelPrefix; }
     ContinuousChannel::Type getChannelType() const { return m_channelType; }
     float getBitVolts() const { return m_bitVolts; }
-    std::string getUnits() const { return m_units; }
+    String getUnits() const { return m_units; }
     std::vector<std::string> getChannelNameSuffixes() const { return m_channelNameSuffixes; }
     std::string getChannelIdentifierDataType() const { return m_channelIdentifierDataType; }
     std::vector<std::string> getChannelIdentifierSubTypes() const { return m_channelIdentifierSubTypes; }
@@ -176,7 +176,7 @@ private:
     std::string m_channelPrefix = "channelPrefix";
     ContinuousChannel::Type m_channelType = ContinuousChannel::Type::INVALID;
     float m_bitVolts = 1.0f;
-    std::string m_units = "units";
+    String m_units = "units";
     std::vector<std::string> m_channelNameSuffixes = { "suffixes" };
     std::string m_channelIdentifierDataType = "datatype";
     std::vector<std::string> m_channelIdentifierSubTypes = { "subtypes" };
