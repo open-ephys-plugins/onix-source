@@ -31,6 +31,10 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
 {
     auto streamIdentifier = getStreamIdentifier();
 
+    const ContinuousChannel::InputRange eulerYawRange { -360.0f, 360.0f };
+    const ContinuousChannel::InputRange eulerRollRange { -180.0f, 180.0f };
+    const ContinuousChannel::InputRange eulerPitchRange { -90.0f, 90.0f };
+
     std::string port = getPortName (deviceIdx);
     StreamInfo eulerAngleStream = StreamInfo (
         createStreamName ("Euler"),
@@ -41,11 +45,14 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "Eul",
         ContinuousChannel::Type::AUX,
         EulerAngleScale,
-        "Degrees",
+        "Deg.",
         { "Y", "R", "P" },
         "euler",
-        { "y", "r", "p" });
+        { "y", "r", "p" },
+        { eulerYawRange, eulerRollRange, eulerPitchRange });
     streamInfos.add (eulerAngleStream);
+
+    const ContinuousChannel::InputRange quaternionRange { -1.0f, 1.0f };
 
     StreamInfo quaternionStream = StreamInfo (
         createStreamName ("Quaternion"),
@@ -56,11 +63,14 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "Quat",
         ContinuousChannel::Type::AUX,
         QuaternionScale,
-        "",
+        "", // NB: Quaternion data is unitless by definition
         { "W", "X", "Y", "Z" },
         "quaternion",
-        { "w", "x", "y", "z" });
+        { "w", "x", "y", "z" },
+        { quaternionRange });
     streamInfos.add (quaternionStream);
+
+    const ContinuousChannel::InputRange accelerationRange { -100.0f, 100.0f };
 
     StreamInfo accelerationStream = StreamInfo (
         createStreamName ("Acceleration"),
@@ -71,11 +81,14 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "Acc",
         ContinuousChannel::Type::AUX,
         AccelerationScale,
-        "m / s ^ 2",
+        "m/s^2",
         { "X", "Y", "Z" },
         "acceleration",
-        { "x", "y", "z" });
+        { "x", "y", "z" },
+        { accelerationRange });
     streamInfos.add (accelerationStream);
+
+    const ContinuousChannel::InputRange gravityRange { -10.0f, 10.0f };
 
     StreamInfo gravityStream = StreamInfo (
         createStreamName ("Gravity"),
@@ -89,8 +102,11 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "m/s^2",
         { "X", "Y", "Z" },
         "gravity",
-        { "x", "y", "z" });
+        { "x", "y", "z" },
+        { gravityRange });
     streamInfos.add (gravityStream);
+
+    const ContinuousChannel::InputRange temperatureRange { -100.0f, 100.0f };
 
     StreamInfo temperatureStream = StreamInfo (
         createStreamName ("Temperature"),
@@ -101,10 +117,14 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "Temp",
         ContinuousChannel::Type::AUX,
         1.0f,
-        "Celsius",
+        String::fromUTF8 ("\xc2\xb0") + String ("C"), // NB: "\xc2\xb0" --> degree symbol
         { "" },
-        "temperature");
+        "temperature",
+        {},
+        { temperatureRange });
     streamInfos.add (temperatureStream);
+
+    const ContinuousChannel::InputRange calibrationRange { -3.0f, 3.0f };
 
     StreamInfo calibrationStatusStream = StreamInfo (
         createStreamName ("Calibration"),
@@ -118,7 +138,8 @@ PolledBno055::PolledBno055 (std::string name, std::string hubName, const oni_dev
         "",
         { "Mag", "Acc", "Gyr", "Sys" },
         "calibration",
-        { "magnetometer", "acceleration", "gyroscope", "system" });
+        { "magnetometer", "acceleration", "gyroscope", "system" },
+        { calibrationRange });
     streamInfos.add (calibrationStatusStream);
 
     for (int i = 0; i < NumFrames; i++)

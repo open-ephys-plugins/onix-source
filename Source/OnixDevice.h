@@ -70,10 +70,11 @@ public:
                 std::string channelPrefix,
                 ContinuousChannel::Type channelType,
                 float bitVolts,
-                std::string units,
+                String units,
                 std::vector<std::string> channelNameSuffixes,
                 std::string channelIdentifierDataType,
-                std::vector<std::string> channelIdentifierSubTypes = {})
+                std::vector<std::string> channelIdentifierSubTypes,
+                std::vector<ContinuousChannel::InputRange> inputRanges)
     {
         m_name = name;
         m_description = description;
@@ -87,6 +88,7 @@ public:
         m_channelNameSuffixes = channelNameSuffixes;
         m_channelIdentifierDataType = channelIdentifierDataType;
         m_channelIdentifierSubTypes = channelIdentifierSubTypes;
+        channelInputRanges = inputRanges;
 
         if (m_numChannels != m_channelNameSuffixes.size())
         {
@@ -126,6 +128,28 @@ public:
                 }
             }
         }
+
+        if (channelInputRanges.size() == 0)
+        {
+            LOGE ("Must specify at least one channel input range.");
+
+            channelInputRanges.push_back (ContinuousChannel::InputRange());
+        }
+        else
+        {
+            ContinuousChannel::InputRange range = channelInputRanges[0];
+
+            if (channelInputRanges.size() == 1)
+            {
+                channelInputRanges.assign (m_numChannels, range);
+            }
+            else if (m_numChannels != channelInputRanges.size())
+            {
+                LOGE ("Invalid number of channel input ranges given. Must either be one input range for all channels, or the same number of input ranges as channels.");
+
+                channelInputRanges.assign (m_numChannels, range);
+            }
+        }
     };
 
     std::string getName() const { return m_name; }
@@ -136,10 +160,11 @@ public:
     std::string getChannelPrefix() const { return m_channelPrefix; }
     ContinuousChannel::Type getChannelType() const { return m_channelType; }
     float getBitVolts() const { return m_bitVolts; }
-    std::string getUnits() const { return m_units; }
+    String getUnits() const { return m_units; }
     std::vector<std::string> getChannelNameSuffixes() const { return m_channelNameSuffixes; }
     std::string getChannelIdentifierDataType() const { return m_channelIdentifierDataType; }
     std::vector<std::string> getChannelIdentifierSubTypes() const { return m_channelIdentifierSubTypes; }
+    ContinuousChannel::InputRange getChannelInputRange (int index) const { return channelInputRanges.at (index); }
 
 private:
     std::string m_name = "name";
@@ -150,10 +175,11 @@ private:
     std::string m_channelPrefix = "channelPrefix";
     ContinuousChannel::Type m_channelType = ContinuousChannel::Type::INVALID;
     float m_bitVolts = 1.0f;
-    std::string m_units = "units";
+    String m_units = "units";
     std::vector<std::string> m_channelNameSuffixes = { "suffixes" };
     std::string m_channelIdentifierDataType = "datatype";
     std::vector<std::string> m_channelIdentifierSubTypes = { "subtypes" };
+    std::vector<ContinuousChannel::InputRange> channelInputRanges = {};
 };
 
 using OnixDeviceMap = std::map<uint32_t, OnixDeviceType>;

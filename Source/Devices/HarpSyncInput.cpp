@@ -40,7 +40,9 @@ HarpSyncInput::HarpSyncInput (std::string name, std::string hubName, const oni_d
         1.0f,
         "s",
         { "" },
-        "harptime");
+        "harptime",
+        {},
+        {});
     streamInfos.add (harpTimeStream);
 
     for (int i = 0; i < numFrames; i++)
