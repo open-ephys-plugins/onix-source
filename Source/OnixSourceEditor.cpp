@@ -542,6 +542,11 @@ void OnixSourceEditor::stopAcquisition()
         canvas->stopAcquisition();
 }
 
+void OnixSourceEditor::startRecording()
+{
+    source->startRecording();
+}
+
 Visualizer* OnixSourceEditor::createNewCanvas (void)
 {
     GenericProcessor* processor = (GenericProcessor*) getProcessor();
