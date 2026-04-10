@@ -55,6 +55,7 @@ public:
     void setInterfaceEnabledState (bool newState);
     void startAcquisition() override;
     void stopAcquisition() override;
+    void startRecording() override;
     Visualizer* createNewCanvas (void) override;
     void saveVisualizerEditorParameters (XmlElement* xml) override;
     void loadVisualizerEditorParameters (XmlElement* xml) override;
